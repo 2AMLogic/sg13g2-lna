@@ -75,13 +75,46 @@ from a blank page):
     `ihp-sg13g2/libs.tech/klayout/python/sg13g2_pycell_lib/ihp/inductor2_code.py`
     / `inductor3_code.py` (pycell generators) and xschem symbols
     (`ihp-sg13g2/libs.tech/xschem/sg13g2_pr/inductor.sym`,
-    `inductor3.sym`). **Whether a corresponding SPICE (or S-parameter/EM)
-    model ships anywhere in this PDK for inductor devices — as opposed to
-    only a layout generator and a schematic symbol — was not resolved by
-    this issue** and is this repo's single highest-priority open tooling
-    question (§4, item 1); it directly gates whether inductive source/load
-    degeneration (this block's entire matching-network approach, per
-    `CLAUDE.md`) can be simulated at all before layout extraction exists.
+    `inductor3.sym`). **CONFIRMED (issue #5, 2026-09-06): SG13G2's
+    open-source PDK ships no SPICE, S-parameter, or EM model for on-chip
+    inductor devices.** A repo-wide GitHub code search of
+    `IHP-GmbH/IHP-Open-PDK` (not limited to `libs.tech/ngspice/models/`)
+    found no inductor SPICE/behavioral model file anywhere in the PDK —
+    only the pycell/xschem-symbol/LVS surface named above — corroborated
+    upstream:
+    - [`IHP-GmbH/IHP-Open-PDK#685`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/685)
+      ("Inductors in the PDK", open) — maintainer: "the simulation
+      inductor model is way too complicated to be simulated by a generic
+      model using the 4 parameters of the xschem symbol ... I've heard
+      mention of the FastHenry tool ... but haven't actually done
+      anything myself."
+    - [`IHP-GmbH/IHP-Open-PDK#1101`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/1101)
+      (closed) — confirms the xschem inductor symbol has no backing
+      simulation subcircuit (LVS-only, `spiceprefix=X`, no `subckt`); a
+      user must supply their own extracted model.
+    - Corroborating user reports of self-generating `.s2p` files via
+      openEMS: [`#314`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/314),
+      [`#806`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/806),
+      [`#349`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/349),
+      [`#251`](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/251).
+    - `ihp-sg13g2/libs.tech/openems/` (and its submodule
+      `VolkerMuehlhaus/openems_ihp_sg13g2`) documents the PDK's own
+      answer: a **user-side EM-simulation methodology** — extract your
+      own geometry and run openEMS/FastHenry yourself — not a shipped
+      model.
+
+    Per this repo's friction protocol, the corresponding tool-gap report
+    has been filed generically against `klayout-tools`:
+    [`2AMLogic/klayout-tools#1517`](https://github.com/2AMLogic/klayout-tools/issues/1517)
+    — `klt mom`'s PEEC/full-wave/S-parameter extraction path is restricted
+    to bar-shaped conductors, cannot process coiled/spiral geometry, and
+    lacks Touchstone/`.s2p` export, so it cannot serve as a repeatable
+    workaround today either. Until that gap closes, the PDK's own
+    documented workaround (user-driven openEMS/FastHenry extraction) is
+    the only path to a simulatable inductor model on this PDK; this
+    directly gates whether inductive source/load degeneration (this
+    block's entire matching-network approach, per `CLAUDE.md`) can be
+    simulated at all before layout extraction exists.
 
 ## 1. What carries over unchanged (transfers from the SG13G2 deck siblings)
 
@@ -104,9 +137,10 @@ from a blank page):
   `klayout-tools`, design specifics stay out of that tracker — unchanged by
   which block or PDK triggered the gap. The inductor-model question in
   "Sources checked" above is exactly the kind of gap this protocol exists
-  for, once it is confirmed (rather than merely suspected from a directory
-  listing) to be a real tooling absence rather than a file this survey
-  missed.
+  for; issue #5 confirmed it as a real tooling absence (not merely a file
+  this survey missed), and the corresponding report,
+  [`2AMLogic/klayout-tools#1517`](https://github.com/2AMLogic/klayout-tools/issues/1517),
+  has been filed.
 - **`npn13g2` as a known, well-characterized device.** `sg13g2-bandgap`'s
   DR-0001 already did the first characterization pass on this exact device
   (VBIC Rev. 1.15, BF target 650, `BVCEO` target 1.6 V / min 1.4 V) for a
@@ -143,13 +177,17 @@ block's canary value is real rather than a relabeled CMOS port:
   assumptions, and de-embedding (if any) are new ground this repo's README
   already names as "the first work."
 - **Inductive source/load degeneration and its passive-model dependency.**
-  As found in "Sources checked" above, this PDK's inductor support may be
-  layout-pycell-and-symbol-only with no confirmed SPICE/EM model — a
-  question none of the three siblings needed to ask, since none of them
-  uses on-chip spiral inductors in their core topology. If confirmed, this
-  is this block's first `klayout-tools` friction filing, and it blocks
-  simulating S11/S22/gain at all (not just confirming a target — the
-  testbench itself has no passive model to drive) until resolved.
+  As found in "Sources checked" above, this PDK's inductor support is
+  **confirmed (issue #5)** to be layout-pycell-and-symbol-only, with no
+  shipped SPICE/S-parameter/EM model — a question none of the three
+  siblings needed to ask, since none of them uses on-chip spiral inductors
+  in their core topology. This produced this block's first
+  `klayout-tools` friction filing
+  ([`2AMLogic/klayout-tools#1517`](https://github.com/2AMLogic/klayout-tools/issues/1517)),
+  and it blocks simulating S11/S22/gain at all (not just confirming a
+  target — the testbench itself has no passive model to drive) until
+  resolved, or worked around via the PDK's own documented user-side
+  openEMS/FastHenry extraction flow (see "Sources checked" above).
   `sg13g2-pll`'s own architecture decision record
   (`DR-001-pll-architecture.md`, which chose between a current-starved CMOS
   ring and an HBT-based LC-tank VCO) is the closest sibling precedent for
@@ -191,9 +229,17 @@ block's canary value is real rather than a relabeled CMOS port:
 
 This plan and `target-spec.md` are inputs to: (a) a future
 spec-ratification issue for the target-spec table, (b) a decision record
-resolving the bias/supply-topology question, and (c) confirming or refuting
-the suspected inductor-SPICE-model gap (item 2 above) — which, if
-confirmed, should be filed against `klayout-tools` per this repo's friction
-protocol before any matching-network schematic work proceeds. Nothing in
-this document authorizes schematic, layout, or simulation work ahead of
-those steps.
+resolving the bias/supply-topology question, and (c) confirming or
+refuting the suspected inductor-SPICE-model gap (item 2 above) — **now
+resolved**: issue #5 confirmed the gap is real (see "Sources checked"
+above) and the corresponding friction report has been filed against
+`klayout-tools` per this repo's friction protocol
+([`2AMLogic/klayout-tools#1517`](https://github.com/2AMLogic/klayout-tools/issues/1517)).
+Resolving (c) does not by itself clear this document's gate on
+matching-network schematic work — (a) and (b) remain the outstanding
+prerequisites, and nothing in this document authorizes schematic, layout,
+or simulation work ahead of those two steps. How this block will actually
+obtain an inductor model for that future schematic work (self-run
+openEMS/FastHenry extraction vs. waiting on
+`2AMLogic/klayout-tools#1517`) is itself a design decision left to a
+future decision record, not settled by this update.
