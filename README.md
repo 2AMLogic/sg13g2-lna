@@ -36,9 +36,14 @@ copying numbers across repos without their derivations.
 
 ## Target specification (DRAFT — engineering to ratify)
 
-Deliberately thin until the bench methodology lands: band, gain, noise
-figure, input/output match (S11/S22), IIP3, supply/power. Rows get numbers
-only from committed benches; the 50 Ω port convention is stated explicitly.
+The detailed DRAFT table — band, gain, noise figure, input/output match
+(S11/S22), stability, IIP3, and supply/power, each row source-cited and the
+50 Ω port convention stated explicitly — lives in
+[`spec/target-spec.md`](spec/target-spec.md). This section stays
+deliberately thin: nothing here is ratified, and rows get numbers only from
+committed benches. See [`spec/README.md`](spec/README.md) for the full
+spec-directory index, including the porting plan and decision-record
+process.
 
 ## License
 
