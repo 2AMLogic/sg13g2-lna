@@ -1,0 +1,19 @@
+{
+  "_comment": "Pinned SG13G2 PDK revision this sim/ tree's committed evidence records were generated against. Every record under sim/*/records/*.md must trace to this file (or a later commit that bumps it) -- see sim/README.md 'PDK pin' section. Not consumed by tooling; kept as a plain, greppable fact sheet. Follows sg13g2-bandgap/sim/pdk.json's and sg13g2-opamp/sim/pdk.json's shape (same PDK, same pinned release).",
+  "source": "IHP-GmbH/IHP-Open-PDK",
+  "fetch_method": "klayout-tools scripts/fetch-ihp-sg13g2.sh (2AMLogic/klayout-tools)",
+  "release_tag": "v0.3.0",
+  "release_url": "https://github.com/IHP-GmbH/IHP-Open-PDK/archive/refs/tags/v0.3.0.tar.gz",
+  "pdk_root_layout": "PDK_ROOT/ihp-sg13g2 (open_pdks-shaped install, klt pdk find/list convention)",
+  "variant": "ihp-sg13g2",
+  "local_install_verified": {
+    "path_marker": "<PDK_ROOT>/ihp-sg13g2/.fetched-version",
+    "value_read": "0.3.0",
+    "checked": "2026-09-10"
+  },
+  "device_models_used_by_this_repo_so_far": {
+    "_comment": "sim/hbt-characterization/ (issue #7) is the first sim/ experiment in this repo, and it only instantiates npn13G2 -- a native ngspice VBIC (level=9) bipolar model, NOT a Verilog-A/OSDI-compiled device. Unlike sg13g2-bandgap and sg13g2-opamp (both of which instantiate PSP103 MOS and/or r3_cmc resistor devices that require the OSDI compile step -- see those repos' sim/tools/build-osdi.sh), this experiment needs no OSDI toolchain at all: `.lib \"cornerHBT.lib\" <section>` plus a bare `ngspice -b` invocation is sufficient. A future sim/ experiment in this repo that instantiates sg13_lv_mos/sg13_hv_mos or a resistor WILL need an OSDI build step -- port sim/tools/build-osdi.sh from sg13g2-bandgap or sg13g2-opamp when that need arises, rather than inventing a new one.",
+    "npn13G2": "native VBIC (Rev. 1.15, level=9) SPICE model card, sg13g2_hbt_mod.lib -- loaded directly via cornerHBT.lib's .LIB sections, no compile step",
+    "ngspice_actually_used": "ngspice-46"
+  }
+}
