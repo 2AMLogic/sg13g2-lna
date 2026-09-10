@@ -1,0 +1,114 @@
+* sg13g2-lna -- npn13G2 noise-optimum device characterization (issue #7)
+* Generated from
+* sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl by
+* sim/hbt-characterization/run_hbt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full methodology, bench definitions and rationale are in
+* sim/hbt-characterization/README.md; this header is a short pointer.
+*
+* Generated for: HBT_SECTION=hbt_typ TEMP=-40 Nx=1
+* VCE=1.0V, base voltage swept 26 points from 0.55V
+* in 0.02V steps.
+*
+* TWO independent DUT branches, sharing only the corner-lib model card
+* (not electrically connected), both instantiating the same npn13G2
+* Nx=1 device:
+*
+*   XQ1 (nodes c/b/e)   -- the 50 Ohm-referenced RF port bench. Base and
+*     collector are each fed through an "ideal bias tee" (a DC source in
+*     series with a 1 H inductor -- at 2.4 GHz that inductor presents
+*     ~1.5e10 Ohm, an effectively open RF choke, while offering zero DC
+*     drop). The base's RF port is AC-coupled through a 1 F "ideal DC
+*     block" capacitor (~6.6e-11 Ohm at 2.4 GHz, effectively a short) to a
+*     50 Ohm Thevenin source (Rs=50, driven by Vin); the collector's RF
+*     port is identically AC-coupled to a 50 Ohm load RL. Rs is pinned at
+*     temp=27 (300.15 K) regardless of the swept ambient corner -- the
+*     standard Friis/IEEE noise-figure convention of holding the SOURCE
+*     reference temperature fixed while only the DUT's ambient varies (see
+*     README.md "Noise figure bench" for the full rationale). This branch
+*     is used for: (a) J_C via its own DC operating point, (b) 50
+*     Ohm-terminated transducer gain |S21|^2 at 2.4 GHz via a 1 V
+*     open-circuit source (S21 = 2*Vout/Vin for a Zs=Zo=ZL=50 Ohm 2-port),
+*     and (c) NF at 2.4 GHz via ngspice .noise, referenced to the same
+*     fixed 300.15 K source temperature: NF = 10*log10(inoise^2 / (4 k T0
+*     Rs)).
+*
+*   XQ2 (nodes c2/b2/e2) -- the short-circuit h21/fT bench. Base is driven
+*     by an ideal DC+AC current source (Ib2, no RF port, no 50 Ohm
+*     convention -- h21 is a unitless, port-independent short-circuit
+*     current-gain figure by definition); collector is tied directly to an
+*     ideal DC voltage source (zero AC impedance = ideal short). Ib2's DC
+*     value is alter()ed every sweep point to XQ1's own measured base
+*     current at that point, so both branches sit at (very nearly) the
+*     same DC operating point despite the different RF terminations. fT is
+*     extracted from a wide .ac sweep of h21 = -i(Vce2)/Ib2_ac (Ib2_ac=1A)
+*     via a 0 dB crossing (ngspice `meas ac ... WHEN h21db=0`), skipped
+*     (reported NA) below a 1 nA Ic floor where the device is
+*     effectively off and h21 never crosses 0 dB in the swept range.
+*
+* NOTE ON EXECUTION ORDER (ngspice "current plot" gotcha, same class of
+* issue sg13g2-opamp/sim/gm-id-characterization/testbench/*.tmpl
+* documents): every measured quantity is echoed to stdout IMMEDIATELY
+* after the analysis that produced it, before the next analysis switches
+* ngspice's "current plot" -- both the echo AND the `if icval > 1e-9`
+* gate on the fT branch must happen before any subsequent analysis runs,
+* or the referencing vector silently goes stale. The fT branch therefore
+* runs BEFORE the gain/noise analyses below it, not after.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+
+.options temp=-40 tnom=27
+
+* --- XQ1: 50 Ohm RF-port bench (gain, NF) ---
+Vcc cc 0 dc 1.0
+Lc cc c 1
+Vbb bb 0 dc 0.55
+Lb bb b 1
+Cin rf_in b 1
+Rs vin rf_in 50 temp=27
+Vin vin 0 dc 0 ac 1
+Cout c out 1
+RL out 0 50
+Ve e 0 dc 0
+XQ1 c b e 0 npn13G2 Nx=1
+
+* --- XQ2: short-circuit h21/fT bench ---
+Ib2 0 b2 dc 0 ac 1
+Vce2 c2 0 dc 1.0
+Ve2 e2 0 dc 0
+XQ2 c2 b2 e2 0 npn13G2 Nx=1
+
+.control
+let i = 0
+let n = 26
+dowhile i < n
+  let vbeval = 0.55 + i*0.02
+  echo "PT $&vbeval"
+  alter Vbb = $&vbeval
+  op
+  let icval = @q.xq1.qnpn13g2[ic]
+  let ibval = @q.xq1.qnpn13g2[ib]
+  echo "IC $&icval"
+
+  if icval > 1e-9
+    alter Ib2 = $&ibval
+    ac dec 20 1meg 3000g
+    let h21db = db(-i(vce2))
+    meas ac ftmeas WHEN h21db=0
+    echo "FT $&ftmeas"
+  else
+    echo "FT NA"
+  end
+
+  ac lin 1 2.4g 2.4g
+  let gaindb = db(2*v(out))
+  echo "GAIN $&gaindb"
+
+  noise v(out) vin lin 1 2.4g 2.4g
+  let nfdb = 10*log10((inoise_spectrum^2)/(4*1.3806503e-23*300.15*50))
+  echo "NF $&nfdb"
+
+  let i = i + 1
+end
+.endc
+.end
