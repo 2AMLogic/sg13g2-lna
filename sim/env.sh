@@ -22,7 +22,6 @@
 # shellcheck disable=SC2296
 _sg13g2_env_self="${BASH_SOURCE[0]:-${(%):-%x}}"
 _sg13g2_sim_dir="$(cd "$(dirname "${_sg13g2_env_self}")" && pwd)"
-_sg13g2_repo_root="$(cd "${_sg13g2_sim_dir}/.." && pwd)"
 
 export PDK="${PDK:-ihp-sg13g2}"
 
@@ -48,5 +47,3 @@ else
 fi
 
 unset _sg13g2_env_self _sg13g2_sim_dir _sg13g2_candidate
-# _sg13g2_repo_root intentionally left exported-free but available to callers
-# that source this file inline; not exported to avoid leaking into child envs.
