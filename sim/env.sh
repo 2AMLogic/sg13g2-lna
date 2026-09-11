@@ -17,11 +17,6 @@
 # below tells shellcheck which dialect to assume.
 # shellcheck shell=bash
 
-# ${(%):-%x} is the zsh equivalent of ${BASH_SOURCE[0]} -- sourced from both
-# shells; shellcheck cannot parse the zsh half.
-# shellcheck disable=SC2296
-_sg13g2_env_self="${BASH_SOURCE[0]:-${(%):-%x}}"
-
 export PDK="${PDK:-ihp-sg13g2}"
 
 if [[ -z "${PDK_ROOT:-}" ]]; then
@@ -45,4 +40,4 @@ else
   echo "sg13g2-lna: see sim/pdk.json for the pinned release this repo's evidence records target." >&2
 fi
 
-unset _sg13g2_env_self _sg13g2_candidate
+unset _sg13g2_candidate
