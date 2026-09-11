@@ -21,7 +21,6 @@
 # shells; shellcheck cannot parse the zsh half.
 # shellcheck disable=SC2296
 _sg13g2_env_self="${BASH_SOURCE[0]:-${(%):-%x}}"
-_sg13g2_sim_dir="$(cd "$(dirname "${_sg13g2_env_self}")" && pwd)"
 
 export PDK="${PDK:-ihp-sg13g2}"
 
@@ -46,4 +45,4 @@ else
   echo "sg13g2-lna: see sim/pdk.json for the pinned release this repo's evidence records target." >&2
 fi
 
-unset _sg13g2_env_self _sg13g2_sim_dir _sg13g2_candidate
+unset _sg13g2_env_self _sg13g2_candidate
