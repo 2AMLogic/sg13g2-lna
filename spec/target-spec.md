@@ -77,6 +77,16 @@ range or "TBD, pending decision record" rather than an invented number.
 
 ## Open topology question this table does not resolve
 
+> **Update (2026-09-16):** a decision record now *proposes* an answer —
+> [`decision-records/0001-bias-supply-topology.md`](decision-records/0001-bias-supply-topology.md)
+> (cascode, single 1.8 V rail, `I_C` = 4.0 mA at `Nx=8`), with the
+> breakdown-voltage budget worked against `npn13g2`'s BVCEO minimum across
+> the {−40, 27, 125} °C × ±10 %-supply corner box and cited to
+> `sim/hbt-characterization/records/`. That record's status is **proposed,
+> not ratified**: the Supply and Power rows below remain DRAFT and unpinned
+> until a separate ratification PR passes this fleet's two-key (EE-key +
+> market-key) protocol. Nothing in this section is superseded by the link.
+
 **Bias/supply topology is not yet decided** and several rows below (Supply,
 Power, and indirectly Gain/NF/IIP3, which all depend on bias current and
 device stacking) are bounded rather than pinned as a result. `npn13g2`'s
@@ -132,7 +142,11 @@ second, not-yet-resolved axis this table does not attempt to bind yet.
    future issue.
 2. **Bias/supply topology** (cascode vs. single-stage, exact supply
    voltage) — see "Open topology question" above. Blocks the Supply and
-   Power rows, and indirectly bounds achievable Gain/NF/IIP3.
+   Power rows, and indirectly bounds achievable Gain/NF/IIP3. A
+   recommendation is **proposed** in
+   [`decision-records/0001-bias-supply-topology.md`](decision-records/0001-bias-supply-topology.md);
+   this item closes when that recommendation is ratified, not when it is
+   merged.
 3. **Matching-network passive models.** Inductive source/load degeneration
    needs the PDK's inductor pycell + SPICE/EM model story resolved first
    (open question, see `porting-plan.md`) — S11/S22 numbers cannot be
@@ -141,8 +155,9 @@ second, not-yet-resolved axis this table does not attempt to bind yet.
    current density for minimum NF has not been derived against
    `sg13g2_hbt_mod.lib`'s actual noise parameters.
 
-Decision records live in `spec/decision-records/` (create the directory
-when the first record is written; copy a `TEMPLATE.md` from a sibling repo
-such as `sg13g2-bandgap/spec/decision-records/` to start it — one decision
-per record, numbered sequentially, append-only: supersede, never edit). A
-row above is ratified only when a decision record says so.
+Decision records live in [`spec/decision-records/`](decision-records/) —
+one decision per record, `NNNN-<slug>.md`, numbered sequentially,
+append-only: supersede, never edit. Start from
+[`decision-records/TEMPLATE.md`](decision-records/TEMPLATE.md). A row above
+is ratified only when a **ratified** decision record says so; a `proposed`
+record links from the relevant section but changes nothing here.
