@@ -1,0 +1,90 @@
+* sg13g2-lna -- npn13G2 held-base breakdown extraction + naive-method
+* control, BENCH B (voltage-driven .dc sweep). Issue #20.
+*
+* Generated from
+* sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl by
+* sim/breakdown-extraction/run_breakdown_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template
+* and re-run the sweep. Full methodology and caveats are in
+* sim/breakdown-extraction/README.md.
+*
+* Generated for: HBT_SECTION=hbt_typ TEMP=27 Nx=1
+* selft=1 RB=1e9 Ohm, V_CE swept 0.20 V ->
+* 5.40 V in 0.04 V steps.
+*
+* WHAT THIS BENCH IS, AND WHEN IT IS VALID
+* ----------------------------------------
+* A voltage-driven .dc sweep is the WRONG bench for the open base --
+* that is the method issue #20 and
+* spec/decision-records/0001-bias-supply-topology.md both call
+* numerically untrustworthy, because the open-base locus is S-shaped and
+* the solver picks a branch by initial guess (see Bench A's header).
+*
+* It is, however, the RIGHT bench for the two things it is used for
+* here, and for neither of them does the branch ambiguity arise:
+*
+*   1. HELD-BASE EXTRACTION (RB finite -> BVCER; RB -> 0 -> BVCES).
+*      With the base tied to the emitter through a low impedance the
+*      device is off: the avalanche-generated base current is swallowed
+*      by Rbe instead of being amplified by the device's own current
+*      gain, so there is no regenerative feedback, no snapback, and
+*      I_C(V_CE) is monotone and single-valued over the whole swept
+*      range. The collector current read out at V_CE = 1.12 / 1.40 /
+*      1.60 / 2.00 V is then directly usable: it is what the cascode
+*      device Q2 would leak at DR-0001's worst-case V_CE, at
+*      BVCEO(min), at the model card's vce_max, and at the top of the
+*      card's stated validity range. The V_CE at which I_C crosses a
+*      stated current criterion (if it ever does) is the corresponding
+*      BVCER/BVCES figure.
+*
+*   2. NAIVE-METHOD CONTROL (RB = 1e9 Ohm, the quasi-open base
+*      impedance of the uncommitted spot check quoted in DR-0001). Run
+*      this way the bench deliberately reproduces that spot check's
+*      behaviour, so the committed record carries the evidence for *why*
+*      Bench A exists instead of asking a reader to take it on trust.
+*      Nothing from these cells is quoted as a BVCEO value.
+*
+* TOPOLOGY -- identical to Bench A except for the collector drive:
+*   Vce c 0      -- an ideal DC voltage source; V_CE is the swept
+*                   (independent) quantity and I_C = -i(Vce) is
+*                   measured. No series or load resistance: the source
+*                   is ideal, so there is no load line to intersect and
+*                   no compliance limit.
+*   Rbe b e      -- base termination (RB -> 0: BVCES; RB finite: BVCER;
+*                   RB = 1e9: the quasi-open control), as in Bench A.
+*   Ve e 0       -- emitter at ground through a 0 V source.
+*   XQ1's 4th terminal (bn) tied to 0.
+*
+* NO RF PORT, NO 50 OHM REFERENCE -- DC only, as in Bench A.
+*
+* The swept range deliberately runs past the model card's own declared
+* limits (vce_max = 1.6 V, vbc_max = 5.1 V, and the stated validity box
+* vce : 0.4 - 2.0 V). Everything above 2.0 V is an extrapolation of the
+* model outside the range its authors validated it over, and both the
+* README and the record label it as such; it is swept only to show
+* whether an avalanche runaway exists anywhere below (and, for the
+* explicitly-labelled extended-ceiling cells, well above) the B-C
+* limit -- not to claim a breakdown number there.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+
+.options temp=27 tnom=27
+
+Vce c 0 dc 0
+Rbe b e 1e9
+Ve e 0 dc 0
+XQ1 c b e 0 npn13G2 Nx=1 selft=1
+
+* The swept table is written to its own file (/Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/b_nx1_fs_27c_rb1g_st1.meas, committed
+* next to the console log under corners/<record-id>/) for the same
+* reason Bench A redirects its echoes: ngspice's convergence
+* diagnostics interleave mid-line with console output and would
+* silently corrupt a row rather than fail loudly.
+
+.control
+dc Vce 0.20 5.40 0.04
+let ic = -i(Vce)
+let vbe = v(b)-v(e)
+print ic vbe > /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/b_nx1_fs_27c_rb1g_st1.meas
+.endc
+.end
