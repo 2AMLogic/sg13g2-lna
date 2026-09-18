@@ -1,0 +1,53 @@
+* sg13g2-lna -- ngspice resistor NOISE-temperature probe (issue #18)
+*
+* Not part of the PVT campaign: this is the one-deck measurement that
+* JUSTIFIES a methodology choice made in tb_lna_sparam.spice.tmpl, committed
+* here because this repo's rule is "no claim without a testbench" -- and
+* sim/lna-characterization/README.md ("Noise figure") makes a claim about
+* ngspice's behaviour, so the claim needs its own bench.
+*
+* CLAIM UNDER TEST: in ngspice-46, a resistor's per-instance `temp=` override
+* does NOT pin that resistor's THERMAL-NOISE temperature. It is honoured for
+* the resistance value's temperature coefficients, but the noise source is
+* computed at the ANALYSIS temperature (`.options temp`) regardless.
+*
+* METHOD: two identical 50 Ohm resistors in the same deck at an analysis
+* temperature of 54 C (327.15 K), one carrying `temp=27` and one not, each
+* loaded by a NOISELESS 1 GOhm resistor so the measured output noise is that
+* resistor's own thermal noise and nothing else. Back out the effective noise
+* temperature from the measured output noise density:
+*
+*     T_eff = onoise_spectrum^2 / (4 * k_B * R)
+*
+* EXPECTED IF THE OVERRIDE WORKED: 300.15 K for R1, 327.15 K for R3.
+* MEASURED (ngspice-46, this deck, 2026-09-18): 327.15 K for BOTH.
+*
+* CONSEQUENCE, and why the LNA bench is built the way it is: a noise-figure
+* bench cannot hold its 50 Ohm source at a fixed reference temperature by
+* writing `temp=27` on the source resistor. tb_lna_sparam.spice.tmpl therefore
+* declares Rs/RL `noisy=0` and re-introduces the source term ANALYTICALLY at
+* an explicitly chosen T0 (290 K and 300.15 K are both reported), which also
+* removes the load resistor's noise -- which the two-port NF definition
+* excludes anyway.
+*
+* Run:  ngspice -b sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice
+* (needs no PDK: there is no device model in this deck.)
+
+.options temp=54 tnom=27
+
+V1 a 0 dc 0 ac 1
+R1 a b 50 temp=27
+R2 b 0 1e9 noisy=0
+R3 a c 50
+R4 c 0 1e9 noisy=0
+
+.control
+noise v(b) V1 lin 1 1e6 1e6
+let teff_pinned = (onoise_spectrum^2)/(4*1.380649e-23*50)
+echo "T_eff of R1 (instance temp=27, .options temp=54): $&teff_pinned K"
+noise v(c) V1 lin 1 1e6 1e6
+let teff_amb = (onoise_spectrum^2)/(4*1.380649e-23*50)
+echo "T_eff of R3 (no instance temp, .options temp=54): $&teff_amb K"
+echo "PROBE_COMPLETE"
+.endc
+.end

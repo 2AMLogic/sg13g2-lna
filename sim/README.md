@@ -137,3 +137,15 @@ target-spec row.
   validity-box flags per row). Per the append-only rule above the first
   record is untouched; see that experiment's README §"Records in this
   experiment" for which tables come from which.
+- **[`lna-characterization/`](lna-characterization/README.md)** — the first
+  **circuit-level** testbench in this tree (issue #18), run against
+  `design/lna.sch` via its committed netlist: ngspice `sp` S-parameters
+  (S11/S21/S12/S22) at 50 Ω ports across the 2400–2483.5 MHz DRAFT band,
+  noise figure at two stated reference temperatures cross-checked against
+  ngspice's own two-port `sp` NF (plus `NFmin`), k/μ/|Δ| stability in-band
+  **and** out-of-band from 10 MHz to 30 GHz, and two-tone transient IIP3
+  with committed tone-spacing/FFT parameters — over the full
+  {typ, bcs, wcs, sf, fs} × {−40, 27, 125} °C × {1.62, 1.80, 1.98} V grid.
+  Evidence *for* the spec-ratification issue (#19), not a conformance claim;
+  its own README states why the DUT's ideal-passive models (no PDK inductor
+  model exists — issue #5) bound what these numbers can be trusted to mean.
