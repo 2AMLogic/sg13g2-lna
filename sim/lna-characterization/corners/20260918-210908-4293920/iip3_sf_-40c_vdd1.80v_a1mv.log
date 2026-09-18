@@ -1,0 +1,51 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- two-tone transient iip3 bench (issue #18)
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00148954 ic2 0.00148853 vce1 0.781049 vce2 1.01895 idd 0.00172732
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                        1.8
+vin                                          0
+va                                           0
+rfin                                         0
+rfout                                        0
+xa.outn                                    1.8
+xa.vb2                                 1.64908
+xa.casc                               0.781049
+xa.xq2.s1                          1.96997e-09
+xa.xq2.t                               2.65115
+xa.b1                                 0.868629
+xa.e1                             -5.43645e-19
+xa.xq1.s1                          8.49123e-10
+xa.xq1.t                               2.03389
+l.xa.lc#branch                      0.00148853
+l.xa.le#branch                      0.00149054
+vt2#branch                                   0
+vt1#branch                                   0
+vdd#branch                         -0.00172732
+
+ Reference value :  1.00000e-06 Reference value :  1.06024e-06 Reference value :  1.12045e-06 Reference value :  1.18067e-06 Reference value :  1.24130e-06
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.00170904 tone2 0.00170836 im3l 3.22636E-08 im3h 3.37165E-08 src1 0.000999621
+FFT: Time span: 2.62144e-07 s, input length: 65536, zero padding: 0
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+FFTDF 3.8147E+06
+FFT tone1 0.00170904 tone2 0.00170836 im3l 3.22533E-08 im3h 3.37252E-08 im5l 8.80525E-11 im5h 3.42557E-11 src1 0.000999621 src2 0.000999618
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

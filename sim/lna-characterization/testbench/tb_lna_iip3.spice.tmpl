@@ -1,0 +1,115 @@
+* sg13g2-lna -- two-tone transient IIP3 bench (issue #18)
+* Generated from
+* sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl by
+* sim/lna-characterization/run_lna_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full methodology, FFT parameters and the method's stated
+* limits are in sim/lna-characterization/README.md.
+*
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*                per-tone open-circuit source amplitude = @@AMP@@ V peak
+*
+* CLAUDE.md: "Linearity is measured honestly: IIP3 via two-tone transient
+* with the tone spacing and FFT parameters recorded; state the method's
+* limits." Everything that defines this measurement is therefore in the
+* deck itself, not only in prose:
+*
+*   Tones (equal amplitude, both inside the 2400-2483.5 MHz draft band):
+*     f1 = @@F1@@ Hz  (FFT bin @@B1@@)
+*     f2 = @@F2@@ Hz  (FFT bin @@B2@@)
+*     tone spacing = f2 - f1 = @@FSPACE@@ Hz
+*   Third-order intermodulation products measured (both in-band):
+*     2*f1-f2 = @@FIM3L@@ Hz (bin @@BIM3L@@)
+*     2*f2-f1 = @@FIM3H@@ Hz (bin @@BIM3H@@)
+*   Fifth-order products (3*f1-2*f2, 3*f2-2*f1) are measured too, at bins
+*   @@BIM5L@@/@@BIM5H@@, purely as a "is the IM3 bin really above the
+*   numerical floor?" sanity check.
+*
+*   FFT parameters (chosen so the measurement is COHERENT -- every tone and
+*   every product lands exactly on an FFT bin centre, so a rectangular
+*   window leaks nothing and no zero-padding is applied):
+*     transient step / max step   = @@TSTEP@@ s (uniform)
+*     settling time discarded     = @@TSTART@@ s before the FFT window
+*     FFT record length           = @@NFFT@@ samples = @@TWINDOW@@ s
+*     bin resolution  df          = @@DF@@ Hz  (= 1/(N*tstep))
+*     window                      = none (rectangular; `set specwindow`)
+*     zero padding                = none (N is an exact power of two)
+*
+* A second, INDEPENDENT coherent-DFT extraction (direct projection of the
+* linearized waveform onto cos/sin at each tone/product frequency, over the
+* same integer-cycle window) is computed in the same deck and echoed
+* alongside the FFT numbers, so the two methods can be compared per point
+* rather than trusted on faith.
+*
+* Port convention: the source is an ideal two-tone Thevenin generator
+* behind Rs = 50 Ohm and the load is RL = 50 Ohm -- the same 50 Ohm port
+* convention spec/target-spec.md states. Input power is reported as the
+* AVAILABLE source power per tone, A^2/(8*Rs); output power per tone and
+* per product is V_peak^2/(2*RL). Both are computed by the parser from the
+* amplitudes echoed below.
+*
+* The DUT subcircuit is inlined verbatim from design/netlist/lna.spice --
+* see tb_lna_sparam.spice.tmpl's header for the exact transformation.
+
+.lib "@@MODELS_LIB@@" @@HBT_SECTION@@
+
+.options temp=@@TEMP@@ tnom=27
+
+* ---------------------------------------------------------------------
+* DUT subcircuit, inlined verbatim from design/netlist/lna.spice
+* ---------------------------------------------------------------------
+@@LNA_SUBCKT@@
+
+Vdd vdd 0 dc @@VDD@@
+* Two tone generators in series form the Thevenin source; Rs = 50 Ohm.
+Vt1 vin va dc 0 sin(0 @@AMP@@ @@F1@@ 0 0 0)
+Vt2 va 0 dc 0 sin(0 @@AMP@@ @@F2@@ 0 0 0)
+Rs vin rfin 50
+RL rfout 0 50
+Xa vdd 0 rfin rfout lna
+
+.control
+set specwindow = none
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let vce1 = v(xa.casc) - v(xa.e1)
+let vce2 = v(xa.outn) - v(xa.casc)
+let idd = -i(vdd)
+echo "OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd"
+
+tran @@TSTEP@@ @@TSTOP@@ @@TSTART@@ @@TSTEP@@
+linearize v(rfout) v(vin)
+let npts = length(v(rfout))
+echo "NPTS $&npts"
+
+* --- independent coherent-DFT extraction (done BEFORE fft, which
+* --- replaces the current plot with the spectrum) --------------------
+let tv = time
+let w1 = 2*PI*@@F1@@
+let w2 = 2*PI*@@F2@@
+let w3 = 2*PI*@@FIM3L@@
+let w4 = 2*PI*@@FIM3H@@
+let d1 = 2*sqrt(mean(v(rfout)*cos(w1*tv))^2 + mean(v(rfout)*sin(w1*tv))^2)
+let d2 = 2*sqrt(mean(v(rfout)*cos(w2*tv))^2 + mean(v(rfout)*sin(w2*tv))^2)
+let d3 = 2*sqrt(mean(v(rfout)*cos(w3*tv))^2 + mean(v(rfout)*sin(w3*tv))^2)
+let d4 = 2*sqrt(mean(v(rfout)*cos(w4*tv))^2 + mean(v(rfout)*sin(w4*tv))^2)
+let ds = 2*sqrt(mean(v(vin)*cos(w1*tv))^2 + mean(v(vin)*sin(w1*tv))^2)
+echo "DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds"
+
+* --- FFT extraction (primary) ----------------------------------------
+fft v(rfout) v(vin)
+let dfbin = frequency[1] - frequency[0]
+let a1 = mag(v(rfout)[@@B1@@])
+let a2 = mag(v(rfout)[@@B2@@])
+let a3 = mag(v(rfout)[@@BIM3L@@])
+let a4 = mag(v(rfout)[@@BIM3H@@])
+let a5 = mag(v(rfout)[@@BIM5L@@])
+let a6 = mag(v(rfout)[@@BIM5H@@])
+let s1 = mag(v(vin)[@@B1@@])
+let s2 = mag(v(vin)[@@B2@@])
+echo "FFTDF $&dfbin"
+echo "FFT tone1 $&a1 tone2 $&a2 im3l $&a3 im3h $&a4 im5l $&a5 im5h $&a6 src1 $&s1 src2 $&s2"
+echo "BENCH_COMPLETE"
+.endc
+.end
