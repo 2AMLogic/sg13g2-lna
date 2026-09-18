@@ -354,8 +354,13 @@ def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
 
 
 def write_csv(path: str, rows: list[dict], fieldnames: list[str]) -> None:
+    # lineterminator="\n" is deliberate: csv's default is "\r\n", which would
+    # make the committed CSV differ (by line endings) from what a reviewer's
+    # own re-parse produces, and would be rewritten by git's autocrlf on the
+    # way in. The README's "re-derive the CSVs from the raw logs and diff
+    # them" check only holds if this file is byte-stable.
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=fieldnames)
+        w = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
 

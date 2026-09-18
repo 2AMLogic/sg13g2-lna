@@ -1,0 +1,169 @@
+* sg13g2-lna -- matched-circuit S-parameter / NF / stability bench (issue #18)
+* Generated from
+* sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl by
+* sim/lna-characterization/run_lna_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run the
+* sweep. Full methodology, bench definitions and model limitations are in
+* sim/lna-characterization/README.md; this header is a short pointer.
+*
+* Generated for: HBT_SECTION=hbt_bcs TEMP=-40 C VDD=1.80 V
+*
+* The DUT subcircuit below is INLINED VERBATIM from the committed
+* design/netlist/lna.spice (xschem-generated from design/lna.sch, issue
+* #17), with only xschem's own commented-out `**.subckt`/`**.ends` markers
+* uncommented and its trailing `.end` dropped, so that the exact device
+* list under test is visible inside every committed snapshot. The runner
+* records the sha256 of design/netlist/lna.spice in the run record, so a
+* later reader can confirm which schematic revision these numbers belong
+* to.
+*
+* TWO independent, electrically isolated copies of the DUT share this deck
+* (each with its own ideal VDD source, so neither loads the other at RF):
+*
+*   Xa -- the S-PARAMETER branch. Driven by ngspice's own `sp`-analysis
+*     port sources (independent voltage sources carrying `portnum`/`z0`),
+*     both at z0 = 50 Ohm: exactly the 50 Ohm port convention
+*     spec/target-spec.md states. `sp` yields S11/S21/S12/S22 directly (no
+*     hand-rolled 2*Vout/Vin extraction), plus -- with its `donoise` flag
+*     set -- ngspice's own two-port NF/NFmin/Rn/SOpt. k, mu and |Delta| are
+*     computed in-deck from those S-parameters (see the .control section)
+*     so the stability numbers are produced by the testbench itself, not
+*     only by a post-processing script; the raw complex S-parameters are
+*     ALSO written out (wrdata) so any of it can be re-derived independently.
+*
+*   Xb -- the NOISE-FIGURE / transducer-gain branch, following
+*     sim/hbt-characterization/'s bench shape (50 Ohm Thevenin source, 50
+*     Ohm load, ngspice `.noise`, NF from the input-referred noise density)
+*     with ONE deliberate methodology correction, documented in
+*     sim/lna-characterization/README.md "Two NF conventions, and why Rs/RL
+*     are noiseless here":
+*       - Rs and RL are declared `noisy=0`. The source resistor's thermal
+*         noise is then re-introduced ANALYTICALLY at a chosen reference
+*         temperature T0 (both the IEEE T0 = 290 K figure and the
+*         300.15 K-referenced figure this repo's earlier records used are
+*         computed below), instead of relying on ngspice's own resistor
+*         noise temperature. This avoids ngspice-46's instance-`temp=`
+*         quirk (a resistor's `temp=27` does NOT pin its noise temperature
+*         to 300.15 K; measured 327.15 K) AND removes the load resistor's
+*         noise, which the standard two-port NF definition excludes.
+*       - Validated against ngspice's own independent `sp`-analysis NF in
+*         the Xa branch, which agrees to <0.001 dB at the nominal corner.
+*
+* NOTE ON EXECUTION ORDER (ngspice "current plot" gotcha, the same class of
+* issue sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl
+* documents): every measured quantity is echoed (or written) IMMEDIATELY
+* after the analysis that produced it, before the next analysis switches
+* ngspice's current plot, or the referencing vector silently goes stale.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_bcs
+
+.options temp=-40 tnom=27
+
+* ---------------------------------------------------------------------
+* DUT subcircuit, inlined verbatim from design/netlist/lna.spice
+* ---------------------------------------------------------------------
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-17/design/lna.sch
+.subckt lna vdd vss rfin rfout
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+R1a vdd b1 10.6k m=1
+R1b b1 vss 10k m=1
+.ends
+
+* --- Xa: S-parameter branch (50 Ohm ports at both ends) ---------------
+Vdda vdda 0 dc 1.80
+Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50
+Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50
+Xa vdda 0 pin pout lna
+
+* --- Xb: 50 Ohm Thevenin source / 50 Ohm load, .noise + transducer gain
+Vddb vddb 0 dc 1.80
+Vin vin 0 dc 0 ac 1
+Rs vin nfin 50 noisy=0
+RL nfout 0 50 noisy=0
+Xb vddb 0 nfin nfout lna
+
+.control
+* --- DC operating point (the bias point every number below carries) ---
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let ib1 = @q.xa.xq1.qnpn13g2[ib]
+let vce1 = v(xa.casc) - v(xa.e1)
+let vce2 = v(xa.outn) - v(xa.casc)
+let vbe1 = v(xa.b1) - v(xa.e1)
+let idd = -i(vdda)
+let pdc = 1.80 * (-i(vdda))
+echo "OP ic1 $&ic1 ic2 $&ic2 ib1 $&ib1 vce1 $&vce1 vce2 $&vce2 vbe1 $&vbe1 idd $&idd pdc $&pdc"
+
+* --- In-band S-parameters + ngspice's own two-port noise figure -------
+* (the trailing `1` is `sp`'s donoise flag: compute NF/NFmin/Rn/SOpt)
+sp lin 11 2.4e9 2.4835e9 1
+let dlt = s_1_1*s_2_2 - s_1_2*s_2_1
+let kfac = (1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag(dlt)^2)/(2*mag(s_1_2*s_2_1))
+let mufac = (1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*dlt) + mag(s_1_2*s_2_1))
+wrdata /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-18/sim/lna-characterization/corners/20260918-210908-4293920/sp_bcs_-40c_vdd1.80v.inband.dat s_1_1 s_2_1 s_1_2 s_2_2 kfac mufac mag(dlt) NF NFmin
+echo "INBAND_DAT_WRITTEN /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-18/sim/lna-characterization/corners/20260918-210908-4293920/sp_bcs_-40c_vdd1.80v.inband.dat"
+
+* --- Broadband stability sweep (out-of-band, both directions) ---------
+* CLAUDE.md: "k-factor / stability circles across the band, at PVT
+* corners, before any matching is declared final". target-spec.md's
+* stability row asks for "across band and out-of-band to at least 3x the
+* upper band edge"; this sweep runs 1e7 Hz .. 3e10 Hz.
+sp dec 40 1e7 3e10
+let dltb = s_1_1*s_2_2 - s_1_2*s_2_1
+let kfacb = (1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag(dltb)^2)/(2*mag(s_1_2*s_2_1))
+let mufacb = (1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*dltb) + mag(s_1_2*s_2_1))
+wrdata /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-18/sim/lna-characterization/corners/20260918-210908-4293920/sp_bcs_-40c_vdd1.80v.stability.dat kfacb mufacb mag(dltb) mag(s_1_1) mag(s_2_1) mag(s_2_2)
+echo "STAB_DAT_WRITTEN /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-18/sim/lna-characterization/corners/20260918-210908-4293920/sp_bcs_-40c_vdd1.80v.stability.dat"
+
+* --- NF and transducer gain at the band bottom / middle / top ---------
+* Each `ac`/`noise` pair is echoed immediately (current-plot gotcha).
+* NF_290  : IEEE/Friis convention, source reference temperature T0 = 290 K
+* NF_30015: same quantity referenced to 300.15 K, for continuity with
+*           sim/hbt-characterization/'s earlier records and with ngspice's
+*           own `sp` NF (which references the analysis temperature).
+ac lin 1 2.4e9 2.4e9
+let g_lo = db(2*v(nfout))
+echo "GAIN lo $&g_lo"
+noise v(nfout) vin lin 1 2.4e9 2.4e9
+let f290 = 1 + (inoise_spectrum^2)/(4*1.380649e-23*290*50)
+let f30015 = 1 + (inoise_spectrum^2)/(4*1.380649e-23*300.15*50)
+let nf290 = 10*log10(f290)
+let nf30015 = 10*log10(f30015)
+echo "NF lo $&nf290 $&nf30015"
+
+ac lin 1 2.44175e9 2.44175e9
+let g_mid = db(2*v(nfout))
+echo "GAIN mid $&g_mid"
+noise v(nfout) vin lin 1 2.44175e9 2.44175e9
+let f290m = 1 + (inoise_spectrum^2)/(4*1.380649e-23*290*50)
+let f30015m = 1 + (inoise_spectrum^2)/(4*1.380649e-23*300.15*50)
+let nf290m = 10*log10(f290m)
+let nf30015m = 10*log10(f30015m)
+echo "NF mid $&nf290m $&nf30015m"
+
+ac lin 1 2.4835e9 2.4835e9
+let g_hi = db(2*v(nfout))
+echo "GAIN hi $&g_hi"
+noise v(nfout) vin lin 1 2.4835e9 2.4835e9
+let f290h = 1 + (inoise_spectrum^2)/(4*1.380649e-23*290*50)
+let f30015h = 1 + (inoise_spectrum^2)/(4*1.380649e-23*300.15*50)
+let nf290h = 10*log10(f290h)
+let nf30015h = 10*log10(f30015h)
+echo "NF hi $&nf290h $&nf30015h"
+echo "BENCH_COMPLETE"
+.endc
+.end

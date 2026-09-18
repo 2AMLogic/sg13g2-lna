@@ -71,14 +71,20 @@ point it was taken at.
   raw *complex* S-parameters are in `corners/<record-id>/*.inband.dat`, so
   any derived quantity here can be re-derived independently.
 - **Cross-check**: the `.noise` branch's independently-computed transducer
-  gain (`Xb`, below) agrees with `|S21|²` to ~1e-4 dB — both are in the
-  summary CSV (`gain_ac_db_at_band_lo`, `gain_ac_minus_s21_db`) precisely so
-  the agreement is checkable, not asserted.
+  gain (`Xb`, below) agrees with `|S21|²` to **0.0000 dB at all 45 cells**
+  (the full precision the CSV records) — both are in the summary CSV
+  (`gain_ac_db_at_band_lo`, `gain_ac_minus_s21_db`) precisely so the
+  agreement is checkable, not asserted. Two different analyses (`sp` port
+  sources vs. an `ac` sweep of a Thevenin-driven second DUT copy) landing on
+  the same number is the evidence that the 50 Ω port convention is applied
+  consistently in both.
 
 ### Noise figure — `.noise`, 50 Ω source, two stated reference temperatures
 
-Two NF numbers are produced by two *independent* methods in the same deck,
-and they agree to <0.001 dB at the nominal cell:
+Two NF numbers are produced by two *independent* methods in the same deck.
+They agree to **≤ 0.0001 dB at every 27 °C cell** — which is the only
+temperature at which they are the *same quantity* (see the cross-check note
+after the list):
 
 1. **ngspice's own two-port NF** from the `sp` analysis above (`donoise`
    flag set), which references the analysis temperature. Reported as
@@ -124,6 +130,29 @@ inferred:
   that reference). They differ by ~0.05 dB; quoting one as the other is
   exactly the kind of silent bench drift this repo's rules exist to
   prevent.
+
+**How to read the two methods' agreement (this is a result, not a caveat).**
+`nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB across all 15 cells at
+27 °C**, and diverge by up to **1.00 dB at −40 °C** and **0.57 dB at
+125 °C**. That is not a discrepancy — it is the *expected* signature of the
+two definitions, and it is why the analytic source term exists:
+
+| Cells | `nf_sp_db` references | `nf30015_db` references | max difference |
+|---|---|---|---|
+| 27 °C (15/45) | 300.15 K (= the analysis temperature) | 300.15 K (fixed) | **0.0001 dB** |
+| −40 °C (15/45) | 233.15 K | 300.15 K (fixed) | 1.0013 dB |
+| 125 °C (15/45) | 398.15 K | 300.15 K (fixed) | 0.5678 dB |
+
+ngspice's own `sp` noise figure **references the analysis temperature**, so
+away from 27 °C it is an *ambient*-referenced NF, not a `T0`-referenced one.
+At the single temperature where the two definitions coincide they agree to
+one part in 10⁴ — which validates both implementations — and everywhere else
+the difference is an exact, predictable re-referencing. **`nf290` is the
+number to quote**; `nf_sp_db` is the independent implementation check, not a
+second opinion about the same quantity. This is the same trap
+[issue #25](https://github.com/2AMLogic/sg13g2-lna/issues/25) describes in
+the precedent bench, caught here because both numbers are committed side by
+side instead of one being quietly chosen.
 
 ### Stability — k, μ and |Δ|, in-band **and** out-of-band
 
@@ -183,7 +212,8 @@ artefact — but it is a *badly conditioned* one, and quoting "k = −1.1" as if
 it were a robust margin would be dishonest. `μ` does not have this problem
 (no small denominator; it is bounded and continuous), which is why `μ` is
 reported alongside k everywhere and is the number to reason from. The
-|S11|/|S22| > 1 check above is the third, independent view.
+negative-resistance check above (|S11|/|S22| > 1) is the third, independent
+view.
 
 ### IIP3 — two-tone transient, coherent FFT
 
@@ -340,13 +370,13 @@ Per-artifact layout of a record `<record-id>`:
 | Path | Content |
 |---|---|
 | `records/<record-id>.md` | human-readable record: bench definitions, PVT grid, PDK/ngspice versions, DUT sha256, headline numbers |
-| `records/<record-id>-sparam.csv` | one row per (PVT cell × in-band frequency): S11/S21/S12/S22 (dB and linear), k, μ, |Δ|, NF, NFmin |
+| `records/<record-id>-sparam.csv` | one row per (PVT cell × in-band frequency): S11/S21/S12/S22 (dB and linear), k, μ, \|Δ\|, NF, NFmin |
 | `records/<record-id>-iip3.csv` | one row per (PVT cell × drive level): P_in, P_out, P_IM3, gain, IIP3, OIP3, DFT cross-check, IM3/IM5 margin, FFT parameters |
-| `records/<record-id>-summary.csv` | one row per PVT cell: operating point, worst-case in-band S-params/NF, in-band and broadband k/μ/|Δ| minima with the frequency each occurs at, negative-resistance check, IIP3 at both drive levels, IM3 slope |
+| `records/<record-id>-summary.csv` | one row per PVT cell: operating point, worst-case in-band S-params/NF, in-band and broadband k/μ/\|Δ\| minima with the frequency each occurs at, negative-resistance check, IIP3 at both drive levels, IM3 slope |
 | `netlist-snapshots/<record-id>/*.spice` | the exact generated deck for every point |
 | `corners/<record-id>/*.log` | raw `ngspice -b` output for every point |
-| `corners/<record-id>/*.inband.dat` | raw complex in-band S-parameters + k/μ/|Δ|/NF/NFmin |
-| `corners/<record-id>/*.stability.dat` | raw broadband k/μ/|Δ|/|S11|/|S21|/|S22|, 140 frequencies |
+| `corners/<record-id>/*.inband.dat` | raw complex in-band S-parameters + k/μ/\|Δ\|/NF/NFmin |
+| `corners/<record-id>/*.stability.dat` | raw broadband k/μ/\|Δ\|/\|S11\|/\|S21\|/\|S22\|, 140 frequencies |
 
 ## Regenerating
 
