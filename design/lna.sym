@@ -1,0 +1,31 @@
+v {xschem version=3.4.6 file_version=1.2
+* lna symbol -- cascode LNA core (issue #17), for hierarchical instantiation
+* by a future testbench (e.g. issue #18's S-parameter/NF/stability/IIP3
+* benches). Pins match design/lna.sch's iopin list and pin order exactly:
+* vdd, vss, rfin, rfout. See lna.sch's own header for the full topology,
+* the idealized-inductor caveat, and the bias-network caveats -- this
+* symbol does not restate them.
+}
+G {}
+K {type=subcircuit
+format="@spiceprefix@name @pinlist lna"
+template="name=x1
+spiceprefix=X"
+}
+V {}
+S {}
+E {}
+L 4 -30 -60 30 -60 {}
+L 4 -30 60 30 60 {}
+L 4 -30 -60 -30 60 {}
+L 4 30 -60 30 60 {}
+B 5 -32 -32 -28 -28 {name=vdd dir=inout pinnumber=1}
+B 5 -32 32 -28 36 {name=vss dir=inout pinnumber=2}
+B 5 -32 -6 -28 -2 {name=rfin dir=inout pinnumber=3}
+B 5 28 -6 32 -2 {name=rfout dir=inout pinnumber=4}
+T {vdd} -25 -30 0 1 0.2 0.2 {}
+T {vss} -25 34 0 1 0.2 0.2 {}
+T {rfin} -25 -4 0 1 0.2 0.2 {}
+T {rfout} 25 -4 0 0 0.2 0.2 {}
+T {@name} -28 65 0 0 0.2 0.2 {}
+T {lna} -14 0 0 0 0.2 0.2 {}

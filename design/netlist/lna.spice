@@ -1,0 +1,20 @@
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-17/design/lna.sch
+**.subckt lna vdd vss rfin rfout
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+R1a vdd b1 10.6k m=1
+R1b b1 vss 10k m=1
+**.ends
+.end
