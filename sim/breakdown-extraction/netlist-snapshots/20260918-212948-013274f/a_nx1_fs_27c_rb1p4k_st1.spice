@@ -1,0 +1,124 @@
+* sg13g2-lna -- npn13G2 open-base breakdown extraction, BENCH A
+* (current-driven continuation). Issue #20.
+*
+* Generated from
+* sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl by
+* sim/breakdown-extraction/run_breakdown_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template
+* and re-run the sweep. Full methodology, bench definitions, extraction
+* criteria and the model-validity caveats are in
+* sim/breakdown-extraction/README.md; this header is a short pointer.
+*
+* Generated for: HBT_SECTION=hbt_typ TEMP=27 Nx=1
+* selft=1 RB=1.4e3 Ohm, collector current forced over
+* 61 logarithmic points at 8 points/decade,
+* starting at Nx * 1e-10 A.
+*
+* WHY CURRENT-DRIVEN, NOT A VOLTAGE-DRIVEN .dc SWEEP
+* --------------------------------------------------
+* The open-base common-emitter characteristic I_CEO(V_CE) is an
+* S-shaped snapback locus: once avalanche-generated base current feeds
+* the device's own current gain, the sustained current rises at a
+* *falling* collector voltage, so I_C is NOT a single-valued function of
+* V_CE and a voltage-driven .dc sweep has two (or three) solutions to
+* choose between at every step. ngspice's continuation then follows
+* whichever branch its previous-point initial guess lands on -- exactly
+* the failure documented in
+* spec/decision-records/0001-bias-supply-topology.md and in issue #20:
+* an uncommitted voltage-driven spot check found the runaway only at
+* 27 C, stayed on the leakage branch through 1.90 V at -40 C and
+* +125 C, and snapped back to the leakage branch above ~3.0 V at 27 C.
+*
+* V_CE, by contrast, IS single-valued in the forced collector current
+* over this locus, so forcing I_C and *measuring* V_CE removes the
+* branch ambiguity entirely. Stepping I_C logarithmically (a source-
+* stepping continuation) keeps every successive Newton solve close to
+* the previous solution. The companion voltage-driven bench
+* (tb_bvcer_vsweep.spice.tmpl) is committed alongside this one as the
+* *control* that reproduces the naive method's failure at a quasi-open
+* base -- it is not the open-base extraction.
+*
+* SCOPE: this bench is the OPEN-BASE (BVCEO) extraction. It is run with
+* a finite/shorted base termination only as a small, explicitly-labelled
+* METHOD PROBE (see README.md "Why Bench A is open-base only"): with the
+* base held to the emitter the device is off, there is no
+* avalanche-sustained branch to find, and forcing even 0.1 nA drives the
+* solver to tens of volts and then into a self-heating NaN. BVCER/BVCES
+* are extracted on Bench B instead, where the held-base characteristic
+* is monotone and single-valued and the voltage-driven sweep is sound.
+*
+* TOPOLOGY
+* --------
+*   Iforce 0 c   -- an ideal DC current source injecting the forced
+*                   collector current into node c. Node c connects to
+*                   nothing else, so the device's collector terminal
+*                   current is exactly the forced value; V_CE = v(c)
+*                   (the emitter sits at 0 V through Ve) is the
+*                   *measured* quantity.
+*   Rbe b e      -- base termination. RB = 1e12 Ohm is "open" to well
+*                   under a part in 1e6 of the smallest swept current:
+*                   at the ~0.4-0.9 V the base floats to, it leaks
+*                   <1 pA.
+*   Ve e 0       -- emitter at ground through a 0 V source, so i(Ve) is
+*                   available as the emitter-terminal current.
+*   XQ1's 4th terminal (bn, the buried-layer/substrate node) is tied to
+*   0, i.e. to the emitter reference -- the same connection
+*   sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl uses.
+*
+* NO RF PORT, NO 50 OHM REFERENCE. This is a DC-only bench; nothing
+* here is terminated, matched, or referenced to 50 Ohm, and no noise or
+* S-parameter quantity is produced. The only measured quantities are the
+* DC node voltages v(c), v(b) and the emitter current i(Ve) at each
+* forced collector current.
+*
+* SELF-HEATING is under explicit control via the subckt's own selft
+* parameter (selft=1 is the PDK default; selft=0 forces
+* rth = selft*3.26e3*(4/Nx)**0.9 to 0 and so disables the VBIC thermal
+* node). Every open-base cell is run BOTH ways -- see README.md
+* "Self-heating".
+*
+* NOTE ON EXECUTION ORDER: each measured value is echoed IMMEDIATELY
+* after the op that produced it, on its own line, before the loop
+* advances -- the same "current plot" discipline
+* sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl documents.
+* Echoing one value per line (rather than several per line) also means a
+* non-converged op yields an empty value in a known column instead of
+* silently shifting the parse.
+*
+* NOTE ON THE MEASUREMENT STREAM: the echoes are redirected to their own
+* file (/Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/a_nx1_fs_27c_rb1p4k_st1.meas, committed next to the console log under
+* corners/<record-id>/) rather than left on the console. ngspice's
+* dynamic-gmin-stepping "Note:" diagnostics are written by a different
+* code path and DO interleave mid-line with console echoes on these
+* cells -- observed producing rows like "VCE 2.80Note:" -- which would
+* silently corrupt a measurement rather than fail loudly. A separate
+* stream cannot be interleaved. The console log is still captured in
+* full as the raw evidence.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+
+.options temp=27 tnom=27
+
+Iforce 0 c dc 1e-10
+Rbe b e 1.4e3
+Ve e 0 dc 0
+XQ1 c b e 0 npn13G2 Nx=1 selft=1
+
+.control
+let i = 0
+let n = 61
+dowhile i < n
+  let ival = 1 * 1e-10 * 10^(i/8)
+  echo "PT $&ival" >> /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/a_nx1_fs_27c_rb1p4k_st1.meas
+  alter Iforce = $&ival
+  op
+  let vcval = v(c)
+  let vbval = v(b)
+  let ieval = i(Ve)
+  echo "VCE $&vcval" >> /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/a_nx1_fs_27c_rb1p4k_st1.meas
+  echo "VBE $&vbval" >> /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/a_nx1_fs_27c_rb1p4k_st1.meas
+  echo "IE $&ieval" >> /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-20/sim/breakdown-extraction/corners/20260918-212948-013274f/a_nx1_fs_27c_rb1p4k_st1.meas
+  let i = i + 1
+end
+.endc
+.end

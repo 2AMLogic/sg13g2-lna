@@ -149,3 +149,16 @@ target-spec row.
   Evidence *for* the spec-ratification issue (#19), not a conformance claim;
   its own README states why the DUT's ideal-passive models (no PDK inductor
   model exists — issue #5) bound what these numbers can be trusted to mean.
+- **[`breakdown-extraction/`](breakdown-extraction/README.md)** — issue
+  #20: `npn13G2` collector–emitter breakdown extracted from the model
+  card's own weak-avalanche parameters, over the same corner × {−40, 27,
+  125} °C grid × `Nx` ∈ {1, 8}. BVCEO (open base) and BVCER/BVCES
+  (finite and shorted base terminations) are both extracted by a
+  **current-driven continuation** — the collector current is forced and
+  `V_CE` measured — because the voltage-driven `.dc` sweep the naive
+  method uses follows whichever branch of the S-shaped snapback locus
+  its initial guess lands on, and that failure is reproduced as a
+  committed control. Evidence for
+  `spec/decision-records/0001-bias-supply-topology.md`'s breakdown
+  budget; DC-only, no RF port or 50 Ω reference anywhere, and not a
+  claim against any `target-spec.md` row.
