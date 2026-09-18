@@ -16,6 +16,28 @@ not a claim against any row of `spec/target-spec.md` (none are ratified),
 and specifically **not comparable to the NF/Gain target-spec rows**, which
 describe a matched circuit this repo has not designed yet.
 
+## Records in this experiment
+
+`sim/` is append-only (`sim/README.md`): a re-run mints a new `<record-id>`
+and never edits an older one. Two records exist:
+
+| Record | Grid | Issue |
+|---|---|---|
+| `20260910-200059-7da7038` | `Nx=1` over `{typ,bcs,wcs,sf,fs} × {−40,27,125} °C × V_CE {0.8,1.0,1.2,1.4} V`, **plus a single `Nx=8` spot check** at `typ`/27 °C/`V_CE`=1.0 V. 1586 rows, 61 cells. | [#7](https://github.com/2AMLogic/sg13g2-lna/issues/7) |
+| **`20260918-203652-4293920`** (current) | `Nx ∈ {1,8}`, **each across the full** `{typ,bcs,wcs,sf,fs} × {−40,27,125} °C × V_CE {0.6,0.8,1.0,1.2,1.4} V` grid. 3898 rows, 150 cells. Adds model-card validity-box flagging per row and a per-point convergence gate. | [#21](https://github.com/2AMLogic/sg13g2-lna/issues/21) |
+
+The second record exists because
+`spec/decision-records/0001-bias-supply-topology.md` (DR-0001) recommended
+`npn13G2` `Nx = 8` while resting on (a) that single `Nx=8` spot check with
+all corner behaviour *inferred* from `Nx=1` corner deltas, and (b) a
+worst-case `V_CE1` of 0.54 V that sits **below** the first record's 0.8 V
+`V_CE` floor. DR-0001 named both gaps itself in its §"What is NOT evidenced
+here". Every table below is regenerated from the **current** record;
+the earlier record's files are untouched, and its `Nx=1` numbers are
+reproduced bit-for-bit by the new run wherever the two grids overlap
+(spot-checked: `typ`/27 °C and `wcs`/125 °C noise-optimum NF at
+`V_CE ∈ {0.8,1.0,1.2,1.4}`, and the whole `Nx=8` spot-check cell).
+
 ## What is measured, and how (bench definitions)
 
 Per `CLAUDE.md`: "NF and S-param numbers carry their bench definitions.
@@ -107,11 +129,17 @@ Gummel-plot-based characterization.
 
 - **Base voltage `Vbb`**: 26 points, `0.55 V + i*0.02 V` for
   `i = 0..25` (0.55 V to 1.05 V), applied through the input bias tee.
-- **`V_CE`**: `{0.8, 1.0, 1.2, 1.4} V` — the top of this range (1.4 V)
+- **`V_CE`**: `{0.6, 0.8, 1.0, 1.2, 1.4} V` — the top of this range (1.4 V)
   equals `npn13G2`'s `BVCEO` **minimum** spec (1.4–1.6 V, per
   `target-spec.md` source (2)); no swept point ever *exceeds* 1.4 V, so
   this sweep never asks the device to operate past its own minimum-spec
   breakdown voltage — noted explicitly per the issue's own requirement.
+  The 0.6 V point was added by #21 so that DR-0001's cold/low-supply/`wcs`
+  worst case (`V_CE1` = 0.540 V) is bracketed by measurement instead of
+  extrapolated from a 0.8 V floor. 0.6 V is still inside the model card's
+  own `vce : 0.4–2.0 V` validity range; **0.54 V itself is still not a
+  swept point** — the remaining extrapolation distance is 0.06 V rather
+  than the 0.26 V DR-0001 had to cover.
 - **Corner grid**: `{typ, bcs, wcs, sf, fs}` × `{-40, 27, 125} °C` — see
   `sim/README.md`'s "Corner label convention" section for why these five
   labels map onto `cornerHBT.lib`'s three real sections
@@ -120,17 +148,87 @@ Gummel-plot-based characterization.
   labels, the direct analogue of `sg13g2-bandgap`'s `mos_ff`/`mos_ss` pair
   — read `wcs` as this experiment's `ss`-equivalent wherever
   `target-spec.md` names an `ss`-corner binding condition.
-- **`Nx` (emitter multiplicity)**: `Nx=1` (the PDK's default single-finger
-  emitter) across the full grid above, plus a single **area-scaling spot
-  check** at `Nx=8`, `typ`/27 °C/`V_CE=1.0 V` only (not a second full
-  grid — issue #7's scope is "plus one larger emitter-area/multiplicity so
-  area scaling is visible", a spot check, not a second sweep).
-- **Grid size**: `5 corner labels × 3 temps × 4 V_CE × 26 Vbe points =
-  1560` `Nx=1` points, `+ 26` `Nx=8` points `= 1586` total data rows, from
-  `61` `ngspice -b` invocations (one per `corner_label × temp × V_CE × Nx`
-  cell, each internally sweeping all 26 `Vbb` points via `alter`+`dowhile`
-  — see `sg13g2-opamp/sim/gm-id-characterization/run_gmid_sweep.sh` for the
+- **`Nx` (emitter multiplicity)**: `Nx ∈ {1, 8}` — `Nx=1` is the PDK's
+  default single-finger emitter, `Nx=8` is the geometry DR-0001
+  recommends. **Both run the full corner × temp × `V_CE` grid.** (Record
+  `20260910-200059-7da7038` had `Nx=8` as a single `typ`/27 °C/`V_CE`=1.0 V
+  spot check only; #21 promoted it to a full grid because the spot check's
+  own headline finding — noise-optimum `J_C` moving ~3× between `Nx=1` and
+  `Nx=8` — is exactly the kind of `Nx`-dependence that makes inferring
+  `Nx=8` corner behaviour from `Nx=1` corner deltas unsafe.) `Nx=1..10` is
+  the model card's stated valid range, so both values are inside it.
+- **Grid size**: `2 Nx × 5 corner labels × 3 temps × 5 V_CE = 150` cells ×
+  `26` `Vbe` points = `3900` attempted points, `3898` in the CSV (two
+  points dropped by the convergence gate below), from `150` `ngspice -b`
+  invocations (one per `Nx × corner_label × temp × V_CE` cell, each
+  internally sweeping all 26 `Vbb` points via `alter`+`dowhile` — see
+  `sg13g2-opamp/sim/gm-id-characterization/run_gmid_sweep.sh` for the
   precedent this render→simulate→parse shape follows).
+
+### Model-card validity box (`validity_flags` column)
+
+`sg13g2_hbt_mod.lib` states its own validity range, which DR-0001 treats as
+a hard design boundary and whose `ic` limit is load-bearing in DR-0001's
+`Nx=8`-vs-`Nx=1` argument:
+
+```
+* Valid range for model
+* ic: <(0.003*Nx) A   vbe :(0.65 - 0.96) V   vce :(0.4 - 2.0) V
+* Temp: -40°C - +125°C
+* Valid numbers: NX = 1 - 10
+```
+
+The sweep deliberately runs **outside** that box at the top and bottom of
+the `Vbb` grid (the box is narrower than the ≥2 decades of `J_C` the fT/NF
+curves need to be resolved). From record `20260918-203652-4293920` onward,
+every row of `records/<record-id>.csv` therefore carries a
+`validity_flags` column — empty when the point is inside the box,
+otherwise a `;`-joined subset of
+`{ic_high, vbe_low, vbe_high, vce_low, vce_high}`. (The first record has no
+such column; its rows can be classified after the fact with the same three
+limits.) Every swept temperature (−40/27/125 °C) and every swept `Nx`
+(1, 8) is inside the card's last two limits by construction, so no flag
+exists for those, and the two `vce_*` flags never fire with the committed
+`V_CE` grid — they exist so an extended grid cannot silently escape the
+box. In the current record **2187 of 3898 rows are inside the box**
+(`ic_high` 841, `vbe_high` 748, `vbe_low` 750; a row can carry more than
+one flag).
+
+`records/<record-id>-summary.csv` reports each cell's noise optimum and
+fT peak **twice**: once over all converged points (the original columns,
+schema-compatible with the first record) and once restricted to in-box
+points (`in_box_*` columns, appended). Where this README quotes a single
+number it says which.
+
+> **Self-heating is not covered by the box check.** The card's
+> −40…+125 °C limit is an *ambient* corner range; `selft=1` means the
+> junction runs hotter than ambient at every point (DR-0001 computes
+> ΔT_j ≈ 9 K at its own `Nx=8` bias, ~60 K at the `Nx=1` noise optimum).
+> A row can therefore be flagged in-box and still sit past the card's
+> temperature ceiling at the 125 °C corner. This is inherent to the corner
+> set, applies equally to the first record, and is **not** encoded in
+> `validity_flags`.
+
+### Per-point convergence gate
+
+At `Nx=8` the VBIC electrothermal loop runs away at the cold/best-case-speed
+corner with the highest `V_CE`: in cell `nx8_bcs_-40c_vce1.4v` the operating
+point diverges to NaN above `Vbe ≈ 1.01 V` (`I_C` > 50 mA into
+`rth = 1747 K/W`). ngspice then **echoes a stale gain/NF value carried over
+from the previous plot** — the exact cross-plot hazard the testbench header
+warns about — so a naive parser would record a plausible-looking but bogus
+row. `run_hbt_sweep.sh` therefore drops any point whose block contains an
+ngspice operating-point-failure marker (`operating point failed`, `The
+operating point could not be simulated successfully`, `Timestep too
+small`), and the record's `## Partial cells` field names every cell that
+lost points. In the current record that is **one cell, two points**
+(`Vbe` = 1.03 and 1.05 V at `nx8_bcs_-40c_vce1.4v`) — both already flagged
+`ic_high;vbe_high`, i.e. far outside the model's validity box.
+
+The gate is deliberately *not* a blanket match on `Error:`: `Error: measure
+ftmeas when(WHEN) : out of interval` is the benign "h21 never crosses 0 dB"
+case, which already has its own handling (blank fT) and whose gain/NF are
+valid.
 
 ### Sweep grid derivation (why `Vbb` ∈ [0.55, 1.05] V)
 
@@ -148,85 +246,159 @@ specific `Ic` via a blind `Ib`-current guess).
 
 ## Results
 
-Full per-point data: `records/<record-id>.csv` (1586 rows: `point_id`,
+All numbers in this section are from record
+**`20260918-203652-4293920`** unless a row explicitly says otherwise.
+
+Full per-point data: `records/<record-id>.csv` (3898 rows: `point_id`,
 `corner_label`, `hbt_section`, `temp_c`, `nx`, `vce_v`, `vbe_v`, `ic_a`,
-`jc_ma_um2`, `ft_hz`, `gain_db`, `nf_db`). Per-`(corner_label, temp, Nx,
-V_CE)` cell summary (noise-optimum `J_C`/NF/gain/fT, and fT-peak
-`J_C`/fT): `records/<record-id>-summary.csv`.
+`jc_ma_um2`, `ft_hz`, `gain_db`, `nf_db`, `validity_flags`).
+Per-`(corner_label, temp, Nx, V_CE)` cell summary (noise-optimum
+`J_C`/NF/gain/fT and fT-peak `J_C`/fT, each both unrestricted and
+restricted to the validity box): `records/<record-id>-summary.csv`.
 
-### Noise-optimum `J_C`, nominal corner (`typ`/27 °C, `Nx=1`)
+### Noise-optimum NF vs `V_CE`, `Nx=1` (unrestricted optimum)
 
-| V_CE (V) | Noise-optimum J_C (mA/um²) | NF (dB) | Gain (dB) | fT at that point (Hz) |
-|---|---|---|---|---|
-| 0.8 | 37.85 | 6.39 | 8.11 | 3.25e11 |
-| 1.0 | 45.78 | 6.32 | 8.54 | 3.16e11 |
-| 1.2 | 55.14 | 6.31 | 8.86 | 2.77e11 |
-| 1.4 | 51.69 | 6.35 | 8.74 | 3.12e11 |
+"Unrestricted" = the minimum-NF point in the cell regardless of the
+validity box. **In 71 of the 75 `Nx=1` cells that point is outside the
+box** (`ic_high` and/or `vbe_high`) — see the in-box table below and
+"Why `Nx=8` and not `Nx=1`".
 
-### Noise-optimum `J_C`, binding corner (`wcs`/125 °C, `Nx=1`)
+| corner/T | `V_CE`=0.6 | 0.8 | 1.0 | 1.2 | 1.4 | spread |
+|---|---|---|---|---|---|---|
+| `typ`/−40 °C | 5.759 | 5.605 | 5.576 | 5.551 | 5.533 | 0.227 |
+| `typ`/27 °C | 6.621 | 6.393 | 6.317 | 6.311 | 6.353 | 0.310 |
+| `typ`/125 °C | 7.821 | 7.534 | 7.443 | 7.450 | 7.503 | 0.378 |
+| `bcs`/−40 °C | 4.696 | 4.539 | 4.446 | **4.445** | 4.498 | 0.251 |
+| `bcs`/27 °C | 5.559 | 5.320 | 5.244 | 5.261 | 5.315 | 0.316 |
+| `bcs`/125 °C | 6.712 | 6.456 | 6.357 | 6.365 | 6.426 | 0.355 |
+| `wcs`/−40 °C | 6.790 | 6.704 | 6.673 | 6.644 | 6.617 | 0.173 |
+| `wcs`/27 °C | 7.629 | 7.432 | 7.371 | 7.379 | 7.398 | 0.258 |
+| `wcs`/125 °C | 8.824 | 8.578 | **8.514** | 8.534 | 8.573 | 0.310 |
 
-`target-spec.md`'s NF row names `ss process corner, 125 °C` as its expected
-binding corner; `wcs` is this experiment's `ss`-equivalent label (see
-"Sweep grid" above).
+(`sf` and `fs` reproduce `typ` exactly — both map to `hbt_typ`, see "Sweep
+grid". `target-spec.md`'s NF row names `ss`/125 °C as its expected binding
+corner; `wcs` is this experiment's `ss`-equivalent label.)
 
-| V_CE (V) | Noise-optimum J_C (mA/um²) | NF (dB) | Gain (dB) | fT at that point (Hz) |
-|---|---|---|---|---|
-| 0.8 | 30.85 | 8.58 | 5.86 | 2.19e11 |
-| 1.0 | 40.74 | **8.51** | 6.39 | 1.99e11 |
-| 1.2 | 42.47 | 8.53 | 6.52 | 2.24e11 |
-| 1.4 | 39.44 | 8.57 | 6.36 | 2.63e11 |
+**The `V_CE=0.6 V` column is the new information here.** Restricted to
+`V_CE ∈ {0.8,1.0,1.2,1.4} V` this table's worst spread is **0.099 dB** —
+which is the "≤0.10 dB" flatness figure DR-0001 §Evidence 3 quotes, now
+independently reproduced. **Adding the 0.6 V point widens the worst spread
+to 0.378 dB**: at `Nx=1`, `NF(0.6 V) − NF(0.8 V)` is **+0.086 to
++0.287 dB** (mean +0.213 dB) across the nine corner/temp cells. So the
+`V_CE`-flatness argument DR-0001 extrapolated below 0.8 V does **not** hold
+at `Nx=1` — it is off by roughly 3×. It does hold at `Nx=8` (next table),
+which is the geometry DR-0001 actually recommends.
 
-**Noise-optimum `J_C` and its NF, stated explicitly, across the whole
-grid (`Nx=1`)**:
+### Noise-optimum NF vs `V_CE`, `Nx=8` (unrestricted optimum)
 
-- **Best case anywhere in the grid**: `bcs`/−40 °C/`V_CE=1.2 V`,
-  `J_C=60.93 mA/um²` → **NF=4.44 dB**, gain=11.21 dB, fT=3.58e11 Hz.
-- **Worst case (the binding corner)**: `wcs`/125 °C/`V_CE=1.0 V`,
-  `J_C=40.74 mA/um²` → **NF=8.51 dB**, gain=6.39 dB, fT=1.99e11 Hz.
-- **fT peak anywhere in the grid**: `bcs`/−40 °C/`V_CE=1.4 V`,
-  `J_C≈20.5 mA/um²` → fT=6.00e11 Hz (600 GHz) — a best-case-speed,
-  cold-temperature corner result; well above the process spec's *typical*
-  300–350 GHz fT figures, which is expected corner-driven upside, not a
-  contradiction of the spec (a "target"/"min" spec row bounds the nominal
-  device, not a fast-corner ceiling).
-- **The noise-optimum `J_C` and the fT-peak `J_C` are NOT the same
-  point** anywhere in the grid — noise-optimum `J_C` sits roughly
-  **2–3× higher** than fT-peak `J_C` at every corner/temp/`V_CE`
-  combination checked (e.g. `typ`/27 °C/`V_CE=1.0 V`: noise-optimum
-  `J_C=45.78`, fT-peak `J_C=19.11 mA/um²`). This is the expected
-  `Voinigescu`-style result: minimum-NF current density is set by a
-  different tradeoff (base resistance / shot noise vs. gm) than
-  maximum-fT current density (transit-time-limited), and the two do not
-  coincide.
+New in this record — the first `Nx=8` corner data of any kind.
 
-### Area-scaling spot check (`Nx=8` vs `Nx=1`, `typ`/27 °C/`V_CE=1.0 V`)
+| corner/T | `V_CE`=0.6 | 0.8 | 1.0 | 1.2 | 1.4 | spread |
+|---|---|---|---|---|---|---|
+| `typ`/−40 °C | 1.544 | 1.553 | 1.559 | 1.566 | 1.576 | 0.031 |
+| `typ`/27 °C | 1.884 | 1.897 | 1.905 | 1.913 | 1.925 | 0.041 |
+| `typ`/125 °C | 2.395 | 2.410 | 2.420 | 2.431 | 2.446 | 0.052 |
+| `bcs`/−40 °C | **1.246** | 1.256 | 1.266 | 1.277 | 1.284 | 0.038 |
+| `bcs`/27 °C | 1.533 | 1.548 | 1.558 | 1.572 | 1.583 | 0.050 |
+| `bcs`/125 °C | 1.972 | 1.991 | 2.003 | 2.018 | 2.038 | 0.066 |
+| `wcs`/−40 °C | 1.880 | 1.886 | 1.891 | 1.894 | 1.899 | 0.019 |
+| `wcs`/27 °C | 2.272 | 2.282 | 2.288 | 2.294 | 2.302 | 0.030 |
+| `wcs`/125 °C | 2.853 | 2.866 | 2.873 | 2.882 | **2.893** | 0.040 |
 
-| Nx | Noise-optimum J_C (mA/um²) | NF (dB) | Gain (dB) | fT-peak J_C (mA/um²) | fT peak (Hz) |
-|---|---|---|---|---|---|
-| 1 | 45.78 | 6.32 | 8.54 | 19.11 | 4.15e11 |
-| 8 | 15.52 | **1.90** | 23.69 | 20.11 | 4.38e11 |
+At `Nx=8` the `V_CE` dependence is **weaker, monotonic, and of the opposite
+sign**: the worst spread over the *full* 0.6–1.4 V range is 0.066 dB, and
+`NF(0.6 V) − NF(0.8 V)` is **−0.019 to −0.006 dB** — lowering `V_CE` to
+0.6 V is very slightly *better*, not worse. Nothing surprising happens at
+the bottom of the range.
 
-Two findings:
+**Grid-wide extremes**:
 
-1. **`J_C` at a given `Vbe` is identical between `Nx=1` and `Nx=8`** (the
-   raw CSV's `jc_ma_um2` column matches to the digit at every shared `Vbe`
-   point) — confirms the model scales `Ic` linearly with `Nx` at fixed
-   bias, as expected for ideal multi-finger scaling.
-2. **The fT-peak `J_C` is nearly `Nx`-invariant** (19.1 vs 20.1 mA/um²,
-   ~5% apart — intrinsic transit-time physics, expected to be
-   `Nx`-independent), **but the noise-optimum `J_C` is not**
-   (45.8 vs 15.5 mA/um², ~3× apart). This traces to `npn13G2`'s own base
-   resistance scaling — `sg13g2_hbt_mod.lib`'s `rbx`/`rbi` parameters scale
-   roughly as `1/Nx`, so a larger device's *excess base-resistance noise*
-   contribution (a significant NF term) falls faster with `Nx` than its
-   signal gain does, pulling the noise-optimum bias point down in current
-   density as the device gets bigger. This is a real, model-grounded
-   effect, not a testbench artifact — flagged here because it directly
-   matters to the future topology decision record: **noise-optimum `J_C`
-   is not a fixed number independent of device sizing**, so a future
-   matching-network design will need to re-derive it for whatever specific
-   emitter geometry the topology decision settles on, not reuse this
-   experiment's `Nx=1` table verbatim at a different `Nx`.
+| | `Nx=1` | `Nx=8` |
+|---|---|---|
+| Best NF anywhere (unrestricted) | 4.445 dB, `bcs`/−40 °C/1.2 V, `J_C`=60.93 (`I_C`=7.02 mA) — **outside the box** | 1.246 dB, `bcs`/−40 °C/0.6 V, `J_C`=28.75 (`I_C`=26.50 mA) — **outside the box** |
+| Best NF anywhere, in box | 5.071 dB, `bcs`/−40 °C/1.4 V, `J_C`=20.52 (`I_C`=2.36 mA) | 1.273 dB, `bcs`/−40 °C/0.8 V, `J_C`=17.99 (`I_C`=16.58 mA) |
+| Binding corner (`wcs`/125 °C), unrestricted | 8.513 dB at 1.0 V, `J_C`=40.74 (`I_C`=4.69 mA) — outside the box | 2.853 dB at 0.6 V, `J_C`=13.03 (`I_C`=12.01 mA) — **inside the box** |
+| Binding corner, in box | 8.729 dB at 1.4 V, `J_C`=25.84 (`I_C`=2.98 mA) | 2.853 dB at 0.6 V (same point) |
+| fT peak anywhere | 6.002e11 Hz, `bcs`/−40 °C/1.4 V, `J_C`≈20.5 | 6.283e11 Hz, `bcs`/−40 °C/1.4 V, `J_C`≈23.2 |
+| Cells whose unrestricted optimum is outside the box | **71 / 75** | **20 / 75** |
+
+The ~600 GHz corner fT figures are well above the process spec's *typical*
+300–350 GHz — expected corner-driven upside at a best-case-speed, cold
+corner, not a contradiction (a "target"/"min" spec row bounds the nominal
+device, not a fast-corner ceiling).
+
+**The noise-optimum `J_C` and the fT-peak `J_C` are NOT the same point**
+anywhere in the grid, at either `Nx` — noise-optimum `J_C` sits roughly
+2–3× higher than fT-peak `J_C` at `Nx=1` (e.g. `typ`/27 °C/1.0 V: 45.78 vs
+19.11 mA/µm²). This is the expected `Voinigescu`-style result: minimum-NF
+current density is set by a different tradeoff (base resistance / shot
+noise vs. gm) than maximum-fT current density (transit-time-limited).
+
+### `Nx=8` vs `Nx=1`
+
+At the one cell both records share (`typ`/27 °C/`V_CE`=1.0 V) — the new
+record reproduces the old one exactly:
+
+| Nx | Noise-optimum J_C (mA/µm²) | NF (dB) | Gain (dB) | in box? | fT-peak J_C | fT peak (Hz) |
+|---|---|---|---|---|---|---|
+| 1 | 45.78 | 6.32 | 8.54 | no (`ic_high;vbe_high`) | 19.11 | 4.15e11 |
+| 8 | 15.52 | **1.90** | 23.69 | **yes** | 20.12 | 4.38e11 |
+
+With the full grid in hand, that advantage is now checkable at every
+corner rather than inferred. In-box noise-optimum NF at `V_CE`=0.8 V:
+
+| corner/T | `Nx=1` (dB) | `Nx=8` (dB) | Δ |
+|---|---|---|---|
+| `typ`/−40 °C | 6.369 | 1.576 | 4.79 |
+| `typ`/27 °C | 6.731 | 1.897 | 4.83 |
+| `typ`/125 °C | 7.766 | 2.410 | 5.36 |
+| `bcs`/−40 °C | 5.182 | 1.273 | 3.91 |
+| `bcs`/27 °C | 5.730 | 1.548 | 4.18 |
+| `bcs`/125 °C | 6.992 | 1.991 | 5.00 |
+| `wcs`/−40 °C | 7.492 | 1.911 | 5.58 |
+| `wcs`/27 °C | 7.848 | 2.282 | 5.57 |
+| `wcs`/125 °C | 8.750 | 2.866 | **5.88** |
+
+`Nx=8` is better by **3.9–5.9 dB at every corner**, and the advantage
+*grows* toward the binding corner. The `Nx=1` spot-check comparison
+(4.4 dB at `typ`/27 °C) was, if anything, the *least* favourable cell in
+the grid for `Nx=8`.
+
+Three findings carried over and corrected from the first record's
+spot check:
+
+1. **`J_C` at a given `Vbe` is *approximately*, not exactly, `Nx`-invariant
+   — and the first record's README overstated this.** The earlier text
+   claimed the `jc_ma_um2` column "matches to the digit at every shared
+   `Vbe` point"; re-reading the same committed data shows it drifts
+   monotonically with bias, reaching **+6.9 %** (`Nx=8` higher) at the top
+   of the `Vbe` grid even in that one `typ`/27 °C/`V_CE`=1.0 V cell. Over
+   the full grid the deviation reaches **+19.7 %** (worst point overall)
+   and **+12.9 %** restricted to in-box points. The cause is self-heating,
+   not a scaling bug: `rth = 3260·(4/Nx)^0.9` K/W falls as `Nx^−0.9` while
+   dissipation rises as `Nx`, so ΔT_j rises as `Nx^0.1` — the `Nx=8` device
+   runs *hotter* at equal `J_C` and therefore draws more `I_C` at equal
+   `Vbe`. **Practical impact is small** because `I_C` is exponential in
+   `Vbe`: a +6.5 % `J_C` offset is ~1.6 mV of `Vbe` at ~60 mV/decade, which
+   is exactly the −1.1…−1.5 mV discrepancy measured against DR-0001's
+   `Nx=1`-interpolated `V_BE` table (see "What this means…" below).
+2. **The fT-peak `J_C` is nearly `Nx`-invariant** (19.1 vs 20.1 mA/µm² at
+   `typ`/27 °C/1.0 V, ~5 % apart — intrinsic transit-time physics), **but
+   the noise-optimum `J_C` is not** (45.8 vs 15.5 mA/µm², ~3× apart). This
+   traces to `npn13G2`'s own base-resistance scaling: `sg13g2_hbt_mod.lib`'s
+   `rbx`/`rbi` scale roughly as `1/Nx`, so a larger device's excess
+   base-resistance noise contribution falls faster with `Nx` than its signal
+   gain does, pulling the noise-optimum bias point down in current density
+   as the device gets bigger. A real, model-grounded effect, not a
+   testbench artifact: **noise-optimum `J_C` is not a fixed number
+   independent of device sizing**, so a design at a third `Nx` must
+   re-derive it rather than rescale either table here.
+3. **`Nx` also decides whether the noise optimum is even a legal bias
+   point.** The `Nx=1` optimum is outside the model card's validity box in
+   71 of 75 cells (`ic ≥ 3 mA` and/or `vbe > 0.96 V`); the `Nx=8` optimum
+   is outside in 20 of 75, all of them cold cells where `vbe_high` binds.
+   Any `Nx=1` design would be quoting an NF the model card does not
+   warrant.
 
 ## Model limitations
 
@@ -252,11 +424,25 @@ Two findings:
   upstream at `IHP-Open-PDK#685`/`#1101`) — irrelevant to this specific
   bench (it uses only ideal L/C/R primitives, not the PDK's own inductor
   device), but it is why no matching-network bench exists yet at all.
-- **Emitter geometry is not swept beyond the `Nx=1`/`Nx=8` spot check** —
+- **Emitter geometry is swept only in `Nx`, and only at two values** —
   `we`/`le` (the per-finger drawn dimensions) are left at the subckt's own
-  defaults throughout; only the finger-count multiplier `Nx` is varied.
+  defaults throughout; only the finger-count multiplier `Nx ∈ {1, 8}` is
+  varied. Finding 3 above means results may **not** be interpolated to an
+  intermediate `Nx`: the noise-optimum `J_C` moves ~3× between these two
+  values, so a third geometry needs its own run (one line of
+  `HBT_NX_LIST`).
 - **Mismatch/statistical corners are out of scope** — only the deterministic
   `cornerHBT.lib` sections are swept, not `_mismatch`/`_stat` variants.
+- **Two bias points in the grid have no data at all** — `Vbe` = 1.03 and
+  1.05 V at `nx8_bcs_-40c_vce1.4v`, dropped by the convergence gate. The
+  electrothermal runaway that causes it is arguably a *real* device limit
+  rather than a numerical artifact (ΔT_j > 180 K at that bias), but this
+  bench makes no claim either way: the points are simply absent, and both
+  are far outside the model card's validity box.
+- **`V_CE` = 0.54 V — DR-0001's true worst case — is still not a measured
+  point.** The grid floor is 0.6 V. The remaining 0.06 V of extrapolation
+  is covered by a monotonic, ≤0.02 dB/0.2 V trend at `Nx=8` (see Results),
+  but it is an extrapolation.
 
 ## What this means for the bias/supply-topology decision (input, not the decision)
 
@@ -266,23 +452,30 @@ does this device's noise optimum actually sit, and how much `BVCEO`
 headroom does that leave?**
 
 The noise-optimum region across the whole PVT grid clusters at
-**`J_C` ≈ 35–65 mA/um²**, essentially **flat across `V_CE`** (the
-noise-optimum NF varies by well under 0.2 dB across the full 0.8–1.4 V
-`V_CE` range at every corner/temp checked — see the per-corner tables
-above). That flatness is the headline finding for the topology question:
-**this device's noise optimum does not, by itself, push a design toward
-either a cascode or a single low-voltage stage** — the NF cost of biasing
-at a lower `V_CE` (more headroom against `BVCEO`, more amenable to a
-lower-voltage single-stage topology) is small (≤0.2 dB) compared to the
-NF cost of biasing at the wrong current density: at `typ`/27 °C/`V_CE=1.0
-V` (raw per-point data, not just the optimum), NF is 8.79 dB at
-`J_C=5.01 mA/um²` and 6.32 dB at the noise-optimum `J_C=45.78 mA/um²` — a
-2.47 dB swing from under-biasing by one decade in current density, at
-*fixed* `V_CE`. In other words: **`J_C` selection dominates the
-noise-optimum decision; `V_CE` selection is a much weaker second-order
-lever**, at least for the bare device in isolation (a real cascode's own
-headroom-vs-linearity/output-swing tradeoffs are a separate, circuit-level
-question this device-only bench cannot answer).
+**`J_C` ≈ 22–67 mA/µm² at `Nx=1`** and **≈ 11–29 mA/µm² at `Nx=8`** (the
+~3× shift of Finding 2 above), and in both cases is **nearly flat across
+`V_CE`**: the noise-optimum NF varies by ≤0.10 dB across 0.8–1.4 V at
+`Nx=1`, ≤0.05 dB at `Nx=8`, and — once the new 0.6 V point is included —
+≤0.38 dB at `Nx=1` and ≤0.07 dB at `Nx=8`. That flatness is the headline
+finding for the topology question: **this device's noise optimum does not,
+by itself, push a design toward either a cascode or a single low-voltage
+stage** — the NF cost of biasing at a lower `V_CE` (more headroom against
+`BVCEO`, more amenable to a lower-voltage single-stage topology) is small
+compared to the NF cost of biasing at the wrong current density: at
+`typ`/27 °C/`V_CE=1.0 V` (raw per-point data, not just the optimum), NF is
+8.79 dB at `J_C=5.01 mA/µm²` and 6.32 dB at the noise-optimum
+`J_C=45.78 mA/µm²` — a 2.47 dB swing from under-biasing by one decade in
+current density, at *fixed* `V_CE`. In other words: **`J_C` selection
+dominates the noise-optimum decision; `V_CE` selection is a much weaker
+second-order lever**, at least for the bare device in isolation (a real
+cascode's own headroom-vs-linearity/output-swing tradeoffs are a separate,
+circuit-level question this device-only bench cannot answer).
+
+The one place that second-order lever is *not* negligible is the
+low-`V_CE` end at `Nx=1`, which only became visible when 0.6 V was added
+to the grid: there the penalty reaches +0.29 dB relative to 0.8 V. At
+`Nx=8` it does not appear at all. **`V_CE`-flatness is therefore an
+`Nx`-dependent statement, and must be quoted with its `Nx`.**
 
 At the noise-optimum `J_C`, `V_CE=1.4 V` (the top of this sweep, equal to
 `BVCEO`'s spec minimum) shows **no NF or fT penalty** relative to
@@ -297,15 +490,68 @@ decision record should weigh cascode-vs-single-stage on linearity/output
 swing/supply-rail-count grounds, informed by (but not determined by) the
 noise-optimum-`J_C` table above.
 
+### Does record `20260918-203652-4293920` change DR-0001's recommendation?
+
+**No.** `spec/decision-records/0001-bias-supply-topology.md` recommends a
+cascode of two `npn13G2` `Nx = 8` devices at `I_C` = 4.0 mA nominal on a
+1.8 V rail with `V_B2 = (11/12)·VDD`. Every input of that recommendation
+that #21 was opened to check survives contact with the new data, so **this
+work produces no superseding decision record.** (Decision records are
+append-only and never edited in place — had the data contradicted DR-0001,
+the correct response would have been a new record `0002-…` superseding
+0001, not an edit to 0001. It did not, so nothing under
+`spec/decision-records/` is touched by #21 at all.) Point by point:
+
+| DR-0001 input | What the new data says | Verdict |
+|---|---|---|
+| §Evidence 2: `Nx=8` beats `Nx=1` on NF (4.4 dB, one cell, `typ`/27 °C) | 3.9–5.9 dB in-box advantage at **every** corner/temp; the advantage *grows* toward the binding corner (5.88 dB at `wcs`/125 °C) | **Confirmed and strengthened** — the cited cell was the least favourable one in the grid |
+| §Evidence 2: the `Nx=1` optimum is outside the model card's validity box, the `Nx=8` one is inside | `Nx=1` optimum is out of box in **71/75** cells; `Nx=8` in 20/75, all cold cells where `vbe_high` binds. At the recommended `I_C` = 4.0 mA, `Nx=8`, every bracketing row is in box at every corner | **Confirmed** |
+| §"`V_BE(T, corner)` — from committed evidence": `V_BE2 ∈ [0.7539, 0.9152] V`, interpolated from **`Nx=1`** rows | Measured directly at `Nx=8` (`V_CE`=1.0 V, `I_C`=4.75 mA): **[0.7526, 0.9140] V**, spread 0.1614 V (DR-0001: 0.1613 V). Every cell differs by **−1.1 to −1.5 mV**. Measured d`V_BE`/d`T` at `typ`: **−0.83 mV/°C**, identical to DR-0001's | **Confirmed to ~1.5 mV** |
+| §"Worst-case corner table" margins | Re-evaluated with the `Nx=8` table: `V_CE1,max` 1.097 → **1.099 V** (margin 0.303 → **0.301 V**, 21.5 %); `V_CE2,max` 1.116 → **1.115 V** (margin 0.284 → **0.285 V**, 20.3 %); `V_CE1,min` 0.540 → **0.541 V** | **Unchanged** — every margin moves by ≤1.5 mV, none changes sign or ranking |
+| §Evidence 1: backing off from the device optimum to `I_C` = 4.0–4.75 mA costs 0.20–0.43 dB (one cell) | Across all nine `bcs`/`typ`/`wcs` × temp cells at `V_CE`=0.8 V: **+0.149 to +0.526 dB** vs the cell's in-box optimum. Worst-corner (`wcs`/125 °C) bare-device NF at `I_C`=4.0 mA is **3.157 dB**, gain 16.45 dB, fT 2.08e11 Hz | **Confirmed**, range slightly wider than the single-cell figure |
+| §Evidence 4: nothing is fT-limited at any corner | fT at the recommended bias is ≥2.08e11 Hz at every corner — ~87× the 2.4 GHz band | **Confirmed** |
+| §"What is NOT evidenced here": `V_CE1` = 0.54 V is below the grid floor; the ≤0.10 dB flatness is the basis for expecting no surprise | At `Nx=8`, `NF(0.6 V) − NF(0.8 V)` = **−0.019 to −0.006 dB** — monotonic, and 0.6 V is slightly *better*. No surprise at the low-`V_CE` end for the recommended geometry | **Confirmed** |
+
+**One supporting argument was luckier than it looked, and should be
+re-read.** DR-0001 quoted "spread ≤ 0.10 dB across the whole 0.8–1.4 V
+`V_CE` range" from **`Nx=1`** data and used it to expect no surprise down
+at 0.54 V. That 0.099 dB figure reproduces exactly — but **it does not
+extend below 0.8 V at `Nx=1`**: adding the 0.6 V point widens the `Nx=1`
+worst-case spread to 0.378 dB, and `NF(0.6) − NF(0.8)` is +0.086…+0.287 dB
+there. The extrapolation happens to be sound only because the recommended
+device is `Nx=8`, where the same quantity is ≤0.066 dB over the *full*
+0.6–1.4 V range. So the conclusion stands, but the `V_CE`-flatness
+argument should be cited as an **`Nx=8` result from this record**, not as a
+general property of `npn13G2` carried over from the `Nx=1` table.
+
+Two caveats attach to the confirmation rather than to the recommendation:
+
+- DR-0001's `V_BE` derivation relied on "`J_C` at a given `V_BE` is
+  `Nx`-invariant in this model, verified in that experiment's README". As
+  Finding 1 above records, that invariance is only approximate (up to
+  +19.7 % in `J_C` over the full grid; the first record's README overstated
+  it). The derivation is nonetheless sound *in outcome*, because the
+  exponential `I_C(V_BE)` compresses even a 6.5 % `J_C` error into ~1.6 mV
+  of `V_BE` — which is precisely the discrepancy measured. Future work
+  should use the direct `Nx=8` rows rather than repeat the inference.
+- `V_CE` = 0.54 V itself is still extrapolated, from 0.6 V rather than from
+  0.8 V.
+
+Nothing here touches the parts of DR-0001 that this experiment structurally
+cannot evidence — no breakdown extraction (still #20), no matched-circuit
+S-parameter/NF/k-factor/IIP3 claim (still #17), and no ratification of any
+`spec/target-spec.md` row.
+
 ## Model card / process-spec cross-check
 
 `spec/target-spec.md` cites `npn13g2`'s process-spec `IC07` figure
 (3.8 µA at `AE=0.07×0.9 µm²`, i.e. a *reference gain point*, not a
 noise-optimum current density) and `fT` target/min of 350/300 GHz. This
-experiment's own fT-peak figures (`typ`/27 °C: ~415 GHz; grid-wide best
-case `bcs`/−40 °C: ~600 GHz) are consistent with — and at the nominal
-corner, somewhat above — those process-spec numbers, a reasonable outcome
-given the process-spec figures are themselves nominal/typical, not a
+experiment's own fT-peak figures (`typ`/27 °C: ~415 GHz at `Nx=1`,
+~438 GHz at `Nx=8`; grid-wide best case `bcs`/−40 °C: ~600 GHz at `Nx=1`,
+~628 GHz at `Nx=8`) are consistent with — and at the nominal corner,
+somewhat above — those process-spec numbers, a reasonable outcome given
+the process-spec figures are themselves nominal/typical, not a
 corner-swept simulation result.
 
 ## Regeneration
@@ -316,8 +562,23 @@ export PDK=ihp-sg13g2
 sim/hbt-characterization/run_hbt_sweep.sh
 ```
 
+~1.5 minutes wall clock for the full 150-cell grid on a 2026-era laptop.
 No OSDI build step is needed (`npn13G2` is a native ngspice VBIC model —
 see `sim/pdk.json`). Requires `ngspice` on `PATH`; does not require
 `xschem` or `klt`. Produces a new `<record-id>` under `records/`,
 `corners/`, and `netlist-snapshots/` — append-only, per `sim/README.md`;
 re-running never edits an existing record.
+
+Every grid axis is overridable from the environment (space-separated), so
+an older record's narrower grid stays reproducible without editing the
+script — e.g. record `20260910-200059-7da7038`'s `Nx=1` main grid:
+
+```bash
+HBT_VCES="0.8 1.0 1.2 1.4" HBT_NX_LIST="1" \
+  sim/hbt-characterization/run_hbt_sweep.sh
+```
+
+`HBT_CORNERS`, `HBT_TEMPS`, `HBT_VCES` and `HBT_NX_LIST` default to the
+full grid documented under "Sweep grid" above. A cut-down grid is useful
+for iterating on the testbench; **only full-grid runs should be committed
+as records**, since every table in this README is a whole-grid statement.
