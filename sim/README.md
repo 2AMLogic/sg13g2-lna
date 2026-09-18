@@ -123,11 +123,17 @@ target-spec row.
 ## Testbenches landed so far
 
 - **[`hbt-characterization/`](hbt-characterization/README.md)** — the
-  first testbench in this tree (issue #7): `npn13G2` fT, 50 Ω-referenced
-  noise figure at 2.4 GHz, and 50 Ω-terminated transducer gain at 2.4 GHz,
-  swept over collector current density (via a dense base-voltage sweep)
-  and `V_CE` ∈ {0.8, 1.0, 1.2, 1.4} V, across the HBT process-corner grid
-  above × {−40, 27, 125} °C. Device-level input to the still-open
-  bias/supply-topology decision record (`target-spec.md` "Open topology
-  question") — not the decision itself, and not a claim against any
-  `target-spec.md` row.
+  first testbench in this tree (issue #7, extended by issue #21):
+  `npn13G2` fT, 50 Ω-referenced noise figure at 2.4 GHz, and
+  50 Ω-terminated transducer gain at 2.4 GHz, swept over collector current
+  density (via a dense base-voltage sweep) and `V_CE` ∈
+  {0.6, 0.8, 1.0, 1.2, 1.4} V, across the HBT process-corner grid above ×
+  {−40, 27, 125} °C, at emitter multiplicity `Nx` ∈ {1, 8}. Device-level
+  input to `spec/decision-records/0001-bias-supply-topology.md` — not the
+  decision itself, and not a claim against any `target-spec.md` row.
+  Two records: `20260910-200059-7da7038` (#7, `Nx=1` grid + one `Nx=8`
+  spot check, `V_CE` ≥ 0.8 V) and `20260918-203652-4293920` (#21, both
+  `Nx` across the full grid, `V_CE` down to 0.6 V, with model-card
+  validity-box flags per row). Per the append-only rule above the first
+  record is untouched; see that experiment's README §"Records in this
+  experiment" for which tables come from which.
