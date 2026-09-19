@@ -22,7 +22,14 @@
 #                          repo with GitHub auto-merge disabled
 #                          (allow_auto_merge:false) this degrades gracefully to
 #                          wait-for-checks-then-merge (immediate if CLEAN)
-#                          instead of failing (#3820).
+#                          instead of failing (#3820). It degrades the same way
+#                          when the parent branch still has open stacked child
+#                          PRs (#8048): the server-side queue would return here
+#                          before the merge lands, and the post-merge
+#                          _auto_reconcile_stacked_children pass would never run
+#                          for those children. Both degradations are bounded by
+#                          LOOM_AUTO_MERGE_TIMEOUT and exit non-zero on timeout
+#                          or a failed required check.
 #   --allow-stacked-children
 #                          Bypass the pre-merge merge-ordering guard's hard-block
 #                          path. That guard's DEFAULT behavior, when the parent
@@ -176,11 +183,11 @@ Options:
                          the matching local branch via 'git branch -d'
                          (Git refuses on unmerged commits).
   --dry-run              Show what would happen without merging
-  --auto                 Enable auto-merge instead of immediate merge. When the
-                         repository has GitHub auto-merge disabled
-                         (allow_auto_merge:false), this is detected up front and
-                         degrades gracefully to wait-for-checks-then-merge
-                         (immediate if already CLEAN) rather than failing (#3820).
+  --auto                 Enable auto-merge instead of immediate merge. Degrades
+                         to a bounded wait-for-checks-then-merge (immediate if
+                         already CLEAN) when the repo has auto-merge disabled
+                         (#3820), or when this branch has open stacked child
+                         PRs to reconcile once the parent lands (#8048).
   --allow-stacked-children
                          Bypass the pre-merge merge-ordering guard's remaining
                          hard-block path. By default (#7982) the guard pins
@@ -481,11 +488,11 @@ fi
 PR_JSON=$(forge_get_pr "$REPO_NWO" "$PR_NUMBER" "$GH") || \
   error "Could not fetch PR #$PR_NUMBER"
 
-PR_STATE=$(echo "$PR_JSON" | jq -r '.state')
-PR_MERGED=$(echo "$PR_JSON" | jq -r '.merged')
-PR_BRANCH=$(echo "$PR_JSON" | jq -r '.head.ref')
-PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
-PR_MERGEABLE=$(echo "$PR_JSON" | jq -r '.mergeable')
+# Combined onto two lines (net code-line offset for the #8112 guard added
+# below — file-size-policy.md's "remove at least as much as you added"; a
+# verbatim, behavior-preserving chain, not a reformat of anything else).
+PR_STATE=$(echo "$PR_JSON" | jq -r '.state'); PR_MERGED=$(echo "$PR_JSON" | jq -r '.merged'); PR_BRANCH=$(echo "$PR_JSON" | jq -r '.head.ref')
+PR_TITLE=$(echo "$PR_JSON" | jq -r '.title'); PR_MERGEABLE=$(echo "$PR_JSON" | jq -r '.mergeable')
 # Head SHA (#4100): the safety criterion for local-branch deletion. A local
 # branch whose tip equals this SHA carries no commits absent from the merged
 # PR, so it is safe to force-delete even though it will never satisfy
@@ -576,6 +583,17 @@ _check_no_open_stacked_children() {
   count="$(echo "$children_json" | jq 'length' 2>/dev/null || echo 0)"
   [[ "$count" -gt 0 ]] || return 0
 
+  # Captured for the POST-merge reconcile pass (#8010 item 2) —
+  # _auto_reconcile_stacked_children below prefers this pre-merge snapshot
+  # over a fresh post-merge query: GitHub retargets an open child PR the
+  # instant delete_branch_on_merge removes this parent branch, so a query run
+  # AFTER the merge can return zero rows even though children existed seconds
+  # earlier. A plain (non-local) assignment so it survives this function
+  # returning — read via `${STACKED_CHILDREN_JSON:-}` everywhere else so a
+  # standalone invocation of either function (e.g. from a test) without this
+  # guard having run first still behaves exactly as before.
+  STACKED_CHILDREN_JSON="$children_json"
+
   # Comma-separated "#N" list for the operator-facing message.
   child_list="$(echo "$children_json" \
     | jq -r '[.[].number | "#" + tostring] | join(", ")' 2>/dev/null || echo '')"
@@ -606,7 +624,13 @@ _check_no_open_stacked_children() {
   # verify the object locally, fetch the branch once if it is absent, and
   # re-verify. All three failing means a detached/unreadable parent.
   if { git -C "$REPO_ROOT" cat-file -e "${PR_HEAD_SHA}^{commit}" 2>/dev/null || git -C "$REPO_ROOT" fetch --quiet origin "$PR_BRANCH" 2>/dev/null; } && git -C "$REPO_ROOT" cat-file -e "${PR_HEAD_SHA}^{commit}" 2>/dev/null && git -C "$REPO_ROOT" update-ref "$pin" "$PR_HEAD_SHA" 2>/dev/null; then
-    warning "Merge-ordering guard: PR #$PR_NUMBER's branch '$PR_BRANCH' still has $count open stacked child PR(s) ($child_list) targeting it. Pinned the parent tip to $pin ($PR_HEAD_SHA) so reconcile-stack.sh can still resolve '$PR_BRANCH' after the merge deletes it (#3747 item 2, #7982). Proceeding with the merge — reconcile each child once this has landed:"$'\n'"$cmds"
+    # Non-local global, mirroring STACKED_CHILDREN_JSON above: unlike that
+    # var (set as soon as an open child is FOUND), this one is set only once
+    # a pin is actually WRITTEN — the item-3 re-pin below must gate on this,
+    # not on STACKED_CHILDREN_JSON, or the --allow-stacked-children bypass
+    # path (which returns above without ever reaching this line) would still
+    # trip the re-pin and write a ref the guard itself chose not to create.
+    STACKED_CHILDREN_PIN_WRITTEN=true; warning "Merge-ordering guard: PR #$PR_NUMBER's branch '$PR_BRANCH' still has $count open stacked child PR(s) ($child_list) targeting it. Pinned the parent tip to $pin ($PR_HEAD_SHA) so reconcile-stack.sh can still resolve '$PR_BRANCH' after the merge deletes it (#3747 item 2, #7982). Proceeding with the merge — reconcile each child once this has landed:"$'\n'"$cmds"
     return 0
   fi
 
@@ -815,6 +839,47 @@ If you are deliberately merging without that review signal and take responsibili
 # call — same reasoning as the two guards above.
 _check_loom_pr_label
 
+# #8191: prove the closing-reference analysis can actually RUN, here, while
+# `set -e` is live and before anything has been mutated.
+#
+# _mp_refs()'s own `error` exit cannot do this. Every consumer calls it inside
+# `$(...)` inside _check_partial_increment_close_conflict /
+# _reset_partial_increment_labels, and both of those are invoked as `... ||
+# true`. Bash suppresses `set -e` in that context, so the exit only kills the
+# subshell: the caller receives an EMPTY string and reads it as "no references
+# found" — the reading that closes an unfinished issue or reopens a correctly
+# closed one. Review reproduced all five skew shapes reaching the merge that
+# way, including the default rollout state (a resynced script against an
+# installed binary that predates this subcommand and answers exit 2).
+#
+# Verifying in isolation, as the original fix did, tested the function and not
+# the call shape. This is the call shape.
+
+# ---------------------------------------------------------------------------
+# Pre-merge verdict-label contradiction guard (#8112).
+#
+# A PR can carry BOTH `loom:pr` (approved) and a blocking verdict/hold label
+# simultaneously — two concurrent Judge passes reaching different verdicts on
+# the same head ~45s apart is a real, observed incident (PR #8076), not a
+# hypothetical. `_check_loom_pr_label` above only checks loom:pr's ABSENCE; it
+# has no way to see a contradicting label standing beside a PRESENT loom:pr.
+#
+# Judge/Doctor's Verdict-Time CAS Recheck (judge.md / doctor.md) and
+# Champion's Verdict-State Janitor Part 1 (champion-pr-merge.md) already exist
+# to prevent and auto-resolve exactly this contradiction — but both live in
+# markdown-orchestrated agent steps, not in this script, so a human or agent
+# invoking merge-pr.sh directly (the documented, canonical way to merge —
+# never `gh pr merge`, see CLAUDE.md) bypasses them entirely. This guard is
+# the backstop at the one point every merge path actually funnels through.
+#
+# Deliberately no bypass flag: --allow-unapproved overrides "nobody reviewed
+# this head" (an absence of signal); this guard blocks "a reviewer explicitly
+# said no" (a present, contradicting signal). Those are different acts, and
+# only the first has a documented override. The fix for a real block here is
+# a fresh Judge verdict, not a flag.
+_check_verdict_label_contradiction() { local msg rc=0; msg="$(printf '%s\n' "$PR_LABELS" | "${LOOM_DAEMON_BIN:-loom-daemon}" merge-pr verdict-contradiction --pr "$PR_NUMBER" --head-sha "$PR_HEAD_SHA" 2>/dev/null)" || rc=$?; [[ $rc -eq 0 && "$msg" == "LOOM-VERDICT-CLEAN" ]] && return 0; [[ $rc -eq 1 && "$msg" == "Merge blocked:"* ]] || msg="Merge blocked: PR #$PR_NUMBER's verdict-label contradiction guard (#8112) could not run — '${LOOM_DAEMON_BIN:-loom-daemon} merge-pr verdict-contradiction' exited $rc without the LOOM-VERDICT-CLEAN signal. A guard that cannot run refuses the merge rather than passing it: a caller cannot tell 'found nothing' from 'never ran', so only a positive clean signal is accepted. Build or install loom-daemon (cargo build --release -p loom-daemon, or re-run the Loom installer), then re-run this merge."; if [[ "$DRY_RUN" == "true" ]]; then warning "[dry-run] Would BLOCK merge of PR #$PR_NUMBER: $msg"; return 0; fi; error "$msg"; }
+_check_verdict_label_contradiction
+
 # ---------------------------------------------------------------------------
 # Partial-increment closing-keyword conflict detection (#4569, extended by
 # #4595 to cover commit messages).
@@ -872,10 +937,52 @@ PARTIAL_CONFLICT_ISSUES=""
 # example/quoted text inside a fenced block reads as documentation, never a
 # live declaration (#5234).
 _strip_fenced_code_blocks() {
+  # Retained only for any out-of-tree caller; the analysis below no longer
+  # uses it (loom-daemon strips fences itself, identically).
   awk '
     /^[[:space:]]*```/ { infence = !infence; next }
     !infence { print }
   '
+}
+
+# Closing-reference / partial-increment analysis, ported to Rust (#8191).
+#
+# These five predicates decide whether merging would close an issue this PR
+# only declared itself a PART OF. Their whole bug history is about what a
+# stacked grep/sed/awk pipeline accidentally matched -- #5234 (a backticked
+# hypothetical mention read as a declaration, reopening a correctly closed
+# issue) and the numbered-list ordinal trap (`3. Part of #789` read as
+# referencing both 3 and 789). Both are ordering bugs inside a pipeline.
+#
+# The body goes over STDIN, never argv: it is untrusted external content and
+# routinely tens of kilobytes.
+#
+# A missing binary is FATAL here rather than degrading. Every one of these
+# feeds a merge-or-refuse decision, and an empty answer is not "no references
+# found" -- it is "no answer", which would silently close an unfinished issue
+# or reopen a correctly closed one. Failing loudly is the safe direction.
+_mp_refs() {
+  # Resolved inline, not via lib/locate-daemon-bin.sh: the retained suites
+  # extract these functions and source them alone, with no libs present.
+  # LOOM_DAEMON_SELF_BIN first, per #8134 — it means "the binary that
+  # IMPLEMENTS this entry point", which is exactly what this is.
+  local bin out rc=0
+  bin="${LOOM_DAEMON_SELF_BIN:-${LOOM_DAEMON_BIN:-}}"
+  if [[ -n "$bin" ]]; then
+    # A PINNED path that is unusable must refuse, not quietly resolve a
+    # different binary off PATH — that substitutes an unknown version for the
+    # one an operator deliberately selected.
+    [[ -x "$bin" ]] || error "merge-pr.sh: LOOM_DAEMON_SELF_BIN/LOOM_DAEMON_BIN is set to '$bin', which is not executable. Refusing rather than silently falling back to a different loom-daemon."
+  else
+    bin="$(command -v loom-daemon 2>/dev/null || printf '%s' "$HOME/.local/bin/loom-daemon")"
+    [[ -x "$bin" ]] || error "merge-pr.sh needs loom-daemon for its closing-reference analysis (#8191) and could not resolve one. Refusing rather than proceeding with no answer: an empty result is indistinguishable from 'no references', which would close an unfinished issue or reopen a correctly closed one."
+  fi
+  # `|| rc=$?`, not `; rc=$?`: under `set -e` a failing command substitution in
+  # a bare assignment aborts the script AT THAT LINE, so the check below never
+  # ran and the refusal was silent — fail-closed, but with nothing said.
+  out="$("$bin" merge-pr-refs "$@" 2>/dev/null)" || rc=$?
+  [[ "$rc" -eq 0 ]] || error "merge-pr.sh's closing-reference analysis failed: '$bin merge-pr-refs $*' exited $rc. A loom-daemon predating #8191 has no such subcommand -- update it, or pin LOOM_DAEMON_BIN to a build that has it. Refusing rather than treating an empty result as 'no references'."
+  printf '%s' "$out"
 }
 
 # Issue numbers referenced with a NON-closing partial-increment keyword
@@ -906,13 +1013,7 @@ _strip_fenced_code_blocks() {
 # would see #3 registered as a declared partial increment AND a closing
 # reference, and get reopened right after a correct close.
 _partial_increment_refs() {
-  { printf '%s\n' "$1" \
-      | _strip_fenced_code_blocks \
-      | sed -E 's/`[^`]*`//g' \
-      | grep -oiE '^[[:space:]]*([-*+>]|[0-9]+\.)?[[:space:]]*(Part of|Contributes to)[[:space:]]+#[0-9]+' \
-      | grep -oE '#[0-9]+' \
-      | tr -d '#' \
-      | sort -un; } || true
+  printf '%s\n' "$1" | _mp_refs partial-increment-refs
 }
 
 # Issue numbers referenced with a GitHub CLOSING keyword anywhere in the text
@@ -926,14 +1027,12 @@ _partial_increment_refs() {
 # created via raw REST for that reason). A quota-free text signal is the one that
 # still works in exactly the conditions where this bug bites.
 _closing_refs_stdin() {
-  { grep -oiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\b[[:space:]]+#[0-9]+' \
-      | grep -oE '[0-9]+' \
-      | sort -un; } || true
+  _mp_refs closing-refs
 }
 
 # Same, for text passed as $1 (the PR body, historically the only source).
 _body_closing_refs() {
-  { printf '%s\n' "$1" | _closing_refs_stdin; } || true
+  printf '%s\n' "$1" | _mp_refs closing-refs
 }
 
 # The literal offending snippets ("close #N", "Fixes #N", …) that reference
@@ -941,9 +1040,7 @@ _body_closing_refs() {
 # `snippet", "snippet`. Empty when the text carries no such reference — which is
 # how the caller tells WHICH source (body vs. commit messages) is at fault.
 _closing_ref_snippets() {
-  { printf '%s\n' "$1" \
-      | grep -oiE "\\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\\b[[:space:]]+#$2\\b" \
-      | sort -u | tr '\n' '|' | sed 's/|$//; s/|/", "/g'; } || true
+  printf '%s\n' "$1" | _mp_refs closing-ref-snippets --issue "$2"
 }
 
 # The literal declaration text (`Part of #N` / `Contributes to #N`) that
@@ -955,12 +1052,7 @@ _closing_ref_snippets() {
 # stripping as _partial_increment_refs so the quoted snippet always matches
 # what was actually matched, never a code-block artifact.
 _partial_increment_ref_snippets() {
-  { printf '%s\n' "$1" \
-      | _strip_fenced_code_blocks \
-      | sed -E 's/`[^`]*`//g' \
-      | grep -oiE "^[[:space:]]*([-*+>]|[0-9]+\\.)?[[:space:]]*(Part of|Contributes to)[[:space:]]+#$2\\b" \
-      | sed -E 's/^[[:space:]]+//' \
-      | sort -u | tr '\n' '|' | sed 's/|$//; s/|/", "/g'; } || true
+  printf '%s\n' "$1" | _mp_refs partial-increment-ref-snippets --issue "$2"
 }
 
 # Every commit message of this PR, concatenated (#4595). merge-pr.sh squash-
@@ -1073,6 +1165,14 @@ _check_partial_increment_close_conflict() {
 
 # Runs before either merge path so the operator sees the conflict BEFORE the
 # close happens, and so --dry-run reports it without merging. Best-effort.
+# #8191 preflight. One call, at top level: NOT inside `$(...)`, NOT behind
+# `|| true`, and AFTER the definitions (_mp_refs lives inside the span the
+# retained suite extracts, so it cannot be defined any earlier). _mp_refs's own
+# `error` therefore exits the script here, which it cannot do from inside a
+# command substitution in a `|| true` caller — the shape review proved lets all
+# five version-skew cases reach the merge with an empty "no references" answer.
+_mp_refs closing-refs </dev/null >/dev/null
+
 _check_partial_increment_close_conflict || true
 
 info "Merging PR #$PR_NUMBER: $PR_TITLE"
@@ -1455,10 +1555,16 @@ _auto_reconcile_stacked_children() {
   # Only a parent PR on a feature/issue-<N> branch can have stacked children.
   [[ "$PR_BRANCH" =~ ^feature/issue-([0-9]+)$ ]] || return 0
 
-  # Live forge discovery — NEVER the daemon registry. Plain `gh` (uncached) so we
-  # see child PRs as of the merge, not a cached list snapshot.
-  local children_json
-  children_json="$(gh pr list --repo "$REPO_NWO" --base "$PR_BRANCH" --state open \
+  # Prefer the pre-merge snapshot the guard above already captured (#8010
+  # item 2) over a fresh post-merge query: GitHub retargets an open child PR
+  # the instant delete_branch_on_merge removes this parent branch, so a query
+  # run AFTER the merge can return zero rows even though children existed
+  # seconds earlier — the guard's own pre-merge query already paid for this
+  # exact answer. Live forge discovery (uncached `gh`, NEVER the daemon
+  # registry) is only a fallback for when the guard never ran (e.g. this
+  # function invoked standalone, as the unit tests do).
+  local children_json="${STACKED_CHILDREN_JSON:-}"
+  [[ -n "$children_json" ]] || children_json="$(gh pr list --repo "$REPO_NWO" --base "$PR_BRANCH" --state open \
     --json number,headRefName 2>/dev/null || echo '[]')"
   [[ -n "$children_json" ]] || return 0
 
@@ -1765,6 +1871,28 @@ _MPS_FRESH_SHA="$(echo "$_MPS_JSON" | jq -r '.head.sha // empty' 2>/dev/null || 
 [[ -n "$_MPS_FRESH_SHA" ]] && MERGE_PRECONDITION_SHA="$_MPS_FRESH_SHA"
 unset _MPS_JSON _MPS_FRESH_SHA
 
+# Re-pin refs/loom/parent/<branch> to the SHA actually being merged (#8010
+# item 3), when the merge-ordering guard above pinned one. That guard pinned
+# $PR_HEAD_SHA — read once, at the top of the script, from the initial
+# (possibly gh-cached) $PR_JSON — but the merge itself uses the
+# $MERGE_PRECONDITION_SHA just refreshed above, live, ~1100 lines and one
+# CI-wait later. If the parent branch was pushed in between, the two SHAs
+# differ and the pin would otherwise still point at a tip that is NOT what
+# gets merged. Re-pointing it here keeps reconcile-stack.sh's fallback
+# rebasing from the tip that was ACTUALLY merged. Best-effort and silent: a
+# failure here leaves the existing (already-correct-when-written) pin in
+# place, and reconcile-stack.sh's #8010-item-4 ancestry check refuses any pin
+# that is not an ancestor of the child rather than silently replaying the
+# wrong commit range. Gated on `$DRY_RUN != true` — this runs unconditionally
+# ahead of both merge paths' own dry-run checks below, and the guard's pin
+# path honors the "dry-run never mutates local refs" contract, so this must
+# too. Gated on STACKED_CHILDREN_PIN_WRITTEN, NOT STACKED_CHILDREN_JSON: the
+# latter is set as soon as the guard FINDS an open child, even on the
+# --allow-stacked-children bypass path that returns without ever writing a
+# pin — gating on it would silently create a pin the guard itself declined
+# to create.
+[[ "$DRY_RUN" != "true" && "${STACKED_CHILDREN_PIN_WRITTEN:-}" == "true" && "$MERGE_PRECONDITION_SHA" != "$PR_HEAD_SHA" ]] && { git -C "$REPO_ROOT" update-ref "refs/loom/parent/$PR_BRANCH" "$MERGE_PRECONDITION_SHA" 2>/dev/null || true; }
+
 if [[ "$AUTO_MERGE" == "true" ]]; then
   # Bounded poll window for the UNSTABLE-because-checks-are-still-running case
   # (#3664). Reuses the same env-var names/semantics as the shell Gitea
@@ -1804,8 +1932,36 @@ if [[ "$AUTO_MERGE" == "true" ]]; then
   # wait function either returns 0 (proceed) or error()s out terminally. Setting
   # AUTO_MERGE_OK=true lets the post-loop "after N attempts" guard pass; the loop
   # itself is short-circuited by the AUTO_MERGE guard on its first iteration.
-  if [[ "$REPO_AUTO_MERGE_ALLOWED" == "false" ]]; then
-    info "PR #$PR_NUMBER: repository 'Allow auto-merge' is disabled; --auto will wait for checks then merge synchronously (immediate if already CLEAN)"
+  #
+  # #8048 adds the SECOND trigger for that same degradation: the merge-ordering
+  # guard above found open stacked child PRs and pinned this parent's tip
+  # (STACKED_CHILDREN_PIN_WRITTEN). Server-side auto-merge only ever QUEUES the
+  # merge here, so the script used to exit 0 at the "Auto-merge queued" branch
+  # below — and _auto_reconcile_stacked_children lives AFTER that exit, so it
+  # never ran for this invocation. GitHub completed the merge minutes later,
+  # delete_branch_on_merge dropped the parent branch, and nothing ever
+  # reconciled the children; the refs/loom/parent/<branch> pin (#7982/#7998)
+  # just sat there unread until an operator ran reconcile-stack.sh by hand.
+  # Reusing this already-bounded wait-then-merge path fixes that at the root
+  # rather than bolting a second poll loop onto the queued path: the merge
+  # becomes synchronous in THIS process, so the shared post-merge cleanup block
+  # — and with it the reconcile pass — is actually reached, while the parent
+  # branch still exists (so reconcile-stack.sh resolves it directly, not only
+  # via the pin fallback). A failing required check or the
+  # LOOM_AUTO_MERGE_TIMEOUT ceiling makes _wait_for_checks_then_sync_merge
+  # error() out non-zero, which is #8048's "loud, non-zero-exit signal that the
+  # children were NOT reconciled" alternative — and it fires BEFORE the merge,
+  # so the queued-then-cancelled case (checks fail after queueing) can no
+  # longer strand children behind an already-merged parent.
+  # The cost is confined to stacked parents: with no open children the guard
+  # never writes a pin, this stays unset, and --auto keeps its zero-added-
+  # polling fast path byte-for-byte. The --allow-stacked-children bypass also
+  # leaves it unset (the guard returns before pinning), so an operator who has
+  # already reconciled by hand keeps the fast queued path too. Written as two
+  # separate [[ ]] tests rather than one `||`-joined condition so the #3820
+  # clause survives verbatim as its own testable predicate.
+  if [[ "$REPO_AUTO_MERGE_ALLOWED" == "false" ]] || [[ "${STACKED_CHILDREN_PIN_WRITTEN:-}" == "true" ]]; then
+    info "PR #$PR_NUMBER: --auto degraded to wait-for-checks-then-merge (immediate if already CLEAN) — repo 'Allow auto-merge' allowed=$REPO_AUTO_MERGE_ALLOWED, open stacked children pinned=${STACKED_CHILDREN_PIN_WRITTEN:-false}"
     _wait_for_checks_then_sync_merge
     AUTO_MERGE=false
     AUTO_MERGE_OK=true
@@ -2279,9 +2435,17 @@ if [[ "$AUTO_MERGE" == "true" ]]; then
     # handle the stale worktree later.
     POST_AUTO_JSON=$(forge_get_pr_nocache "$REPO_NWO" "$PR_NUMBER" "$GH" 2>/dev/null || echo '{}')
     POST_AUTO_MERGED=$(echo "$POST_AUTO_JSON" | jq -r '.merged // false')
+    # #8048 backstop. This branch is now UNREACHABLE for a parent with open
+    # stacked children — the degrade above converts --auto to a synchronous
+    # merge before the enable mutation is even attempted — but the gap it
+    # closes was invisible precisely because this path exits 0 silently. So
+    # assert the invariant here too: if a future refactor ever routes a pinned
+    # stacked parent back through the queued exit, it fails loudly and
+    # non-zero instead of silently orphaning the children (the two-line info
+    # below is merged into one to keep this file at its size-ratchet ceiling).
     if [[ "$POST_AUTO_MERGED" != "true" ]]; then
-      info "Auto-merge queued (server-side merge pending checks); skipping local cleanup"
-      info "Run loom-clean later to remove the worktree once GitHub completes the merge"
+      [[ "${STACKED_CHILDREN_PIN_WRITTEN:-}" == "true" ]] && error "Auto-merge for PR #$PR_NUMBER is queued but NOT merged, and its branch '$PR_BRANCH' still has open stacked child PR(s). The post-merge reconcile pass cannot run from this path, so those children were NOT reconciled by this invocation — once GitHub completes the merge, run ./.loom/scripts/reconcile-stack.sh <child-pr> $PR_BRANCH for each of them (#8048)."
+      info "Auto-merge queued (server-side merge pending checks); skipping local cleanup — run loom-clean later to remove the worktree once GitHub completes the merge"
       exit 0
     fi
     info "PR #$PR_NUMBER already merged server-side; running cleanup"

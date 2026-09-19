@@ -23,10 +23,12 @@ pipeline state already lives.
 - [Entry points](#entry-points)
 - [Exit rule](#exit-rule)
 - [Current implementation](#current-implementation)
+- [Finding what is waiting on you (#8083)](#finding-what-is-waiting-on-you-8083)
 - [`loom:operator-only` sub-kinds (#5671)](#loomoperator-only-sub-kinds-5671)
 - [`loom:needs-capability` — a narrower claim than `loom:operator-only` (#5817)](#loomneeds-capability--a-narrower-claim-than-loomoperator-only-5817)
 - [Bidirectional routing: `loom:operator-only` ↔ `loom:needs-capability` (#5818)](#bidirectional-routing-loomoperator-only--loomneeds-capability-5818)
 - [Fact-based de-escalation of a Champion `proposal-escalated` hold (#7650)](#fact-based-de-escalation-of-a-champion-proposal-escalated-hold-7650)
+- [PR verdict-label mutual exclusion: three independent layers (#8112)](#pr-verdict-label-mutual-exclusion-three-independent-layers-8112)
 - [Follow-up work](#follow-up-work)
 <!-- toc:end -->
 
@@ -213,6 +215,55 @@ or `loom:blocked`. Re-queueing such a PR for review would silently un-park it,
 which is precisely the transition only a human may make. It still reports the
 verdict as stale, so the PR is not merged either; it simply stays exactly where
 the operator left it.
+
+## Finding what is waiting on you (#8083)
+
+`loom:operator` and `loom:operator-only` put "a human is needed" on the label
+substrate — but a state nothing points at is only half-visible. Three
+destinations answer "what is waiting on me?", cheapest first.
+
+**1. The two label queries.** Both are one call and neither was written down
+anywhere before #8083:
+
+```bash
+# PRs Champion is holding on a merge-risk or critical-file hold:
+gh pr list --state open --label loom:operator --json number --jq 'length'
+# Issues parked for an operator (see the sub-kinds below for which kind):
+gh issue list --state open --label loom:operator-only --json number --jq 'length'
+```
+
+**2. The merge-risk hold digest — [#6877](https://github.com/rjwalters/loom/issues/6877).**
+Champion's Held-PR Census (#6720 / #6851 / #7020) overwrites this issue's body
+every pass with one row per held PR — PR number, the hold's own reason, the
+`mergeable` status, and how long a conflict has been rotting — plus an
+aggregate line. It is **pinned** to the repository so it is reachable from the
+issues page without knowing the number; `champion-pr-merge.md` → "Held-PR
+Census" → "Per-PR Digest" → Step 2 re-pins it on **every** pass, so an
+unpinned digest self-heals rather than silently staying invisible (the pin is
+best-effort and never blocks a merge decision).
+
+The digest carries **both** `loom:blocked` and `loom:operator`, and that
+pairing is deliberate:
+
+- `loom:blocked` is what keeps it out of the pipeline. It is a park label
+  (`loom-daemon`'s `work_finder::PARK_LABELS`, enforced at dispatch), and the
+  digest also never carries `loom:issue`, so no work-finder or sweep path can
+  ever pick it up. **Do not remove `loom:blocked` from the digest** — it is
+  the whole park.
+- `loom:operator` is what makes it *findable*: it is the canonical
+  "a human is needed" label, so the digest now answers the same query as the
+  thing it describes. It is safe to carry on an issue because every consumer
+  of `loom:operator` is PR-scoped — the census itself reads `gh pr list
+  --label loom:operator`, so the digest can never enumerate itself, and sweep's
+  `loom:operator` handling (`sweep-wave-lifecycle.md`, `sweep-reference.md`)
+  only ever declines to route an already-`loom:pr` **PR** to merge.
+
+**3. `loom-daemon serve`'s dashboard.** Surfacing these counts in
+`loom-daemon health` and as an operator-held bucket on `GET /api/pipeline` is
+tracked separately in
+[#8091](https://github.com/rjwalters/loom/issues/8091) — note that `health`
+rolls `overall` up over *every* section, so a new section there interacts with
+the #4761 exit-code contract.
 
 ## `loom:operator-only` sub-kinds (#5671)
 
@@ -668,6 +719,65 @@ repo, and Curator is the role already positioned to do that re-check (per
 Champion's own promotion pass is unaffected: it still owns the pure
 dependency-timing case end to end via Pass 0, and treats a Curator-revised
 proposal exactly like any other revision once it reaches the queue.
+
+## PR verdict-label mutual exclusion: three independent layers (#8112)
+
+`loom:pr` (approved) must never coexist with a label asserting the opposite
+or a pending/blocking hold — `loom:changes-requested`, `loom:blocked`,
+`loom:operator`, or `loom:review-requested` (the invariant is stated
+authoritatively in `.github/labels.yml`, "PR verdict-label mutual
+exclusion"). A contradictory pair is not hypothetical: two Judge passes
+reviewing the same head roughly a minute apart reached different verdicts on
+PR #4560 (2026-07-30, #4570) and again on PR #8076 (#8112) — nothing about
+GitHub's label API is compare-and-swap, so two writers can each read a clean
+state and then both still write.
+
+Three independent mechanisms exist for this, at three different points in
+the pipeline. None of them supersedes the others — each is a backstop for a
+path the others do not cover:
+
+1. **Write-time prevention (chosen remediation for #8112's race, candidate
+   (3))** — Judge's and Doctor's **Verdict-Time CAS Recheck**
+   (`judge.md` / `doctor.md`) already claims the PR with `loom:reviewing`
+   before reviewing and re-reads the label set immediately before writing
+   any verdict label, aborting if another verdict already landed, the claim
+   was lost, or the head moved. This is the standing mechanism for the race
+   itself and predates #8112 (#5686, generalizing the PR #4560 incident
+   response) — #8112 does not replace it or add a second one; a Judge/Doctor
+   path that skips this recheck is the actual bug to fix if the race recurs,
+   not a signal that a new claim/CAS mechanism is needed.
+2. **Post-hoc auto-resolution** — Champion's **Verdict-State Janitor Part 1**
+   (`champion-pr-merge.md`) runs before Champion's own merge-eligibility
+   criteria, detects a `loom:pr` + blocking-label pair regardless of how it
+   arose (a race that slipped past layer 1, a manual label edit, a bug
+   elsewhere), and resolves it fail-safe: `loom:pr` always loses, the other
+   label is kept, and a fresh Judge pass is invited.
+3. **Direct-invocation hard block (#8112, this issue)** — `merge-pr.sh`'s
+   `_check_verdict_label_contradiction` guard. Layers 1 and 2 both live in
+   markdown-orchestrated agent steps, not in the shared script — so a human
+   or agent invoking `merge-pr.sh` directly (the documented, canonical way
+   to merge; `gh pr merge` is never used, see the root `CLAUDE.md`) bypassed
+   both of them entirely, which is the literal gap #8112 reports. The guard
+   refuses to merge (hard block, naming both labels) whenever `loom:pr`
+   and a blocking label are both present, checking a **fixed list** of
+   blocking labels rather than "whichever label happens to be read first" —
+   so the refusal cannot be silently defeated by label ordering. Unlike
+   layer 2, it does not auto-resolve anything; it stops the merge and leaves
+   the contradiction for a human or a fresh Judge pass to sort out, since a
+   script invoked directly has no authority to silently discard a
+   `loom:changes-requested`/`loom:blocked`/`loom:operator` verdict the way
+   Champion's own janitor does under its own auto-merge authority.
+
+**`--allow-unapproved` does not bypass layer 3, and there is no separate
+override flag for it either** — this was an explicit decision, not an
+oversight. `--allow-unapproved` overrides *absence* of a review signal
+("nobody has reviewed this head yet"); the verdict-contradiction guard fires
+on *presence* of a conflicting one ("a reviewer explicitly rejected this
+head, or it is on hold, or re-review is pending"). Those are different acts:
+overriding a missing opinion is a call about risk tolerance for skipping
+review; overriding a stated rejection discards someone else's judgment
+outright. The remedy for a real block here is the same as layer 2's: get a
+fresh Judge verdict on the current head, not force a flag past it.
 
 ## Follow-up work
 
