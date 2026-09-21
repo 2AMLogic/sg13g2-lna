@@ -1,0 +1,47 @@
+* sg13g2-lna -- supply-ramp startup / latch check of the Q1 bias generator
+* (issue #26 Test Plan edge case).
+* Generated from sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl by
+* sim/lna-bias-pvt/run_biasop_sweep.sh -- do not edit a generated file.
+*
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*
+* The bias generator (an 8:1 density-matched current-mirror reference fed
+* by R3a through the diode-connected Q3, coupled to b1 through R3b) is
+* deliberately FEEDFORWARD: the reference leg has a direct DC path from vdd
+* through R3a, so no degenerate all-zero operating state exists the way a
+* PTAT/bandgap startup loop can have one. This deck demonstrates that
+* numerically instead of asserting it: VDD ramps 0 V -> target in 1 us (slow
+* vs. any circuit pole), holds to 12 us, the runner checks that I_C1's last
+* samples agree with each other (settled, not ringing) and match the value
+* the op-point bench measured at the same PVT cell (no latch to a different
+* stable state). The raw ic1(t) transient is kept as a wrdata artifact.
+*
+* Startup is exercised at the two extreme PVT cells the issue's Test Plan
+* names -- bcs/125 C/VDD=1.98 V and wcs/-40 C/VDD=1.62 V bracket the old
+* divider's measured min/max bias -- plus the nominal cell.
+
+.lib "@@MODELS_LIB@@" @@HBT_SECTION@@
+.options temp=@@TEMP@@ tnom=27
+
+@@LNA_SUBCKT@@
+
+Vdda vdd 0 pwl(0 0 1e-6 @@VDD@@ 1.2e-5 @@VDD@@)
+Vssa vss 0 dc 0
+Rtin rfin 0 50
+Rtout rfout 0 50
+Xdut vdd vss rfin rfout lna
+
+.control
+save @q.xdut.xq1.qnpn13g2[ic]
+tran 5e-8 1.2e-5
+let ic1v = @q.xdut.xq1.qnpn13g2[ic]
+let n = length(ic1v) - 1
+let s1 = ic1v[n]
+let s2 = ic1v[n-10]
+let s3 = ic1v[n-25]
+wrdata @@STARTUP_DAT@@ ic1v
+echo "STARTUP ic1_end $&s1 ic1_s2 $&s2 ic1_s3 $&s3"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end
