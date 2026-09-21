@@ -113,7 +113,7 @@ under `netlist-snapshots/<record-id>/` and raw ngspice logs under
 - `20260921-154716-f718094` — the first and only record so far: the
   Option-B disproof table (hot/nominal feed-family ratio 1.392/1.335/1.326
   at 0.52 mA/100 µA/20 µA — all worse than the committed npn family's
-  own 1.280), the Option-A skeleton mini-grid (supply independence
+  own 1.277), the Option-A skeleton mini-grid (supply independence
   0.90% vs the committed family's 47.4% measured identically; PTAT
   residual tone hot/cold ≈ 1.355/0.766 at the binding cells), and the
   seed-leg startup PASS at all three ramp cells. Backs DR-0003.

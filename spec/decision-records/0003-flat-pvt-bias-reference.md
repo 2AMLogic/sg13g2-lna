@@ -94,7 +94,7 @@ took that arc's own shape.
   terminal drop and its implied feed family at three currents —
   hot/nominal ratio **1.392** (0.52 mA), **1.335** (100 µA), **1.326**
   (20 µA), i.e. worse than the committed `npn13G2` family's own
-  **1.280** (V_BREF 0.7455/0.8349 V from the committed 45-cell
+  **1.277** (V_BREF 0.7473/0.8349 V from the committed 45-cell
   record) at every traced scale: `rb = 700 Ω` at `bf = 1.10` both
   raises the drop and widens its T-swing. Option B is thereby
   *measured-refuted* as the flat family, not merely argued against.
@@ -126,7 +126,11 @@ took that arc's own shape.
   flat-current mechanism in this vocabulary. This was probed, not
   assumed: the emitter-resistor and shunt-resistor variants of the
   island feed were measured during bench development and moved the hot
-  gain at most 1.31 → 1.23 — nowhere near the required ≤ ~1.08.
+  gain at most 1.31 → 1.23 — nowhere near the required ≤ ~1.08. Those
+  development probes were deliberately not committed as benches: the
+  load-bearing statement is the formal identity, and these rows are
+  **not backed by a committed testbench** (the `biasref-topology`
+  record's phases are).
 - **P_dc budget fact (Stage 2 sizing input, from committed rows).** At
   the binding cell (1.98 V) the bar `P_dc < 10 mW` fixes
   `I_dd < 5.05 mA`; with the committed divider (~165 µA at 1.98 V) and

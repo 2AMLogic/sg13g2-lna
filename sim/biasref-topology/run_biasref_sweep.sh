@@ -279,7 +279,7 @@ read -r MPA_MIN_ID MPA_MIN MPA_MAX_ID MPA_MAX <<<"${MPA_STATS}"
 # V_EB(typ,27C) at the SAME feed current. Computed from this run's own CSV;
 # the committed npn13G2 family's comparable figure (from
 # ../lna-bias-pvt/records/20260921-132025-d6da30a: V_BREF 0.7455 V at
-# bcs/125C/1.98 V vs 0.8349 V at typ/27C/1.80 V) is 1.280 -- cited by
+# bcs/125C/1.98 V vs 0.8349 V at typ/27C/1.80 V) is 1.277 -- cited by
 # DR-0003.
 MPA_ENVELOPE="$(awk -F, '
   NR>1 { d[$4"_"$2"_"$3] = $5 }
@@ -376,7 +376,7 @@ This is design-space input to DR-0003, the same class of evidence
   sets a \`I ~ (VDD - d)/R\` reference family whose worst/nominal
   current ratio is \`(1.98 - d_hot)/(1.80 - d_nom)\` -- measured per feed
   current below. **At every traced current the ratio is WORSE than the
-  committed npn13G2 family's own 1.280** (V_BREF 0.7455 V hot vs
+  committed npn13G2 family's own 1.277** (V_BREF 0.7473 V hot vs
   0.8349 V nominal, from
   \`../lna-bias-pvt/records/20260921-132025-d6da30a-summary.csv\`):
   the MPA's \`rb=700\` base resistance at \`bf=1.10\` both raises its
