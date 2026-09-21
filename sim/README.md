@@ -24,14 +24,24 @@ prefixes) — every testbench's `run_*.sh` sources it, and an interactive
 `ngspice` session can too, so nothing here can silently drift onto a
 different install than what a script used.
 
-**No OSDI compile step is needed yet.** `sim/hbt-characterization/` (the
-first experiment in this tree) instantiates only `npn13G2`, a native
-ngspice VBIC (level=9) bipolar model — unlike `sg13g2-bandgap`'s and
-`sg13g2-opamp`'s MOS/resistor testbenches, it never loads a Verilog-A/OSDI
-device, so there is no `sim/tools/build-osdi.sh` in this repo (yet). A
-future experiment that instantiates a MOS or resistor device will need to
-port that script from a sibling repo — see `pdk.json`'s
-`device_models_used_by_this_repo_so_far` note.
+**OSDI device models: needed as of `sim/biasref-topology/` (issue #33).**
+The first experiments in this tree instantiate only `npn13G2` and
+`pnpMPA` — native ngspice models (VBIC level=9 and Gummel-Poon level=1)
+loaded by `cornerHBT.lib`'s own sections, no compile step. The
+bias-reference work (DR-0003) instantiated the MOS device those
+HBT-only precedes never did: `sg13_hv_pmos`, PSP103.6, a Verilog-A
+compact model ngspice can only load as an OSDI-compiled library
+(IHP-Open-PDK v0.3.0 ships the Verilog-A sources but no prebuilt
+`.osdi` binaries). `sim/tools/build-osdi.sh` — ported from
+`sg13g2-bandgap`'s, the fleet precedent for this same pinned PDK, with
+identical compiler pins — compiles the PDK's own Verilog-A sources with
+a checksum-pinned `OpenVAF-Reloaded v24.0.1mob`; `--check` verifies the
+models are present and loadable. Every bench that instantiates a MOS
+(or r3_cmc resistor) device `pre_osdi`-loads from
+`$PDK_ROOT/$PDK/libs.tech/ngspice/osdi/` — those benches refuse to run
+without them (see each runner's preflight). `pdk.json`'s
+`device_models_used_by_this_repo_so_far` and `osdi_toolchain` block
+restate the device inventory and pins.
 
 ## Directory / naming convention
 
@@ -95,6 +105,23 @@ experiment. This is a documentation/PDK-content discrepancy between this
 repo's own `spec/` documents and the installed PDK, not a `klayout-tools`
 gap (`klt` resolves PDK paths; it does not author corner-lib content) —
 noted here per `CLAUDE.md`'s friction protocol, not filed externally.
+
+**MOS-bearing benches use the sibling fleet's MOS-label mapping.** Since
+`sim/biasref-topology/` (issue #33) instantiates `sg13_hv_pmos`, a
+MOS-corner mapping is needed too. `cornerMOShv.lib` — unlike
+`cornerHBT.lib` — ships all five real sections (`mos_tt`, `mos_ss`,
+`mos_ff`, `mos_sf`, `mos_fs`, verified against the pinned install), so
+the five-label grid maps straight through, using the same pairing
+`sg13g2-bandgap/sim/lib/pvt_preflight.sh` established for this PDK:
+
+```
+typ -> mos_tt      bcs -> mos_ff      wcs -> mos_ss
+sf  -> mos_sf      fs  -> mos_fs
+```
+
+The HBT mapping above and this MOS mapping are used together by any
+generated deck that instantiates both device families (see
+`sim/biasref-topology/`'s runner).
 
 ## Append-only rule
 
@@ -162,3 +189,17 @@ target-spec row.
   `spec/decision-records/0001-bias-supply-topology.md`'s breakdown
   budget; DC-only, no RF port or 50 Ω reference anywhere, and not a
   claim against any `target-spec.md` row.
+- **[`biasref-topology/`](biasref-topology/README.md)** — issue #33 /
+  DR-0003: the flat-bias-reference design-space probes, **the first
+  bench in this tree to instantiate a MOS device** (`sg13_hv_pmos`,
+  PSP103.6 via OSDI — the toolchain `sim/tools/build-osdi.sh` exists
+  for). Three benches in one runner: the `pnpMPA` diode trace (Option
+  B's "not traced" adequacy question, answered measured — its feed
+  family is PVT-worse than the committed npn family at every traced
+  current), the Option-A first-increment core (the self-biased Widlar
+  PTAT skeleton: supply independence 0.90% worst-case across the ±10%
+  VDD swing vs the committed feed family's 47.4% measured the identical
+  way, with the residual PTAT tone DR-0003's Stage-2 core must trim),
+  and the seed-leg supply-ramp startup check (PASS at the three
+  committed startup cells). Design-space input to DR-0003 — no
+  `target-spec.md` claim, no LNA instantiation.

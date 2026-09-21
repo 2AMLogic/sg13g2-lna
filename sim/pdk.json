@@ -12,8 +12,24 @@
     "checked": "2026-09-10"
   },
   "device_models_used_by_this_repo_so_far": {
-    "_comment": "sim/hbt-characterization/ (issue #7) is the first sim/ experiment in this repo, and it only instantiates npn13G2 -- a native ngspice VBIC (level=9) bipolar model, NOT a Verilog-A/OSDI-compiled device. Unlike sg13g2-bandgap and sg13g2-opamp (both of which instantiate PSP103 MOS and/or r3_cmc resistor devices that require the OSDI compile step -- see those repos' sim/tools/build-osdi.sh), this experiment needs no OSDI toolchain at all: `.lib \"cornerHBT.lib\" <section>` plus a bare `ngspice -b` invocation is sufficient. A future sim/ experiment in this repo that instantiates sg13_lv_mos/sg13_hv_mos or a resistor WILL need an OSDI build step -- port sim/tools/build-osdi.sh from sg13g2-bandgap or sg13g2-opamp when that need arises, rather than inventing a new one.",
+    "_comment": "sim/hbt-characterization/ (issue #7) is the first sim/ experiment in this repo, and it instantiates only npn13G2 -- a native ngspice VBIC (level=9) bipolar model, NOT a Verilog-A/OSDI-compiled device, needing no OSDI toolchain at all. sim/biasref-topology/ (issue #33 / DR-0003) is the first experiment to instantiate a MOS device: sg13_hv_pmos, the PSP103.6 Verilog-A/OSDI device, per DR-0001's binding 'any MOS in the bias network must be the HV flavour' constraint (1.98 V > the LV MOS 1.6 V VDS/VGS maximum). The OSDI build/load step that need finally materialized is sim/tools/build-osdi.sh, ported from sg13g2-bandgap (the fleet precedent) rather than invented here. sim/biasref-topology/ (issue #33) also probes the pnpMPA substrate-PNP diode (native Gummel-Poon level=1, cornered by the same cornerHBT.lib sections via sgp_mpa_* scalars, no compile step).",
     "npn13G2": "native VBIC (Rev. 1.15, level=9) SPICE model card, sg13g2_hbt_mod.lib -- loaded directly via cornerHBT.lib's .LIB sections, no compile step",
+    "pnpMPA": "native Gummel-Poon (level=1) substrate-PNP card (diode-characterized per sg13g2_hbt_mod.lib's own header), sg13g2_hbt_mod.lib -- loaded via the same cornerHBT.lib sections (sgp_mpa_* scalars), no compile step; instantiated only in sim/biasref-topology/ probes",
+    "sg13_hv_pmos": "PSP103.6 Verilog-A via OSDI (sg13_hv_pmos subckt, cornerMOShv.lib mos_* sections), requires sim/tools/build-osdi.sh -- HV flavour per DR-0001's 1.6 V LV-MOS constraint; instantiated only in sim/biasref-topology/ probes so far",
     "ngspice_actually_used": "ngspice-46"
+  },
+  "osdi_toolchain": {
+    "_comment": "Pins belong to sim/tools/build-osdi.sh (the single source of truth); this block restates them as a greppable fact sheet, matching sg13g2-bandgap's sim/pdk.json shape.",
+    "script": "sim/tools/build-osdi.sh (ported from sg13g2-bandgap's, the fleet precedent for this same pinned PDK)",
+    "compiler_repo": "OpenVAF/OpenVAF-Reloaded",
+    "compiler_tag": "v24.0.1mob",
+    "models_built": [
+      "psp103.osdi",
+      "psp103_nqs.osdi",
+      "r3_cmc.osdi",
+      "mosvar.osdi"
+    ],
+    "output_dir": "PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/ (PDK-install territory, deliberately not committed)",
+    "checked": "2026-09-21 (models present + loadable per the port's --check; see sim/biasref-topology/records/)"
   }
 }

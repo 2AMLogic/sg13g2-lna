@@ -1,0 +1,4 @@
+point_id,corner_label,temp_c,vdd_v,iq3_end_a,iq3_op_a,end_vs_op_pct,settled_spread_pct,verdict
+startup_bcs_125c_vdd1.98v,bcs,125,1.98,0.000459327,0.000459328,-0.000,0.000,PASS
+startup_wcs_-40c_vdd1.62v,wcs,-40,1.62,0.000259509,0.000259617,-0.042,0.086,PASS
+startup_typ_27c_vdd1.80v,typ,27,1.80,0.000338957,0.000338958,-0.000,0.001,PASS

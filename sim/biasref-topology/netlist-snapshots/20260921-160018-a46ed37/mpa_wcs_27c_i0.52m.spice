@@ -1,0 +1,46 @@
+* sg13g2-lna -- pnpMPA diode-connected terminal drop over PVT
+* (issue #33 / DR-0003 Option-B adequacy evidence).
+* Generated from sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl by
+* sim/biasref-topology/run_biasref_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+*
+* Generated for: HBT_SECTION=hbt_wcs TEMP=27 C
+* FEED_I=0.52m A
+*
+* WHAT THIS MEASURES: the terminal drop of a diode-connected pnpMPA
+* (the PDK's substrate PNP, characterized diode-only per
+* sg13g2_hbt_mod.lib's own header -- DUT: diode_pp=pnpMPA), in the
+* diode orientation a CMOS-style bandgap island would use it:
+* emitter at the fed node, base and collector tied to vss (the
+* substrate). Curator pass of #33 inserted this device as Option B
+* with its adequacy explicitly "not traced" -- this bench is that
+* trace, at the island-scale current the committed mirror actually
+* runs (0.52 mA-ish) plus two decades down where its drop is
+* smallest (20 uA: Q3's Nx=1 density-match current divided by 8).
+* The cornerHBT.lib sections hbt_typ/hbt_bcs/hbt_wcs corner BOTH the
+* npn13G2 (vbic_* scalars) and the pnpMPA (sgp_mpa_* scalars), so
+* the same 3-section HBT convention the committed 45-cell grid uses
+* applies unchanged to this device (verified against the pinned
+* v0.3.0 install -- see sim/biasref-topology/README.md).
+*
+* NO RF claim lives here; no LNA device is instantiated. This is a
+* device-level design-space probe, the same class of evidence as
+* sim/hbt-characterization/, and no number here claims conformance to
+* any spec/target-spec.md row.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.options temp=27 tnom=27
+
+Vam feed bref dc 0
+Ifeed 0 feed dc 0.52m
+Xd 0 0 bref pnpMPA
+
+.control
+op
+let veb = v(bref)
+let id  = -i(vam)
+echo "MPADIODE veb $&veb id $&id"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end
