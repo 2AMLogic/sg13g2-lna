@@ -1,4 +1,4 @@
-** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-26/design/lna.sch
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/design/lna.sch
 **.subckt lna vdd vss rfin rfout
 
 *.iopin vdd
@@ -15,7 +15,23 @@ Cbyp2 vb2 vss 100p m=1
 Cvdd vdd vss 100p m=1
 R2a vdd vb2 1k m=1
 R2b vb2 vss 11k m=1
-R3a vdd bref 2.45k m=1
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp nc_e vss 3.4k m=1
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg m=1
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k m=1
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k m=1
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k m=1
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
 R3b bref b1 330 m=1
 XQ3 bref bref vss vss npn13G2 Nx=1
 Cbref bref vss 100p m=1

@@ -1,0 +1,84 @@
+* sg13g2-lna -- Option-A bias-reference first-increment core, DC op mini-grid
+* (issue #33 / DR-0003 supply-independence evidence).
+* Generated from sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl
+* by sim/biasref-topology/run_biasref_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+*
+* Generated for: MOS_SECTION=mos_ff HBT_SECTION=hbt_bcs
+* TEMP=125 C VDD=1.62 V
+*
+* THE DUT: the self-biased Widlar PTAT skeleton of DR-0003 Option A --
+* the supply-independent stage the flat-reference core builds on. Its
+* parts, all real PDK compact models (no ideal subst):
+*   XMb/XQb/Rp : the degenerated feedback leg (diode-connected
+*                sg13_hv_pmos over npn13G2 Nx=8, emitter -> Rp -> vss)
+*                -- the PMOS-diode's drain+gate node nc_b is the
+*                mirror-gate node; HV flavour per DR-0001's binding
+*                "any MOS in the bias network must be the HV flavour"
+*                constraint (1.98 V > the 1.6 V LV VDS/VGS max).
+*   XMa/XQa    : the plain-diode leg (nxn13G2 Nx=1 diode at nc_a) whose
+*                base is cross-coupled to XQb's base -- this
+*                cross-coupled pair is what makes the cell
+*                supply-independent (a diode-connected PMOS over the
+*                PLAIN leg instead is a voltage feed: verified dead in
+*                this bench's development history, see README.md).
+*   Rseed      : the startup seed -- the classic PTAT-loop degenerate
+*                zero-current state is a genuine latch surface (measured:
+*                without the seed, ngspice op finds the dead branch at
+*                most cells), so a 10 Meg seed guarantees the loop
+*                bootstrap. The supply-ramp startup check lives in
+*                tb_core_startup.spice.tmpl.
+*   XMk/XQ3    : the output copy (w=210u: a 21:1 mirror of the 10u loop
+*                legs) into the Q3 reference-island diode, the same
+*                island load the committed design/netlist/lna.spice
+*                biases (its Nx=1 density-match to Q1 Nx=8). The island
+*                current is read through XQ3's own operating-point
+*                collector current -- no ammeter fixture, no hidden
+*                current source.
+*
+* WHAT THIS MEASURES: the DC op of that core over the corner box
+* {typ,bcs,wcs} x {-40,27,125} C x {1.62,1.80,1.98} V, with the MOS
+* corner mapped per sim/README.md's convention (typ->mos_tt,
+* bcs->mos_ff, wcs->mos_ss). The two claims these rows evidence:
+*   1. supply independence: at fixed corner/T the island current moves
+*      <1% over the full +/-10% VDD swing (the committed R3a feed
+*      family moved ~19% -- see README.md's decomposition of the
+*      committed record).
+*   2. the residual tone is PTAT-shaped (hot/nom ~1.35): this skeleton
+*      is NOT the flat core -- DR-0003's Stage 2 (amp-servo mixed-tone
+*      output) is what flattens it. No flatness claim is made here.
+*
+* NO RF claim lives here; the LNA itself is not instantiated. No
+* conformance to any spec/target-spec.md row is claimed.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_bcs
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ff
+.options temp=125 tnom=27
+
+Vvdd vdd 0 dc 1.62
+Vssa vss 0 dc 0
+
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp  nc_e vss 3.4k
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg
+XMk bref nc_b vdd vdd sg13_hv_pmos w=210u l=1u ng=1 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+
+.control
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+op
+let iq3  = @q.xq3.qnpn13g2[ic]
+let iqa  = @q.xqa.qnpn13g2[ic]
+let vbref = v(bref)
+let vna  = v(nc_a)
+let vsdb = vdd - v(nc_b)
+echo "BIASREF iq3 $&iq3 iqa $&iqa vbref $&vbref vna $&vna vsdb $&vsdb"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end

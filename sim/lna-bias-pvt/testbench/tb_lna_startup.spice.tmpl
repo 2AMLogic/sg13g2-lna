@@ -3,7 +3,20 @@
 * Generated from sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl by
 * sim/lna-bias-pvt/run_biasop_sweep.sh -- do not edit a generated file.
 *
-* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ MOS_SECTION=@@MOS_SECTION@@
+* TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*
+* Stage-2 preamble note (issue #33 / DR-0003): same MOS/OSDI preamble
+* the biasop deck now carries (the DUT instantiates sg13_hv_pmos /
+* sg13_hv_nmos). The fine initial tran step (1e-9) is the
+* sg13g2-bandgap fleet's own documented cure (their closed-loop-startup
+* and closed-loop-vref-pvt headers, issues #58/#151) for the ngspice
+* "Timestep too small ... trouble with <npn13G2 vbic-instance>" stiff
+* boot instant this DR-0003 core's ramp hits at the bcs/125C cell with
+* the committed 5e-8 initial step: the startup-precharge desert of the
+* now-closing servo loop is numerically stiff, the PWL stimulus shape
+* is unchanged, and the settled values agree with the op deck exactly
+* (see the record's startup CSV).
 *
 * The bias generator (an 8:1 density-matched current-mirror reference fed
 * by R3a through the diode-connected Q3, coupled to b1 through R3b) is
@@ -21,7 +34,8 @@
 * divider's measured min/max bias -- plus the nominal cell.
 
 .lib "@@MODELS_LIB@@" @@HBT_SECTION@@
-.options temp=@@TEMP@@ tnom=27
+.lib "@@MOS_LIB@@" @@MOS_SECTION@@
+.options temp=@@TEMP@@ tnom=27 gmin=1e-10
 
 @@LNA_SUBCKT@@
 
@@ -32,8 +46,11 @@ Rtout rfout 0 50
 Xdut vdd vss rfin rfout lna
 
 .control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
 save @q.xdut.xq1.qnpn13g2[ic]
-tran 5e-8 1.2e-5
+tran 1e-9 1.2e-5
 let ic1v = @q.xdut.xq1.qnpn13g2[ic]
 let n = length(ic1v) - 1
 let s1 = ic1v[n]

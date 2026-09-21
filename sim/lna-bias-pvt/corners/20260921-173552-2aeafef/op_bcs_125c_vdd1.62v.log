@@ -1,0 +1,24 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- dc operating-point pvt bench of the q1 bias generator
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+BIASOP ic1 0.00393959 ic2 0.00393462 ic3 0.000501421 ib1 4.96204E-06 vb1 0.746015 vbref 0.747653 vce1 0.73542 vce2 0.88458 vbe1 0.746015 idd 0.00471567 pdc 0.00763939 vbg 1.02612 vl 1.02718 gsvo 0.867052 cb3 0.624411
+BENCH_COMPLETE
+ngspice-46 done

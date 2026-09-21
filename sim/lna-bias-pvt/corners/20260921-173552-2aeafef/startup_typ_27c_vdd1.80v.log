@@ -1,0 +1,66 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- supply-ramp startup / latch check of the q1 bias generator
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+rfin                                         0
+rfout                                        0
+xdut.outn                                    0
+xdut.vb2                          -6.30681e-62
+xdut.casc                         -3.44033e-55
+xdut.xq2.s1                        9.71284e-76
+xdut.xq2.t                        7.08954e-120
+xdut.b1                           -8.68559e-55
+xdut.e1                            -1.3494e-79
+xdut.xq1.s1                       -3.77088e-62
+xdut.xq1.t                        9.07125e-117
+xdut.nc_b                         -7.96171e-68
+xdut.nc_a                          -1.2202e-70
+xdut.nc_e                         -2.77707e-77
+xdut.xqb.s1                       -6.90208e-75
+xdut.xqb.t                        4.18443e-140
+xdut.xqa.s1                       -4.83226e-78
+xdut.xqa.t                        3.00232e-147
+xdut.vbg                           1.40635e-75
+xdut.cb3                           1.40634e-75
+xdut.xqc.s1                        5.38228e-83
+xdut.xqc.t                        7.18716e-156
+xdut.gsvo                                    0
+xdut.es                                      0
+xdut.dn                                      0
+xdut.vl                                      0
+xdut.bref                         -8.68559e-55
+xdut.xq3.s1                       -3.46803e-62
+xdut.xq3.t                        6.21265e-117
+l.xdut.lc#branch                  -1.15497e-69
+l.xdut.le#branch                  -1.73672e-64
+vssa#branch                       -4.74092e-64
+vdda#branch                        4.74092e-64
+
+ Reference value :  3.90256e-07 Reference value :  1.69550e-06 Reference value :  3.10850e-06 Reference value :  4.46850e-06 Reference value :  5.82250e-06 Reference value :  7.17450e-06 Reference value :  8.57650e-06 Reference value :  9.92450e-06 Reference value :  1.12675e-05
+No. of Data Rows : 12012
+STARTUP ic1_end 0.0039403 ic1_s2 0.0039403 ic1_s3 0.0039403
+BENCH_COMPLETE
+ngspice-46 done

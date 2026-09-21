@@ -209,3 +209,93 @@ took that arc's own shape.
 - Model-validity-box audit of the amplifier stage's devices at all 45
   cells once it exists (the same recheck discipline the committed
   record documents).
+
+## Stage-2 sizing amendment (2026-09-21, issue #33, records `20260921-173323-2aeafef` and `20260921-173552-2aeafef`)
+
+This amendment is the "sized Stage-2 DR-stated amendment of this record"
+the Decision section above anticipated: it freezes the concrete core
+that implements Stage 2, states the nominal tolerance its landing is
+judged against, and binds both records that measure it. The
+`Status: proposed` line stays as it is per the template's vocabulary
+(topology records do not self-ratify; spec rows are inputs here that
+nothing relaxes).
+
+### The sized core (what "amp-servo'd mixed-tone" concretely is)
+
+- **The Kuijk sum is built as a voltage the amp closes the loop against,
+  not as two separately mirrored currents.** The Stage-1 skeleton is
+  unchanged and keeps its role (the supply-independent PTAT program, its
+  cross-coupled Widlar pair measured at 0.90 % supply move in Phase B).
+  A PTAT copy of its leg current (`XMv`, 10 µm off the `nc_b` bus)
+  drives `Rsum` (18.4 kΩ) in series with the diode-connected `XQc`
+  (`npn13G2`, Nx=1), building the classic Kuijk sum node
+  **`V_BG = V_BE(Qc) + I_ptat·Rsum`** at `vbg` — the V_BE-anchored
+  CTAT tone (Qc's V_BE) plus the Stage-1 PTAT term, exactly the two
+  tones the Decision section names.
+- **The amp-servo loop**: an NMOS-input pair (`sg13_hv_nmos`,
+  `XMnp1`/`XMnp2`, w=10u/l=1u — the one new device this amendment adds
+  to `sim/pdk.json`'s vocabulary; PMOS-input at these 0.62..0.88 V
+  levels does not fit the 1.62 V cold rail, and the sibling's amp shape
+  is NMOS-loaded on 3.3 V) with a resistor tail (`Rtail`, 9.53 kΩ),
+  PMOS diode load + mirror (`XMld`/`XMlm`; the output node `gsvo` is
+  the stage output AND the bank gate bus), holding **`V_BG` across the
+  bare resistor `Rl` (26 kΩ)** through `XMref` (w=40u):
+  **`I_ref = V_BG/Rl`** — the "bare-resistor-transduced flat-current
+  output". The island bank `XMis` (w=512u, a 12.8:1 mirror of the servo
+  branch) copies `I_ref` into the `bref` island. One amp, one
+  constraint; no second servo exists, and none was needed.
+- **`R3a` is deleted** (as this record's Consequences section
+  required); the island chain (`Q3` Nx=1 density-match to `Q1` Nx=8,
+  `R3b` 330 Ω, `Cbref`) is unchanged.
+- **Trim knobs**: `Rsum` trims the flatness (the classic Kuijk α);
+  `XMis`'s width trims the landing scale. Two knobs, each touched once
+  during development probes that are NOT part of the committed evidence
+  — the committed records below are single runs.
+
+### The measured facts (both records in-tree)
+
+- **Core-level** (`sim/biasref-topology/records/20260921-173323-2aeafef*`,
+  Phases D/E, 27-cell `{typ,bcs,wcs} × {−40,27,125} °C × {1.62,1.80,1.98} V`):
+  island current spans the whole box at **+0.75 % / −1.02 %** of the
+  nominal cell (511.6 µA); worst servo transduction error
+  **|vl − vbg| = 1.06 mV**; worst supply move across the ±10 % VDD swing
+  **≤ 0.51 %** per (corner,T); startup ramps PASS at all three committed
+  cells including the bcs/125 °C boot of the *closing* loop. Phases A-C
+  reproduce PR #38's committed Stage-1 record byte-identically
+  (338.958 / 459.328 / 259.617 µA).
+- **Netlist-level, the two RATIFIED bars**
+  (`sim/lna-bias-pvt/records/20260921-173552-2aeafef*`, 45 cells, the
+  unchanged bar columns): **I_C1 spans 3.6573..4.1511 mA (0 violations
+  of ≤ 4.5 mA; max margin 7.75 %)**; **P_dc spans 7.1865..9.7683 mW (0
+  violations of < 10 mW; worst cell bcs/125 °C/1.98 V, 2.32 % margin)**;
+  startup verdicts PASS ×3 (worst end-vs-op 0.008 %).
+- **Model-validity audit**: `Qc`'s V_BE spans 0.6244..0.8149 V over the
+  45 cells (the same regime the island's `Qa` always rode: below the
+  card's 0.65 V floor only at the 125 °C cells, the same closest call
+  the committed Stage-1 record documented for `Qa`, and its V_CE equals
+  its V_BE diode-tied); the NMOS/PMOS instances ride |V_DS| ≤ 1.98 V
+  inside the HV cards' ratings, per the DR-0001 HV constraint.
+- **Solver notes (method, not physics)**: the op decks' explicit
+  `gmin=1e-10` is value-identical to ngspice's default and selects its
+  working gmin-stepping fallback (the implicit default aborts with
+  singular iterations at bcs/−40 °C/1.62 V); the startup decks' fine
+  initial `tran` step (1e-9) is the sg13g2-bandgap fleet's own
+  documented cure for ngspice VBIC boot-desert stiffness — the
+  committed 5e-8 step aborts inside the first microsecond at
+  bcs/125 °C. Both are recorded in the templates' headers and the
+  records' method-notes sections.
+
+### The stated nominal tolerance
+
+**DR-0001's 4.0 mA plan-table entry is re-landed within 4.0 mA ± 3 %**
+(3.88..4.12 mA). The swapped netlist lands **3.9403 mA** at
+typ/27 °C/1.80 V — **−1.49 %** — inside that band. Basis, all measured:
+the core's own whole-box spread (±1.0 %, Phase D), the
+density-mirror/β second-order terms the family always carried
+(I_C1/I_C3 spans 7.78..8.21 across the 45 cells), and the bounded
+P_dc margin at the binding hot cell (9.768 mW, 2.32 %) that the
+−1.5 % landing deliberately preserves. This is an honest bandgap-class
+band for a corner-and-temperature flat current over this grid; it is
+not a relaxation of any row (both bars held with 0 violations at every
+cell), and no `spec/target-spec.md` numeric row changed — the bars
+remain inputs to this record.

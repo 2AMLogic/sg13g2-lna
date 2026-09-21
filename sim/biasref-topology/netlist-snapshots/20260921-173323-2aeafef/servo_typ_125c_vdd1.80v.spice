@@ -1,0 +1,104 @@
+* sg13g2-lna -- DR-0003 Option-A Stage-2 flat core, DC op mini-grid
+* (issue #33 / DR-0003 Stage-2 sizing-amendment evidence).
+* Generated from sim/biasref-topology/testbench/tb_servo_minigrid.spice.tmpl
+* by sim/biasref-topology/run_biasref_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+*
+* Generated for: MOS_SECTION=mos_tt HBT_SECTION=hbt_typ
+* TEMP=125 C VDD=1.80 V
+*
+* THE DUT: the complete DR-0003 Option-A Stage-2 flat-reference core,
+* exactly as design/netlist/lna.spice instantiates it after the Stage-2
+* swap -- its integrity is cross-checked below by requiring this deck's
+* device lines to match the committed netlist's core section verbatim
+* (the runner records both sha256s in the record):
+*   Skeleton (Stage 1, unchanged, measured in this experiment's core
+*   phases): XMb/XQb/Rp (degenerated feedback leg, Nx=8, Rp=3.4k),
+*   XMa/XQa (plain diode leg, Nx=1), Rseed (10 Meg startup seed). The
+*   cross-coupled pair is the supply-independent PTAT program: its
+*   mirror-gate bus nc_b programs every PMOS gate that hangs on it.
+*   Kuijk sum branch (Stage 2): XMv (copy of the skeleton's leg current
+*   off the nc_b bus) feeding Rsum in series with the diode-connected
+*   XQc (Nx=1) -- the classic V_BG = V_BE + I_ptat*Rsum flat-voltage
+*   node at vbg. One amp, one constraint: the servo is what keeps this
+*   core within "an error-amplifier-closed Kuijk-style sum with a
+*   bare-resistor-transduced flat-current output".
+*   Amp-servo loop (Stage 2): XMnp1/XMnp2 (sg13_hv_nmos input pair,
+*   gates at vbg and vl), Rtail (resistor tail), XMld (diode-connected
+*   PMOS load on the vl-side drain dn) and XMlm (its mirror, whose
+*   drain node gsvo is the stage output AND the bank gate bus). The
+*   servo holds the vbg node's voltage across the bare resistor Rl
+*   (through XMref), so I_ref = V_BG/Rl is flat, and Mis (12.8x the
+*   XMref mirror device) copies it into the reference island diode XQ3
+*   -- the same island load the committed netlist biases.
+*   The 0 V source Viref under Rl is an ideal ammeter (the same
+*   instrument convention this experiment's mpa-diode phase uses); at
+*   DC it changes nothing about the network it measures.
+*
+* WHAT THIS MEASURES: the DC op of that core over the corner box
+* {typ,bcs,wcs} x {-40,27,125} C x {1.62,1.80,1.98} V, MOS corner
+* mapped per sim/README.md (typ->mos_tt, bcs->mos_ff, wcs->mos_ss).
+* These rows evidence the Stage-2 core's OWN flatness and servo
+* transparency -- the island current's spread across the entire 27-cell
+* box and the |vl - vbg| residual of the transduction. The two RATIFIED
+* 45-cell bars (I_C1 <= 4.5 mA, P_dc < 10 mW on the committed LNA
+* netlist) are NOT evaluated here at all -- sim/lna-bias-pvt's record
+* owns those, against the swapped design/netlist/lna.spice.
+*
+* The explicit gmin=1e-10 in .options is VALUE-IDENTICAL to ngspice's
+* own default; making it explicit selects ngspice's working
+* gmin-stepping fallback at the op of this core (the implicit default
+* aborts with singular iterations at the bcs/-40C/1.62V cell).
+*
+* NO RF claim lives here; the LNA itself is not instantiated. No
+* conformance to any spec/target-spec.md row is claimed.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+.options temp=125 tnom=27 gmin=1e-10
+
+Vvdd vdd 0 dc 1.80
+Vssa vss 0 dc 0
+
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp  nc_e vss 3.4k
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg
+
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl sul 26k
+Viref sul vss 0
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+
+.control
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+op
+let iq3  = @q.xq3.qnpn13g2[ic]
+let iv   = @q.xqc.qnpn13g2[ic]
+let iref = -i(viref)
+let vb   = v(vbg)
+let vlx  = v(vl)
+let gx   = v(gsvo)
+let vbr  = v(bref)
+let c3   = v(cb3)
+let idd  = -i(vvdd)
+echo "SERVO iq3 $&iq3 iv $&iv iref $&iref vbg $&vb vl $&vlx gsvo $&gx vbref $&vbr cb3 $&c3 idd $&idd"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end

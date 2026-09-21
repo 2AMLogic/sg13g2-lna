@@ -18,7 +18,7 @@ design/
                      git, same convention every sibling canary uses)
 ```
 
-## What's here (issues #17, #26)
+## What's here (issues #17, #26, #33)
 
 - **`lna.sch`** — a cascode LNA: `Q1` (common-emitter input device) stacked
   under `Q2` (common-base cascode device), both `sg13g2_pr/npn13G2`
@@ -81,33 +81,50 @@ not an RF performance result.
    the reference island RF-grounded by `Cbref`. Measured over the same
    45-cell PVT grid issue #18's campaign uses
    ([`../sim/lna-bias-pvt/`](../sim/lna-bias-pvt/README.md), the record
-   whose `## DUT` sha256 matches this netlist): `I_C1` spans 2.26..4.08 mA (the divider's
-   evidence recorded 0.025..14.7 mA) and `P_dc` spans 4.36..9.41 mW —
-   inside DR-0001's `I_C1 <= 4.5 mA` bias-network mandate and the
-   `P_dc < 10 mW` Power row (both ratified by DR-0002, whose Power-row
-   binding conditions name this very issue as the verification gate) at
-   **every** cell, with a supply-ramp startup/latch
-   check at the extreme corners. Two things this README states rather than
+   whose `## DUT` sha256 matches this netlist): after the issue #33 /
+   DR-0003 Stage-2 flat-reference core swap, the committed record
+   (`20260921-173552-2aeafef`, bar columns byte-identical to issue #26's
+   sweep) measures `I_C1` spans 3.657..4.151 mA (the old family held
+   2.26..4.08 mA; the divider's evidence had recorded 0.025..14.7 mA)
+   and `P_dc` spans 7.19..9.77 mW — inside DR-0001's `I_C1 <= 4.5 mA`
+   bias-network mandate and the `P_dc < 10 mW` Power row (both ratified
+   by DR-0002, whose Power-row binding conditions name the bias work as
+   the verification gate) at **every** cell (margins 7.75 % / 2.32 %),
+   with the supply-ramp startup/latch check PASS at the extreme corners
+   on the now-closing loop. Three things this README states rather than
    lets a reader discover late:
-   - **The nominal lands at 3.06 mA, deliberately below DR-1's 4.0 mA
-     table entry.** The mirror family's residual PVT envelope (the
-     reference feed tracks `VDD - V_BE3`, whose headroom swings
-     ~0.95..1.23 across the corner box) times a 4.0 mA nominal lands the
-     worst cell at ~5.2 mA / ~10.7 mW — outside both bars above; no
-     flatter reference family fits this schematic's `npn13G2` + ideal
-     R/C/L vocabulary and the 1.62 V / -40 °C headroom wall (a
-     bandgap-class reference needs a PMOS mirror loop — the OSDI
-     toolchain this repo deliberately does not ship, see
-     [`../sim/pdk.json`](../sim/pdk.json) — or more stacked-`V_BE`
-     headroom than the rail leaves). The flat-reference design space is
-     tracked in issue #33; no spec row is relaxed by this change, the
-     (~24 % off nominal) trade is stated rather than papered over, and
-     the rows DR-0002 left DRAFT (e.g. the IIP3 numeric target) stay
-     DRAFT pending their own decision record.
-   - **The RF impedance at `b1` changed.** The old divider's ~5.1 kΩ
-     Thevenin is now 330 Ω into an RF-grounded reference island — a real
-     change to the (unmatched) input network, whose S-parameter / gain /
-     NF / stability consequences are *measured* by re-running the issue
+   - **The nominal re-lands at DR-0001's 4.0 mA table entry (issue
+     #33's whole point).** The old `R3a`-feed family was trapped at a
+     deliberate 3.06 mA nominal by its supply-tracked envelope (a 4.0
+     mA sizing busted both bars at the hot cell); issue #33 / DR-0003
+     measured and closed that wall (Option-B diode families
+     measured-refuted, single-junction feeds formally impossible), and
+     its Stage-2 core — the skeleton + Kuijk sum branch +
+     amp-servo'd `V_BG/Rl` transduction from
+     [`../sim/biasref-topology/`](../sim/biasref-topology/README.md) —
+     now feeds the island: 3.9403 mA at typ/27 °C/1.80 V (−1.49 % vs
+     the plan entry, inside the ±3 % tolerance DR-0003's Stage-2
+     sizing amendment states with its own measurements). `R3a` is
+     deleted, exactly as DR-0003's consequence list required. No spec
+     row is relaxed by this change, and the rows DR-0002 left DRAFT
+     (e.g. the IIP3 numeric target) stay DRAFT pending their own
+     decision record.
+   - **The core's own design-space evidence lives in its own bench.**
+     Core-level flatness (whole-box island spread +0.75 %/−1.02 %),
+     servo transparency (|vl − vbg| ≤ 1.06 mV) and the closing-loop
+     startup are measured by
+     [`../sim/biasref-topology/`](../sim/biasref-topology/README.md)'s
+     Phase D/E record `20260921-173323-2aeafef`, not asserted here;
+     the mirror-bank ratios (the 12.8:1 island bank joined the
+     skeleton's 21:1 copy) carry the same centroid-matching,
+     no-mismatch-section caveat every bench in this tree states — a
+     layout-time budget item before any ratified claim.
+   - **The RF impedance at `b1` and the RF operating point both
+     changed.** `b1` still sees 330 Ω into an RF-grounded reference
+     island (that changed in #26 and did not change again), but the
+     re-bias from 3.06 to ~3.94 mA moves the RF operating point —
+     whose S-parameter / gain / NF / stability consequences are
+     *measured* by re-running the issue
      #18 benches against this same netlist (see
      [`../sim/lna-characterization/`](../sim/lna-characterization/README.md)),
      not estimated here. The matching-network work (issue #27) inherits

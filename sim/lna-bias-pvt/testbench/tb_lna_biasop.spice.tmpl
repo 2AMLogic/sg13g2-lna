@@ -6,7 +6,27 @@
 * Full methodology, bench definitions and model limitations are in
 * sim/lna-bias-pvt/README.md; this header is a short pointer.
 *
-* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ MOS_SECTION=@@MOS_SECTION@@
+* TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*
+* Stage-2 preamble note (issue #33 / DR-0003): since the DR-0003 Stage-2
+* core swap landed in design/netlist/lna.spice, the DUT instantiates
+* sg13_hv_pmos and sg13_hv_nmos (PSP103.6 via OSDI), so this deck loads
+* cornerMOShv.lib's section for the MOS devices (typ->mos_tt,
+* bcs->mos_ff, wcs->mos_ss, sf/fs->mos_tt -- sim/README.md "Corner-label
+* convention") and preloads the OSDI models exactly the way
+* sim/biasref-topology's decks do. The bar evaluation below is
+* byte-identical in meaning to the pre-swap bench (same probes, same
+* columns, same awk verdicts, same limits); only the deck's
+* .lib/pre_osdi preamble and the additive audit probes (vbg/vl/gsvo/cb3
+* node reads for the DR-0003 Stage-2 servo-transparency and
+* model-validity audit -- extra BIASOP keys the CSV parser ignores)
+* differ. The explicit gmin=1e-10 in .options is VALUE-IDENTICAL to
+* ngspice's own default (no numeric shift on cells that converged
+* before); making it explicit selects ngspice's working gmin-stepping
+* fallback, which the swapped netlist's op needs at the
+* bcs/-40C/1.62V cell (plain implicit default aborts there -- see the
+* record's method notes).
 *
 * The DUT subcircuit below is INLINED VERBATIM from the committed
 * design/netlist/lna.spice (xschem-generated from design/lna.sch), with only
@@ -27,7 +47,8 @@
 * same netlist).
 
 .lib "@@MODELS_LIB@@" @@HBT_SECTION@@
-.options temp=@@TEMP@@ tnom=27
+.lib "@@MOS_LIB@@" @@MOS_SECTION@@
+.options temp=@@TEMP@@ tnom=27 gmin=1e-10
 
 * ---------------------------------------------------------------------
 * DUT subcircuit, inlined verbatim from design/netlist/lna.spice
@@ -41,6 +62,9 @@ Rtout rfout 0 50
 Xdut vdd vss rfin rfout lna
 
 .control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
 op
 let ic1 = @q.xdut.xq1.qnpn13g2[ic]
 let ic2 = @q.xdut.xq2.qnpn13g2[ic]
@@ -53,7 +77,11 @@ let vce2 = v(xdut.outn) - v(xdut.casc)
 let vbe1 = v(xdut.b1) - v(xdut.e1)
 let idd = -i(vdda)
 let pdc = @@VDD@@ * (-i(vdda))
-echo "BIASOP ic1 $&ic1 ic2 $&ic2 ic3 $&ic3 ib1 $&ib1 vb1 $&vb1 vbref $&vbref vce1 $&vce1 vce2 $&vce2 vbe1 $&vbe1 idd $&idd pdc $&pdc"
+let vbgx = v(xdut.vbg)
+let vlx = v(xdut.vl)
+let gsvox = v(xdut.gsvo)
+let cb3x = v(xdut.cb3)
+echo "BIASOP ic1 $&ic1 ic2 $&ic2 ic3 $&ic3 ib1 $&ib1 vb1 $&vb1 vbref $&vbref vce1 $&vce1 vce2 $&vce2 vbe1 $&vbe1 idd $&idd pdc $&pdc vbg $&vbgx vl $&vlx gsvo $&gsvox cb3 $&cb3x"
 echo "BENCH_COMPLETE"
 quit
 .endc

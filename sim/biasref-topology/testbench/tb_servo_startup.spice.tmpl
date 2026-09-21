@@ -1,0 +1,84 @@
+* sg13g2-lna -- DR-0003 Option-A Stage-2 flat core, supply-ramp startup /
+* latch check (issue #33 / DR-0003 Stage-2 sizing-amendment evidence).
+* Generated from sim/biasref-topology/testbench/tb_servo_startup.spice.tmpl
+* by sim/biasref-topology/run_biasref_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+*
+* Generated for: MOS_SECTION=@@MOS_SECTION@@ HBT_SECTION=@@HBT_SECTION@@
+* TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*
+* The same Stage-2 core as tb_servo_minigrid.spice.tmpl (see that
+* template's header for the DUT inventory), now exercised by the
+* committed startup convention: VDD ramps 0 V -> target in 1 us, holds
+* to 12 us, and the runner checks the island current's last samples
+* agree with each other (settled, no ringing) and match the same
+* cell's op value (no latch to a different stable state). The ramp
+* ends at three cells: bcs/125 C/1.98 V, wcs/-40 C/1.62 V and
+* typ/27 C/1.80 V -- the same cells the committed lna-bias-pvt and this
+* experiment's own Phase C use.
+*
+* What the ramp must prove, on top of Phase C's skeleton evidence: the
+* Stage-2 core closes a SECOND loop (the amp-servo) on top of the
+* skeleton's self-biased PTAT loop. The seed leg still boots the
+* skeleton; the servo's own degenerate state (banks off, vl = 0) is
+* escaped because the amp's input pair turns on as vbg rises with the
+* skeleton boot and pulls the gate bus gsvo down until the bank feeds
+* Rl up to the servo constraint -- all inside this 12 us window at
+* every cell, or the verdict records it.
+*
+* The initial tran step (1e-9) is the sg13g2-bandgap fleet's own
+* documented cure for the ngspice VBIC boot-desert "Timestep too
+* small" abort at exactly this class of stiff pre-charge instant
+* (their closed-loop-startup / closed-loop-vref-pvt header comments,
+* issues #58/#151): with the committed 5e-8 initial step this deck
+* aborts at the bcs/125 C cell inside the first microsecond -- the
+* ramp shape and every verdict criterion are unchanged; only the
+* solver's initial march is finer. gmin=1e-10 is VALUE-IDENTICAL to
+* ngspice's default (see the minigrid template's note).
+
+.lib "@@MODELS_LIB@@" @@HBT_SECTION@@
+.lib "@@MOS_LIB@@" @@MOS_SECTION@@
+.options temp=@@TEMP@@ tnom=27 gmin=1e-10
+
+Vvdd vdd 0 pwl(0 0 1e-6 @@VDD@@ 1.2e-5 @@VDD@@)
+Vssa vss 0 dc 0
+
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp  nc_e vss 3.4k
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg
+
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+save @q.xq3.qnpn13g2[ic]
+tran 1e-9 1.2e-5
+let iq3v = @q.xq3.qnpn13g2[ic]
+let n = length(iq3v) - 1
+let s1 = iq3v[n]
+let s2 = iq3v[n-10]
+let s3 = iq3v[n-25]
+wrdata @@STARTUP_DAT@@ iq3v
+echo "STARTUP iq3_end $&s1 iq3_s2 $&s2 iq3_s3 $&s3"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end
