@@ -127,9 +127,9 @@ from", `KLT_TIERS_DOC`).
 | Field | Value |
 |---|---|
 | Source | `2AMLogic/klayout-tools` `docs/design-evidence-tiers.md` |
-| Pinned at | commit `31a3e3c41c08bbd58719e0b99a3b6d19beb9be63` (2026-09-21, repository tip) |
-| File SHA-256 | `5ce13a12f12bfeb3ca07f45c7527e3423d69872f7f52a4bd0762099292e1c2e9` |
-| Last doc-touching upstream commit | `31a3e3c41c08` (feat(erc): declare a tap by assertion or disclose it as unexpressible, #2240) |
+| Pinned at | commit `13bfe8c2e651db15ae57c7b91cf7ba4e2a49165c` (2026-09-21, repository tip at vendoring; the doc itself unchanged since the sha below) |
+| File SHA-256 | `c7a1e7e10627fae396007e0ff951734f37d95028b8f49f2e21e802e9f552f318` |
+| Last doc-touching upstream commit | `31a3e3c41c08bbd58719e0b99a3b6d19beb9be63` (feat(erc): declare a tap by assertion or disclose it as unexpressible, #2240) |
 | License | Apache-2.0 (klayout-tools is Apache-2.0; this copy is verbatim, unmodified) |
 
 **Upgrade procedure**: copy the newer doc from klayout-tools verbatim,
