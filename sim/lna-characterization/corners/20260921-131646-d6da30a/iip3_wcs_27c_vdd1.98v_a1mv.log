@@ -1,0 +1,54 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- two-tone transient iip3 bench (issue #18)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00348835 ic2 0.00347991 vce1 0.958332 vce2 1.02167 idd 0.00411299
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                       1.98
+vin                                          0
+va                                           0
+rfin                                         0
+rfout                                        0
+xa.outn                                   1.98
+xa.vb2                                 1.80727
+xa.casc                               0.958332
+xa.xq2.s1                          2.17764e-09
+xa.xq2.t                               6.22301
+xa.b1                                 0.849359
+xa.e1                                        0
+xa.xq1.s1                           1.0525e-09
+xa.xq1.t                               5.85215
+xa.bref                               0.852145
+xa.xq3.s1                          3.30844e-10
+xa.xq3.t                               4.37151
+l.xa.lc#branch                      0.00347991
+l.xa.le#branch                      0.00349679
+vt2#branch                                   0
+vt1#branch                                   0
+vdd#branch                         -0.00411299
+
+ Reference value :  1.00000e-06 Reference value :  1.02584e-06 Reference value :  1.05256e-06 Reference value :  1.08016e-06 Reference value :  1.10701e-06 Reference value :  1.13320e-06 Reference value :  1.15935e-06 Reference value :  1.19058e-06 Reference value :  1.21695e-06 Reference value :  1.24363e-06
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.0017613 tone2 0.00175973 im3l 7.84535E-09 im3h 7.65914E-09 src1 0.000999621
+FFT: Time span: 2.62144e-07 s, input length: 65536, zero padding: 0
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+FFTDF 3.8147E+06
+FFT tone1 0.0017613 tone2 0.00175973 im3l 7.83788E-09 im3h 7.66957E-09 im5l 6.43228E-11 im5h 5.32291E-11 src1 0.000999621 src2 0.000999618
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

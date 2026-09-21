@@ -1,0 +1,41 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- supply-ramp startup / latch check of the q1 bias generator
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+rfin                                         0
+rfout                                        0
+xdut.outn                                    0
+xdut.vb2                           -3.2353e-28
+xdut.casc                         -2.51119e-20
+xdut.xq2.s1                       -1.02359e-32
+xdut.xq2.t                         2.35945e-30
+xdut.b1                           -1.31114e-27
+xdut.e1                            3.12408e-54
+xdut.xq1.s1                        6.66063e-28
+xdut.xq1.t                         1.49906e-28
+xdut.bref                         -1.15021e-27
+xdut.xq3.s1                        -6.9971e-30
+xdut.xq3.t                         5.86587e-47
+l.xdut.lc#branch                  -2.32099e-31
+l.xdut.le#branch                   2.98748e-33
+vssa#branch                        5.60905e-31
+vdda#branch                       -5.60906e-31
+
+
+No. of Data Rows : 257
+STARTUP ic1_end 0.0030557 ic1_s2 0.0030557 ic1_s3 0.0030557
+BENCH_COMPLETE
+ngspice-46 done

@@ -1,0 +1,14 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- dc operating-point pvt bench of the q1 bias generator
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+BIASOP ic1 0.00231991 ic2 0.0023183 ic3 0.000299465 ib1 1.58641E-06 vb1 0.881397 vbref 0.881921 vce1 0.603639 vce2 1.01636 vbe1 0.881397 idd 0.00275603 pdc 0.00446477
+BENCH_COMPLETE
+ngspice-46 done

@@ -1,0 +1,81 @@
+* sg13g2-lna -- DC operating-point PVT bench of the Q1 bias generator
+* (issue #26 acceptance sweep).
+* Generated from sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl by
+* sim/lna-bias-pvt/run_biasop_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+* Full methodology, bench definitions and model limitations are in
+* sim/lna-bias-pvt/README.md; this header is a short pointer.
+*
+* Generated for: HBT_SECTION=hbt_wcs TEMP=125 C VDD=1.98 V
+*
+* The DUT subcircuit below is INLINED VERBATIM from the committed
+* design/netlist/lna.spice (xschem-generated from design/lna.sch), with only
+* xschem's own commented-out `**.subckt`/`**.ends` markers uncommented and
+* its trailing `.end` dropped -- the same convention
+* sim/lna-characterization/run_lna_sweep.sh uses. NO device line is altered.
+* The runner records design/netlist/lna.spice's sha256 in the record so a
+* later reader can tell which schematic revision a number belongs to.
+*
+* What this deck measures: the DC operating point ONLY. The two acceptance
+* bars of issue #26 are op-point quantities:
+*   - DR-1's bias-network requirement: I_C1 <= 4.5 mA at every PVT cell
+*   - spec/target-spec.md's DRAFT power row: P_dc = VDD * I_DD < 10 mW at
+*     every cell (both rows stay unratified; this is evidence for them,
+*     not a conformance verdict).
+* It measures NOTHING RF: no S-parameter, NF, gain, k-factor or IIP3 claim
+* lives here (issue #18's benches own those, re-run post-fix against this
+* same netlist).
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.options temp=125 tnom=27
+
+* ---------------------------------------------------------------------
+* DUT subcircuit, inlined verbatim from design/netlist/lna.spice
+* ---------------------------------------------------------------------
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-26/design/lna.sch
+.subckt lna vdd vss rfin rfout
+
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+R3a vdd bref 2.45k m=1
+R3b bref b1 330 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+Cbref bref vss 100p m=1
+.ends
+
+Vdda vdd 0 dc 1.98
+Vssa vss 0 dc 0
+Rtin rfin 0 50
+Rtout rfout 0 50
+Xdut vdd vss rfin rfout lna
+
+.control
+op
+let ic1 = @q.xdut.xq1.qnpn13g2[ic]
+let ic2 = @q.xdut.xq2.qnpn13g2[ic]
+let ic3 = @q.xdut.xq3.qnpn13g2[ic]
+let ib1 = @q.xdut.xq1.qnpn13g2[ib]
+let vb1 = v(xdut.b1)
+let vbref = v(xdut.bref)
+let vce1 = v(xdut.casc) - v(xdut.e1)
+let vce2 = v(xdut.outn) - v(xdut.casc)
+let vbe1 = v(xdut.b1) - v(xdut.e1)
+let idd = -i(vdda)
+let pdc = 1.98 * (-i(vdda))
+echo "BIASOP ic1 $&ic1 ic2 $&ic2 ic3 $&ic3 ib1 $&ib1 vb1 $&vb1 vbref $&vbref vce1 $&vce1 vce2 $&vce2 vbe1 $&vbe1 idd $&idd pdc $&pdc"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end
