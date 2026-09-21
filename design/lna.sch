@@ -68,8 +68,20 @@ v {xschem version=3.4.6 file_version=1.2
  *     the exponential V_BE-vs-divider race that swung I_C1 over
  *     0.025..14.7 mA across the PVT box (issue #26's evidence) is gone:
  *     Q1 tracks Q3, and the pair's residual spread is only its feed's.
- *   - R3a feeds the reference leg from vdd: I_ref = (VDD - V_BE3)/R3a.
- *     The mirror transfer is beta-independent across the corner box
+ *   - The R3a vdd->bref feed resistor is DELETED (issue #33 / DR-0003
+ *     Stage 2; the DR's own consequence list required exactly this
+ *     deletion). The bref island is fed by Mis, the output bank of the
+ *     DR-0003 Option-A flat-reference core: the unchanged Stage-1
+ *     self-biased Widlar PTAT skeleton (Mb/Qb/Rp, Ma/Qa, Rseed --
+ *     supply-independent, 0.90% worst supply move, PR #38's measured
+ *     evidence), the Kuijk sum branch (Mv/Rsum/Qc building
+ *     V_BG = V_BE(Qc) + I_ptat*Rsum at vbg: the V_BE-anchored CTAT
+ *     tone plus the Stage-1 PTAT term), and the amp-servo loop
+ *     (sg13_hv_nmos pair Mnp1/Mnp2, resistor tail Rtail, PMOS diode
+ *     load Mld + mirror Mlm) that holds V_BG across the bare resistor
+ *     Rl through Mref, so I_ref = V_BG/Rl is flat, and Mis (12.8:1
+ *     mirror of the servo branch) copies it into the island. The
+ *     mirror transfer stays beta-independent across the corner box
  *     (npn13G2's beta at this density spans ~240..2500, so mirror and
  *     base-current errors stay in the low percent -- measured, in the
  *     bias-pvt records).
@@ -84,34 +96,36 @@ v {xschem version=3.4.6 file_version=1.2
  *     netlist. The DC drop across R3b (I_B1*R3b; I_B1 spans
  *     ~1.6..16 uA over the corner box) moves I_C1 by only a few percent
  *     at every cell -- measured in sim/lna-bias-pvt's sweep.
- *   - Sizing: R3a=2.45k lands I_C1 = 3.056 mA at typ/27C/VDD=1.80V. The
- *     45-cell PVT grid (issue #26's acceptance sweep, sim/lna-bias-pvt)
- *     spans I_C1 2.26..4.08 mA and P_dc 4.36..9.41 mW: inside DR-1's
- *     I_C1 <= 4.5 mA bias-network mandate and spec/target-spec.md's
- *     P_dc < 10 mW row (both ratified by DR-0002, issue #32 -- whose
- *     Power-row binding conditions explicitly reference this issue as
- *     the verification gate) at EVERY cell. This nominal is deliberately BELOW DR-1's 4.0 mA
- *     table entry: the mirror family's residual envelope (the reference
- *     feed tracks VDD - V_BE3, whose headroom swings ~1.23/0.95 across
- *     the box) times a 4.0 mA nominal lands the worst cell at ~5.2 mA /
- *     ~10.7 mW -- outside both bars. No flatter reference family fits
- *     this schematic's device vocabulary and supply: a bandgap-class
- *     current reference needs a PMOS mirror loop (an OSDI toolchain this
- *     repo does not ship, and MOS devices are outside the committed
- *     npn13G2 + ideal R/C/L vocabulary) or more stacked V_BE headroom
- *     than 1.62 V - V_BE(-40C,wcs) ~= 0.72 V leaves. The flat-reference
- *     design space is recorded in the follow-up issue referenced from
- *     design/README.md. Neither row is relaxed by this change; both
- *     bars are held with margin at every cell, the ~24%-off-nominal
- *     trade is stated rather than papered over, and the rows DR-0002
- *     left DRAFT (e.g. the IIP3 numeric target) stay DRAFT pending
- *     their own decision record.
+ *   - Sizing (DR-0003 Stage-2 swap): the flat core re-lands I_C1 at
+ *     DR-0001's 4.0 mA plan-table entry: record
+ *     sim/lna-bias-pvt/records/20260921-173552-2aeafef measures
+ *     I_C1 = 3.9403 mA at typ/27C/VDD=1.80V -- -1.49% vs the 4.0 mA
+ *     entry, inside the +/-3% tolerance DR-0003's Stage-2 sizing
+ *     amendment states with its own measurements. The 45-cell PVT grid
+ *     (sim/lna-bias-pvt, bar columns byte-identical to issue #26's
+ *     sweep) spans I_C1 3.657..4.151 mA and P_dc 7.187..9.768 mW: inside
+ *     DR-1's I_C1 <= 4.5 mA bias-network mandate and
+ *     spec/target-spec.md's P_dc < 10 mW row (both ratified by
+ *     DR-0002, issue #32) at EVERY cell, with margins 7.75% / 2.32%.
+ *     The old committed family (R3a feed) held 2.26..4.08 mA at a
+ *     deliberate 3.06 mA nominal, 24% below the plan entry, because
+ *     its supply-tracked envelope could not hold both bars at 4.0 mA
+ *     -- the wall DR-0003 measured and closed (Option-B diode feeds
+ *     refuted at every traced current, single-junction feed families
+ *     formally impossible at 4.0 mA, the widescreen flat family
+ *     measured: core-level island spread +0.75%/-1.02% over the whole
+ *     design-space box in
+ *     sim/biasref-topology/records/20260921-173323-2aeafef). Neither
+ *     row is relaxed by this change, and the rows DR-0002 left DRAFT
+ *     (e.g. the IIP3 numeric target) stay DRAFT pending their own
+ *     decision record.
  *
- * Sanity op-point (ngspice, hbt_typ section, 27C, VDD=1.80V, ideal 50 Ohm
- * terminations on rfin/rfout, ONLY this netlist -- not a claimed LNA
- * result, just confirmation the schematic converges to the intended bias
- * point): I_C1=3.056mA, I_C2=3.052mA, V_CE1=0.814V, V_CE2=0.986V -- from
- * the acceptance record in sim/lna-bias-pvt/records/ matching this
+ * Sanity op-point (ngspice, hbt_typ+mos_tt sections, 27C, VDD=1.80V,
+ * ideal 50 Ohm terminations on rfin/rfout, ONLY this netlist -- not a
+ * claimed LNA result, just confirmation the schematic converges to the
+ * intended bias point): I_C1=3.940mA, I_C2=3.935mA, V_CE1=0.803V,
+ * V_CE2=0.997V -- from the acceptance record
+ * sim/lna-bias-pvt/records/20260921-173552-2aeafef matching this
  * netlist's sha256. This is a
  * single-point convergence check reproducible from design/netlist/lna.spice
  * plus a Vdd/Vss/50 Ohm-terminated testbench and cornerHBT.lib's hbt_typ
@@ -215,16 +229,155 @@ C {lab_pin.sym} 300 -20 0 0 {name=l23 lab=vb2}
 N 300 90 300 140 {}
 C {lab_pin.sym} 300 140 0 0 {name=l24 lab=vss}
 
-* --- Q1 bias generator (issue #26): 8:1 density-matched npn13G2 mirror ---
-* R3a feeds a diode-connected nx=1 reference (Q3, bref node); b1 sits one
-* R3b away from the bref island so the RF port still sees a finite (330 Ohm)
-* bias impedance, like the old divider's Thevenin it replaces. Cbref RF-
-* grounds the reference island. Full reasoning in the schematic header.
-C {res.sym} -300 340 0 0 {name=R3a value=2.45k m=1}
-N -300 310 -300 260 {}
-C {lab_pin.sym} -300 260 0 0 {name=l25 lab=vdd}
-N -300 370 -300 420 {}
-C {lab_pin.sym} -300 420 0 0 {name=l26 lab=bref}
+* --- Q1 bias generator (issue #26 -> issue #33 / DR-0003): flat reference ---
+* The R3a vdd->bref feed resistor is GONE (deleted -- DR-0003: "the R3a
+* re-size the issue named happens as a deletion inside the Stage-2 core
+* swap"). The bref island is now fed by Mis, the output bank of the
+* DR-0003 Option-A staged flat-reference core: the self-biased Widlar
+* PTAT skeleton inherited unchanged from PR #38's Stage 1 (Mb/Qb/Rp,
+* Ma/Qa, Rseed), this Stage 2's Kuijk sum branch (Mv/Rsum/Qc), and the
+* amp-servo loop (Mnp1/Mnp2/Rtail, Mld/Mlm) that holds the servoed
+* branch current I_ref = V_BG/Rl through Mref and mirrors it into the
+* island. Full sizing rationale, measured evidence, and the stated
+* nominal tolerance live in
+* spec/decision-records/0003-flat-pvt-bias-reference.md and the
+* sim/biasref-topology + sim/lna-bias-pvt records -- not here. b1
+* still sits one R3b away from the bref island so the RF port sees a
+* finite (330 Ohm) bias impedance; Cbref RF-grounds the reference
+* island -- both unchanged from issue #26's design.
+C {sg13g2_pr/sg13_hv_pmos.sym} -1500 200 0 0 {name=Mb model=sg13_hv_pmos w=10u l=1u ng=1 m=1}
+N -1480 170 -1460 150 {}
+C {lab_pin.sym} -1460 150 0 0 {name=l100 lab=vdd}
+N -1480 200 -1460 200 {}
+C {lab_pin.sym} -1460 200 0 0 {name=l101 lab=vdd}
+N -1520 200 -1540 200 {}
+C {lab_pin.sym} -1540 200 0 0 {name=l102 lab=nc_b}
+N -1480 230 -1460 250 {}
+C {lab_pin.sym} -1460 250 0 0 {name=l103 lab=nc_b}
+C {sg13g2_pr/npn13G2.sym} -1500 600 0 0 {name=Qb model=npn13G2 spiceprefix=X Nx=8}
+N -1480 570 -1460 550 {}
+C {lab_pin.sym} -1460 550 0 0 {name=l104 lab=nc_b}
+N -1520 600 -1540 600 {}
+C {lab_pin.sym} -1540 600 0 0 {name=l105 lab=nc_a}
+N -1480 630 -1460 650 {}
+C {lab_pin.sym} -1460 650 0 0 {name=l106 lab=nc_e}
+N -1480 600 -1460 600 {}
+C {lab_pin.sym} -1460 600 0 0 {name=l107 lab=vss}
+C {res.sym} -1500 880 0 0 {name=Rp value=3.4k m=1}
+N -1500 850 -1500 820 {}
+C {lab_pin.sym} -1500 820 0 0 {name=l108 lab=nc_e}
+N -1500 910 -1500 950 {}
+C {lab_pin.sym} -1500 950 0 0 {name=l109 lab=vss}
+C {sg13g2_pr/sg13_hv_pmos.sym} -1320 200 0 0 {name=Ma model=sg13_hv_pmos w=10u l=1u ng=1 m=1}
+N -1300 170 -1280 150 {}
+C {lab_pin.sym} -1280 150 0 0 {name=l110 lab=vdd}
+N -1300 200 -1280 200 {}
+C {lab_pin.sym} -1280 200 0 0 {name=l111 lab=vdd}
+N -1340 200 -1360 200 {}
+C {lab_pin.sym} -1360 200 0 0 {name=l112 lab=nc_b}
+N -1300 230 -1280 250 {}
+C {lab_pin.sym} -1280 250 0 0 {name=l113 lab=nc_a}
+C {sg13g2_pr/npn13G2.sym} -1320 600 0 0 {name=Qa model=npn13G2 spiceprefix=X Nx=1}
+N -1300 570 -1280 550 {}
+C {lab_pin.sym} -1280 550 0 0 {name=l114 lab=nc_a}
+N -1340 600 -1360 600 {}
+C {lab_pin.sym} -1360 600 0 0 {name=l115 lab=nc_a}
+N -1300 630 -1280 650 {}
+C {lab_pin.sym} -1280 650 0 0 {name=l116 lab=vss}
+N -1300 600 -1280 600 {}
+C {lab_pin.sym} -1280 600 0 0 {name=l117 lab=vss}
+C {res.sym} -1140 -80 0 0 {name=Rseed value=10meg m=1}
+N -1140 -110 -1140 -150 {}
+C {lab_pin.sym} -1140 -150 0 0 {name=l118 lab=vdd}
+N -1140 -50 -1140 -10 {}
+C {lab_pin.sym} -1140 -10 0 0 {name=l119 lab=nc_a}
+C {sg13g2_pr/sg13_hv_pmos.sym} -1000 200 0 0 {name=Mv model=sg13_hv_pmos w=10u l=1u ng=1 m=1}
+N -980 170 -960 150 {}
+C {lab_pin.sym} -960 150 0 0 {name=l120 lab=vdd}
+N -980 200 -960 200 {}
+C {lab_pin.sym} -960 200 0 0 {name=l121 lab=vdd}
+N -1020 200 -1040 200 {}
+C {lab_pin.sym} -1040 200 0 0 {name=l122 lab=nc_b}
+N -980 230 -960 250 {}
+C {lab_pin.sym} -960 250 0 0 {name=l123 lab=vbg}
+C {res.sym} -1000 420 0 0 {name=Rsum value=18.4k m=1}
+N -1000 390 -1000 360 {}
+C {lab_pin.sym} -1000 360 0 0 {name=l124 lab=vbg}
+N -1000 450 -1000 490 {}
+C {lab_pin.sym} -1000 490 0 0 {name=l125 lab=cb3}
+C {sg13g2_pr/npn13G2.sym} -1000 700 0 0 {name=Qc model=npn13G2 spiceprefix=X Nx=1}
+N -980 670 -960 650 {}
+C {lab_pin.sym} -960 650 0 0 {name=l126 lab=cb3}
+N -1020 700 -1040 700 {}
+C {lab_pin.sym} -1040 700 0 0 {name=l127 lab=cb3}
+N -980 730 -960 750 {}
+C {lab_pin.sym} -960 750 0 0 {name=l128 lab=vss}
+N -980 700 -960 700 {}
+C {lab_pin.sym} -960 700 0 0 {name=l129 lab=vss}
+C {sg13g2_pr/sg13_hv_nmos.sym} -800 300 0 0 {name=Mnp1 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+N -780 270 -760 250 {}
+C {lab_pin.sym} -760 250 0 0 {name=l130 lab=gsvo}
+N -820 300 -840 300 {}
+C {lab_pin.sym} -840 300 0 0 {name=l131 lab=vbg}
+N -780 300 -760 300 {}
+C {lab_pin.sym} -760 300 0 0 {name=l132 lab=vss}
+N -780 330 -760 350 {}
+C {lab_pin.sym} -760 350 0 0 {name=l133 lab=es}
+C {sg13g2_pr/sg13_hv_nmos.sym} -640 300 0 0 {name=Mnp2 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+N -620 270 -600 250 {}
+C {lab_pin.sym} -600 250 0 0 {name=l134 lab=dn}
+N -660 300 -680 300 {}
+C {lab_pin.sym} -680 300 0 0 {name=l135 lab=vl}
+N -620 300 -600 300 {}
+C {lab_pin.sym} -600 300 0 0 {name=l136 lab=vss}
+N -620 330 -600 350 {}
+C {lab_pin.sym} -600 350 0 0 {name=l137 lab=es}
+C {res.sym} -720 560 0 0 {name=Rtail value=9.53k m=1}
+N -720 530 -720 500 {}
+C {lab_pin.sym} -720 500 0 0 {name=l138 lab=es}
+N -720 590 -720 630 {}
+C {lab_pin.sym} -720 630 0 0 {name=l139 lab=vss}
+C {sg13g2_pr/sg13_hv_pmos.sym} -480 200 0 0 {name=Mld model=sg13_hv_pmos w=10u l=1u ng=1 m=1}
+N -460 170 -440 150 {}
+C {lab_pin.sym} -440 150 0 0 {name=l140 lab=vdd}
+N -460 200 -440 200 {}
+C {lab_pin.sym} -440 200 0 0 {name=l141 lab=vdd}
+N -500 200 -520 200 {}
+C {lab_pin.sym} -520 200 0 0 {name=l142 lab=dn}
+N -460 230 -440 250 {}
+C {lab_pin.sym} -440 250 0 0 {name=l143 lab=dn}
+C {sg13g2_pr/sg13_hv_pmos.sym} -320 200 0 0 {name=Mlm model=sg13_hv_pmos w=10u l=1u ng=1 m=1}
+N -300 170 -280 150 {}
+C {lab_pin.sym} -280 150 0 0 {name=l144 lab=vdd}
+N -300 200 -280 200 {}
+C {lab_pin.sym} -280 200 0 0 {name=l145 lab=vdd}
+N -340 200 -360 200 {}
+C {lab_pin.sym} -360 200 0 0 {name=l146 lab=dn}
+N -300 230 -280 250 {}
+C {lab_pin.sym} -280 250 0 0 {name=l147 lab=gsvo}
+C {sg13g2_pr/sg13_hv_pmos.sym} -160 200 0 0 {name=Mref model=sg13_hv_pmos w=40u l=1u ng=1 m=1}
+N -140 170 -120 150 {}
+C {lab_pin.sym} -120 150 0 0 {name=l148 lab=vdd}
+N -140 200 -120 200 {}
+C {lab_pin.sym} -120 200 0 0 {name=l149 lab=vdd}
+N -180 200 -200 200 {}
+C {lab_pin.sym} -200 200 0 0 {name=l150 lab=gsvo}
+N -140 230 -120 250 {}
+C {lab_pin.sym} -120 250 0 0 {name=l151 lab=vl}
+C {res.sym} -160 420 0 0 {name=Rl value=26k m=1}
+N -160 390 -160 360 {}
+C {lab_pin.sym} -160 360 0 0 {name=l152 lab=vl}
+N -160 450 -160 490 {}
+C {lab_pin.sym} -160 490 0 0 {name=l153 lab=vss}
+C {sg13g2_pr/sg13_hv_pmos.sym} -860 -160 0 0 {name=Mis model=sg13_hv_pmos w=512u l=1u ng=1 m=1}
+N -840 -190 -820 -210 {}
+C {lab_pin.sym} -820 -210 0 0 {name=l154 lab=vdd}
+N -840 -160 -820 -160 {}
+C {lab_pin.sym} -820 -160 0 0 {name=l155 lab=vdd}
+N -880 -160 -900 -160 {}
+C {lab_pin.sym} -900 -160 0 0 {name=l156 lab=gsvo}
+N -840 -130 -820 -110 {}
+C {lab_pin.sym} -820 -110 0 0 {name=l157 lab=bref}
 
 C {res.sym} -300 600 0 0 {name=R3b value=330 m=1}
 N -300 570 -300 520 {}

@@ -3,7 +3,16 @@
 Issue [#26](https://github.com/2AMLogic/sg13g2-lna/issues/26): the
 acceptance bench for the Q1 bias-generator replacement (placeholder
 resistive `R1a`/`R1b` divider → 8:1 density-matched `npn13G2`
-current-mirror reference). Where
+current-mirror reference); re-run for issue
+[#33](https://github.com/2AMLogic/sg13g2-lna/issues/33) / DR-0003
+Stage 2, whose flat-reference core swap replaced the `R3a` feed in the
+same committed netlist (the bench's DUT is always the committed
+`design/netlist/lna.spice`; the two bars and their columns/verdicts are
+byte-identical in meaning across the swap — see
+[`../biasref-topology/`](../biasref-topology/README.md) for the
+core-level design-space benches and
+[`../../spec/decision-records/0003-flat-pvt-bias-reference.md`](../../spec/decision-records/0003-flat-pvt-bias-reference.md)
+for the decision record and its Stage-2 sizing amendment). Where
 [`../lna-characterization/`](../lna-characterization/README.md) (issue
 [#18](https://github.com/2AMLogic/sg13g2-lna/issues/18)) measures the LNA's
 *RF* behaviour, this experiment measures only the *DC operating point* of
@@ -85,11 +94,15 @@ export PDK=ihp-sg13g2
 sim/lna-bias-pvt/run_biasop_sweep.sh
 ```
 
-Requires `ngspice` and the PDK resolution `../env.sh` performs; requires
-neither xschem, python3, nor an OSDI build step (`npn13G2` is a native
-ngspice VBIC model — see [`../pdk.json`](../pdk.json)). `BIASOP_JOBS=<n>`
-bounds concurrency (concurrency changes wall-clock only); `BIASOP_SMOKE=1`
-runs the nominal cell only as a plumbing check.
+Requires `ngspice`, the PDK resolution `../env.sh` performs, and —
+since the DR-0003 Stage-2 core swap — the OSDI device models (the DUT
+instantiates `sg13_hv_pmos`/`sg13_hv_nmos`, PSP103.6 via OSDI: run
+[`../tools/build-osdi.sh`](../tools/build-osdi.sh) `--check` first; see
+[`../README.md`](../README.md) "OSDI device models"); it needs neither
+xschem nor python3 (`npn13G2` itself stays a native ngspice VBIC model —
+see [`../pdk.json`](../pdk.json)). `BIASOP_JOBS=<n>` bounds concurrency
+(concurrency changes wall-clock only); `BIASOP_SMOKE=1` runs the
+nominal cell only as a plumbing check.
 
 Every run mints a new timestamped record under `records/`, with generated
 decks under `netlist-snapshots/<record-id>/` and raw ngspice logs under

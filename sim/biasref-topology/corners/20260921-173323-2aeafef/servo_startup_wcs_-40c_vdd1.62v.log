@@ -1,0 +1,45 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- dr-0003 option-a stage-2 flat core, supply-ramp startup /
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+nc_b                              -1.27495e-20
+nc_a                                3.0506e-24
+nc_e                               2.68126e-30
+xqb.s1                            -1.24135e-27
+xqb.t                              1.61519e-27
+xqa.s1                             1.20825e-31
+xqa.t                              9.68511e-35
+vbg                               -4.62963e-23
+cb3                                -4.6296e-23
+xqc.s1                            -1.84992e-30
+xqc.t                              1.03445e-33
+gsvo                                         0
+es                                           0
+dn                                           0
+vl                                           0
+bref                              -1.90485e-26
+xq3.s1                            -7.61632e-34
+xq3.t                              4.11217e-57
+vssa#branch                       -1.14069e-30
+vvdd#branch                        1.14069e-30
+
+ Reference value :  4.76280e-07 Reference value :  1.96650e-06 Reference value :  3.51050e-06 Reference value :  5.04450e-06 Reference value :  6.82050e-06 Reference value :  8.36250e-06 Reference value :  9.89450e-06 Reference value :  1.14725e-05
+No. of Data Rows : 12011
+STARTUP iq3_end 0.000513827 iq3_s2 0.000513827 iq3_s3 0.000513827
+BENCH_COMPLETE
+ngspice-46 done

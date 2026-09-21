@@ -51,6 +51,29 @@ the bench is committed beside the results. Three benches, one runner:
   committed feedforward mirror family does not — the seed leg
   (`Rseed`) exists for exactly that reason and this bench is its
   evidence.
+- **Phase D (Stage 2) — `testbench/tb_servo_minigrid.spice.tmpl`**: the
+  complete DR-0003 Stage-2 flat core, whose device lines are the Stage-2
+  core section of the committed `design/netlist/lna.spice` verbatim:
+  the Phase-B skeleton unchanged, plus the Kuijk sum branch (`XMv`
+  PTAT copy off the `nc_b` bus, `Rsum`, sum-branch diode `XQc`, node
+  `V_BG = V_BE(Qc) + I_ptat·Rsum`), the amp-servo loop (`sg13_hv_nmos`
+  input pair `XMnp1`/`XMnp2` — this tree's first nmos devices —
+  resistor tail `Rtail`, PMOS diode load `XMld` + mirror `XMlm`, output
+  node = the bank gate bus), the bare-resistor transduction branch
+  (`XMref` + `Rl`: `I_ref = V_BG/Rl`) and the 12.8:1 island bank
+  (`XMis`) into the same `XQ3` island diode. Same 27-cell box as Phase
+  B. Evidences the Stage-2 core's own flatness (whole-box island
+  spread vs nominal) and the servo's transparency (|vl − vbg|); records
+  the sizing input behind DR-0003's Stage-2 sizing amendment. The two
+  RATIFIED 45-cell bars are NOT evaluated here —
+  [`../lna-bias-pvt/`](../lna-bias-pvt/README.md)'s record owns those
+  against the swapped netlist.
+- **Phase E (Stage 2) — `testbench/tb_servo_startup.spice.tmpl`**: the
+  committed 3-cell ramp convention applied to the Phase-D core — the
+  seed leg boots the skeleton AND the now-closing servo loop settles
+  to the Phase-D op value at every cell, or the verdict records it.
+  Same degenerate-state discipline as Phase C, plus the servo's own
+  banks-off state and its amp-driven escape.
 
 ## Method limits (what this experiment does NOT measure)
 
@@ -60,9 +83,21 @@ the bench is committed beside the results. Three benches, one runner:
   own the RF consequences of any eventual bias change.
 - **No flatness claim for the skeleton.** The Phase-B core's output tone
   is PTAT by design (hot/cold gains ≈ 1.35/0.77). It is the
-  supply-independent *stage* of DR-0003 Option A — the flat trim (an
-  amp-servo'd mixed-tone output, DR-0003 Stage 2) is the follow-on
-  issue's deliverable, not this bench's claim.
+  supply-independent *stage* of DR-0003 Option A — Phase D is the flat
+  trim's measured evidence (island spread +0.75%/−1.02 % over the whole
+  27-cell box), still a *bench-level* claim about the reference core,
+  not the LNA.
+- **Solver aids, not physics (Phases D/E).** The Phase-D/E decks' explicit
+  `gmin=1e-10` is VALUE-IDENTICAL to ngspice's own default (no numeric
+  shift); making it explicit selects ngspice's working gmin-stepping
+  fallback — the implicit default aborts with singular iterations at the
+  bcs/−40 °C/1.62 V cell. The Phase-E ramp's fine initial tran step
+  (1e-9) is the sg13g2-bandgap fleet's own documented cure
+  (closed-loop-startup / closed-loop-vref-pvt headers, issues #58/#151)
+  for ngspice's VBIC boot-desert "Timestep too small" abort, which the
+  committed 5e-8 step hits at the bcs/125 °C cell inside the first
+  microsecond. The ramp shape and every verdict criterion are the
+  committed ones unchanged.
 - **No mismatch sections**: the grid uses the committed 45-cell
   convention (`hbt_typ`/`hbt_bcs`/`hbt_wcs` and single `mos_*` sections,
   no `_mismatch`/`_stat` variants). The 21:1 output mirror in
@@ -110,10 +145,22 @@ under `netlist-snapshots/<record-id>/` and raw ngspice logs under
 
 ## Records in this experiment
 
-- `20260921-154716-f718094` — the first and only record so far: the
-  Option-B disproof table (hot/nominal feed-family ratio 1.392/1.335/1.326
-  at 0.52 mA/100 µA/20 µA — all worse than the committed npn family's
-  own 1.277), the Option-A skeleton mini-grid (supply independence
-  0.90% vs the committed family's 47.4% measured identically; PTAT
-  residual tone hot/cold ≈ 1.355/0.766 at the binding cells), and the
-  seed-leg startup PASS at all three ramp cells. Backs DR-0003.
+- `20260921-154716-f718094` — the Stage-1 record (PR #38's committed
+  evidence): the Option-B disproof table (hot/nominal feed-family ratio
+  1.392/1.335/1.326 at 0.52 mA/100 µA/20 µA — all worse than the
+  committed npn family's own 1.277), the Option-A skeleton mini-grid
+  (supply independence 0.90% vs the committed family's 47.4% measured
+  identically; PTAT residual tone hot/cold ≈ 1.355/0.766 at the binding
+  cells), and the seed-leg startup PASS at all three ramp cells. Backs
+  DR-0003.
+- `20260921-173323-2aeafef` — the five-phase record (issue #33's Stage-2
+  increment; Phases A-C reproduce `20260921-154716-f718094`'s numbers
+  byte-identically): Phases D/E add the complete Stage-2 core
+  (skeleton + Kuijk sum branch + amp-servo loop + `V_BG/Rl`
+  transduction + 12.8:1 island bank) — island current spread
+  **+0.75%/−1.02%** of nominal over the whole 27-cell box, worst servo
+  transduction error **1.06 mV**, supply move ≤ 0.51% per (corner,T),
+  closing-loop startup PASS ×3. The sizing evidence behind DR-0003's
+  Stage-2 sizing amendment; the ratified 45-cell bars on the swapped
+  netlist live in
+  [`../lna-bias-pvt/records/20260921-173552-2aeafef`](../lna-bias-pvt/records/20260921-173552-2aeafef.md).

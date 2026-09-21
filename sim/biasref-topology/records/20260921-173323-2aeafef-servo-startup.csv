@@ -1,0 +1,4 @@
+point_id,corner_label,temp_c,vdd_v,iq3_end_a,iq3_op_a,end_vs_op_pct,settled_spread_pct,verdict
+servo_startup_bcs_125c_vdd1.98v,bcs,125,1.98,0.000507786,0.000507786,0.000,0.000,PASS
+servo_startup_wcs_-40c_vdd1.62v,wcs,-40,1.62,0.000513827,0.000513827,0.000,0.000,PASS
+servo_startup_typ_27c_vdd1.80v,typ,27,1.80,0.000511593,0.000511593,0.000,0.000,PASS

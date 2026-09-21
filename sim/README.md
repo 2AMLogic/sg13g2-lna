@@ -24,7 +24,8 @@ prefixes) — every testbench's `run_*.sh` sources it, and an interactive
 `ngspice` session can too, so nothing here can silently drift onto a
 different install than what a script used.
 
-**OSDI device models: needed as of `sim/biasref-topology/` (issue #33).**
+**OSDI device models: needed as of `sim/biasref-topology/` and (since the
+DR-0003 Stage-2 core swap) `sim/lna-bias-pvt/` — issue #33.**
 The first experiments in this tree instantiate only `npn13G2` and
 `pnpMPA` — native ngspice models (VBIC level=9 and Gummel-Poon level=1)
 loaded by `cornerHBT.lib`'s own sections, no compile step. The
@@ -201,5 +202,15 @@ target-spec row.
   VDD swing vs the committed feed family's 47.4% measured the identical
   way, with the residual PTAT tone DR-0003's Stage-2 core must trim),
   and the seed-leg supply-ramp startup check (PASS at the three
-  committed startup cells). Design-space input to DR-0003 — no
-  `target-spec.md` claim, no LNA instantiation.
+  committed startup cells). Its Stage-2 increment (same runner,
+  phases D/E) adds the complete sized flat core — skeleton + Kuijk sum
+  branch (`XMv`/`Rsum`/`XQc` building `V_BG = V_BE + I_ptat*Rsum`) +
+  amp-servo loop (the tree's first `sg13_hv_nmos` instances,
+  `XMnp1`/`XMnp2`) + bare-resistor transduction (`I_ref = V_BG/Rl`)
+  + 12.8:1 island bank — evidencing the core's own whole-box island
+  spread (+0.75%/-1.02% vs nominal) and its closing-loop startup, the
+  sizing input behind DR-0003's Stage-2 sizing amendment. Design-space
+  input to DR-0003 — no `target-spec.md` claim, no LNA instantiation;
+  the two RATIFIED 45-cell bars on the swapped netlist are
+  [`lna-bias-pvt/`](lna-bias-pvt/README.md)'s own record, not this
+  one's.
