@@ -1,0 +1,59 @@
+* sg13g2-lna -- supply-ramp startup / latch check of the Option-A
+* bias-reference skeleton (issue #33 / DR-0003; the ramp convention is
+* the committed sim/lna-bias-pvt one).
+* Generated from sim/biasref-topology/testbench/tb_core_startup.spice.tmpl
+* by sim/biasref-topology/run_biasref_sweep.sh -- do not edit a generated
+* file directly, edit this template and re-run.
+*
+* Generated for: MOS_SECTION=mos_ss HBT_SECTION=hbt_wcs
+* TEMP=-40 C VDD=1.62 V
+*
+* WHY THIS EXISTS: unlike the committed mirror feed (a plain R3a branch
+* from vdd -- deliberately feedforward, no degenerate state), the Option-A
+* skeleton is a self-biased PTAT loop, and that loop's zero-current state
+* is a genuine degenerate operating point (the classic bandgap startup
+* surface). The seed leg (Rseed) is the committed-design answer: a
+* 10 Meg pull-up on the plain-diode leg's node guarantees a nonzero
+* bootstrap current. This deck demonstrates that numerically the same
+* way sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl does for the
+* committed family: VDD ramps 0 V -> target in 1 us (slow vs. any circuit
+* pole), holds to 12 us, and the runner checks that the island current's
+* last samples agree with each other (settled, not ringing) and match the
+* same cell's op-value (no latch to a different stable state).
+*
+* Cells: the same three the committed 45-cell startup check uses --
+* bcs/125 C/1.98 V, wcs/-40 C/1.62 V, typ/27 C/1.80 V.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.options temp=-40 tnom=27
+
+Vvdd vdd 0 pwl(0 0 1e-6 1.62 1.2e-5 1.62)
+Vssa vss 0 dc 0
+
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp  nc_e vss 3.4k
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg
+XMk bref nc_b vdd vdd sg13_hv_pmos w=210u l=1u ng=1 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+
+.control
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save @q.xq3.qnpn13g2[ic]
+tran 5e-8 1.2e-5
+let iq3v = @q.xq3.qnpn13g2[ic]
+let n = length(iq3v) - 1
+let s1 = iq3v[n]
+let s2 = iq3v[n-10]
+let s3 = iq3v[n-25]
+wrdata /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/sim/biasref-topology/corners/20260921-154716-f718094/startup_wcs_-40c_vdd1.62v.dat iq3v
+echo "STARTUP iq3_end $&s1 iq3_s2 $&s2 iq3_s3 $&s3"
+echo "BENCH_COMPLETE"
+quit
+.endc
+.end

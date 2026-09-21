@@ -1,0 +1,14 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-lna -- pnpmpa diode-connected terminal drop over pvt
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+MPADIODE veb 0.750441 id -0.0001
+BENCH_COMPLETE
+ngspice-46 done
