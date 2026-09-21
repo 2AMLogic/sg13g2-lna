@@ -1,0 +1,44 @@
+name: signoff
+
+# T1 verdict-of-record gate — see signoff/README.md for the full
+# contract. This job re-renders the klt signoff tier report from the
+# committed block manifest and the vendored design-evidence-tiers doc,
+# then fails on any byte-drift against signoff/t1-report.json, so a
+# manifest citation whose artifact has since changed fails rather than
+# rotting (issue #30).
+#
+# Headless and PDK-free like the repo's other checks: `klt signoff
+# --manifest` on the current manifest grades only committed files, so
+# this runner needs nothing but bash, python3 (stdlib) and the pinned
+# klt wheel. It never mints evidence — refreshing the record is a
+# deliberate developer action, never a CI side effect.
+#
+# Exit-code contract (klt docs/cli/signoff.md): 0 = all T1 items met,
+# 3 = ran successfully with at least one unmet item. Both are clean runs;
+# an all-unmet report is a correct verdict, not a CI failure. The
+# checker self-test runs first — a drift gate that cannot fail is
+# indistinguishable from no gate at all.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  signoff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned klt
+        run: python3 -m pip install "klayout-tools==0.5.0"
+
+      - name: Drift-checker self-test
+        run: .github/scripts/test-check-signoff.sh
+
+      - name: T1 verdict of record is current
+        run: .github/scripts/check-signoff.sh
