@@ -34,13 +34,16 @@ Inductive-degeneration matching leans on the same PDK passive models the VCO
 canary characterizes — coordinate through klayout-tools issues, not by
 copying numbers across repos without their derivations.
 
-## Target specification (DRAFT — engineering to ratify)
+## Target specification
 
-The detailed DRAFT table — band, gain, noise figure, input/output match
+The detailed table — band, gain, noise figure, input/output match
 (S11/S22), stability, IIP3, and supply/power, each row source-cited and the
 50 Ω port convention stated explicitly — lives in
 [`spec/target-spec.md`](spec/target-spec.md). This section stays
-deliberately thin: nothing here is ratified, and rows get numbers only from
+deliberately thin: rows are ratified per
+[`spec/decision-records/0002-target-spec-first-ratification.md`](spec/decision-records/0002-target-spec-first-ratification.md)
+(issue #19; the IIP3 numeric target and the former stretch columns are
+explicitly unratified), and rows get numbers only from
 committed benches. See [`spec/README.md`](spec/README.md) for the full
 spec-directory index, including the porting plan and decision-record
 process.

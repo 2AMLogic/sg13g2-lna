@@ -1,16 +1,26 @@
 # 0001: LNA bias/supply topology and supply voltage
 
-- **Status**: proposed
-- **Date**: 2026-09-16
-- **Decided by**: Builder (Loom), issue #16
+- **Status**: ratified (via [0002](0002-target-spec-first-ratification.md), 2026-09-21, issue #19's ratification PR)
+- **Date**: 2026-09-16 (proposed) · 2026-09-21 (ratified via 0002)
+- **Decided by**: Builder (Loom), issue #16 (proposal) · operator, by approving the issue-#19 ratification PR (ratification act)
 - **Issue**: [#16](https://github.com/2AMLogic/sg13g2-lna/issues/16)
   (sub-issue of the T1 gap tracker [#4](https://github.com/2AMLogic/sg13g2-lna/issues/4))
 
-**This record is `proposed`, not `ratified`.** It does **not** ratify
-`spec/target-spec.md`'s Supply or Power rows, or any other row. Ratification
-of those rows is a separate, later PR through this fleet's two-key (EE-key +
-market-key) protocol; this record is the evidence base such a PR would cite.
-`spec/target-spec.md` remains DRAFT in its entirety.
+> **Status update, 2026-09-21 (by 0002):** the paragraph below was accurate
+> while this record was `proposed`. That proviso is now discharged — record
+> [0002](0002-target-spec-first-ratification.md) is the "separate, later PR"
+> it anticipated, drafted on the evidence and ratified by the operator's
+> PR approval (the two-key protocol `2AMLogic/2am#372` being still
+> in-progress at pickup, the predecessor standing policy
+> `2AMLogic/2am#357` is the path used). The "separate, later PR through this
+> fleet's two-key protocol" therefore reads, as executed, as the
+> ratification-via-PR path. The original proviso text is preserved:
+>
+> **This record is `proposed`, not `ratified`.** It does **not** ratify
+> `spec/target-spec.md`'s Supply or Power rows, or any other row. Ratification
+> of those rows is a separate, later PR through this fleet's two-key (EE-key +
+> market-key) protocol; this record is the evidence base such a PR would cite.
+> `spec/target-spec.md` remains DRAFT in its entirety.
 
 ## Context
 
