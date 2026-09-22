@@ -44,6 +44,8 @@
   "timezone": "UTC",
 
   // --- Python (uv) ---
+  // Carried from template; no-ops here — this repo has no Python manifest
+  // (measured 2026-09-22). Applies only if one is ever added.
 
   // Update lockfile without widening pyproject.toml version ranges.
   // Renovate detects uv.lock natively.
@@ -83,8 +85,9 @@
     },
 
     // Group all GitHub Actions SHA updates into one PR
-    // AGENTS.md mandates SHA pinning with inline version comments (# vX.Y.Z)
-    // Renovate preserves these comments natively when updating digests
+    // (SHA-pinning policy carried from the noc0dev template — this repo's
+    // own AGENTS.md has no such mandate; measured 2026-09-22)
+    // Renovate preserves inline version comments (# vX.Y.Z) natively when updating digests
     {
       "groupName": "github-actions",
       "matchManagers": ["github-actions"],
