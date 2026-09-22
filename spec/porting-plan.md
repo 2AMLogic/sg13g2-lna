@@ -2,10 +2,13 @@
 
 **Status: engineering input, not a ratified decision.** This document is
 the required reading for anyone starting design work on this block. It does
-not ratify the target spec (`target-spec.md` remains DRAFT, gated on a
-future spec-ratification issue) — it records what the fleet's existing
-SG13G2 blocks already teach about this PDK, and draws a hard line around
-the RF-specific work this block cannot borrow from anywhere in the fleet.
+not ratify the target spec — that gate has closed: `target-spec.md` is now
+RATIFIED for the rows marked RATIFIED, via decision record
+[0002](decision-records/0002-target-spec-first-ratification.md) (issue
+[#19](https://github.com/2AMLogic/sg13g2-lna/issues/19), merged as PR #32)
+— it records what the fleet's existing SG13G2 blocks already teach about
+this PDK, and draws a hard line around the RF-specific work this block
+cannot borrow from anywhere in the fleet.
 
 **This block has no same-block sibling.** Every other spec-scaffolding
 issue in this fleet ("bootstrap the block") has been a second-or-third PDK
@@ -231,17 +234,24 @@ block's canary value is real rather than a relabeled CMOS port:
 ## 3. Next steps
 
 This plan and `target-spec.md` are inputs to: (a) a future
-spec-ratification issue for the target-spec table, (b) a decision record
-resolving the bias/supply-topology question, and (c) confirming or
-refuting the suspected inductor-SPICE-model gap (item 2 above) — **now
-resolved**: issue #5 confirmed the gap is real (see "Sources checked"
-above) and the corresponding friction report has been filed against
-`klayout-tools` per this repo's friction protocol
+spec-ratification issue for the target-spec table — **now resolved**: issue
+[#19](https://github.com/2AMLogic/sg13g2-lna/issues/19) closed via PR #32,
+ratifying the table's rows through decision record
+[0002](decision-records/0002-target-spec-first-ratification.md) — (b) a
+decision record resolving the bias/supply-topology question — **now
+resolved**: decision record
+[0001](decision-records/0001-bias-supply-topology.md), ratified by record
+0002 — and (c) confirming or refuting the suspected inductor-SPICE-model
+gap (item 2 above) — **now resolved**: issue #5 confirmed the gap is real
+(see "Sources checked" above) and the corresponding friction report has
+been filed against `klayout-tools` per this repo's friction protocol
 ([`2AMLogic/klayout-tools#1517`](https://github.com/2AMLogic/klayout-tools/issues/1517)).
-Resolving (c) does not by itself clear this document's gate on
-matching-network schematic work — (a) and (b) remain the outstanding
-prerequisites, and nothing in this document authorizes schematic, layout,
-or simulation work ahead of those two steps. How this block will actually
+With (a)–(c) resolved, matching-network schematic work is no longer gated
+on this document's prerequisites — it runs against the ratified spec's own
+row gates (each RATIFIED row's note in `target-spec.md` names its
+pre-conditions, e.g. stability's hold on #27), and nothing in this
+document authorizes schematic, layout, or simulation work outside those
+gates. How this block will actually
 obtain an inductor model for that future schematic work (self-run
 openEMS/FastHenry extraction vs. waiting on
 `2AMLogic/klayout-tools#1517`) is itself a design decision left to a
