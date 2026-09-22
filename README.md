@@ -34,6 +34,9 @@ Inductive-degeneration matching leans on the same PDK passive models the VCO
 canary characterizes — coordinate through klayout-tools issues, not by
 copying numbers across repos without their derivations.
 
+*Consumers / related:* `sg13g2-sat-rx` — a Ka-band LNA on the same PDK that
+cites this repo as prior art; a different block, not a port of this one.
+
 ## Target specification
 
 The detailed table — band, gain, noise figure, input/output match

@@ -61,9 +61,12 @@ from a blank page):
     statistical/mismatch counterpart for `npn13g2` (a 4-terminal device
     with an internal thermal pseudo-node — see §4 below for the LVS
     implication `sg13g2-bandgap`'s plan already flagged).
-  - `ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib` — the five-corner
-    (tt/ff/ss/fs/sf) HBT corner file this repo's `target-spec.md`
-    verification-corners section cites.
+  - `ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib` — the HBT corner
+    file, shipping three real sections (`hbt_typ`, `hbt_bcs`, `hbt_wcs`;
+    no skewed `sf`/`fs`-equivalent HBT sections exist). See
+    `spec/target-spec.md` §"Verification corners" and `sim/README.md`
+    §"Corner-label convention" for how the fleet's five-label PVT grid
+    maps `sf`/`fs` onto `hbt_typ` as documented fallbacks.
   - Passive/matching-network model surface checked and found **thinner
     than the active-device surface**: `ihp-sg13g2/libs.tech/ngspice/models/`
     has no file resembling an inductor SPICE model (searched for `induct*`

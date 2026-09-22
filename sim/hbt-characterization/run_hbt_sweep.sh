@@ -82,9 +82,11 @@ mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
 # Corner labels mirror cornerMOShv.lib's five-label convention (for
 # fleet-wide consistency), mapped onto cornerHBT.lib's three REAL sections
 # -- see sim/README.md "Corner label convention" for the discrepancy this
-# resolves (target-spec.md/porting-plan.md describe five HBT sections;
-# the installed PDK ships three). sf/fs fall back to hbt_typ, the same
-# convention sg13g2-bandgap's HBT_SECTION_OF map already uses.
+# resolves (target-spec.md/porting-plan.md described five HBT sections
+# at the time this grid was recorded; target-spec.md's Verification
+# corners section and the installed PDK both give three). sf/fs fall
+# back to hbt_typ, the same convention sg13g2-bandgap's HBT_SECTION_OF
+# map already uses.
 #
 # Every axis is overridable from the environment (space-separated) so an
 # earlier record's narrower grid stays reproducible without editing this
