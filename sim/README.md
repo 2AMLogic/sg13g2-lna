@@ -79,8 +79,10 @@ sim/
 ## Corner-label convention: `cornerHBT.lib` has three sections, not five
 
 `spec/target-spec.md`'s "Verification corners" section and
-`spec/porting-plan.md` both describe `cornerHBT.lib` as shipping "the five
-process corners {tt, ff, ss, fs, sf}". **Verified against the pinned PDK
+`spec/porting-plan.md` described `cornerHBT.lib` as shipping "the five
+process corners {tt, ff, ss, fs, sf}" at the time this convention was
+recorded; `target-spec.md`'s Verification corners section now records the
+three-section reality. **Verified against the pinned PDK
 install (`v0.3.0`): `cornerHBT.lib` actually defines three real sections
 — `hbt_typ`, `hbt_bcs`, `hbt_wcs`** (plus `_mismatch`/`_stat` variants of
 each) — no skewed `sf`/`fs`-equivalent HBT section exists. This is the
