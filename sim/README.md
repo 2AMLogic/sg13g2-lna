@@ -144,11 +144,16 @@ ngspice analysis (`.op`, `.ac`, `.noise`) used for each reported quantity
 
 ## Spec ratification: not claimed here
 
-No row of `spec/target-spec.md`'s DRAFT target table is ratified by
-anything in this tree. Every experiment's `README.md` and record restate
-that disclaimer locally: results here are device-characterization *input*
-to a future decision record, not a conformance claim against a DRAFT
-target-spec row.
+Nothing in this tree ratifies a `spec/target-spec.md` row: ratification is
+a decision-record act, and it happened via decision record
+[0002](../spec/decision-records/0002-target-spec-first-ratification.md)
+(issue [#19](https://github.com/2AMLogic/sg13g2-lna/issues/19), merged as
+PR #32) — which marked the band, gain, NF, S11/S22, stability, supply and
+power rows RATIFIED and left the IIP3 numeric target and every stretch
+column DRAFT. Every experiment's `README.md` and record keeps its local
+disclaimer: results here are device-characterization *evidence* — the
+input record 0002 was ratified against — not a conformance claim against
+a target-spec row.
 
 ## Testbenches landed so far
 
@@ -170,13 +175,15 @@ target-spec row.
 - **[`lna-characterization/`](lna-characterization/README.md)** — the first
   **circuit-level** testbench in this tree (issue #18), run against
   `design/lna.sch` via its committed netlist: ngspice `sp` S-parameters
-  (S11/S21/S12/S22) at 50 Ω ports across the 2400–2483.5 MHz DRAFT band,
+  (S11/S21/S12/S22) at 50 Ω ports across the 2400–2483.5 MHz band
+  (ratified by DR-0002),
   noise figure at two stated reference temperatures cross-checked against
   ngspice's own two-port `sp` NF (plus `NFmin`), k/μ/|Δ| stability in-band
   **and** out-of-band from 10 MHz to 30 GHz, and two-tone transient IIP3
   with committed tone-spacing/FFT parameters — over the full
   {typ, bcs, wcs, sf, fs} × {−40, 27, 125} °C × {1.62, 1.80, 1.98} V grid.
-  Evidence *for* the spec-ratification issue (#19), not a conformance claim;
+  Evidence *for* the spec ratification (issue #19 → decision record 0002),
+  not a conformance claim;
   its own README states why the DUT's ideal-passive models (no PDK inductor
   model exists — issue #5) bound what these numbers can be trusted to mean.
 - **[`breakdown-extraction/`](breakdown-extraction/README.md)** — issue

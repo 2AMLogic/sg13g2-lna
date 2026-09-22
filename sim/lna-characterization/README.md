@@ -9,12 +9,16 @@ netlist `design/netlist/lna.spice` (issue #17, PR #23) — at the 50 Ω port
 convention `spec/target-spec.md` states, across a process × temperature ×
 supply PVT grid.
 
-**Nothing here is a conformance claim.** Every row of
-`spec/target-spec.md` is DRAFT/unratified; this campaign is *evidence for*
-that ratification (issue #19), not a pass/fail verdict against it. And two
-of the numbers below fall short of their DRAFT targets by a wide margin —
-see "Results" and "What these numbers do and do not license" — which is the
-point of running the bench before declaring anything final.
+**Nothing here is a conformance claim.** `spec/target-spec.md` is now
+RATIFIED for the rows decision record
+[0002](../../spec/decision-records/0002-target-spec-first-ratification.md)
+marks RATIFIED (issue #19's ratification, PR #32) — DRAFT only for the
+IIP3 numeric target and the stretch columns; this campaign is the
+*evidence* that ratification used, not a pass/fail verdict against it. And
+two of the numbers below fall short of their targets by a wide margin —
+see "Results" and "What these numbers do and do not license" — which is
+why each ratified row's note gates conformance verdicts on the #26/#27
+re-runs rather than on this campaign's numbers.
 
 > **Headline conclusion, stated up front so it is not buried:** the DUT as
 > committed has **no input or output matching network** — `Cin`/`Cout` are
@@ -64,7 +68,8 @@ point it was taken at.
   output ports" convention, applied by ngspice's own two-port machinery
   rather than by a hand-rolled `2*Vout/Vin` extraction.
 - **Analysis**: `sp lin 11 2.4e9 2.4835e9 1` — 11 points across the full
-  2400–2483.5 MHz DRAFT band. The trailing `1` is `sp`'s `donoise` flag
+  2400–2483.5 MHz band (ratified by DR-0002). The trailing `1` is `sp`'s
+  `donoise` flag
   (see NF below).
 - **Reported**: |S11|, |S21|, |S12|, |S22| in dB and linear magnitude, per
   frequency point, per PVT cell, in `records/<record-id>-sparam.csv`; the
@@ -223,7 +228,7 @@ written into every generated IIP3 deck's header as well as here.
 
 - **Source**: two series `sin()` generators forming one Thevenin source
   behind `Rs = 50 Ω`, load `RL = 50 Ω` — the same 50 Ω port convention.
-- **Tones** (both inside the DRAFT band): `f1 = 2.44140625 GHz`,
+- **Tones** (both inside the band): `f1 = 2.44140625 GHz`,
   `f2 = 2.449035… GHz`, **tone spacing = 7.62939453125 MHz**. The measured
   IM3 products `2f1 − f2 = 2.43377… GHz` and `2f2 − f1 = 2.45667… GHz` are
   also in band.
@@ -306,12 +311,14 @@ written into every generated IIP3 deck's header as well as here.
   and **this campaign cannot exercise that corner at all** — not merely
   because the HBT sections are missing, but because the L/C mismatch it
   refers to lives in passives that are *ideal* in this netlist (next
-  section). That is a real coverage gap against the DRAFT spec, recorded
-  here rather than papered over.
-- **Supply**: ±10 % around DR-1's *proposed* 1.8 V nominal rail
-  (`spec/decision-records/0001-bias-supply-topology.md`, status
-  **proposed**, not ratified). If that record's nominal changes, this axis
-  changes with it.
+  section). That is a real coverage gap against the spec's exercisable
+  corner box, recorded here rather than papered over.
+- **Supply**: ±10 % around the 1.8 V nominal rail
+  (`spec/decision-records/0001-bias-supply-topology.md`, status now
+  **ratified** — its proposal made binding by decision record
+  [0002](../../spec/decision-records/0002-target-spec-first-ratification.md)
+  as the 1.80 V ± 10 % supply row). If that record's nominal changes, this
+  axis changes with it.
 - **Not covered**: passive corners (`cornerCAP.lib` and any inductor corner
   data) — the DUT's passives are ideal primitives with no corner models to
   sweep; mismatch/Monte-Carlo (`*_mismatch`/`*_stat` sections) — a separate
@@ -361,7 +368,7 @@ written into every generated IIP3 deck's header as well as here.
 
 See [`records/`](records/) for the append-only per-run record. The current
 record's headline numbers are reproduced in its own `records/<record-id>.md`
-and summarized against the DRAFT target rows in
+and summarized against the target-spec rows in
 [`../../measurements/README.md`](../../measurements/README.md) — which is
 the document to read for "what does this mean for the spec".
 
@@ -425,8 +432,10 @@ stability baseline any future matching network must be re-checked against;
 use the per-cell `ic1_a` spread as the case for replacing the placeholder
 bias divider.
 
-**Do not**: quote any number here as "meets spec" (no spec row is
-ratified); quote gain/NF/S11/S22 as achievable silicon performance (ideal
+**Do not**: quote any number here as "meets spec" (the as-committed DUT
+predates the #26/#27 re-runs the ratified rows' notes gate conformance
+on, and ideal passives bound what these numbers mean); quote
+gain/NF/S11/S22 as achievable silicon performance (ideal
 passives, §Model limitations); declare the matching network final (there
 isn't one, and stability has not been shown unconditional); or quote k
 without μ beside it (§Why k is ill-conditioned).

@@ -11,13 +11,19 @@ checked.
 
 ## ⚠️ Read this before quoting any number below
 
-1. **No row of `spec/target-spec.md` is ratified.** That table is **DRAFT**
-   in its entirety, by its own first line. Nothing here "passes spec",
-   "fails spec", or "meets spec" — there is no spec yet to meet. The
-   comparisons below exist to be *input to* the ratification issue
-   ([#19](https://github.com/2AMLogic/sg13g2-lna/issues/19)), which is where
-   the DRAFT numbers get argued about with this evidence in hand. Language
-   in this file is deliberately "against the DRAFT target", never "passing".
+1. **`spec/target-spec.md` is RATIFIED for the rows it marks RATIFIED, and
+   still DRAFT for the rest.** Its own status line remains the single
+   source of truth: ratification landed via decision record
+   [0002](../spec/decision-records/0002-target-spec-first-ratification.md)
+   (issue [#19](https://github.com/2AMLogic/sg13g2-lna/issues/19), merged
+   as PR #32) — the band, gain, NF, S11/S22, stability, supply and power
+   rows are binding, while the IIP3 numeric target and every former DRAFT
+   *stretch* column remain DRAFT by that record's explicit carve-outs.
+   Nothing here is a conformance verdict: the DUT this report reads is the
+   as-committed pre-#26/pre-#27 design (placeholder bias network, no
+   matching network, ideal passives), so the comparisons below remain
+   descriptive — measured shortfalls against the target rows, disclosed as
+   such — and the language stays "against the target", never "passing".
 2. **These are simulations of a schematic with idealized passives, not
    measurements of silicon.** Both inductors, all four capacitors and all
    four bias resistors in `design/lna.sch` are generic ideal SPICE
@@ -72,7 +78,7 @@ of `../sim/lna-characterization/records/20260918-210908-4293920-summary.csv`
 | **Output match (S22)** | < −10 dB across band | < −15 dB | **−0.0044 dB** | **−0.0034 dB** (bcs/−40 °C/1.80 V) | −0.0059 dB (wcs/125 °C/1.62 V) |
 | **Stability (k)** | k > 1 across band **and** out-of-band to ≥ 3× the upper band edge | k > 1.5 | in-band **k = 0.431**, **μ = 0.99962** | broadband **k = −3.169** at 66.8 MHz and **μ = 0.99902** at 29.9 GHz (both bcs/125 °C/1.98 V); in-band worst **k = 0.346** (fs/125 °C/1.62 V), **μ = 0.99952** (wcs/125 °C/1.80 V) | k = 25.6 in-band, μ = 1.00062 — only at wcs/−40 °C/1.62 V, where the amplifier is effectively off |
 | **IIP3** | > 0 dBm | > +5 dBm | **−2.22 dBm** | **−22.03 dBm** (wcs/−40 °C/1.62 V) | **+9.68 dBm** (bcs/125 °C/1.98 V) |
-| **Supply** | TBD (DR-1 *proposes* 1.8 V, not ratified) | — | swept ±10 %: 1.62 / 1.80 / 1.98 V | — | — |
+| **Supply** | 1.80 V ± 10 % (decided: DR-0002 makes DR-0001's 1.8 V proposal binding) | — | swept ±10 %: 1.62 / 1.80 / 1.98 V | — | — |
 | **Power (P_dc)** | < 10 mW | < 5 mW | **7.75 mW** | **29.64 mW** (bcs/125 °C/1.98 V) | 0.39 mW (wcs/−40 °C/1.62 V, amplifier effectively off) |
 
 *Summary-CSV columns behind each row, in order*: `s21_db_min` /
@@ -81,14 +87,17 @@ of `../sim/lna-characterization/records/20260918-210908-4293920-summary.csv`
 `iip3_dbm_a2mv`; `pdc_w`. "Worst" for a match or NF row means the numerically
 *least favourable* cell, which for S11/S22 is the one closest to 0 dB.
 
-**Distance from the DRAFT targets, stated plainly**: at the nominal cell,
-gain is **2.4 dB short** of the DRAFT target, NF is **0.37 dB over**, IIP3 is
-**2.2 dB under**, S11 is **9.4 dB short**, S22 is **10 dB short**, and
-stability does not meet "k > 1 across band" anywhere except at cells where
-the amplifier is essentially off. Power is within the DRAFT target at
-nominal and **~3× over it** at the worst cell. None of this is a spec
-failure (there is no ratified spec); all of it is the starting point the
-ratification argument has to begin from.
+**Distance from the target rows, stated plainly**: at the nominal cell,
+gain is **2.4 dB short** of the target, NF is **0.37 dB over**, IIP3 is
+**2.2 dB under** its still-DRAFT numeric target, S11 is **9.4 dB short**,
+S22 is **10 dB short**, and stability does not meet "k > 1 across band"
+anywhere except at cells where the amplifier is essentially off. Power is
+within the target at nominal and **~3× over it** at the worst cell. These
+are disclosed shortfalls of the as-committed design against rows DR-0002
+ratifies — each ratified row's note in `spec/target-spec.md` records them
+with their root cause (#26's placeholder bias network, #27's absent
+matching networks) — not conformance verdicts, which await the re-runs
+those issues gate.
 
 ## The three findings that matter
 
@@ -220,6 +229,9 @@ list is in
    practice on the inductor-model gap (#5 / klayout-tools#1519).
 3. **#25** — reconcile the precedent NF bench's source-reference-temperature
    claim, so this repo has one consistent NF definition across experiments.
-4. **#19** — ratify `spec/target-spec.md` via the fleet two-key mechanism,
-   using this record as the evidence base. Until then, the DRAFT targets are
-   a hypothesis, not a bar.
+4. **#19** — ratify `spec/target-spec.md` — **now resolved**: ratified via
+   decision record
+   [0002](../spec/decision-records/0002-target-spec-first-ratification.md)
+   (PR #32, this record as the evidence base). The rows it marks RATIFIED
+   are now a bar, not a hypothesis; the IIP3 numeric target and the former
+   stretch columns remain DRAFT pending their own record.
