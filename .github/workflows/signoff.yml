@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.5.0"
+        run: python3 -m pip install "klayout-tools==0.6.0"
 
       - name: Drift-checker self-test
         run: .github/scripts/test-check-signoff.sh
