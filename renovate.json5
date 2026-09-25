@@ -62,6 +62,22 @@
 
   // --- PR behavior ---
 
+  // Label every Renovate PR so it enters the Loom review queue.
+  //
+  // Without this, Renovate's PRs are bot-authored and unlabeled, and
+  // .loom/scripts/judge-fallback-guard.sh (lines 182-185) skips any external
+  // bot author permanently -- the fallback queue applies no labels, so such a
+  // PR can never leave it. The PRs would exist but nothing in the pipeline
+  // would ever review them, silently defeating the "automerge: false, humans
+  // review" posture this config is built around. This is the Renovate analog
+  // of the per-entry `labels:` that check-dependabot-labels.sh enforces for
+  // Dependabot (that check is a no-op here: no .github/dependabot.yml).
+  //
+  // Top-level `labels` applies to every PR Renovate opens; none of the
+  // packageRules below override it.
+  // Ref: https://docs.renovatebot.com/configuration-options/#labels
+  "labels": ["loom:review-requested"],
+
   // Limit concurrent PRs to keep review queue manageable
   "prConcurrentLimit": 5,
 
