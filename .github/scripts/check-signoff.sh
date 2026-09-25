@@ -46,7 +46,7 @@ fail() {
 }
 
 command -v klt >/dev/null 2>&1 || \
-  fail "klt not on PATH — install the pinned release (see signoff/README.md): python3 -m pip install klayout-tools==0.5.0"
+  fail "klt not on PATH — install the pinned release (see signoff/README.md): python3 -m pip install klayout-tools==0.6.0"
 
 cd "$ROOT" || fail "cannot cd to $ROOT"
 [ -f "$MANIFEST" ] || fail "missing $MANIFEST"

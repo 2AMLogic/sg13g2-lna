@@ -5,7 +5,7 @@
   report rendered by `klt signoff --manifest` — never a hand-maintained
   checkbox list in an issue body.
 - **Date**: 2026-09-21, issue #30 (companion item-11 work item: #35).
-- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.5.0` from
+- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.6.0` from
   PyPI) and the vendored checklist below.
 - **Does not**: grade anything itself. Every row's verdict comes from the
   tool's own mechanical parse-and-grade; this directory only declares what
@@ -17,7 +17,7 @@
 |---|---|
 | `manifest.json` | The block manifest: `block`, `kind`, and the per-item `evidence` map `klt signoff --manifest` grades. The fleet roll-up (2AMLogic/2am#956) consumes exactly this file; `sg13g2-lna` is the row identity. |
 | `t1-report.json` | The **verdict of record**: the committed `klt signoff --format json` output. CI re-renders the report on every push and PR and fails on any byte-drift (`.github/scripts/check-signoff.sh`), so a manifest citation whose artifact has since changed fails rather than rotting. |
-| `design-evidence-tiers.md` | Vendored copy of the T1-T4 evidence-tier checklist `klt signoff` parses (see provenance below). Vendored so the render is reproducible from this repo alone and carries the eleventh checklist item, which released `klt 0.5.0` does not bundle (see "Why the checklist doc is vendored"). |
+| `design-evidence-tiers.md` | Vendored copy of the T1-T4 evidence-tier checklist `klt signoff` parses (see provenance below). Vendored so the render is reproducible from this repo alone, independent of whichever doc a given installed `klt` build happens to bundle (see "Why the checklist doc is vendored"). |
 
 Today every item renders `unmet` with `reason: "no_evidence"` — the honest
 statement of the gap for a block at this stage, though a richer one than
@@ -93,31 +93,52 @@ the item just to make a row go green.
   - **Item 7 accepts only a `klt pex` report** — unlike every other
     item, it rejects any other evidence kind; a clean DRC or pre-layout
     sim renders `wrong_kind` (#30's "Things that will bite").
-  - **Item 11 must stay uncited while the klt pin is `0.5.0`.** The
-    item-11 grading rules (klayout-tools#2057, plus the per-item
-    build-grading guard of #2201) are on klayout-tools `main` but not in
-    any release; a citation under the pinned 0.5.0 build would fall
-    through to rules that do not exist in the running build and could
-    render `met` from nothing. The row is present (the vendored
-    checklist carries item 11) and renders `unmet`/`no_evidence` — the
-    exact "has a row, even if unmet" state issue #30 requires. Cite it
-    only after bumping the pin to a release containing #2057/#2201.
-    Item 11's blocking work is tracked in the companion issue #35; the
-    load-bearing upstream frictions for this block are already on file
+  - **Item 11 stays uncited — no evidence exists, not a tooling gap.**
+    Under the previous `0.5.0` pin this item additionally had to stay
+    uncited on tooling grounds: the item-11 grading rules
+    (klayout-tools#2057, plus the per-item build-grading guard of #2201)
+    were on klayout-tools `main` but not in any release, so a citation
+    under the pinned 0.5.0 build would have fallen through to rules that
+    did not exist in the running build and could have rendered `met` from
+    nothing. **`klt 0.6.0` ships both #2057 and #2201** (klayout-tools
+    `CHANGELOG.md@v0.6.0`), which retires that specific risk — a genuine
+    item-11 citation under the current pin now grades against real rules,
+    not a silent fall-through. The rendered report's per-row
+    `graded_by_build: true` field (also new in 0.6.0) is the machine-checkable
+    confirmation of that fact. What has not changed: this repo has no
+    layout, so there is no `klt erc` supply-spec run to cite — item 11 stays
+    uncited for the same reason items 2, 3, 4 and 7 do (no artifact exists
+    yet), and renders `unmet`/`no_evidence` — the exact "has a row, even if
+    unmet" state issue #30 requires. Item 11's blocking work (the actual
+    layout and supply-spec evidence) is tracked in the companion issue #35;
+    the load-bearing upstream frictions for this block are already on file
     (SiGe-HBT recognition permanently declined — klayout-tools#1242,
     documented for this PDK in `sg13g2-bandgap#4`; tap declaration by
-    assertion or disclosure — klayout-tools#2240, unreleased).
+    assertion or disclosure — klayout-tools#2240, shipped in 0.6.0).
 
 ## Why the checklist doc is vendored
 
 The tiers checklist is `klt`'s runtime tool data: `klt signoff --manifest`
 renders the item skeleton mechanically from the doc, so the checklist and
-the grader can never drift. Released `klt 0.5.0` (2026-09-15) bundles the
-**ten-item** checklist — the eleventh item (power delivery, structural)
-landed on klayout-tools `main` on 2026-09-17 (#2057), ahead of any
-release: klayout-tools#2173 tracks the release lag itself. Rendering with
-the bundled doc would silently report ten items and no item-11 row at
-all, so `signoff/README.md`'s commands and `.github/scripts/check-signoff.sh`
+the grader can never drift. The *original* reason to vendor no longer
+holds: released `klt 0.5.0` (2026-09-15) bundled only the **ten-item**
+checklist (item 11, power delivery/structural, landed on klayout-tools
+`main` on 2026-09-17, #2057, ahead of any release — klayout-tools#2173
+tracked that release lag). **`klt 0.6.0`'s bundled doc carries item 11**,
+so rendering against the bundled copy would no longer silently drop the
+row.
+
+The vendoring is kept anyway, for the **independent** reason
+`signoff/README.md` has always also given: reproducibility from this repo
+alone. Which checklist a render used against a given installed `klt`
+build is otherwise an environment fact, not a repo fact — a different
+machine with a different installed `klayout-tools` version could bundle a
+different doc revision and silently re-grade this block's evidence
+against different item text. Pinning the exact bytes here, alongside the
+committed report's own `source_doc_content_hash` (new in 0.6.0, see
+below), makes the render fully reconstructible from a checkout of this
+repo, independent of whatever a given `klt` install happens to bundle.
+`signoff/README.md`'s commands and `.github/scripts/check-signoff.sh`
 both pass `--tiers-doc signoff/design-evidence-tiers.md` — the documented
 vendoring pattern (`docs/cli/signoff.md` → "Where the tier doc comes
 from", `KLT_TIERS_DOC`).
@@ -127,9 +148,9 @@ from", `KLT_TIERS_DOC`).
 | Field | Value |
 |---|---|
 | Source | `2AMLogic/klayout-tools` `docs/design-evidence-tiers.md` |
-| Pinned at | commit `13bfe8c2e651db15ae57c7b91cf7ba4e2a49165c` (2026-09-21, repository tip at vendoring; the doc itself unchanged since the sha below) |
-| File SHA-256 | `c7a1e7e10627fae396007e0ff951734f37d95028b8f49f2e21e802e9f552f318` |
-| Last doc-touching upstream commit | `31a3e3c41c08bbd58719e0b99a3b6d19beb9be63` (feat(erc): declare a tap by assertion or disclose it as unexpressible, #2240) |
+| Pinned at | commit `c622e8addb362491664d44ba4d717f354ca88bbd` (2026-09-22, the `v0.6.0` tag commit) |
+| File SHA-256 | `63eeec72e3d849761cf32dcf091af5728b069b1515e32bb3138e9454303671e5` |
+| Last doc-touching upstream commit | `0882541638acaec9ceb43c4df77b47d5a1a179db` (feat(signoff): carry a mixed-signal manifest's declared partition boundary, #2303) |
 | License | Apache-2.0 (klayout-tools is Apache-2.0; this copy is verbatim, unmodified) |
 
 **Upgrade procedure**: copy the newer doc from klayout-tools verbatim,
@@ -149,7 +170,7 @@ It is refreshed deliberately, in the same commit as whatever change
 re-grades the block:
 
 ```bash
-python3 -m pip install klayout-tools==0.5.0   # the pinned release
+python3 -m pip install klayout-tools==0.6.0   # the pinned release
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -165,17 +186,25 @@ report is a correct verdict, not a CI failure. The payload gates on its
 own fields (`block`, `kind`, `schema_version`, 11 rendered items, no
 error envelope), not the exit code alone.
 
-**Known field gap under the current pin.** `klt 0.5.0` predates the
+**Field gap closed under the current pin.** `klt 0.5.0` predated the
 report's `build` and `source_doc_content_hash` fields
-(klayout-tools#2175/#2176, unreleased as of the pin), so the committed
-record does not name which `klt` build graded it or hash the checklist
-it was graded against. The compensating pins are explicit in this repo
-today — the PyPI release pin in the command above and in CI's install
-step, the vendored doc's committed SHA-256 above, and the CI byte-drift
-gate that fails the moment any of the three moves. When a klt release
-carrying #2175/#2176/#2201 is pinned, the re-rendered record picks both
-fields up and the pin plus doc hashes become machine-checked rather than
-prose.
+(klayout-tools#2175/#2176); under that pin the committed record did not
+name which `klt` build graded it or hash the checklist it was graded
+against, so this repo carried the equivalent facts as prose — the PyPI
+release pin in the command above and in CI's install step, and the
+vendored doc's committed SHA-256 in the Provenance table. **`klt 0.6.0`
+ships both fields.** The committed `t1-report.json` now carries a
+top-level `build` object (`version`, `git_commit`, `git_tag`,
+`grading_ruleset_id`, …) naming exactly which `klt` build produced the
+render, a top-level `source_doc_content_hash` that must match the
+Provenance table's File SHA-256 above, and a per-row `graded_by_build`
+flag (klayout-tools#2201) confirming the running build actually has
+rules for that item. What were three independently-maintained prose
+pins — the PyPI version string, the vendored doc's recorded hash, and
+"is item 11's rule real" — are now each cross-checked against a
+machine-emitted field in the same report `check-signoff.sh` already
+byte-compares, rather than resting on a human keeping three numbers in
+sync by hand.
 
 ## Sources
 
