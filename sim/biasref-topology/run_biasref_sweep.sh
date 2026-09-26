@@ -66,37 +66,16 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
 
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_biasref_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
-
-command -v ngspice >/dev/null 2>&1 || { echo "run_biasref_sweep.sh: ngspice not on PATH." >&2; exit 3; }
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
-MODELS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerHBT.lib"
-MOS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerMOShv.lib"
-OSDI_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
-for f in "${MODELS_LIB}" "${MOS_LIB}" "${OSDI_DIR}/psp103.osdi" "${OSDI_DIR}/psp103_nqs.osdi" "${OSDI_DIR}/mosvar.osdi"; do
-  if [[ ! -f "${f}" ]]; then
-    echo "run_biasref_sweep.sh: missing ${f} -- if it is the .osdi models, run sim/tools/build-osdi.sh (see sim/README.md 'OSDI device models')." >&2
-    exit 3
-  fi
-done
-
-REPO_GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-EXPERIMENT_DIR="${SCRIPT_DIR}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
-mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
+# PDK/ngspice preflight (exit 3 on any miss, prefixed with this runner's
+# own name) and this run's record id + append-only output dirs. --osdi
+# because the Option-A core instantiates sg13_hv_pmos/sg13_hv_nmos.
+sim_require_pdk run_biasref_sweep.sh --osdi
+sim_record_paths
 
 # --- PVT grids ------------------------------------------------------------
 CORNER_LABELS=(typ bcs wcs)
@@ -112,39 +91,15 @@ if [[ -n "${BIASREF_SMOKE:-}" ]]; then
   STARTUP_CELLS=("typ 27 1.80")
 fi
 
-render() { # render <template> <outfile> <extra sed-args...>
-  local tmpl="$1" out="$2"; shift 2
-  sed "$@" \
-    -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
-    -e "s|@@MOS_LIB@@|${MOS_LIB}|g" \
-    -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
-    "${tmpl}" > "${out}"
-}
-
-_ncpu="$(sysctl -n ncpu 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 3)"
-BIASREF_JOBS="${BIASREF_JOBS:-$(( _ncpu / 3 ))}"
-(( BIASREF_JOBS < 1 )) && BIASREF_JOBS=1
-(( BIASREF_JOBS > 6 )) && BIASREF_JOBS=6
+# Deck rendering (sim_render), the ngspice job pool (sim_jobs /
+# sim_pool_init / sim_pool_spawn) and the per-point pass/fail gate
+# (sim_check_log) are sim/env.sh's shared surface; this bench adds no
+# failure pattern of its own beyond the BENCH_COMPLETE marker.
+sim_jobs BIASREF_JOBS
+sim_pool_init "${BIASREF_JOBS}"
 
 FAILED_LIST="$(mktemp)"
 trap 'rm -f "${FAILED_LIST}"' EXIT
-
-pool_spawn() {
-  while (( $(jobs -rp | wc -l) >= BIASREF_JOBS )); do
-    wait -n 2>/dev/null || true
-  done
-  ( trap - EXIT; "$@" ) &
-}
-
-_check() { # _check <point_id> <log> <rc>
-  local pid="$1" log="$2" rc="$3"
-  if [[ "${rc}" != 0 ]] || ! grep -q "^BENCH_COMPLETE" "${log}"; then
-    echo "run_biasref_sweep.sh: FAILED ${pid} (rc=${rc}) -- see ${log}" >&2
-    echo "${pid}" >> "${FAILED_LIST}"
-    return 1
-  fi
-  return 0
-}
 
 run_mpa_cell() {
   local label="$1" temp="$2" ifeed="$3"
@@ -152,13 +107,13 @@ run_mpa_cell() {
   local pid="mpa_${label}_${temp}c_i${ifeed}"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
-  render "${EXPERIMENT_DIR}/testbench/tb_mpa_diode.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_mpa_diode.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
     -e "s|@@IFEED@@|${ifeed}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${pid}" "${log}" "${rc}" || return 0
+  sim_check_log "${pid}" "${log}" "${rc}" || return 0
 }
 
 run_core_cell() {
@@ -168,14 +123,14 @@ run_core_cell() {
   local pid="core_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
-  render "${EXPERIMENT_DIR}/testbench/tb_core_minigrid.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_core_minigrid.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt}|g" \
     -e "s|@@MOS_SECTION@@|${mos}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
     -e "s|@@VDD@@|${vdd}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${pid}" "${log}" "${rc}" || return 0
+  sim_check_log "${pid}" "${log}" "${rc}" || return 0
 }
 
 run_startup_cell() {
@@ -186,7 +141,7 @@ run_startup_cell() {
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
   local dat="${CORNERS_OUT}/${pid}.dat"
-  render "${EXPERIMENT_DIR}/testbench/tb_core_startup.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_core_startup.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt}|g" \
     -e "s|@@MOS_SECTION@@|${mos}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
@@ -194,7 +149,7 @@ run_startup_cell() {
     -e "s|@@STARTUP_DAT@@|${dat}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${pid}" "${log}" "${rc}" || return 0
+  sim_check_log "${pid}" "${log}" "${rc}" || return 0
 }
 
 run_servo_cell() {
@@ -204,10 +159,10 @@ run_servo_cell() {
   local pid="servo_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
-  render "${EXPERIMENT_DIR}/testbench/tb_servo_minigrid.spice.tmpl" "${netlist}"     -e "s|@@HBT_SECTION@@|${hbt}|g"     -e "s|@@MOS_SECTION@@|${mos}|g"     -e "s|@@TEMP@@|${temp}|g"     -e "s|@@VDD@@|${vdd}|g"
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_servo_minigrid.spice.tmpl" "${netlist}"     -e "s|@@HBT_SECTION@@|${hbt}|g"     -e "s|@@MOS_SECTION@@|${mos}|g"     -e "s|@@TEMP@@|${temp}|g"     -e "s|@@VDD@@|${vdd}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${pid}" "${log}" "${rc}" || return 0
+  sim_check_log "${pid}" "${log}" "${rc}" || return 0
 }
 
 run_servo_startup_cell() {
@@ -218,10 +173,10 @@ run_servo_startup_cell() {
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
   local dat="${CORNERS_OUT}/${pid}.dat"
-  render "${EXPERIMENT_DIR}/testbench/tb_servo_startup.spice.tmpl" "${netlist}"     -e "s|@@HBT_SECTION@@|${hbt}|g"     -e "s|@@MOS_SECTION@@|${mos}|g"     -e "s|@@TEMP@@|${temp}|g"     -e "s|@@VDD@@|${vdd}|g"     -e "s|@@STARTUP_DAT@@|${dat}|g"
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_servo_startup.spice.tmpl" "${netlist}"     -e "s|@@HBT_SECTION@@|${hbt}|g"     -e "s|@@MOS_SECTION@@|${mos}|g"     -e "s|@@TEMP@@|${temp}|g"     -e "s|@@VDD@@|${vdd}|g"     -e "s|@@STARTUP_DAT@@|${dat}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${pid}" "${log}" "${rc}" || return 0
+  sim_check_log "${pid}" "${log}" "${rc}" || return 0
 }
 
 echo "run_biasref_sweep.sh: record ${RECORD_ID}; ${#CORNER_LABELS[@]} corners x ${#TEMPS[@]} temps; ${BIASREF_JOBS} job(s)"
@@ -229,31 +184,31 @@ echo "run_biasref_sweep.sh: record ${RECORD_ID}; ${#CORNER_LABELS[@]} corners x 
 for label in "${CORNER_LABELS[@]}"; do
   for temp in "${TEMPS[@]}"; do
     for ifeed in "${MPA_FEEDS[@]}"; do
-      pool_spawn run_mpa_cell "${label}" "${temp}" "${ifeed}"
+      sim_pool_spawn run_mpa_cell "${label}" "${temp}" "${ifeed}"
     done
   done
 done
 for label in "${CORNER_LABELS[@]}"; do
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      pool_spawn run_core_cell "${label}" "${temp}" "${vdd}"
+      sim_pool_spawn run_core_cell "${label}" "${temp}" "${vdd}"
     done
   done
 done
 for cell in "${STARTUP_CELLS[@]}"; do
   set -- ${cell}
-  pool_spawn run_startup_cell "${1}" "${2}" "${3}"
+  sim_pool_spawn run_startup_cell "${1}" "${2}" "${3}"
 done
 for label in "${CORNER_LABELS[@]}"; do
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      pool_spawn run_servo_cell "${label}" "${temp}" "${vdd}"
+      sim_pool_spawn run_servo_cell "${label}" "${temp}" "${vdd}"
     done
   done
 done
 for cell in "${STARTUP_CELLS[@]}"; do
   set -- ${cell}
-  pool_spawn run_servo_startup_cell "${1}" "${2}" "${3}"
+  sim_pool_spawn run_servo_startup_cell "${1}" "${2}" "${3}"
 done
 wait
 

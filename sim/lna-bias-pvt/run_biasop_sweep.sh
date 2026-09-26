@@ -56,32 +56,15 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
 
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_biasop_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
-
-command -v ngspice >/dev/null 2>&1 || { echo "run_biasop_sweep.sh: ngspice not on PATH." >&2; exit 3; }
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
-MODELS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerHBT.lib"
-MOS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerMOShv.lib"
-OSDI_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
-if [[ ! -f "${MODELS_LIB}" ]]; then
-  echo "run_biasop_sweep.sh: cornerHBT.lib not found at ${MODELS_LIB}" >&2
-  exit 3
-fi
-for f in "${MOS_LIB}" "${OSDI_DIR}/psp103.osdi" "${OSDI_DIR}/psp103_nqs.osdi" "${OSDI_DIR}/mosvar.osdi"; do
-  if [[ ! -f "${f}" ]]; then
-    echo "run_biasop_sweep.sh: ${f} not found -- if the .osdi models are missing, run sim/tools/build-osdi.sh (see sim/README.md 'OSDI device models'); the DR-0003 Stage-2 DUT will not simulate without them." >&2
-    exit 3
-  fi
-done
+# PDK/ngspice preflight (exit 3 on any miss, prefixed with this runner's
+# own name). --osdi because the DR-0003 Stage-2 DUT instantiates
+# sg13_hv_pmos/sg13_hv_nmos (PSP103.6, loadable only as OSDI).
+sim_require_pdk run_biasop_sweep.sh --osdi
 
 DESIGN_NETLIST="${REPO_ROOT}/design/netlist/lna.spice"
 if [[ ! -f "${DESIGN_NETLIST}" ]]; then
@@ -90,24 +73,19 @@ if [[ ! -f "${DESIGN_NETLIST}" ]]; then
 fi
 DESIGN_NETLIST_SHA="$(shasum -a 256 "${DESIGN_NETLIST}" | awk '{print $1}')"
 
-REPO_GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-EXPERIMENT_DIR="${SCRIPT_DIR}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
-mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
+# This run's record id + its three append-only output locations.
+sim_record_paths
 
 # --- DUT: the committed design netlist, inlined verbatim ----------------
 # Same uncomment-subckt convention as sim/lna-characterization's runner.
-DUT_SUBCKT="$(mktemp)"
-trap 'rm -f "${DUT_SUBCKT}"' EXIT
+# SIM_DUT_SUBCKT is what sim_render splices in at @@LNA_SUBCKT@@.
+SIM_DUT_SUBCKT="$(mktemp)"
+trap 'rm -f "${SIM_DUT_SUBCKT}"' EXIT
 sed -e 's|^\*\*\.subckt|.subckt|' \
     -e 's|^\*\*\.ends|.ends|' \
     -e '/^\.end$/d' \
-    "${DESIGN_NETLIST}" > "${DUT_SUBCKT}"
-grep -q '^\.subckt lna ' "${DUT_SUBCKT}" || {
+    "${DESIGN_NETLIST}" > "${SIM_DUT_SUBCKT}"
+grep -q '^\.subckt lna ' "${SIM_DUT_SUBCKT}" || {
   echo "run_biasop_sweep.sh: could not recover a '.subckt lna ...' line from ${DESIGN_NETLIST}" >&2
   exit 3
 }
@@ -142,44 +120,15 @@ else
 fi
 STARTUP_CELLS=("bcs 125 1.98" "wcs -40 1.62" "typ 27 1.80")
 
-render() {
-  # render <template> <outfile> <sed-args...>
-  local tmpl="$1" out="$2"; shift 2
-  sed "$@" \
-    -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
-    -e "s|@@MOS_LIB@@|${MOS_LIB}|g" \
-    -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
-    "${tmpl}" \
-    | sed -e "/@@LNA_SUBCKT@@/r ${DUT_SUBCKT}" -e "/@@LNA_SUBCKT@@/d" > "${out}"
-}
-
-_ncpu="$(sysctl -n ncpu 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 3)"
-BIASOP_JOBS="${BIASOP_JOBS:-$(( _ncpu / 3 ))}"
-(( BIASOP_JOBS < 1 )) && BIASOP_JOBS=1
-(( BIASOP_JOBS > 6 )) && BIASOP_JOBS=6
+# Deck rendering (sim_render), the ngspice job pool (sim_jobs /
+# sim_pool_init / sim_pool_spawn) and the per-point pass/fail gate
+# (sim_check_log) are sim/env.sh's shared surface; this bench adds no
+# failure pattern of its own beyond the BENCH_COMPLETE marker.
+sim_jobs BIASOP_JOBS
+sim_pool_init "${BIASOP_JOBS}"
 
 FAILED_LIST="$(mktemp)"
-trap 'rm -f "${DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
-
-pool_spawn() {
-  # pool_spawn <fn> <args...> -- run in the background, at most
-  # BIASOP_JOBS at a time. `trap - EXIT` in the child keeps the child's
-  # exit from deleting the parent's shared temp files.
-  while (( $(jobs -rp | wc -l) >= BIASOP_JOBS )); do
-    wait -n 2>/dev/null || true
-  done
-  ( trap - EXIT; "$@" ) &
-}
-
-_check() { # _check <point_id> <log> <rc>
-  local pid="$1" log="$2" rc="$3"
-  if [[ "${rc}" != 0 ]] || ! grep -q "^BENCH_COMPLETE" "${log}"; then
-    echo "run_biasop_sweep.sh: FAILED ${pid} (rc=${rc}) -- see ${log}" >&2
-    echo "${pid}" >> "${FAILED_LIST}"
-    return 1
-  fi
-  return 0
-}
+trap 'rm -f "${SIM_DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
 
 run_op_cell() {
   local corner_label="$1" temp="$2" vdd="$3"
@@ -188,7 +137,7 @@ run_op_cell() {
   local point_id="op_${corner_label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
-  render "${EXPERIMENT_DIR}/testbench/tb_lna_biasop.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_biasop.spice.tmpl" "${netlist}" \
     -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
     -e "s|@@MOS_SECTION@@|${mos_section}|g" \
@@ -196,7 +145,7 @@ run_op_cell() {
     -e "s|@@VDD@@|${vdd}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${point_id}" "${log}" "${rc}" || return 0
+  sim_check_log "${point_id}" "${log}" "${rc}" || return 0
 }
 
 run_startup_cell() {
@@ -207,7 +156,7 @@ run_startup_cell() {
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
   local dat="${CORNERS_OUT}/${point_id}.dat"
-  render "${EXPERIMENT_DIR}/testbench/tb_lna_startup.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_startup.spice.tmpl" "${netlist}" \
     -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
     -e "s|@@MOS_SECTION@@|${mos_section}|g" \
@@ -216,18 +165,18 @@ run_startup_cell() {
     -e "s|@@STARTUP_DAT@@|${dat}|g"
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  _check "${point_id}" "${log}" "${rc}" || return 0
+  sim_check_log "${point_id}" "${log}" "${rc}" || return 0
 }
 
 echo "run_biasop_sweep.sh: record ${RECORD_ID}; ${#OP_CELLS[@]} op cells, ${#STARTUP_CELLS[@]} startup cells, ${BIASOP_JOBS} job(s)"
 
 for cell in "${OP_CELLS[@]}"; do
   set -- ${cell}
-  pool_spawn run_op_cell "${1}" "${2}" "${3}"
+  sim_pool_spawn run_op_cell "${1}" "${2}" "${3}"
 done
 for cell in "${STARTUP_CELLS[@]}"; do
   set -- ${cell}
-  pool_spawn run_startup_cell "${1}" "${2}" "${3}"
+  sim_pool_spawn run_startup_cell "${1}" "${2}" "${3}"
 done
 wait
 
