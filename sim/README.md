@@ -260,3 +260,24 @@ a target-spec row.
   the two RATIFIED 45-cell bars on the swapped netlist are
   [`lna-bias-pvt/`](lna-bias-pvt/README.md)'s own record, not this
   one's.
+- **[`lna-core-envelope/`](lna-core-envelope/README.md)** — issue #52: what
+  (gain, NF, P_dc) envelope is achievable on `npn13G2` **at all**, as
+  distinct from what the committed DUT measures. Re-runs
+  `lna-characterization/`'s own sp/NF/stability bench, character-for-
+  character, over 15 DUT **variants** across the same 45-cell PVT grid
+  (675 decks): a constant-`J_C` emitter-area family, a constant-`I_C`
+  current-density family (emitter area 4 … 80 unit emitters, mirror width
+  scaled inversely), and four two-stage cascades on one shared bias core.
+  The committed netlist runs as the control variant `s_ctrl_a8` and the
+  parser **refuses to write a record** unless it reproduces
+  `lna-characterization` record `20260926-122301-088c734` (it currently
+  reproduces it to `0.000e+00` relative difference at all 45 cells). Also
+  carries a derivation-only half — no PDK, no ngspice — that re-references
+  that committed record's `NFmin` to the RATIFIED T0 = 290 K (ngspice's
+  `sp` NF is **analysis-temperature** referenced, proven against the
+  record's own independent `.noise` column to 9.2e-5 dB) and computes its
+  gain envelope against collector-tank inductor Q. Evidence for
+  `spec/decision-records/0004-achievable-gain-nf-power-envelope.md`; every
+  variant except the control is a **probe**, nothing under `design/`
+  changes because of it, and no number here is a `target-spec.md`
+  conformance claim.
