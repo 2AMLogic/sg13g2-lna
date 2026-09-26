@@ -6,7 +6,43 @@
 * sweep. Full methodology, bench definitions and model limitations are in
 * sim/lna-characterization/README.md; this header is a short pointer.
 *
-* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ MOS_SECTION=@@MOS_SECTION@@
+* TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+*
+* DR-0003 Stage-2 preamble note (issue #33 / PR #40, commit e25df3b): since
+* the flat-reference core swap landed in design/netlist/lna.spice, the DUT
+* instantiates sg13_hv_pmos and sg13_hv_nmos (PSP103.6 via OSDI). This deck
+* therefore loads cornerMOShv.lib's section for the MOS devices alongside
+* cornerHBT.lib's for the HBTs (typ->mos_tt, bcs->mos_ff, wcs->mos_ss,
+* sf->mos_sf, fs->mos_fs -- cornerMOShv ships all five real sections, so
+* only the HBT side duplicates) and preloads the OSDI models exactly the way
+* sim/lna-bias-pvt's and sim/biasref-topology's decks do. Without that
+* preamble ngspice-46 aborts on `unknown subckt: ... sg13_hv_pmos` before
+* any analysis runs -- which is why the pre-swap records
+* (20260918-210908-4293920, 20260921-131646-d6da30a) are the last ones this
+* deck could produce unchanged. NOTHING about the measurement itself moved:
+* same two DUT copies, same 50 Ohm `sp` ports, same `.noise` convention,
+* same wrdata columns, same parser.
+*
+* SECOND DR-0003 edit, and the ONLY numeric one: `.options gmin=1e-10`.
+* This is NOT ngspice-46's default -- the default is 1e-12, and this deck
+* carried no gmin override at all for the two pre-swap records. It is set
+* because the DR-0003 flat-reference core does not converge without it at
+* the coldest/lowest-rail cells: at bcs/-40 C/1.62 V (and sf/-40 C at 1.62
+* and 1.80 V, fs/-40 C/1.62 V) ngspice-46's dynamic gmin stepping, true
+* gmin stepping, source stepping AND transient-op fallback all fail in turn
+* and the `op` aborts with "Timestep too small", taking the whole cell's
+* sp/noise/stability output with it. The cost is quantified rather than
+* asserted -- re-running the nominal cell's committed snapshot with and
+* without the override (see README.md "gmin and the DR-0003 core") moves
+* every recorded quantity in the 7th significant figure or beyond:
+* NFmin 2.38165037 -> 2.38165216 dB, nf290 2.65592 -> 2.65592 dB,
+* |S21| 11.5657 -> 11.5657 dB, mu 1.00035307 -> 1.00035309,
+* I_C1 3.94032 -> 3.94030 mA; the largest relative move anywhere is
+* 4.5e-5 on Rollett's k (3.824535 -> 3.824708), which this bench already
+* documents as ill-conditioned on exactly this topology. gmin is a
+* conductance, not a noise source, so it adds no noise term; at 1e-10 S it
+* is 0.1 nA of leakage per junction per volt against a mA-scale bias.
 *
 * The DUT subcircuit below is INLINED VERBATIM from the committed
 * design/netlist/lna.spice (xschem-generated from design/lna.sch, issue
@@ -56,8 +92,9 @@
 * ngspice's current plot, or the referencing vector silently goes stale.
 
 .lib "@@MODELS_LIB@@" @@HBT_SECTION@@
+.lib "@@MOS_LIB@@" @@MOS_SECTION@@
 
-.options temp=@@TEMP@@ tnom=27
+.options temp=@@TEMP@@ tnom=27 gmin=1e-10
 
 * ---------------------------------------------------------------------
 * DUT subcircuit, inlined verbatim from design/netlist/lna.spice
@@ -78,6 +115,12 @@ RL nfout 0 50 noisy=0
 Xb vddb 0 nfin nfout lna
 
 .control
+* PSP103.6 Verilog-A/OSDI models for sg13_hv_pmos / sg13_hv_nmos. `pre_osdi`
+* executes before the netlist is parsed, so these must precede every
+* analysis; build them with sim/tools/build-osdi.sh.
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
 * --- DC operating point (the bias point every number below carries) ---
 op
 let ic1 = @q.xa.xq1.qnpn13g2[ic]

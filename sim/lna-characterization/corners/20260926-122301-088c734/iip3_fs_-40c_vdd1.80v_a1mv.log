@@ -1,0 +1,87 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Note: Source stepping completed
+Note: Starting dynamic gmin stepping
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Note: Source stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- two-tone transient iip3 bench (issue #18)
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00397292 ic2 0.00396997 vce1 0.750977 vce2 1.04902 idd 0.00473502
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                        1.8
+vin                                          0
+va                                           0
+rfin                                         0
+rfout                                        0
+xa.outn                                    1.8
+xa.vb2                                  1.6473
+xa.casc                               0.750977
+xa.xq2.s1                          1.95312e-07
+xa.xq2.t                               7.27606
+xa.b1                                 0.898087
+xa.e1                                        0
+xa.xq1.s1                          7.99228e-08
+xa.xq1.t                               5.21381
+xa.nc_b                               0.812183
+xa.nc_a                               0.808834
+xa.nc_e                              0.0427307
+xa.xqb.s1                          8.93317e-08
+xa.xqb.t                             0.0168938
+xa.xqa.s1                          3.23286e-08
+xa.xqa.t                               0.11612
+xa.vbg                                   1.039
+xa.cb3                                0.808625
+xa.xqc.s1                          3.23206e-08
+xa.xqc.t                              0.114928
+xa.gsvo                                0.84043
+xa.es                                 0.216818
+xa.dn                                 0.825338
+xa.vl                                   1.0392
+xa.bref                               0.899042
+xa.xq3.s1                          3.49618e-08
+xa.xq3.t                               5.19474
+l.xa.lc#branch                      0.00396997
+l.xa.le#branch                      0.00397581
+vt2#branch                                   0
+vt1#branch                                   0
+vdd#branch                         -0.00473502
+
+ Reference value :  1.00000e-06 Reference value :  1.01036e-06 Reference value :  1.02079e-06 Reference value :  1.03132e-06 Reference value :  1.04177e-06 Reference value :  1.05209e-06 Reference value :  1.06247e-06 Reference value :  1.07278e-06 Reference value :  1.08315e-06 Reference value :  1.09348e-06 Reference value :  1.10289e-06 Reference value :  1.11292e-06 Reference value :  1.12321e-06 Reference value :  1.13364e-06 Reference value :  1.14401e-06 Reference value :  1.15432e-06 Reference value :  1.16455e-06 Reference value :  1.17481e-06 Reference value :  1.18516e-06 Reference value :  1.19557e-06 Reference value :  1.20607e-06 Reference value :  1.21634e-06 Reference value :  1.22659e-06 Reference value :  1.23685e-06 Reference value :  1.24718e-06 Reference value :  1.25736e-06
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.00197369 tone2 0.00197114 im3l 7.41528E-09 im3h 7.37233E-09 src1 0.000999621
+FFT: Time span: 2.62144e-07 s, input length: 65536, zero padding: 0
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+FFTDF 3.8147E+06
+FFT tone1 0.00197369 tone2 0.00197114 im3l 7.40969E-09 im3h 7.38315E-09 im5l 4.83133E-11 im5h 7.1662E-11 src1 0.000999621 src2 0.000999618
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

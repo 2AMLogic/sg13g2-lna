@@ -7,10 +7,14 @@
 #
 # (PDK_ROOT/PDK may also be left unset if the PDK is installed under one of
 # the usual prefixes sim/env.sh checks.) Requires ngspice and python3 on
-# PATH; does not require xschem, klt, or an OSDI build step (npn13G2 is a
-# native ngspice VBIC model -- see sim/pdk.json). Full methodology, bench
-# definitions, corner scope and stated method limits are in
-# sim/lna-characterization/README.md -- read that first if a result here
+# PATH, and -- since the DR-0003 Stage-2 core swap (issue #33 / PR #40,
+# commit e25df3b) -- the OSDI device models, because the committed DUT now
+# instantiates sg13_hv_pmos / sg13_hv_nmos (PSP103.6 via OSDI). Build or
+# check them with sim/tools/build-osdi.sh (see sim/README.md "OSDI device
+# models"); npn13G2 itself stays a native ngspice VBIC model needing no
+# compile step -- see sim/pdk.json. Does not require xschem or klt. Full
+# methodology, bench definitions, corner scope and stated method limits are
+# in sim/lna-characterization/README.md -- read that first if a result here
 # looks surprising.
 #
 # Runs the CIRCUIT-level characterization of design/lna.sch (via its
@@ -67,10 +71,22 @@ command -v python3 >/dev/null 2>&1 || { echo "run_lna_sweep.sh: python3 not on P
 NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
 
 MODELS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerHBT.lib"
+MOS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerMOShv.lib"
+OSDI_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
 if [[ ! -f "${MODELS_LIB}" ]]; then
   echo "run_lna_sweep.sh: cornerHBT.lib not found at ${MODELS_LIB}" >&2
   exit 3
 fi
+# DR-0003 Stage-2 (issue #33 / PR #40): the committed DUT instantiates
+# sg13_hv_pmos / sg13_hv_nmos, so this bench now needs cornerMOShv.lib and
+# the OSDI models too -- the same preamble sim/lna-bias-pvt's runner
+# already carries.
+for f in "${MOS_LIB}" "${OSDI_DIR}/psp103.osdi" "${OSDI_DIR}/psp103_nqs.osdi" "${OSDI_DIR}/mosvar.osdi"; do
+  if [[ ! -f "${f}" ]]; then
+    echo "run_lna_sweep.sh: ${f} not found -- if the .osdi models are missing, run sim/tools/build-osdi.sh (see sim/README.md 'OSDI device models'); the DR-0003 Stage-2 DUT will not simulate without them." >&2
+    exit 3
+  fi
+done
 
 DESIGN_NETLIST="${REPO_ROOT}/design/netlist/lna.spice"
 if [[ ! -f "${DESIGN_NETLIST}" ]]; then
@@ -116,6 +132,14 @@ grep -q '^\.subckt lna ' "${DUT_SUBCKT}" || {
 # spec/target-spec.md names an `ss`-corner binding condition.
 CORNER_LABELS=(typ bcs wcs sf fs)
 declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
+# DR-0003 Stage-2: the DUT also instantiates sg13_hv_pmos/sg13_hv_nmos, so
+# every cell maps onto a cornerMOShv.lib section as well. cornerMOShv ships
+# all five real MOS sections, so the five labels map straight through
+# (typ->mos_tt, bcs->mos_ff, wcs->mos_ss, sf->mos_sf, fs->mos_fs) -- only
+# the HBT side duplicates. Identical mapping to
+# sim/lna-bias-pvt/run_biasop_sweep.sh, so the two benches describe the same
+# 45 cells.
+declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
 TEMPS=(-40 27 125)
 # DR-1's proposed nominal rail is 1.8 V; spec/target-spec.md's "Verification
 # corners" asks for +/-10% around whatever the Supply row eventually ratifies.
@@ -213,6 +237,8 @@ render() {
   local tmpl="$1" out="$2"; shift 2
   sed "$@" \
     -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
+    -e "s|@@MOS_LIB@@|${MOS_LIB}|g" \
+    -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
     "${tmpl}" \
     | sed -e "/@@LNA_SUBCKT@@/r ${DUT_SUBCKT}" -e "/@@LNA_SUBCKT@@/d" > "${out}"
 }
@@ -232,6 +258,7 @@ check_log() {
 
 run_sparam_cell() {
   local corner_label="$1" hbt_section="$2" temp="$3" vdd="$4"
+  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
   local point_id="sp_${corner_label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
@@ -240,6 +267,7 @@ run_sparam_cell() {
 
   render "${EXPERIMENT_DIR}/testbench/tb_lna_sparam.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
+    -e "s|@@MOS_SECTION@@|${mos_section}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
     -e "s|@@VDD@@|${vdd}|g" \
     -e "s|@@N_INBAND@@|${N_INBAND}|g" \
@@ -259,12 +287,14 @@ run_sparam_cell() {
 
 run_iip3_point() {
   local corner_label="$1" hbt_section="$2" temp="$3" vdd="$4" amp="$5" amp_label="$6"
+  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
   local point_id="iip3_${corner_label}_${temp}c_vdd${vdd}v_${amp_label}"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
 
   render "${EXPERIMENT_DIR}/testbench/tb_lna_iip3.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
+    -e "s|@@MOS_SECTION@@|${mos_section}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
     -e "s|@@VDD@@|${vdd}|g" \
     -e "s|@@AMP@@|${amp}|g" \
@@ -363,9 +393,11 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  noise figure, k-factor/mu-factor stability and two-tone IIP3 of"
   echo "  \`design/lna.sch\` (via its committed netlist), across a"
   echo "  process x temperature x supply PVT grid. **Not** a conformance"
-  echo "  claim against any \`spec/target-spec.md\` row -- that table is"
-  echo "  DRAFT/unratified, and this record is evidence *for* its"
-  echo "  ratification, not a pass/fail verdict against it."
+  echo "  claim against any \`spec/target-spec.md\` row. That table's"
+  echo "  RATIFIED rows (decision record 0002) are a bar, not a"
+  echo "  hypothesis -- but their *verification* is gated on the #26 bias"
+  echo "  and #27 matching re-runs, so this record is evidence about the"
+  echo "  as-committed DUT, not a pass/fail verdict against the spec."
   echo "- **DUT**: \`design/netlist/lna.spice\` (sha256"
   echo "  \`${DESIGN_NETLIST_SHA}\`), inlined verbatim into every generated"
   echo "  deck as a \`.subckt lna vdd vss rfin rfout\`."
@@ -378,7 +410,33 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  transient + rectangular-window FFT, no zero padding."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\` (IHP-Open-PDK v0.3.0)."
-  echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
+  echo "- **Device model sections**: HBT from \`cornerHBT.lib\`"
+  echo "  (\`hbt_typ\`/\`hbt_bcs\`/\`hbt_wcs\`; \`sf\`/\`fs\` fall back to"
+  echo "  \`hbt_typ\` -- no skewed HBT section exists in this PDK), MOS from"
+  echo "  \`cornerMOShv.lib\` mapped straight through by the five labels"
+  echo "  (\`mos_tt\`/\`mos_ff\`/\`mos_ss\`/\`mos_sf\`/\`mos_fs\`), with the"
+  echo "  PSP103.6 OSDI models preloaded (\`pre_osdi\`). Identical mapping to"
+  echo "  \`sim/lna-bias-pvt/run_biasop_sweep.sh\`, so both benches describe"
+  echo "  the same 45 cells."
+  echo "- **ngspice**: \`${NGSPICE_VERSION}\`, with"
+  echo "  \`.options gmin=1e-10\` in every deck. That is 100x ngspice-46's"
+  echo "  own 1e-12 default and is NOT what the two pre-DR-0003 records ran"
+  echo "  under; the DR-0003 flat-reference core does not converge at the"
+  echo "  coldest/lowest-rail cells without it. Measured cost of the"
+  echo "  override at the nominal cell: every recorded quantity moves in the"
+  echo "  7th significant figure or beyond (largest relative move anywhere"
+  echo "  4.5e-5, on the ill-conditioned Rollett k). See \`README.md\`"
+  echo "  section \"gmin and the DR-0003 core\"."
+  echo "- **Ideal-passive assumption (this record's largest stated limit)**:"
+  echo "  \`Le\`/\`Lc\` are ideal infinite-Q SPICE \`L\` primitives and the"
+  echo "  capacitors/resistors are ideal \`C\`/\`R\`, because SG13G2's open PDK"
+  echo "  ships no simulatable inductor model (issue #5, upstream"
+  echo "  \`2AMLogic/klayout-tools#1519\`). Only the HBTs and the DR-0003"
+  echo "  core's MOS devices are real PDK models. This makes every"
+  echo "  gain/NF/S11/S22 number here the MOST OPTIMISTIC case, and makes"
+  echo "  the stability numbers the LEAST-DAMPED case. No number in this"
+  echo "  record is verified against a physical passive model, let alone"
+  echo "  silicon. Full list: \`README.md\` section \"Model limitations\"."
   CORNER_LABELS_STR="$(IFS=,; echo "${CORNER_LABELS[*]}")"
   TEMPS_STR="$(IFS=,; echo "${TEMPS[*]}")"
   VDDS_STR="$(IFS=,; echo "${VDDS[*]}")"

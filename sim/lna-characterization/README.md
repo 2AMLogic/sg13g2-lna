@@ -15,21 +15,52 @@ RATIFIED for the rows decision record
 marks RATIFIED (issue #19's ratification, PR #32) — DRAFT only for the
 IIP3 numeric target and the stretch columns; this campaign is the
 *evidence* that ratification used, not a pass/fail verdict against it. And
-two of the numbers below fall short of their targets by a wide margin —
-see "Results" and "What these numbers do and do not license" — which is
-why each ratified row's note gates conformance verdicts on the #26/#27
-re-runs rather than on this campaign's numbers.
+several of the numbers below fall short of their targets — see "Results"
+and "What these numbers do and do not license" — which is why each
+ratified row's note gates conformance verdicts on the #26/#27 re-runs
+rather than on this campaign's numbers.
+
+### Which DUT each record describes — read this before quoting any number
+
+This directory holds **three** append-only records, and they characterize
+**three different circuits**. A number quoted from the wrong one is a
+statement about a design that no longer exists.
+
+| Record | DUT sha256 (first 16) | The circuit it characterizes | Standing |
+|---|---|---|---|
+| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23) | **historical** |
+| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34) | **historical** |
+| **`20260926-122301-088c734`** | **`23f9445b01dbec99`** | **DR-0003 flat-reference bias core** (issue #33 / PR #40, commit `e25df3b`) — current `main` | **current** |
+
+The headline numbers, findings narrative and every figure quoted below are
+from the **current** record unless a sentence explicitly names a historical
+one. Re-baselined under issue
+[#49](https://github.com/2AMLogic/sg13g2-lna/issues/49); the two historical
+records are untouched (`../README.md` §"Append-only rule") and remain the
+only valid source for statements about the DUTs *they* ran.
 
 > **Headline conclusion, stated up front so it is not buried:** the DUT as
 > committed has **no input or output matching network** — `Cin`/`Cout` are
 > 100 pF DC blocks, not matching elements, and there is no base
-> inductor. Its measured `S11 ≈ −0.6 dB` and `S22 ≈ −0.004 dB` are
-> therefore not a *failed* match, they are the **absence** of one, and they
-> are exactly what makes the k-factor result below ill-conditioned. Per
-> `CLAUDE.md` ("Stability is a spec row … before any matching is declared
-> final") and issue #18's own framing, **this result gates the matching
-> network: the matching network is not done, and this bench says so
-> numerically rather than by assertion.**
+> inductor. Its measured `S11 = −3.07 dB` and `S22 = −0.0044 dB` (nominal
+> cell) are therefore not a *failed* match, they are the **absence** of
+> one. Per `CLAUDE.md` ("Stability is a spec row … before any matching is
+> declared final") and issue #18's own framing, **this result gates the
+> matching network: the matching network is not done, and this bench says
+> so numerically rather than by assertion.**
+>
+> **Second headline, new with the DR-0003 re-baseline and more consequential
+> than the first:** `NFmin` — the noise figure this circuit would deliver
+> under a *lossless, ideal* source-impedance noise match — is **2.0749 dB
+> at the best of the 45 cells, 2.3817 dB at the nominal cell, 2.7275 dB at
+> the worst**. Every one of those is **above** the RATIFIED `NF < 1.5 dB`
+> row. A matching network can only move NF *down towards* `NFmin`, never
+> below it, so **at this operating point the ratified NF row is not
+> reachable by matching at all** — it is short by 0.575 dB even at the best
+> cell, under an assumption (lossless match, infinite-Q passives) that is
+> already optimistic. That is a measurement, not a verdict on the spec: the
+> ratified value is untouched here, and what it implicates is the bias
+> point and device sizing, not only issue #27's absent matching network.
 
 ## What is measured, and how (bench definitions)
 
@@ -52,12 +83,25 @@ the record so a later reader can tell which schematic revision a number
 belongs to, and the inlined `.subckt` is visible inside every committed
 snapshot rather than being `.include`d from elsewhere.
 
-Bias comes from the DUT's own on-chip divider (`R1a`/`R1b`, `R2a`/`R2b`) off
-a single ideal `VDD` source — there is no external bias tee and no forced
-operating point. The measured operating point (`I_C1`, `I_C2`, `V_CE1`,
-`V_CE2`, `V_BE1`, `I_DD`, `P_dc`) is echoed by every deck and lands in the
-summary CSV, so every S-parameter/NF/IIP3 number below carries the bias
-point it was taken at.
+Bias comes from the DUT's own on-chip network off a single ideal `VDD`
+source — there is no external bias tee and no forced operating point. In
+the current record that network is the **DR-0003 flat-reference core**
+(`sg13_hv_pmos`/`sg13_hv_nmos` + `npn13G2`, issue #33 / PR #40), not the
+`R1a`/`R1b` resistive divider the two historical records ran. The measured
+operating point (`I_C1`, `I_C2`, `V_CE1`, `V_CE2`, `V_BE1`, `I_DD`, `P_dc`)
+is echoed by every deck and lands in the summary CSV, so every
+S-parameter/NF/IIP3 number below carries the bias point it was taken at.
+
+Because the DUT now instantiates MOS devices, every deck additionally loads
+`cornerMOShv.lib`'s section for the cell (`typ→mos_tt`, `bcs→mos_ff`,
+`wcs→mos_ss`, `sf→mos_sf`, `fs→mos_fs` — `cornerMOShv` ships all five real
+sections, so only the HBT side duplicates) and `pre_osdi`-loads the PSP103.6
+OSDI models. That mapping is identical to
+[`../lna-bias-pvt/run_biasop_sweep.sh`](../lna-bias-pvt/), so the two
+benches describe the same 45 cells. Unlike the HBT-only pre-DR-0003 decks,
+this bench therefore **requires** [`../tools/build-osdi.sh`](../tools/build-osdi.sh)
+to have been run; the runner refuses to start without the `.osdi` binaries
+rather than producing a partial record.
 
 ### S-parameters (S11, S21, S12, S22) — `sp` analysis, 50 Ω both ports
 
@@ -137,16 +181,17 @@ inferred:
   prevent.
 
 **How to read the two methods' agreement (this is a result, not a caveat).**
-`nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB across all 15 cells at
-27 °C**, and diverge by up to **1.00 dB at −40 °C** and **0.57 dB at
-125 °C**. That is not a discrepancy — it is the *expected* signature of the
-two definitions, and it is why the analytic source term exists:
+On the current record `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
+across all 15 cells at 27 °C**, and diverge by up to **0.50 dB at −40 °C**
+and **0.66 dB at 125 °C**. That is not a discrepancy — it is the *expected*
+signature of the two definitions, and it is why the analytic source term
+exists:
 
 | Cells | `nf_sp_db` references | `nf30015_db` references | max difference |
 |---|---|---|---|
 | 27 °C (15/45) | 300.15 K (= the analysis temperature) | 300.15 K (fixed) | **0.0001 dB** |
-| −40 °C (15/45) | 233.15 K | 300.15 K (fixed) | 1.0013 dB |
-| 125 °C (15/45) | 398.15 K | 300.15 K (fixed) | 0.5678 dB |
+| −40 °C (15/45) | 233.15 K | 300.15 K (fixed) | 0.5029 dB |
+| 125 °C (15/45) | 398.15 K | 300.15 K (fixed) | 0.6595 dB |
 
 ngspice's own `sp` noise figure **references the analysis temperature**, so
 away from 27 °C it is an *ambient*-referenced NF, not a `T0`-referenced one.
@@ -199,26 +244,94 @@ across band and out-of-band to at least 3× the upper band edge" at the
 
 #### Why k is ill-conditioned on this circuit (read before quoting a k number)
 
+**Re-checked against the DR-0003 DUT (record `20260926-122301-088c734`) —
+the conclusion survives, the illustrative numbers changed.** This section
+rests on `|S12|` being tiny, which is a property of the bias point, not a
+constant; it was re-derived rather than assumed when the core changed.
+
 This DUT is a cascode with an almost purely *reactive* load (`Lc` to an
-ideal `VDD`) and **no matching at either port**. Consequently
-`|S11| ≈ 0.935` and `|S22| ≈ 0.9995`, while the cascode's reverse isolation
-is excellent: `|S12| ≈ 1.9e-5` (≈ −94 dB). In Rollett's k both the numerator
-and the denominator are then nearly zero:
+ideal `VDD`) and **no matching at either port**. The DR-0003 core loads the
+input noticeably harder than the old divider did, so `|S11|` fell from
+≈ 0.935 to **0.7026** — but `|S22| = 0.99949` is still essentially on the
+unit circle and the cascode's reverse isolation is still excellent:
+`|S12| = 1.670e-5` (**−95.54 dB**, worst cell −90.16 dB). In Rollett's k
+both the numerator and the denominator are therefore still small (nominal
+cell, 2.4 GHz):
 
 ```
-numerator   = 1 − |S11|² − |S22|² + |Δ|²   ≈  1 − 0.874 − 0.999 + 0.875 ≈ −2e-4
-denominator = 2·|S12·S21|                  ≈  2 · 1.9e-5 · 4.34         ≈  1.7e-4
+numerator   = 1 − |S11|² − |S22|² + |Δ|²   =  1 − 0.49367 − 0.99898 + 0.49313 = 4.837e-4
+denominator = 2·|S12·S21|                  =  2 · 1.670e-5 · 3.7869          = 1.265e-4
+k = 3.8235   (the deck's own in-deck value: 3.824708)
 ```
 
-so **k is a ratio of two small, nearly-cancelling quantities** and swings
-wildly (including negative) on differences in the fourth decimal place of
-quantities that are themselves ≈ 1. It is a real result, not a numerical
-artefact — but it is a *badly conditioned* one, and quoting "k = −1.1" as if
-it were a robust margin would be dishonest. `μ` does not have this problem
-(no small denominator; it is bounded and continuous), which is why `μ` is
-reported alongside k everywhere and is the number to reason from. The
-negative-resistance check above (|S11|/|S22| > 1) is the third, independent
-view.
+so **k is still a ratio of two small quantities**, each assembled from
+differences in the fourth decimal place of quantities that are themselves
+≈ 1. What changed is the *sign* of the numerator: with `|S11|` off the unit
+circle the cancellation is no longer near-total, so in-band k is now
+comfortably positive (min **3.3899** over all 45 cells, was 0.346) instead
+of straddling zero. Out of band it still swings hard — broadband
+`k = −3.5301` at 50.1 MHz (bcs/125 °C/1.98 V) — because the same
+cancellation returns wherever `|S11|` climbs back toward 1.
+
+The conclusion is therefore unchanged: k is a real result but a *badly
+conditioned* one, and quoting a k number as a robust margin — in either
+direction, including the reassuring in-band 3.39 — would be dishonest. `μ`
+does not have this problem (no small denominator; it is bounded and
+continuous), which is why `μ` is reported alongside k everywhere and is the
+number to reason from. The negative-resistance check above
+(|S11|/|S22| > 1) is the third, independent view.
+
+### `gmin` and the DR-0003 core — the one numeric solver override, and its measured cost
+
+Both templates set **`.options gmin=1e-10`**. This is **not** ngspice-46's
+default (the default is `1e-12`) and it is **not** what the two pre-DR-0003
+records ran under — those decks carried no `gmin` override at all. It is
+stated here, and in both deck headers, rather than left to be discovered in
+a diff, because a solver override that is invisible is indistinguishable
+from a silent numeric change.
+
+**Why it is there.** The DR-0003 flat-reference bias core (PR #40) does not
+converge without it at the coldest/lowest-rail cells. On the first
+un-overridden re-baseline attempt, `bcs/−40 °C/1.62 V`, `sf/−40 °C/1.62 V`,
+`sf/−40 °C/1.80 V` and `fs/−40 °C/1.62 V` all lost their operating point:
+ngspice-46's dynamic gmin stepping, true gmin stepping, source stepping and
+the transient-op fallback each failed in turn and the `op` aborted with
+`Timestep too small`, taking the whole cell's `sp`/`.noise`/stability output
+with it (and, with it, four cells of the 45-cell grid). The bias-network
+change is what moved — the RF bench did not.
+
+**What it costs, measured rather than asserted.** Re-running the *nominal*
+cell (which converges either way) from its own committed snapshot, with and
+without the override:
+
+| Quantity | `gmin` default (1e-12) | `gmin = 1e-10` | relative move |
+|---|---|---|---|
+| `NFmin` @ 2.4 GHz | 2.38165037 dB | 2.38165216 dB | 7.5e-7 |
+| `nf290` @ band lo | 2.65592 dB | 2.65592 dB | < 1e-6 |
+| \|S21\| @ band lo | 11.5657 dB | 11.5657 dB | < 1e-6 |
+| μ @ 2.4 GHz | 1.00035307 | 1.00035309 | 2e-8 |
+| k @ 2.4 GHz (ill-conditioned) | 3.824535 | 3.824708 | **4.5e-5** |
+| `I_C1` | 3.94032 mA | 3.94030 mA | 5e-6 |
+
+Every recorded quantity moves in the **7th significant figure or beyond**.
+The single largest relative move anywhere is `4.5e-5`, on Rollett's k —
+exactly the quantity the section above documents as a ratio of two
+nearly-cancelling fourth-decimal differences on this topology, so a
+fifth-decimal sensitivity there is the expected behaviour of an
+ill-conditioned metric, not evidence that `gmin` moved the circuit. `gmin`
+is a conductance, not a noise source, so it introduces no noise term; at
+`1e-10 S` it is 0.1 nA of leakage per junction per volt against a mA-scale
+bias.
+
+**Reproducing that table** needs no PDK corner knowledge — the two decks
+differ by one `sed`:
+
+```bash
+R=20260926-122301-088c734
+D=sim/lna-characterization/netlist-snapshots/$R/sp_typ_27c_vdd1.80v.spice
+sed 's/ gmin=1e-10//' "$D" > /tmp/nogmin.sp     # the default-gmin twin
+ngspice -b "$D" ; ngspice -b /tmp/nogmin.sp     # (retarget the wrdata paths first)
+```
 
 ### IIP3 — two-tone transient, coherent FFT
 
@@ -313,6 +426,20 @@ written into every generated IIP3 deck's header as well as here.
   refers to lives in passives that are *ideal* in this netlist (next
   section). That is a real coverage gap against the spec's exercisable
   corner box, recorded here rather than papered over.
+  **On the MOS side the five labels are real**, since the DR-0003 core
+  landed: `cornerMOShv.lib` ships all five sections, so
+  `typ→mos_tt`, `bcs→mos_ff`, `wcs→mos_ss`, `sf→mos_sf`, `fs→mos_fs` map
+  straight through. The `sf`/`fs` cells are therefore **no longer bit-identical
+  to `typ`** on the current record the way they were on the two historical,
+  HBT-only ones — they differ through the bias core's MOS devices while
+  still sharing `typ`'s HBT section. The difference is real but *small*,
+  because the DR-0003 reference is well regulated: across all nine
+  (temp, VDD) pairs `I_C1` moves by ≤ 0.05 % between `typ`, `sf` and `fs`,
+  and `NFmin` by ≤ 0.0001 dB. Do not read `sf`/`fs` as independent
+  RF corners on the strength of that — they still carry `typ`'s HBT
+  section, and the HBT is what sets the RF behaviour. The coverage gap
+  above is unchanged: it is about the *passives*, which have no corner
+  models at all.
 - **Supply**: ±10 % around the 1.8 V nominal rail
   (`spec/decision-records/0001-bias-supply-topology.md`, status now
   **ratified** — its proposal made binding by decision record
@@ -334,8 +461,10 @@ written into every generated IIP3 deck's header as well as here.
    inductor** (issue #5, upstream
    [`2AMLogic/klayout-tools#1519`](https://github.com/2AMLogic/klayout-tools/issues/1519),
    open). The 100 pF capacitors and the bias resistors are likewise generic
-   ideal `C`/`R`, not `cap_cmim`/`rsil` PDK devices. **Only the two
-   `npn13G2` HBTs are real PDK models.** Consequences, stated plainly:
+   ideal `C`/`R`, not `cap_cmim`/`rsil` PDK devices. **The only real PDK
+   models in the DUT are the two `npn13G2` HBTs and — since the DR-0003
+   core landed (PR #40) — the `sg13_hv_pmos`/`sg13_hv_nmos` devices of the
+   flat-reference bias core.** Consequences, stated plainly:
    - **Gain is optimistic.** A real 5 nH load inductor at 2.44 GHz with
      Q ≈ 10 has ~7.7 Ω of series loss; the ideal one has none.
    - **NF is optimistic.** That same loss sits partly at the input (`Le`)
@@ -350,14 +479,22 @@ written into every generated IIP3 deck's header as well as here.
    **No S11/S22/gain/NF/stability number in this tree is verified against
    silicon, or even against a physical passive model, until that gap
    closes.**
-2. **`sf`/`fs` are not real HBT corners** in this PDK (above) — 18 of the
-   45 cells are numerically identical to their `typ` counterparts and are
-   committed as such, deliberately, rather than being silently dropped.
-3. **The bias network is a single-corner placeholder** (`design/README.md`
-   caveat 2): `R1a`/`R1b` were sized at one corner and are **not** claimed
-   to hold DR-1's `I_C1 ≤ 4.5 mA` over PVT. The measured `ic1_a` column in
-   the summary CSV is how you check that, and it is one of this campaign's
-   more actionable findings.
+2. **`sf`/`fs` are not real HBT corners** in this PDK (above). On the two
+   historical records that made 18 of the 45 cells numerically identical to
+   their `typ` counterparts; on the current record they differ, but only
+   through the DR-0003 core's MOS devices (≤ 0.05 % on `I_C1`,
+   ≤ 0.0001 dB on `NFmin`) — the HBT that sets the RF behaviour is still
+   `hbt_typ` in all three. They are committed as such, deliberately, rather
+   than being silently dropped.
+3. **Which bias network a record describes is a property of the record, not
+   of this bench.** The two historical records characterize DUTs whose base
+   bias came from a bare `V_BE`-referenced resistive divider
+   (`20260918-210908-4293920`) and from an `npn13G2` mirror reference
+   (`20260921-131646-d6da30a`). The current record
+   (`20260926-122301-088c734`) characterizes the **DR-0003 flat-reference
+   core** (PR #40). The measured `ic1_a`/`pdc_w` columns in each record's
+   summary CSV are how you check a bias claim against the DUT that record
+   actually ran — never across records.
 4. **No layout, no parasitic extraction, no package/pad model.** Schematic
    netlist only.
 5. **Noise**: only the devices' own VBIC noise sources plus the analytic
@@ -366,11 +503,80 @@ written into every generated IIP3 deck's header as well as here.
 
 ## Results
 
-See [`records/`](records/) for the append-only per-run record. The current
-record's headline numbers are reproduced in its own `records/<record-id>.md`
-and summarized against the target-spec rows in
+See [`records/`](records/) for the append-only per-run records (three of
+them — see "Which DUT each record describes" above). The current record's
+headline numbers are reproduced in its own `records/<record-id>.md` and
+summarized against the target-spec rows in
 [`../../measurements/README.md`](../../measurements/README.md) — which is
 the document to read for "what does this mean for the spec".
+
+### Headline numbers — record `20260926-122301-088c734` (DR-0003 core)
+
+45 of 45 cells completed; **no failed cells**. Nominal cell means
+typ/27 °C/1.80 V.
+
+| Quantity | Nominal | Worst of 45 | Best of 45 |
+|---|---|---|---|
+| in-band \|S21\| | 11.4604 … 11.5657 dB | **10.2748 dB** (wcs/125 °C/1.62 V) | 12.3539 dB (bcs/−40 °C/1.98 V) |
+| in-band S11 | −3.0657 dB | **−2.9616 dB** (bcs/−40 °C/1.98 V) | −3.2227 dB (wcs/125 °C/1.62 V) |
+| in-band S22 | −0.0044 dB | **−0.0033 dB** (bcs/−40 °C/1.98 V) | −0.0059 dB (wcs/125 °C/1.62 V) |
+| `nf290` (worst in-band point per cell) | 2.6559 dB | **3.7759 dB** (wcs/125 °C/1.62 V) | 1.8432 dB (bcs/−40 °C/1.98 V) |
+| **`NFmin`** @ 2.4 GHz | **2.3817 dB** | **2.7275 dB** (wcs/125 °C/1.62 V) | **2.0749 dB** (bcs/−40 °C/1.98 V) |
+| in-band μ (min) | 1.000353 | **1.000275** (bcs/125 °C/1.98 V) | 1.000404 (wcs/125 °C/1.98 V) |
+| in-band k (min) | 3.824708 | **3.389937** (wcs/125 °C/1.98 V) | — |
+| broadband μ (min, 10 MHz–30 GHz) | 0.999997 | **0.99999592** at 595.7 MHz (bcs/−40 °C/1.98 V) | — |
+| broadband k (min) | −2.792214 | **−3.530083** at 50.1 MHz (bcs/125 °C/1.98 V) | — |
+| max \|S11\| broadband | 0.813574 | **0.817548** at 10 MHz (bcs/125 °C/1.62 V) | — |
+| max \|S22\| broadband | 1.0000000 | **1.00000018** at 188.4 MHz (bcs/125 °C/1.98 V) | — |
+| IIP3 (2 mV/tone) | −1.4171 dBm | **−2.3219 dBm** (wcs/−40 °C/1.62 V) | +0.4979 dBm (bcs/125 °C/1.98 V) |
+| `I_C1` | 3.9403 mA | **4.1511 mA** (bcs/−40 °C/1.98 V) | 3.6573 mA (wcs/125 °C/1.62 V) |
+| `P_dc` | 8.4860 mW | **9.7683 mW** (bcs/125 °C/1.98 V) | 7.1866 mW (wcs/125 °C/1.62 V) |
+
+### The three questions this re-baseline was run to answer
+
+**1. Is the ratified `NF < 1.5 dB` row still reachable under an ideal noise
+match? No — not at this operating point.** `NFmin` is the floor a lossless,
+ideal source-impedance transformation would reach, and on this DUT it is
+**2.0749 dB at the best cell** (bcs/−40 °C/1.98 V), **2.3817 dB nominal**,
+**2.7275 dB at the worst cell**. That is **0.575 / 0.882 / 1.228 dB above
+the ratified 1.5 dB bar** respectively, and **0 of 45 cells** have
+`NFmin < 1.5 dB`. Since no passive matching network can take NF *below*
+`NFmin` — and a real, finite-Q one lands above it — the NF row cannot be
+met by matching alone here. The historical `20260918…` record's argument
+("~1.1 dB of the present NF is the absent noise match", `NFmin` 0.600 dB
+best / 0.751 dB nominal) was an argument **about a different circuit** and
+does not transfer. Two secondary facts make the same point from the other
+side: the nominal `nf290 − NFmin` gap is now only **0.274 dB** (was
+~1.1 dB) — i.e. the DR-0003 core already sits close to its own noise
+optimum, so there is very little left for a matching network to recover —
+and `nf290` itself is **2.6559 dB nominal**, 1.16 dB over the bar. **This
+is a measurement, not a spec verdict**: nothing ratified is touched here,
+and the row's reachability is now a bias-point/device-sizing question as
+much as a matching question (#27).
+
+**2. Does the in-band μ < 1 residue persist? No — it is retired.**
+**0 of 45 cells** have in-band μ < 1 (worst **1.000275**, bcs/125 °C/
+1.98 V), and in-band k is now positive everywhere (min 3.3899). On the
+`20260918…` record it was 40 of 45. **The broadband residue does persist**:
+45 of 45 cells dip below 1 somewhere in 10 MHz–30 GHz, minimum
+**0.99999592** (−4.1 ppm) at 595.7 MHz, bcs/−40 °C/1.98 V. The amplifier is
+still *conditionally*, not unconditionally, stable by the ratified
+metric — the failure has simply moved entirely out of band.
+
+**3. Does the `|S22| > 1` residue persist? Yes, at raw precision — and the
+"0 of 45" reading is a rounding artefact, stated here rather than
+inherited.** The summary CSV records `s22_mag_broadband_max` to six
+decimals, which rounds this record's maximum to `1.000000`; counting from
+that column gives "0 of 45". Counting from the raw 140-frequency
+`corners/*.stability.dat` tables instead gives **45 of 45 cells with
+\|S22\| > 1, maximum 1.00000018 (+0.18 ppm)** at 188.4 MHz,
+bcs/125 °C/1.98 V. For comparison, re-counted the same way: the
+`20260918…` record is 31 of 45 at +3.71 ppm and the `20260921…` record is
+45 of 45 at +0.17 ppm. So the residue **shrank ~20× in magnitude** versus
+the original record and did **not** disappear. At 0.18 ppm it remains
+indistinguishable from the numerical resolution of a lossless port, so
+issue #27's disposition is unchanged: re-check once a *lossy* inductor
+model exists, do not dismiss.
 
 Per-artifact layout of a record `<record-id>`:
 
@@ -393,12 +599,18 @@ export PDK=ihp-sg13g2
 sim/lna-characterization/run_lna_sweep.sh
 ```
 
-Requires `ngspice` (≥ 46) and `python3`; **no** xschem, no `klt`, no OSDI
-build step (`npn13G2` is a native ngspice VBIC model — see
-[`../pdk.json`](../pdk.json)). A full run is 138 `ngspice -b` invocations;
-`LNA_SWEEP_JOBS=<n>` sets how many run concurrently (default
+Requires `ngspice` (≥ 46), `python3`, **and the OSDI device models** — build
+or check them with [`../tools/build-osdi.sh`](../tools/build-osdi.sh) (see
+[`../README.md`](../README.md) §"OSDI device models"). The OSDI requirement
+is new as of the DR-0003 core: `npn13G2` is still a native ngspice VBIC
+model needing no compile step, but the committed DUT now also instantiates
+`sg13_hv_pmos`/`sg13_hv_nmos` (PSP103.6 via OSDI), so both `cornerMOShv.lib`
+and the `.osdi` binaries must be present or the runner refuses to start.
+Still **no** xschem and no `klt`. A full run is 138 `ngspice -b`
+invocations; `LNA_SWEEP_JOBS=<n>` sets how many run concurrently (default
 `min(6, ncpu/3)`). Each point writes only its own files, so the numbers are
-identical at any concurrency — set `LNA_SWEEP_JOBS=1` to prove it.
+identical at any concurrency — set `LNA_SWEEP_JOBS=1` to prove it (record
+`20260926-122301-088c734` was run that way, on a shared host).
 
 Each run mints a **new** `<record-id>` (`<UTC date>-<UTC time>-<short git
 sha>`); nothing under an existing `records/`, `corners/` or
@@ -407,7 +619,8 @@ rule").
 
 **Plumbing check without a full campaign**: `LNA_SWEEP_SMOKE=1
 sim/lna-characterization/run_lna_sweep.sh` runs the identical flow over the
-single nominal cell in ~30 s. A smoke record is a real record but is *not* a
+single nominal cell in ~1 min (measured 58 s on the host that produced
+the current record). A smoke record is a real record but is *not* a
 PVT campaign — do not commit one as evidence.
 
 **Re-deriving the CSVs from the committed raw logs alone** (no ngspice, no
@@ -425,17 +638,21 @@ diff /tmp/check-summary.csv sim/lna-characterization/records/<record-id>-summary
 
 ## What these numbers do and do not license
 
-**Do**: treat this as the evidence base for the spec-ratification issue
-(#19); use `NFmin` and the measured operating point to size the *missing*
-input matching network; use the broadband μ/|S11|/|S22| data as the
-stability baseline any future matching network must be re-checked against;
-use the per-cell `ic1_a` spread as the case for replacing the placeholder
-bias divider.
+**Do**: treat the current record as the evidence base for any statement
+about the DUT on `main`; use `NFmin` and the measured operating point to
+size the *missing* input matching network — and to argue about whether the
+ratified NF row is reachable at this bias point at all (it is not, see
+"The three questions" above); use the broadband μ/|S11|/|S22| data as the
+stability baseline any future matching network must be re-checked against.
 
 **Do not**: quote any number here as "meets spec" (the as-committed DUT
-predates the #26/#27 re-runs the ratified rows' notes gate conformance
+predates the #27 matching re-run the ratified rows' notes gate conformance
 on, and ideal passives bound what these numbers mean); quote
 gain/NF/S11/S22 as achievable silicon performance (ideal
 passives, §Model limitations); declare the matching network final (there
-isn't one, and stability has not been shown unconditional); or quote k
-without μ beside it (§Why k is ill-conditioned).
+isn't one, and stability has not been shown unconditional); quote k
+without μ beside it (§Why k is ill-conditioned); mix numbers **across**
+records (§Which DUT each record describes — the three records are three
+different circuits); or read a `|S22| > 1` / μ count off the summary CSV
+without checking the raw `*.stability.dat` tables, whose ppm-scale residues
+the CSV's six-decimal columns round away.

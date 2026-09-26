@@ -1,0 +1,79 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- two-tone transient iip3 bench (issue #18)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00385314 ic2 0.00384782 vce1 0.638614 vce2 0.981386 idd 0.00461296
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                       1.62
+vin                                          0
+va                                           0
+rfin                                         0
+rfout                                        0
+xa.outn                                   1.62
+xa.vb2                                 1.48012
+xa.casc                               0.638614
+xa.xq2.s1                          1.75465e-07
+xa.xq2.t                               6.60482
+xa.b1                                 0.843537
+xa.e1                                        0
+xa.xq1.s1                          6.75077e-08
+xa.xq1.t                               4.30652
+xa.nc_b                               0.625327
+xa.nc_a                               0.739732
+xa.nc_e                              0.0554774
+xa.xqb.s1                          6.87889e-08
+xa.xqb.t                              0.016248
+xa.xqa.s1                          2.95562e-08
+xa.xqa.t                              0.137172
+xa.vbg                                 1.03736
+xa.cb3                                0.739488
+xa.xqc.s1                          2.95467e-08
+xa.xqc.t                               0.13589
+xa.gsvo                               0.700854
+xa.es                                 0.234193
+xa.dn                                 0.671806
+xa.vl                                  1.03782
+xa.bref                               0.845271
+xa.xq3.s1                          3.27557e-08
+xa.xq3.t                               4.86181
+l.xa.lc#branch                      0.00384782
+l.xa.le#branch                       0.0038584
+vt2#branch                                   0
+vt1#branch                                   0
+vdd#branch                         -0.00461296
+
+ Reference value :  1.00000e-06 Reference value :  1.01141e-06 Reference value :  1.02279e-06 Reference value :  1.03418e-06 Reference value :  1.04528e-06 Reference value :  1.05620e-06 Reference value :  1.06721e-06 Reference value :  1.07862e-06 Reference value :  1.09007e-06 Reference value :  1.10128e-06 Reference value :  1.11245e-06 Reference value :  1.12361e-06 Reference value :  1.13404e-06 Reference value :  1.14496e-06 Reference value :  1.15627e-06 Reference value :  1.16754e-06 Reference value :  1.17868e-06 Reference value :  1.18990e-06 Reference value :  1.20060e-06 Reference value :  1.21180e-06 Reference value :  1.22257e-06 Reference value :  1.23384e-06 Reference value :  1.24517e-06 Reference value :  1.25627e-06
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.0018716 tone2 0.00186955 im3l 7.04111E-09 im3h 6.91893E-09 src1 0.000999621
+FFT: Time span: 2.62144e-07 s, input length: 65536, zero padding: 0
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+FFTDF 3.8147E+06
+FFT tone1 0.0018716 tone2 0.00186955 im3l 7.03388E-09 im3h 6.92985E-09 im5l 5.98824E-11 im5h 5.62444E-11 src1 0.000999621 src2 0.000999618
+BENCH_COMPLETE
+Note: Simulation executed from .control section 
