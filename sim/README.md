@@ -24,8 +24,11 @@ prefixes) — every testbench's `run_*.sh` sources it, and an interactive
 `ngspice` session can too, so nothing here can silently drift onto a
 different install than what a script used.
 
-**OSDI device models: needed as of `sim/biasref-topology/` and (since the
-DR-0003 Stage-2 core swap) `sim/lna-bias-pvt/` — issue #33.**
+**OSDI device models: needed as of `sim/biasref-topology/` and — since the
+DR-0003 Stage-2 core swap put `sg13_hv_pmos`/`sg13_hv_nmos` into the
+committed `design/netlist/lna.spice` itself — `sim/lna-bias-pvt/` and
+`sim/lna-characterization/` too (issue #33; the latter re-baselined under
+issue #49).**
 The first experiments in this tree instantiate only `npn13G2` and
 `pnpMPA` — native ngspice models (VBIC level=9 and Gummel-Poon level=1)
 loaded by `cornerHBT.lib`'s own sections, no compile step. The
@@ -123,8 +126,14 @@ sf  -> mos_sf      fs  -> mos_fs
 ```
 
 The HBT mapping above and this MOS mapping are used together by any
-generated deck that instantiates both device families (see
-`sim/biasref-topology/`'s runner).
+generated deck that instantiates both device families — `sim/biasref-topology/`'s
+runner, `sim/lna-bias-pvt/`'s, and (since the DR-0003 core landed in the
+committed DUT) `sim/lna-characterization/`'s. A consequence worth stating
+where the convention lives: on a bench that instantiates **both**
+families, `sf`/`fs` cells are no longer numerically identical to `typ` —
+the HBT side still duplicates `hbt_typ`, but the MOS side is a real,
+distinct section. They are still not independent *RF* corners wherever an
+HBT sets the RF behaviour.
 
 ## Append-only rule
 

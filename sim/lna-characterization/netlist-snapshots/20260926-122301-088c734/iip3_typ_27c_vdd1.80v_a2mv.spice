@@ -1,0 +1,169 @@
+* sg13g2-lna -- two-tone transient IIP3 bench (issue #18)
+* Generated from
+* sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl by
+* sim/lna-characterization/run_lna_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full methodology, FFT parameters and the method's stated
+* limits are in sim/lna-characterization/README.md.
+*
+* Generated for: HBT_SECTION=hbt_typ MOS_SECTION=mos_tt
+*                TEMP=27 C VDD=1.80 V
+*                per-tone open-circuit source amplitude = 2e-3 V peak
+*
+* DR-0003 Stage-2 preamble note (issue #33 / PR #40, commit e25df3b): the
+* committed DUT instantiates sg13_hv_pmos / sg13_hv_nmos (PSP103.6 via
+* OSDI), so this deck loads cornerMOShv.lib's MOS section alongside
+* cornerHBT.lib's HBT section and preloads the OSDI models, and sets
+* `.options gmin=1e-10` (NOT ngspice-46's 1e-12 default -- the swapped core
+* will not converge at the coldest/lowest-rail cells without it) -- see
+* tb_lna_sparam.spice.tmpl's header and README.md "gmin and the DR-0003
+* core" for the full note and the measured size of that override's effect.
+* The two-tone measurement itself is unchanged.
+*
+* CLAUDE.md: "Linearity is measured honestly: IIP3 via two-tone transient
+* with the tone spacing and FFT parameters recorded; state the method's
+* limits." Everything that defines this measurement is therefore in the
+* deck itself, not only in prose:
+*
+*   Tones (equal amplitude, both inside the 2400-2483.5 MHz draft band):
+*     f1 = 2441406250.0 Hz  (FFT bin 640)
+*     f2 = 2449035644.53125 Hz  (FFT bin 642)
+*     tone spacing = f2 - f1 = 7629394.53125 Hz
+*   Third-order intermodulation products measured (both in-band):
+*     2*f1-f2 = 2433776855.46875 Hz (bin 638)
+*     2*f2-f1 = 2456665039.0625 Hz (bin 644)
+*   Fifth-order products (3*f1-2*f2, 3*f2-2*f1) are measured too, at bins
+*   636/646, purely as a "is the IM3 bin really above the
+*   numerical floor?" sanity check.
+*
+*   FFT parameters (chosen so the measurement is COHERENT -- every tone and
+*   every product lands exactly on an FFT bin centre, so a rectangular
+*   window leaks nothing and no zero-padding is applied):
+*     transient step / max step   = 4e-12 s (uniform)
+*     settling time discarded     = 1e-6 s before the FFT window
+*     FFT record length           = 65536 samples = 2.6214e-07 s
+*     bin resolution  df          = 3814697.265625 Hz  (= 1/(N*tstep))
+*     window                      = none (rectangular; `set specwindow`)
+*     zero padding                = none (N is an exact power of two)
+*
+* A second, INDEPENDENT coherent-DFT extraction (direct projection of the
+* linearized waveform onto cos/sin at each tone/product frequency, over the
+* same integer-cycle window) is computed in the same deck and echoed
+* alongside the FFT numbers, so the two methods can be compared per point
+* rather than trusted on faith.
+*
+* Port convention: the source is an ideal two-tone Thevenin generator
+* behind Rs = 50 Ohm and the load is RL = 50 Ohm -- the same 50 Ohm port
+* convention spec/target-spec.md states. Input power is reported as the
+* AVAILABLE source power per tone, A^2/(8*Rs); output power per tone and
+* per product is V_peak^2/(2*RL). Both are computed by the parser from the
+* amplitudes echoed below.
+*
+* The DUT subcircuit is inlined verbatim from design/netlist/lna.spice --
+* see tb_lna_sparam.spice.tmpl's header for the exact transformation.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+
+.options temp=27 tnom=27 gmin=1e-10
+
+* ---------------------------------------------------------------------
+* DUT subcircuit, inlined verbatim from design/netlist/lna.spice
+* ---------------------------------------------------------------------
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/design/lna.sch
+.subckt lna vdd vss rfin rfout
+
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp nc_e vss 3.4k m=1
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg m=1
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k m=1
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k m=1
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k m=1
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
+R3b bref b1 330 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+Cbref bref vss 100p m=1
+.ends
+
+Vdd vdd 0 dc 1.80
+* Two tone generators in series form the Thevenin source; Rs = 50 Ohm.
+Vt1 vin va dc 0 sin(0 2e-3 2441406250.0 0 0 0)
+Vt2 va 0 dc 0 sin(0 2e-3 2449035644.53125 0 0 0)
+Rs vin rfin 50
+RL rfout 0 50
+Xa vdd 0 rfin rfout lna
+
+.control
+* PSP103.6 Verilog-A/OSDI models for sg13_hv_pmos / sg13_hv_nmos --
+* `pre_osdi` runs before the netlist is parsed, so it precedes everything.
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+set specwindow = none
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let vce1 = v(xa.casc) - v(xa.e1)
+let vce2 = v(xa.outn) - v(xa.casc)
+let idd = -i(vdd)
+echo "OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd"
+
+tran 4e-12 1.26214e-06 1e-6 4e-12
+linearize v(rfout) v(vin)
+let npts = length(v(rfout))
+echo "NPTS $&npts"
+
+* --- independent coherent-DFT extraction (done BEFORE fft, which
+* --- replaces the current plot with the spectrum) --------------------
+let tv = time
+let w1 = 2*PI*2441406250.0
+let w2 = 2*PI*2449035644.53125
+let w3 = 2*PI*2433776855.46875
+let w4 = 2*PI*2456665039.0625
+let d1 = 2*sqrt(mean(v(rfout)*cos(w1*tv))^2 + mean(v(rfout)*sin(w1*tv))^2)
+let d2 = 2*sqrt(mean(v(rfout)*cos(w2*tv))^2 + mean(v(rfout)*sin(w2*tv))^2)
+let d3 = 2*sqrt(mean(v(rfout)*cos(w3*tv))^2 + mean(v(rfout)*sin(w3*tv))^2)
+let d4 = 2*sqrt(mean(v(rfout)*cos(w4*tv))^2 + mean(v(rfout)*sin(w4*tv))^2)
+let ds = 2*sqrt(mean(v(vin)*cos(w1*tv))^2 + mean(v(vin)*sin(w1*tv))^2)
+echo "DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds"
+
+* --- FFT extraction (primary) ----------------------------------------
+fft v(rfout) v(vin)
+let dfbin = frequency[1] - frequency[0]
+let a1 = mag(v(rfout)[640])
+let a2 = mag(v(rfout)[642])
+let a3 = mag(v(rfout)[638])
+let a4 = mag(v(rfout)[644])
+let a5 = mag(v(rfout)[636])
+let a6 = mag(v(rfout)[646])
+let s1 = mag(v(vin)[640])
+let s2 = mag(v(vin)[642])
+echo "FFTDF $&dfbin"
+echo "FFT tone1 $&a1 tone2 $&a2 im3l $&a3 im3h $&a4 im5l $&a5 im5h $&a6 src1 $&s1 src2 $&s2"
+echo "BENCH_COMPLETE"
+.endc
+.end

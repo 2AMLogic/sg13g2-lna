@@ -6,8 +6,19 @@
 * the sweep. Full methodology, FFT parameters and the method's stated
 * limits are in sim/lna-characterization/README.md.
 *
-* Generated for: HBT_SECTION=@@HBT_SECTION@@ TEMP=@@TEMP@@ C VDD=@@VDD@@ V
+* Generated for: HBT_SECTION=@@HBT_SECTION@@ MOS_SECTION=@@MOS_SECTION@@
+*                TEMP=@@TEMP@@ C VDD=@@VDD@@ V
 *                per-tone open-circuit source amplitude = @@AMP@@ V peak
+*
+* DR-0003 Stage-2 preamble note (issue #33 / PR #40, commit e25df3b): the
+* committed DUT instantiates sg13_hv_pmos / sg13_hv_nmos (PSP103.6 via
+* OSDI), so this deck loads cornerMOShv.lib's MOS section alongside
+* cornerHBT.lib's HBT section and preloads the OSDI models, and sets
+* `.options gmin=1e-10` (NOT ngspice-46's 1e-12 default -- the swapped core
+* will not converge at the coldest/lowest-rail cells without it) -- see
+* tb_lna_sparam.spice.tmpl's header and README.md "gmin and the DR-0003
+* core" for the full note and the measured size of that override's effect.
+* The two-tone measurement itself is unchanged.
 *
 * CLAUDE.md: "Linearity is measured honestly: IIP3 via two-tone transient
 * with the tone spacing and FFT parameters recorded; state the method's
@@ -52,8 +63,9 @@
 * see tb_lna_sparam.spice.tmpl's header for the exact transformation.
 
 .lib "@@MODELS_LIB@@" @@HBT_SECTION@@
+.lib "@@MOS_LIB@@" @@MOS_SECTION@@
 
-.options temp=@@TEMP@@ tnom=27
+.options temp=@@TEMP@@ tnom=27 gmin=1e-10
 
 * ---------------------------------------------------------------------
 * DUT subcircuit, inlined verbatim from design/netlist/lna.spice
@@ -69,6 +81,11 @@ RL rfout 0 50
 Xa vdd 0 rfin rfout lna
 
 .control
+* PSP103.6 Verilog-A/OSDI models for sg13_hv_pmos / sg13_hv_nmos --
+* `pre_osdi` runs before the netlist is parsed, so it precedes everything.
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
 set specwindow = none
 op
 let ic1 = @q.xa.xq1.qnpn13g2[ic]
