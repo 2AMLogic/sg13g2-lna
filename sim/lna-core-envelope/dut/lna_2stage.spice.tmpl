@@ -1,0 +1,91 @@
+* sg13g2-lna -- TWO-STAGE PROBE DUT (issue #52), NOT a committed design.
+*
+* This file exists to answer one acceptance-criterion question of issue #52
+* with a simulated result rather than an argument: *can a device-count /
+* topology change close the RATIFIED Gain (S21) > 15 dB row inside the
+* RATIFIED P_dc < 10 mW row?* It is a PROBE, in the same sense
+* sim/biasref-topology/'s Phase-A/B skeletons were probes: it is not
+* `design/lna.sch`, it is not netlisted from any schematic, and nothing in
+* `design/` changes because of it. `design/netlist/lna.spice` remains the
+* committed DUT and the subject of every conformance number in this repo.
+*
+* Construction, stated so a reader can audit it against the committed
+* netlist line by line:
+*
+*   - The DR-0003 flat bias-reference core (XMb/XQb/Rp/XMa/XQa/Rseed/XMv/
+*     Rsum/XQc/XMnp1/XMnp2/Rtail/XMld/XMlm/XMref/Rl/XMis/XQ3/Cbref) is
+*     copied VERBATIM from design/netlist/lna.spice with exactly one
+*     substitution: XMis's width, which is the knob that sets the island
+*     reference current and therefore the total DC power. One core feeds
+*     BOTH stages (the two-stage variant does not pay the bias overhead
+*     twice) through its own 330 Ohm series base resistor per stage
+*     (R3ba/R3bb), each identical to the committed R3b.
+*   - The cascode base divider (R2a 1k / R2b 11k / Cbyp2 / Cvdd) is copied
+*     verbatim and shared by both stages, as in the committed core.
+*   - Each RF stage is the committed cascode verbatim -- XQ1/XQ2 npn13G2,
+*     Le = 1 nH emitter degeneration, Lc = 5 nH collector inductor -- with
+*     the emitter geometry (Nx, m) substituted per stage.
+*   - The interstage connection is one 100 pF ideal DC block (Cc), the same
+*     primitive and value the committed Cin/Cout use. There is NO
+*     interstage matching network: that would be design work, and #27 owns
+*     the matching networks. The consequence is stated rather than hidden
+*     -- the interstage transfer here is an unmatched 5 nH tank driving the
+*     next base, so the two-stage gain numbers this probe reports are what
+*     the topology gives with no interstage design at all.
+*
+* Ideal-passive limitation: Le/Lc/Cc are ideal infinite-Q SPICE primitives,
+* exactly as in the committed netlist, because SG13G2 ships no simulatable
+* inductor model (issue #5, upstream 2AMLogic/klayout-tools#1519). Every
+* gain number from this DUT is therefore the MOST OPTIMISTIC case and every
+* stability number the LEAST-DAMPED case -- the same caveat the
+* lna-characterization record carries, and the reason this probe's gain
+* claim is stated as an envelope bound, not as a design result.
+*
+* Substituted by sim/lna-core-envelope/run_core_envelope.sh:
+*   @@NX1@@/@@M1@@  stage-1 emitter multiplicity / instance multiplicity
+*   @@NX2@@/@@M2@@  stage-2 emitter multiplicity / instance multiplicity
+*   @@WIS@@         XMis width in um (the total-power knob)
+
+.subckt lna vdd vss rfin rfout
+* --- RF stage 1 (cascode) --------------------------------------------
+XQ2a outa vb2 casca vss npn13G2 Nx=@@NX1@@ m=@@M1@@
+XQ1a casca b1a e1a vss npn13G2 Nx=@@NX1@@ m=@@M1@@
+Lea e1a vss 1n m=1
+Lca vdd outa 5n m=1
+Cin rfin b1a 100p m=1
+* --- interstage DC block (no interstage match -- see header) ----------
+Cc outa b1b 100p m=1
+* --- RF stage 2 (cascode) --------------------------------------------
+XQ2b outb vb2 cascb vss npn13G2 Nx=@@NX2@@ m=@@M2@@
+XQ1b cascb b1b e1b vss npn13G2 Nx=@@NX2@@ m=@@M2@@
+Leb e1b vss 1n m=1
+Lcb vdd outb 5n m=1
+Cout outb rfout 100p m=1
+* --- shared cascode base divider (verbatim from the committed core) ---
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+* --- DR-0003 flat bias reference core (verbatim except XMis width) ----
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp nc_e vss 3.4k m=1
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg m=1
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k m=1
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k m=1
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k m=1
+XMis bref gsvo vdd vdd sg13_hv_pmos w=@@WIS@@u l=1u ng=1 m=1
+R3ba bref b1a 330 m=1
+R3bb bref b1b 330 m=1
+XQ3 bref bref vss vss npn13G2 Nx=1
+Cbref bref vss 100p m=1
+.ends
