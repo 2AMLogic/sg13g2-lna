@@ -225,6 +225,14 @@ open, still blocked in practice on the inductor-model gap.
 This finding is **reversed** by the re-baseline, and that reversal is the
 single most consequential result in this report.
 
+> **⚠ Amended 2026-09-26 by issue #52 — read
+> [§"Amendment (issue #52)"](#amendment-issue-52-the-nfmin-numbers-below-are-referenced-to-the-analysis-temperature-not-to-t0--290-k)
+> at the end of this file before quoting the `NFmin` table below.** The
+> qualitative conclusion of this section stands (0 of 45 cells clear the
+> row, either way), but the three `NFmin` values in it are referenced to
+> each cell's **analysis temperature**, not to the RATIFIED T0 = 290 K, so
+> the *margins* quoted are wrong in both directions.
+
 The repo's own thesis claim ("sub-dB noise figures at low GHz are textbook
 SiGe territory", `spec/target-spec.md` source (3)) is testable against a
 number this campaign produces directly: `NFmin`, the noise figure the
@@ -346,3 +354,90 @@ list is in
    (PR #32, this record as the evidence base). The rows it marks RATIFIED
    are now a bar, not a hypothesis; the IIP3 numeric target and the former
    stretch columns remain DRAFT pending their own record.
+
+## Amendment (issue #52): the `NFmin` numbers below are referenced to the analysis temperature, not to T0 = 290 K
+
+**Date**: 2026-09-26. **Source**: issue
+[#52](https://github.com/2AMLogic/sg13g2-lna/issues/52) /
+[`spec/decision-records/0004-achievable-gain-nf-power-envelope.md`](../spec/decision-records/0004-achievable-gain-nf-power-envelope.md)
+§"Evidence — 3". **Nothing above is deleted or rewritten** — this amendment
+is appended in the same spirit as the `sim/` append-only rule, so the
+original text stays readable and the correction is explicit.
+
+Two statements in this report need correcting, and one finding needs
+withdrawing. All three are re-derivable from committed files with
+`sim/lna-core-envelope/derive_committed_record_envelope.py` (no PDK, no
+ngspice — it reads record `20260926-122301-088c734`'s own raw
+`corners/<id>/*.inband.dat` complex-S tables).
+
+### (a) `NFmin` — the reference temperature
+
+ngspice's two-port `sp` noise figure — the `NF`/`NFmin` vectors, and
+therefore this record's `nf_sp_db_*` / `nfmin_sp_db_*` columns — is
+referenced to the **analysis temperature**, not to a fixed T0. Proof, from
+this record's own data: re-referencing the *independently computed*
+`.noise`-based `nf290` column (the Xb branch, noiseless `Rs`, analytic
+290 K source term) to each cell's analysis temperature reproduces the
+committed `sp`-analysis `nf` column (the Xa branch) to a worst error of
+**9.2e-5 dB across all 45 cells**. No other convention satisfies that.
+
+`spec/target-spec.md` RATIFIES the NF row at **T0 = 290 K**, so §3's table
+is comparing a different quantity against the row. Re-referenced with the
+same identity `sim/hbt-characterization/rederive_nf_fixed_t0.py` uses for
+the issue-#25 correction (`F(T₀) − 1 = (F(Tₐ) − 1)·Tₐ/T₀`):
+
+| | `NFmin` as printed in §3 | **`NFmin` at T0 = 290 K** | vs the ratified `NF < 1.5 dB` |
+|---|---|---|---|
+| best of 45 cells (bcs/−40 °C/1.98 V) | 2.0749 dB | **1.7389 dB** | **+0.239 dB over** (§3 said +0.575) |
+| nominal cell (typ/27 °C/1.80 V) | 2.3817 dB | **2.4454 dB** | **+0.945 dB over** (§3 said +0.882) |
+| worst of 45 cells (wcs/125 °C/1.62 V) | 2.7275 dB | **3.4239 dB** | **+1.924 dB over** (§3 said +1.228) |
+| cells with `NFmin` < 1.5 dB | 0 of 45 | **0 of 45** | unchanged |
+
+§3's conclusion — the ratified NF row is not reachable by matching at this
+operating point — is **unaffected**. Its *margins* are: better than stated
+at the cold cells, considerably worse at the hot ones. Per-cell values:
+`sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv`.
+
+### (b) The gain shortfall — the metric assumed no output network
+
+§"Results against the ratified target table" and issue #27 both quote an
+"available-gain basis" of 14.42 dB at nominal (11.4604 + 2.9556), 0.58 dB
+short of the ratified > 15 dB row. That arithmetic is correct and
+re-derives exactly, but it applies an ideal conjugate match at the **input**
+and leaves the **output terminated in the bare 50 Ω port** — which the
+ratified S22 row already forbids a finished design from doing. The
+committed core's output impedance, `Z = 50·(1+S22)/(1−S22)` from this
+record's own complex `S22` at the nominal cell and the band-bottom sweep
+point (2.4 GHz), is **0.0427 + j76.50 Ω** — parallel-equivalent
+**137 kΩ ∥ j76.5 Ω**, a near-lossless current source that a 50 Ω
+termination almost entirely discards. (Band mid 0.0457 + j77.92 Ω, band top
+0.0489 + j79.34 Ω; nothing below turns on which in-band point is quoted.)
+
+Charging only the output tank's own loss at a finite inductor Q (arithmetic
+on the committed S-parameters, not a passive model — the PDK has none):
+
+| output-tank Q | available gain, worst of 45 cells | nominal | cells > 15 dB |
+|---|---|---|---|
+| input match only (output at 50 Ω) | 13.07 dB | 14.42 dB | 3/45 |
+| Q = 3 | 15.19 dB | 16.54 dB | **45/45** |
+| Q = 10 | 20.40 dB | 21.75 dB | 45/45 |
+| Q = ∞ (the committed ideal model) | 41.34 dB | 43.95 dB | 45/45 |
+
+So "the gain row is unreachable even under an ideal lossless match" is
+**withdrawn**. What the evidence supports is narrower: the gain row cannot
+be met by an *input* match alone, and how much of the 5.4 dB of headroom at
+Q = 10 survives the matching networks' own insertion loss is #27's budget.
+
+### (c) What the campaign could not answer, and where the answer now lives
+
+§3 says closing the NF row "requires revisiting the bias point and/or
+device sizing, which is a design decision needing its own decision record".
+That work is done as evidence: `sim/lna-core-envelope/` (record
+`20260926-180931-90b07a0`) re-runs this exact bench over 15 DUT variants ×
+the same 45 cells, with the committed netlist as a control that reproduces
+this record to `0.000e+00` relative difference. Headline: emitter area at
+**constant current** (not more current) is the cheapest NF lever — 80 unit
+emitters instead of 8 buys 1.55 dB of `NFmin` while *lowering* worst-cell
+P_dc by 1.36 mW — and the NF row then holds at all 30 cold/nominal cells
+and at **none** of the 15 hot ones, on every variant tried. The trade that
+leaves is DR-0004's subject, and the decision is the operator's.
