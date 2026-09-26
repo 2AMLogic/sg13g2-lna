@@ -46,37 +46,22 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
 
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_hbt_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
+# PDK/ngspice preflight (exit 3 on any miss, prefixed with this runner's
+# own name) and this run's record id + append-only output dirs. No --osdi:
+# npn13G2 is a native ngspice VBIC model, and this bench instantiates
+# nothing else.
+sim_require_pdk run_hbt_sweep.sh
+sim_record_paths
 
-command -v ngspice >/dev/null 2>&1 || { echo "run_hbt_sweep.sh: ngspice not on PATH." >&2; exit 3; }
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
-MODELS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerHBT.lib"
-if [[ ! -f "${MODELS_LIB}" ]]; then
-  echo "run_hbt_sweep.sh: cornerHBT.lib not found at ${MODELS_LIB}" >&2
-  exit 3
-fi
-
-REPO_GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-EXPERIMENT_DIR="${SCRIPT_DIR}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
 CSV_RAW="${RECORDS_DIR}/${RECORD_ID}.raw.csv"
 CSV_OUT="${RECORDS_DIR}/${RECORD_ID}.csv"
 SUMMARY_OUT="${RECORDS_DIR}/${RECORD_ID}-summary.csv"
 MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
-mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
 
 # --- Sweep grid ----------------------------------------------------------
 # Corner labels mirror cornerMOShv.lib's five-label convention (for

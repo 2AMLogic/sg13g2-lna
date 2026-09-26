@@ -56,37 +56,18 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
 
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_lna_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
-
-command -v ngspice >/dev/null 2>&1 || { echo "run_lna_sweep.sh: ngspice not on PATH." >&2; exit 3; }
+# PDK/ngspice preflight (exit 3 on any miss, prefixed with this runner's
+# own name). --osdi since DR-0003 Stage-2 (issue #33 / PR #40): the
+# committed DUT instantiates sg13_hv_pmos / sg13_hv_nmos, so this bench
+# needs cornerMOShv.lib and the OSDI models too. python3 is this bench's
+# own requirement (the FFT-parameter derivation and the parser).
+sim_require_pdk run_lna_sweep.sh --osdi
 command -v python3 >/dev/null 2>&1 || { echo "run_lna_sweep.sh: python3 not on PATH." >&2; exit 3; }
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
-MODELS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerHBT.lib"
-MOS_LIB="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models/cornerMOShv.lib"
-OSDI_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
-if [[ ! -f "${MODELS_LIB}" ]]; then
-  echo "run_lna_sweep.sh: cornerHBT.lib not found at ${MODELS_LIB}" >&2
-  exit 3
-fi
-# DR-0003 Stage-2 (issue #33 / PR #40): the committed DUT instantiates
-# sg13_hv_pmos / sg13_hv_nmos, so this bench now needs cornerMOShv.lib and
-# the OSDI models too -- the same preamble sim/lna-bias-pvt's runner
-# already carries.
-for f in "${MOS_LIB}" "${OSDI_DIR}/psp103.osdi" "${OSDI_DIR}/psp103_nqs.osdi" "${OSDI_DIR}/mosvar.osdi"; do
-  if [[ ! -f "${f}" ]]; then
-    echo "run_lna_sweep.sh: ${f} not found -- if the .osdi models are missing, run sim/tools/build-osdi.sh (see sim/README.md 'OSDI device models'); the DR-0003 Stage-2 DUT will not simulate without them." >&2
-    exit 3
-  fi
-done
 
 DESIGN_NETLIST="${REPO_ROOT}/design/netlist/lna.spice"
 if [[ ! -f "${DESIGN_NETLIST}" ]]; then
@@ -95,14 +76,8 @@ if [[ ! -f "${DESIGN_NETLIST}" ]]; then
 fi
 DESIGN_NETLIST_SHA="$(shasum -a 256 "${DESIGN_NETLIST}" | awk '{print $1}')"
 
-REPO_GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-EXPERIMENT_DIR="${SCRIPT_DIR}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
-mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
+# This run's record id + its three append-only output locations.
+sim_record_paths
 
 # --- DUT: the committed design netlist, inlined verbatim ----------------
 # design/netlist/lna.spice is xschem's own flat netlist of design/lna.sch:
@@ -112,14 +87,15 @@ mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
 # those two markers and drop the trailing ".end" so the identical device
 # list can be instantiated twice inside one testbench deck. NOTHING ELSE is
 # changed -- every device line is verbatim, and the sha256 above pins which
-# revision these numbers belong to.
-DUT_SUBCKT="$(mktemp)"
-trap 'rm -f "${DUT_SUBCKT}"' EXIT
+# revision these numbers belong to. SIM_DUT_SUBCKT is what sim_render
+# splices in at @@LNA_SUBCKT@@.
+SIM_DUT_SUBCKT="$(mktemp)"
+trap 'rm -f "${SIM_DUT_SUBCKT}"' EXIT
 sed -e 's|^\*\*\.subckt|.subckt|' \
     -e 's|^\*\*\.ends|.ends|' \
     -e '/^\.end$/d' \
-    "${DESIGN_NETLIST}" > "${DUT_SUBCKT}"
-grep -q '^\.subckt lna ' "${DUT_SUBCKT}" || {
+    "${DESIGN_NETLIST}" > "${SIM_DUT_SUBCKT}"
+grep -q '^\.subckt lna ' "${SIM_DUT_SUBCKT}" || {
   echo "run_lna_sweep.sh: could not recover a '.subckt lna ...' line from ${DESIGN_NETLIST}" >&2
   exit 3
 }
@@ -207,54 +183,19 @@ fi
 # deck, writing only files named after that point, so the pool below is a
 # pure wall-clock optimization: the committed numbers are bit-identical to a
 # serial run (LNA_SWEEP_JOBS=1).
-if [[ -z "${LNA_SWEEP_JOBS:-}" ]]; then
-  _ncpu="$( (getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) | head -1 )"
-  LNA_SWEEP_JOBS=$(( _ncpu / 3 ))
-  (( LNA_SWEEP_JOBS < 1 )) && LNA_SWEEP_JOBS=1
-  (( LNA_SWEEP_JOBS > 6 )) && LNA_SWEEP_JOBS=6
-  unset _ncpu
-fi
+sim_jobs LNA_SWEEP_JOBS
+sim_pool_init "${LNA_SWEEP_JOBS}"
 
-total_runs=0
+# This bench's own extra failure criteria, on top of sim_check_log's
+# rc / BENCH_COMPLETE test: a model-resolution error, or a transient that
+# gave up on its timestep (an IIP3 point that did so carries no usable
+# spectrum, however cleanly ngspice exited).
+SIM_LOG_FAIL_PATTERNS="Unable to find definition of model|couldn't be loaded|Unknown model type|fatal error|doAnalyses: TRAN: Timestep too small"
+
 # Failures are recorded in a file, not a shell array: each point runs in a
 # background subshell, whose variable writes cannot propagate to the parent.
 FAILED_LIST="$(mktemp)"
-trap 'rm -f "${DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
-
-pool_spawn() {
-  # pool_spawn <fn> <args...> -- run in the background, at most
-  # LNA_SWEEP_JOBS at a time. `trap - EXIT` in the child keeps the child's
-  # exit from deleting the parent's shared temp files.
-  while (( $(jobs -rp | wc -l) >= LNA_SWEEP_JOBS )); do
-    wait -n 2>/dev/null || true
-  done
-  total_runs=$((total_runs + 1))
-  ( trap - EXIT; "$@" ) &
-}
-
-render() {
-  # render <template> <outfile> <sed-args...>
-  local tmpl="$1" out="$2"; shift 2
-  sed "$@" \
-    -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
-    -e "s|@@MOS_LIB@@|${MOS_LIB}|g" \
-    -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
-    "${tmpl}" \
-    | sed -e "/@@LNA_SUBCKT@@/r ${DUT_SUBCKT}" -e "/@@LNA_SUBCKT@@/d" > "${out}"
-}
-
-check_log() {
-  # check_log <point_id> <log> <rc>
-  local point_id="$1" log="$2" rc="$3"
-  if [[ "${rc}" -ne 0 ]] \
-    || grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type|fatal error|doAnalyses: TRAN: Timestep too small" "${log}" \
-    || ! grep -q "^BENCH_COMPLETE" "${log}"; then
-    echo "run_lna_sweep.sh: FAILED ${point_id} (rc=${rc}) -- see ${log}" >&2
-    echo "${point_id}" >> "${FAILED_LIST}"
-    return 1
-  fi
-  return 0
-}
+trap 'rm -f "${SIM_DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
 
 run_sparam_cell() {
   local corner_label="$1" hbt_section="$2" temp="$3" vdd="$4"
@@ -265,7 +206,7 @@ run_sparam_cell() {
   local inband_dat="${CORNERS_OUT}/${point_id}.inband.dat"
   local stab_dat="${CORNERS_OUT}/${point_id}.stability.dat"
 
-  render "${EXPERIMENT_DIR}/testbench/tb_lna_sparam.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_sparam.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
     -e "s|@@MOS_SECTION@@|${mos_section}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
@@ -282,7 +223,7 @@ run_sparam_cell() {
 
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  check_log "${point_id}" "${log}" "${rc}" || return 0
+  sim_check_log "${point_id}" "${log}" "${rc}" || return 0
 }
 
 run_iip3_point() {
@@ -292,7 +233,7 @@ run_iip3_point() {
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
 
-  render "${EXPERIMENT_DIR}/testbench/tb_lna_iip3.spice.tmpl" "${netlist}" \
+  sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_iip3.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
     -e "s|@@MOS_SECTION@@|${mos_section}|g" \
     -e "s|@@TEMP@@|${temp}|g" \
@@ -318,7 +259,7 @@ run_iip3_point() {
 
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
-  check_log "${point_id}" "${log}" "${rc}" || return 0
+  sim_check_log "${point_id}" "${log}" "${rc}" || return 0
 }
 
 amp_label_of() {
@@ -336,7 +277,7 @@ for corner_label in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      pool_spawn run_sparam_cell "${corner_label}" "${hbt_section}" "${temp}" "${vdd}"
+      sim_pool_spawn run_sparam_cell "${corner_label}" "${hbt_section}" "${temp}" "${vdd}"
     done
   done
 done
@@ -348,14 +289,14 @@ for corner_label in "${CORNER_LABELS[@]}"; do
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
       for amp in "${AMPS_GRID[@]}"; do
-        pool_spawn run_iip3_point "${corner_label}" "${hbt_section}" "${temp}" "${vdd}" \
+        sim_pool_spawn run_iip3_point "${corner_label}" "${hbt_section}" "${temp}" "${vdd}" \
           "${amp}" "$(amp_label_of "${amp}")"
       done
     done
   done
 done
 for amp in "${AMPS_NOMINAL_ONLY[@]}"; do
-  pool_spawn run_iip3_point "${NOMINAL_CORNER}" "${HBT_SECTION_OF[${NOMINAL_CORNER}]}" \
+  sim_pool_spawn run_iip3_point "${NOMINAL_CORNER}" "${HBT_SECTION_OF[${NOMINAL_CORNER}]}" \
     "${NOMINAL_TEMP}" "${NOMINAL_VDD}" "${amp}" "$(amp_label_of "${amp}")"
 done
 wait
@@ -450,7 +391,7 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  FFT N=${NFFT} samples at ${TSTEP} s/sample (window ${TWINDOW} s,"
   echo "  bin ${DF} Hz), rectangular window, no zero padding,"
   echo "  ${TSTART} s of transient discarded before the window."
-  echo "- **Result**: ${total_runs} ngspice invocations (run ${LNA_SWEEP_JOBS} at a"
+  echo "- **Result**: ${SIM_POOL_SPAWNED} ngspice invocations (run ${LNA_SWEEP_JOBS} at a"
   echo "  time; each writes only its own files, so concurrency affects wall-clock"
   echo "  time only, not any number below)."
   if [[ ${#failed_points[@]} -gt 0 ]]; then

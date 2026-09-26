@@ -22,7 +22,34 @@ without re-deriving it from the pin file alone.
 `sg13g2-opamp` do (env vars first, then the usual open_pdks install
 prefixes) — every testbench's `run_*.sh` sources it, and an interactive
 `ngspice` session can too, so nothing here can silently drift onto a
-different install than what a script used.
+different install than what a script used. It also carries the shared
+runner surface documented below.
+
+## Shared runner surface (`sim/env.sh`)
+
+Every `run_*_sweep.sh` opens the same way: resolve the PDK, refuse to run
+without it, mint a `<record-id>`, create the output dirs, then render decks
+and (for the concurrent benches) schedule `ngspice -b` runs. That
+scaffolding lives once, in `env.sh`, and each runner calls it:
+
+| Helper | Contract |
+|---|---|
+| `sim_require_pdk <script-name> [--osdi]` | The preflight. Any miss — no resolvable PDK, no `ngspice` on PATH, no `cornerHBT.lib`, or (with `--osdi`) no `cornerMOShv.lib`/`.osdi` models — prints `"<script-name>: …"` on **stderr** and exits **3**. The `<script-name>` argument is what keeps that message prefix per-runner. On success it sets `NGSPICE_VERSION`, `MODELS_LIB` and, with `--osdi`, `MOS_LIB`/`OSDI_DIR`. Paths come from `env.sh`'s own `SG13G2_NGSPICE_MODELS`, so there is exactly one definition of where the model libs live. |
+| `sim_record_paths` | Mints `RECORD_ID` (`<YYYYMMDD>-<HHMMSS>-<short-git-sha>`, UTC) and sets + creates `SNAPSHOTS_OUT`, `CORNERS_OUT`, `RECORDS_DIR` under the caller's `SCRIPT_DIR`. |
+| `sim_jobs <var-name>` | Sets `<var-name>` to `min(6, ncpu/3)`, floor 1, unless it is already set in the environment — an explicit `*_JOBS` knob wins. |
+| `sim_pool_init <jobs>` / `sim_pool_spawn <fn> <args…>` | The bash-4.3 `wait -n` job pool. `SIM_POOL_SPAWNED` counts what was scheduled (what a record quotes as "N ngspice invocations"). |
+| `sim_render <tmpl> <out> <sed-args…>` | Applies the caller's own substitutions, then `@@MODELS_LIB@@`/`@@MOS_LIB@@`/`@@OSDI_DIR@@`; if `SIM_DUT_SUBCKT` is set, splices that file in at `@@LNA_SUBCKT@@`. |
+| `sim_check_log <point-id> <log> <rc>` | Per-point gate: non-zero `rc`, any pattern the runner put in `SIM_LOG_FAIL_PATTERNS`, or a missing `BENCH_COMPLETE` marker fails the point and appends its id to `${FAILED_LIST}`. |
+
+**What deliberately does NOT move into `env.sh`**: sweep grids,
+`HBT_SECTION_OF`/`MOS_SECTION_OF` maps, per-experiment template
+substitutions, `*_SMOKE` overrides, `python3` requirements, and the
+bespoke failure criteria of `hbt-characterization` and
+`breakdown-extraction` (both count emitted `PT ` lines against an expected
+`N_POINTS`, and both are deliberately serial, so neither uses
+`sim_pool_spawn` or `sim_check_log`). Those are **bench definitions** — per
+"Bench definitions carry with every number" below, they stay visible in
+the runner that owns them.
 
 **OSDI device models: needed as of `sim/biasref-topology/` and — since the
 DR-0003 Stage-2 core swap put `sg13_hv_pmos`/`sg13_hv_nmos` into the
@@ -53,7 +80,8 @@ restate the device inventory and pins.
 sim/
   README.md            this file — the authoritative convention
   pdk.json              pinned PDK revision (see "PDK pin" above)
-  env.sh                 PDK_ROOT/PDK resolution, sourced by every testbench
+  env.sh                 PDK_ROOT/PDK resolution + the shared runner
+                          helpers, sourced by every testbench
   <experiment-slug>/     one directory per distinct claim under test
     README.md            testbench rationale, bench definitions (port
                           impedance, bias-network idealizations, frequency),
