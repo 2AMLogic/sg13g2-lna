@@ -28,10 +28,30 @@
 
   // --- Merge policy ---
 
-  // Never auto-merge. Agents review, humans merge.
+  // Renovate never merges its own PRs.
+  //
+  // Scope note: this key governs Renovate only -- it is not an end-to-end
+  // merge gate for this repo. The `labels` key below routes these PRs into the
+  // Loom pipeline, whose Champion does auto-merge on `loom:pr`. Two things
+  // hold that path today (both measured 2026-09-26): `draftPR` below, and
+  // Champion's CRITICAL_PATTERNS (champion-pr-merge.md:1044-1053) listing
+  // `.github/workflows/` and `package.json` -- between them 100% of this
+  // repo's current dependency surface, so criterion #3 holds such a PR for a
+  // human. Neither covers `pyproject.toml`/`uv.lock`, so revisit this if a
+  // Python manifest ever lands here.
   "automerge": false,
 
-  // Create PRs as drafts — consistent with AGENTS.md PR policy
+  // Create PRs as drafts -- consistent with AGENTS.md PR policy, and the
+  // primary brake on the path described above.
+  //
+  // Consequence a human must action: Champion's merge path has no draft gate
+  // (measured 2026-09-26: zero `draft` matches in merge-pr.sh,
+  // lib/forge-helpers.sh or champion-pr-merge.md; criterion #4 gates on
+  // `mergeable`, not `mergeStateStatus`, and a draft reads MERGEABLE/CLEAN).
+  // So a Renovate PR gets reviewed and labeled `loom:pr`, then fails an
+  // unmergeable-draft merge attempt on every Champion pass until someone
+  // clicks "Ready for review". Fail-safe -- nothing merges -- but recurring
+  // noise: undrafting is a required human step, not an optional one.
   "draftPR": true,
 
   // --- Schedule ---
@@ -44,11 +64,18 @@
   "timezone": "UTC",
 
   // --- Python (uv) ---
-  // Carried from template; no-ops here — this repo has no Python manifest
-  // (measured 2026-09-22). Applies only if one is ever added.
+  // The `packageRules` entries further below are genuinely Python-scoped
+  // (matchManagers: pep621/uv) and are no-ops here -- this repo has no Python
+  // manifest (measured 2026-09-26: no pyproject.toml, uv.lock or
+  // requirements*.txt tracked). Those apply only if one is ever added.
+  //
+  // The two keys immediately below are NOT Python-scoped: both are top-level
+  // and apply to every manager Renovate runs. This heading is presentational
+  // only. They are inert today because nothing here carries a version range
+  // or a lockfile -- not because they are limited to Python.
 
-  // Update lockfile without widening pyproject.toml version ranges.
-  // Renovate detects uv.lock natively.
+  // Update lockfiles without widening declared version ranges (e.g. leaving
+  // pyproject.toml ranges untouched). Renovate detects uv.lock natively.
   "rangeStrategy": "update-lockfile",
 
   // Refresh uv.lock even when no direct dependency range changes.
