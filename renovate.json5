@@ -65,9 +65,10 @@
 
   // --- Python (uv) ---
   // The `packageRules` entries further below are genuinely Python-scoped
-  // (matchManagers: pep621/uv) and are no-ops here -- this repo has no Python
-  // manifest (measured 2026-09-26: no pyproject.toml, uv.lock or
-  // requirements*.txt tracked). Those apply only if one is ever added.
+  // (matchManagers: pep621, which carries uv.lock) and are no-ops here -- this
+  // repo has no Python manifest (measured 2026-09-26: no pyproject.toml,
+  // uv.lock or requirements*.txt tracked). Those apply only if one is ever
+  // added.
   //
   // The two keys immediately below are NOT Python-scoped: both are top-level
   // and apply to every manager Renovate runs. This heading is presentational
@@ -82,6 +83,28 @@
   // This is how Renovate keeps transitive dependencies current.
   // Match the repo's Monday morning schedule explicitly; Renovate otherwise
   // applies a separate lock-file-maintenance default schedule.
+  //
+  // Quarantine gap -- the 14-day `minimumReleaseAge` above does NOT cover what
+  // this refreshes (all measured 2026-09-26 against renovatebot/renovate@main):
+  //
+  //   * Renovate marks `lockFileMaintenance` unsupported for minimumReleaseAge
+  //     -- "Not possible, as we delegate to the package manager to perform the
+  //     required changes" (docs/usage/key-concepts/minimum-release-age.md:178),
+  //     and it "does not currently manage any transitive dependencies -- instead
+  //     leaving that to package managers and lockFileMaintenance" (ibid:293).
+  //   * So the quarantine cannot age-check these updates, and leaving the check
+  //     applied risks suppressing them outright rather than making them safer.
+  //     The packageRules below opt them out explicitly, mirroring Renovate's own
+  //     security:minimumReleaseAge* presets -- see the comment there.
+  //   * Closing the gap for real needs the package-manager side, which Renovate
+  //     wires up for npm (`--before=<date>`, ibid:83) and Poetry
+  //     (`POETRY_SOLVER_MIN_RELEASE_AGE`, ibid:97) but NOT for uv: that doc
+  //     never mentions uv, and lib/modules/manager/pep621/processors/uv.ts
+  //     (386 lines) has zero matches for minimumReleaseAge/exclude-newer.
+  //     Renovate's own advice is to set the check in the package manager too
+  //     (ibid:76). When a Python manifest lands here, set uv's `exclude-newer`
+  //     to get transitive quarantine:
+  //     https://docs.astral.sh/uv/reference/settings/#exclude-newer
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 10am on monday"]
@@ -108,23 +131,95 @@
   // Limit concurrent PRs to keep review queue manageable
   "prConcurrentLimit": 5,
 
-  // Add release notes and changelogs to PR body for agent review
-  "fetchReleaseNotes": true,
+  // Add release notes and changelogs to PR body for agent review.
+  //
+  // Spelled with the current option name. `fetchReleaseNotes` (used here until
+  // now) is not a live option: measured 2026-09-26, it is the only key in this
+  // file absent from Renovate's option registry (lib/config/options/index.ts),
+  // having been renamed to `fetchChangeLogs`. It still "works" -- migration
+  // rewrites it in memory, boolean `true` -> `'pr'` -- but silently, since
+  // `configMigration` defaults to false, so no migration PR is raised and a
+  // stale key can sit here indefinitely looking authoritative. Note `'pr'` is
+  // also `fetchChangeLogs`'s own default, so the old line was setting the
+  // default it would have had anyway; kept explicit because it is policy here.
+  // Ref: https://docs.renovatebot.com/configuration-options/#fetchchangelogs
+  "fetchChangeLogs": "pr",
 
   // --- Package grouping ---
 
   "packageRules": [
-    // Group all non-major Python dependency updates into one PR
+    // --- Quarantine exemptions ---
+    //
+    // Renovate cannot age-check these four update-type groups: they carry no
+    // release timestamp, or the package manager performs the change. Its docs
+    // mark all six update types ❌ for minimumReleaseAge
+    // (docs/usage/key-concepts/minimum-release-age.md:175-182), and its own
+    // security:minimumReleaseAge* presets opt them out with
+    // `minimumReleaseAge: null` plus a PR-body warning, because applying the
+    // check to them "results in updates that will never come"
+    // (lib/config/presets/internal/security.preset.ts:37-82). Leaving the bare
+    // 14-day check applied to them therefore buys no safety and risks
+    // suppressing the updates entirely -- including the lockFileMaintenance run
+    // configured above, which is this repo's only transitive-dependency path.
+    //
+    // These mirror that preset datasource-agnostically: it adds
+    // matchDatasources per generated preset and pins 3 days, whereas this repo
+    // wants its own 14 days across every manager. Measured 2026-09-26 against
+    // renovatebot/renovate@main. The exemptions are deliberate and narrow --
+    // they widen nothing for ordinary major/minor/patch updates, which remain
+    // fully quarantined.
     {
-      "groupName": "python minor/patch dependencies",
-      "matchManagers": ["pep621", "uv"],
-      "matchUpdateTypes": ["minor", "patch"]
+      "description": "No quarantine for update types the package manager controls",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Lock file maintenance does not enforce this repo's 14-day quarantine -- Renovate delegates the change to the package manager. Transitive versions in this PR are NOT age-checked. uv has no Renovate-side release-age support; see renovate.json5 (`lockFileMaintenance`) for the gap and the uv-side `exclude-newer` fix."
+      ]
+    },
+    {
+      "description": "No quarantine for update types that carry no release timestamp",
+      "matchUpdateTypes": ["bump", "lockfileUpdate", "rollback"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate does not enforce minimumReleaseAge for `bump`, `lockfileUpdate` or `rollback` updates, so this PR was raised without the 14-day check. Validate the release age by hand."
+      ]
+    },
+    {
+      "description": "No quarantine for version/digest pinning",
+      "matchUpdateTypes": ["pin"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate's pin functionality does not yet wire in release age (renovatebot/renovate#40288), so the 14-day check was not applied. Validate the release age by hand."
+      ]
+    },
+    {
+      "description": "No quarantine for package replacements",
+      "matchUpdateTypes": ["replacement"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate's replacement functionality does not yet wire in release age (renovatebot/renovate#39400), so the 14-day check was not applied. Validate the release age by hand."
+      ]
     },
 
-    // Python major updates get individual PRs (more risk, need individual review)
+    // --- Grouping ---
+
+    // Group all non-major Python dependency updates into one PR.
+    //
+    // `pep621` is the manager, and it is sufficient: uv is not a manager but a
+    // *processor* under pep621 (lib/modules/manager/pep621/processors/uv.ts,
+    // `lockfileName = 'uv.lock'`), so pep621 is what matches pyproject.toml and
+    // carries uv.lock with it. The former `"uv"` entry here matched nothing.
+    // Measured 2026-09-26 against renovate 44.115.10: its manager list holds 117
+    // names including `pep621` and NOT `uv`; pep621's managerFilePatterns is
+    // `/(^|/)pyproject\.toml$/`. Worth knowing that this was silent -- 44.x does
+    // not validate manager names at all (a rule naming
+    // `totally-bogus-manager` yields zero errors and zero warnings), whereas
+    // renovate 37.x rejected `uv` outright: "You have included an unsupported
+    // manager in a package rule." Revisit if uv is ever promoted to a manager.
     {
-      "matchManagers": ["pep621", "uv"],
-      "matchUpdateTypes": ["major"]
+      "groupName": "python minor/patch dependencies",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["minor", "patch"]
     },
 
     // Group all GitHub Actions SHA updates into one PR
@@ -135,13 +230,29 @@
       "groupName": "github-actions",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "digest"]
-    },
-
-    // GitHub Actions major updates get individual PRs
-    {
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["major"]
     }
+
+    // Major updates get individual PRs -- deliberately with no rule here.
+    // Ungrouped-and-individual is already Renovate's default, and the two
+    // entries removed from this list (pep621 majors, github-actions majors)
+    // were not merely redundant, they were unreachable: each contained nothing
+    // but selectors, and massageConfig() *deletes* such rules before validation
+    // or lookup ever sees them --
+    //   newRules.filter(rule => !Object.keys(rule).every(
+    //     k => k.startsWith('match') || k.startsWith('exclude')))
+    // (lib/config/massage.ts). Measured against renovate 44.115.10 by feeding
+    // this file's own former rule list through massageConfig: 3 rules in, 1 out,
+    // both selectors-only rules dropped. Removed 2026-09-26; majors still get
+    // their own PRs, by Renovate's default rather than by a rule Renovate throws
+    // away.
+    //
+    // Note for anyone re-deriving this from validation.ts: that file does carry
+    // "Each packageRule must contain at least one non-match* or non-exclude*
+    // field", which reads like the consequence here -- but it is unreachable for
+    // a selectors-only rule, because massageConfig runs first and removes the
+    // rule. Measured: `renovate-config-validator --no-global` on the pre-fix file
+    // reports zero warnings and zero errors for those two rules; the only thing
+    // it flagged was the fetchReleaseNotes migration handled above.
 
     // Note: security/vulnerability PRs bypass both schedule and
     // minimumReleaseAge by default (Renovate built-in behavior).
