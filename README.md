@@ -5,8 +5,11 @@ A SiGe HBT low-noise amplifier on IHP SG13G2 on
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: just opened.** Nothing is designed yet. The first work is
-the S-parameter and noise testbench methodology — proving what ngspice can and cannot measure before any transistor is sized.
+**Status: core schematic and simulation campaigns committed.** The cascode
+core lives in [`design/`](design/), with characterization benches and records
+under [`sim/`](sim/). Input/output matching remains open in issue #27, and
+layout is still pending. The committed [`T1 report`](signoff/t1-report.json)
+currently records zero T1 items met; these artifacts do not establish signoff.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
