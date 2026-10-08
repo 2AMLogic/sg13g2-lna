@@ -1,6 +1,6 @@
 # 0004: The achievable (gain, NF, P_dc) envelope on `npn13G2`, and what the RATIFIED NF row costs
 
-- **Status**: proposed
+- **Status**: ruled 2026-10-08 — Option A adopted (disclosure-note correction, no ratified value changes; issue [#57](https://github.com/2AMLogic/sg13g2-lna/issues/57)); Option C in progress ([#58](https://github.com/2AMLogic/sg13g2-lna/issues/58)); Options B and D not taken. Originally `proposed` 2026-09-26; analysis below unchanged.
 - **Date**: 2026-09-26
 - **Decided by**: Builder (Loom), issue #52 — **drafted for the operator to
   rule on; this record decides nothing by itself**
