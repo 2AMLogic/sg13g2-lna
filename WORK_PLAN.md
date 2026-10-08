@@ -17,7 +17,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#56**: sim: replace the ideal inductors with EM-extracted lossy models from sg13g2-vco (removes the blocker on #27, T1 item 5 match and stability rows)
 
 ## In Progress
 
@@ -43,6 +43,7 @@ Issues carrying `loom:curated`.
 
 - **#4**: Gap-to-T1 tracker: artifact-presence checklist (schematic through repo hygiene) *(curated)*
 - **#46**: README: embed the fleet burndown chart (one line) *(curated)*
+- **#56**: sim: replace the ideal inductors with EM-extracted lossy models from sg13g2-vco (removes the blocker on #27, T1 item 5 match and stability rows) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -58,11 +59,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 2 |
+| Curated | 3 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 
