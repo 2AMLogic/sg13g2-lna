@@ -636,6 +636,130 @@ sim/lna-characterization/parse_lna_sweep.py \
 diff /tmp/check-summary.csv sim/lna-characterization/records/<record-id>-summary.csv
 ```
 
+## Inductor-loss variants (issue #56)
+
+`Le` and `Lc` in the committed netlist are ideal, which is the most optimistic
+case for gain and NF and the most degenerate for stability (see "Model
+limitations" item 1). Issue #56 adds a **bench-side** way to swap in lossy
+models without touching `design/` or `spec/`: every variant netlist is
+generated into `netlist-snapshots/<record-id>/` from the verbatim
+`design/netlist/lna.spice` plus one marked `VARIANT EDIT`.
+
+### The EM model and its provenance
+
+`../models/sg13g2_inductor_em.spice` is a **byte-identical stamped copy** of
+`2AMLogic/sg13g2-vco`'s `sim/inductor-model/sg13g2_inductor_em.spice`, an
+openEMS (FDTD) extraction of the PDK's own `inductor2` PCell fitted to a lumped
+subcircuit. Repo, path, full commit sha and sha256 are in
+[`../models/SOURCE.md`](../models/SOURCE.md); the master lives in `sg13g2-vco`
+and the copy is **not to be edited here**. `../models/check_sources.sh`
+verifies the recorded sha256 (exit 0 match, 1 mismatch) and
+`run_lna_variant.sh` runs it first.
+
+`Lc` (5 nH) becomes `XLc vdd outn vss inductor w=6.10u s=3.29u d=110.11u
+nr_r=5` -- the sibling's 5-turn extraction geometry (5.05 nH, series
+resistance 6.69 ohm per the issue), `sub` tied to `vss`, `mc_rsh = mc_rsub =
+1`. Probed in isolation with the far terminal and `sub` grounded, ngspice
+gives at 2.44175 GHz Z = 9.96 + j84.7 ohm, i.e. Im(Z)/(2 pi f) = 5.52 nH and
+**Q = Im/Re = 8.5** (the series-R-only bound is ~11; substrate loss takes the
+rest). That is the number a matching network may assume for `Lc`: Q ~ 8.5 at
+2.44 GHz, typical process, 27 C, one-port to ground.
+
+`Le` (1 nH) is a geometry the EM extraction did **not** cover, and no `klt` with
+klayout-tools#2729 (`klt mom` series-winding static solve) is available on
+this worker (installed `klt 0.7.0+g4cbdfa769875` predates it), so per the issue
+the stated fallback is used: a **resistance sweep bracketing Q = 5 to 20**.
+`Le e1 vss 1n` becomes `Le e1 le_x 1n` + `Rle le_x vss R` with R = 2 pi f L / Q
+at f = 2.44175 GHz: 0.767 ohm (Q=20), 1.534 ohm (Q=10), 3.068 ohm (Q=5). A
+constant R is a DC-resistance model: it has no skin effect, no substrate loss
+and no self-resonance, and its Q rises linearly with frequency.
+
+| Variant | `Lc` | `Le` |
+|---|---|---|
+| `ideal` | ideal 5 nH | ideal 1 nH |
+| `lc_em` | EM 5-turn model | ideal |
+| `le_q20` / `le_q10` / `le_q5` | ideal | 1 nH + series R, Q = 20 / 10 / 5 |
+| `lc_em_le_q10` | EM 5-turn model | 1 nH + series R, Q = 10 |
+
+### How the campaign runs (and why it is not `run_lna_sweep.sh`)
+
+`run_lna_variant.sh` + `lna_variant_campaign.py` express the same 45 PVT cells
+(corner_label x {-40, 27, 125} C x VDD {1.62, 1.80, 1.98} V, same
+label -> `cornerHBT`/`cornerMOShv` section map, `gmin = 1e-10`) as `klt sim`
+**corners requests**, because on the Loom dispatch workers a multi-corner grid
+goes to the Spot batch fleet (`KLT_SIM_BACKEND=batch`) rather than being
+hand-launched on the shared host. `klt sim` owns the single `.control` block
+and runs **one analysis per request**, so each variant is three requests:
+
+| Request | Analysis (50 ohm ports) | Measurements |
+|---|---|---|
+| `<v>_sp_band` | `sp lin 11 2.4e9 2.4835e9 1` | |S21|, |S11|, |S22| mid-band and worst-in-band; mu, k in-band; ngspice two-port NF and NFmin |
+| `<v>_sp_stab` | `sp dec 40 1e7 3e10` | mu min and #points mu < 1 and the lowest/highest such frequency; k min; max |S11|, max |S22|; #points |S22| > 1 + 1e-6 |
+| `<v>_noise` | `noise v(nfout) vin lin 3 2.4e9 2.4835e9` | NF at T0 = 290 K at band lo/mid/hi (Rs, RL noiseless, source noise re-added analytically, as in "Noise figure" above) |
+
+Differences from `run_lna_sweep.sh` to keep in mind: one DUT copy per netlist
+(the original runs two copies in one deck); the DC operating point is **not**
+re-recorded (so the extra DC drop across the EM `Lc`'s series resistance,
+~4 mA x ~7 ohm, is not quantified); the stability sweep does not report
+|Delta|; and the NF at 290 K is the three-point lo/mid/hi set, with the
+"worst" taken over those three.
+
+At the nominal cell the `ideal` variant through this harness reproduces
+the existing record `20260926-122301-088c734` (ngspice-47 local probe):
+|S21|max 11.5657 dB (same), |S11| worst -3.0657 dB (same), k in-band min
+3.824708 (3.82470763), mu in-band min 1.000353, NF(290 K, band lo) 2.6559 dB
+(same). The 45-cell ideal-vs-lossy record is **not yet committed** -- see
+"Status of the 45-cell run" below.
+
+### Limits of the EM model (restated from its own header)
+
+1. Three geometries were extracted (1, 4, 5 turns). Away from them the model
+   is the analytic model times an EM correction extrapolated from the nearest
+   turn count; nothing validates that extrapolation. The 5-turn device used
+   here is one of the three extracted geometries.
+2. One process point (typical metal and substrate conductivity) and **one
+   temperature**. All corner and temperature dependence is inherited from the
+   analytic model's `mc_rsh`, `mc_rsub` and `tc1` scaling: it is an EM level
+   with analytic scaling, not an EM corner. In this campaign `mc_rsh` and
+   `mc_rsub` are held at 1.0 in every PVT cell; only the `tc1` temperature
+   coefficient moves with the cell temperature. Passive-process corners are
+   therefore **not** exercised.
+3. Not silicon: no measured device backs any of it.
+4. Specific to this use: `Le` has no EM model (series-R bracket only); the
+   `Cin`, `Cout` and bypass capacitors and the bias resistors stay ideal.
+   The sibling's own accuracy note: fit residual 0.18 % (1 turn) to 0.9 %
+   (4 turns) rms on the series impedance.
+
+### Status of the 45-cell run
+
+As of the commit that introduced this section the 45-cell campaign has **not
+been executed**: the Spot batch fleet could not run the request. Evidence (see
+the PR for issue #56): with the worker's client `klt 0.7.0+g4cbdfa769875`,
+job `klt-sim-5399fab90206` failed in 4 s with `batch_runner_version_mismatch`
+(runner image `klt 0.5.0`); with `batch.runner_version_check: "warn"` job
+`klt-sim-e36e3be948d9` failed with `each request.measurements[] entry requires
+'name' and 'spice'` -- the 0.5.0 runner image predates `expr` measurements,
+`options.osdi_preload` and `options.stage_model_inputs`, all of which this
+DUT needs (PSP103 OSDI MOS devices). The worker-local `/usr/bin/ngspice` is
+42, which cannot load the PDK's OSDI v0.4 binaries, so no local fallback is
+available either (and a local 45-cell grid is out of bounds on the shared
+dispatch host regardless). Once the fleet image carries a current `klt`, run
+
+    sim/lna-characterization/run_lna_variant.sh        # full 6-variant x 45-cell campaign
+
+which mints a new append-only record and writes the per-cell
+ideal-versus-lossy table (`-compare.csv`).
+
+### Nominal-cell probe (not a PVT record)
+
+`LNA_VARIANT_SMOKE=1 LNA_VARIANT_BACKEND=local KLT_NGSPICE_BINARY=<ngspice>=46
+sim/lna-characterization/run_lna_variant.sh` runs every variant at the nominal
+cell only (typ / 27 C / 1.80 V). It is a plumbing check and **not** a PVT
+campaign; its output is deliberately not committed as a record. The numbers it
+gave on 2026-10-08 (ngspice-47, local, 50 ohm ports, band mid = 2.44175 GHz) are
+in the PR description for issue #56; read them as one operating point of one
+process, with all the limits above.
+
 ## What these numbers do and do not license
 
 **Do**: treat the current record as the evidence base for any statement

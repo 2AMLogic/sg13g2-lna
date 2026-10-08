@@ -1,0 +1,188 @@
+*******************************************************************************
+* sg13g2_inductor_em.spice -- SG13G2 spiral inductor, LUMPED MODEL FITTED TO AN
+* openEMS ELECTROMAGNETIC EXTRACTION OF THE PDK'S OWN INDUCTOR PCELL.
+*
+*   .subckt inductor la lb sub  w=<m> s=<m> d=<m> nr_r=<turns>
+*
+* GENERATED FILE -- do not edit by hand.  Produced by
+* em-extraction/scripts/fit_lumped.py from the S-parameters in
+* em-extraction/results/, by
+*
+*   sim/inductor-model/em-extraction/run_extraction.sh
+*
+* Same three terminals, same instance parameters and same corner knobs
+* (mc_rsh, mc_rsub) as sg13g2_inductor_analytic.spice, so it is a drop-in
+* replacement on the SG13G2_IND_MODEL_LIB interface.
+*
+* WHAT WAS EXTRACTED, AND HOW
+* ---------------------------
+* Solver     openEMS (FDTD), IHP's own documented EM route for this PDK.
+* Geometry   the PDK's own KLayout inductor PCell (library SG13_dev, cell
+*            inductor2), instantiated headlessly -- not a redrawn octagon.
+* Stack      IHP's own openEMS stackup libs.tech/openems/openems_ihp_sg13g2/
+*            workflow/SG13G2.xml (sigma_TopMetal2 = 3.03e7 S/m, i.e. the same
+*            11 mOhm/sq typ. sheet resistance the analytic model uses;
+*            sigma_substrate = 2 S/m, i.e. the same 50 Ohm*cm typ. RSBLK).
+* Ports      2 lumped z-ports, LA and LB, each referenced to a local substrate
+*            ground patch = the subcircuit's `sub` node.  Port parasitic
+*            inductance de-embedded (Terman flat-ribbon, per IHP's own
+*            scripts/deembed_openEMS.py method).
+* Band       0.1 .. 30 GHz; the lumped fit is over 0.3 .. 30 GHz.
+* Extracted  {"p1": {"d_um": 47.65, "fit_band_hz": [300000000.0, 30000000000.0], "nr_r": 1, "residual_fit_band_rms_Zse_pct": 0.17977199410681927, "s_um": 3.29, "w_um": 8.22}, "p11": {"d_um": 141.975, "fit_band_hz": [300000000.0, 8008289029.964711], "nr_r": 4, "residual_fit_band_rms_Zse_pct": 0.9002620962545387, "s_um": 3.74, "w_um": 8.22}, "p13": {"d_um": 110.11, "fit_band_hz": [300000000.0, 6859472646.151043], "nr_r": 5, "residual_fit_band_rms_Zse_pct": 0.8349846636572278, "s_um": 3.29, "w_um": 6.1}}
+*
+* WHAT THIS FILE IS NOT
+* ---------------------
+* 1. It is not an EM lookup table for arbitrary geometry.  Three geometries
+*    were extracted.  Every element here is the ANALYTIC model's own
+*    geometry-driven expression multiplied by the correction factor the EM fit
+*    demanded at the nearest extracted turn count (nr_r <= 1 -> the 1-turn
+*    device, nr_r <= 4 -> the 4-turn device, else the 5-turn device).  At the
+*    three extracted geometries this reproduces the extraction to the fit
+*    residual quoted above.  AWAY from them it is an EM-corrected analytic
+*    model, and the correction is an extrapolation that nothing here validates.
+* 2. It is not a PVT extraction.  The EM solve was run at ONE process point
+*    (typ. metal and substrate conductivity, as shipped in IHP's EM stackup)
+*    and ONE temperature.  All corner and temperature dependence in this file
+*    is inherited unchanged from the analytic model's physics (mc_rsh, mc_rsub
+*    and the tc1 coefficients).  A corner number from this file is the EM level
+*    with the analytic model's *scaling*, not an EM corner.
+* 3. It is not silicon.  No measured device backs any of it.
+*
+* Full method, mesh/boundary convergence data and the extraction-vs-analytic
+* delta: sim/inductor-model/em-extraction/README.md.
+*
+* SPDX-License-Identifier: Apache-2.0
+*******************************************************************************
+
+.subckt inductor la lb sub
+
+* ---- instance parameters (names fixed by the PDK's xschem/LVS netlists) ----
+.param w = {2.0e-6}
+.param s = {2.1e-6}
+.param d = {15.48e-6}
+.param nr_r = {1}
+
+* ---- corner knobs, same meaning as in sg13g2_inductor_analytic.spice -------
+.param mc_rsh = {1.0}
+.param mc_rsub = {1.0}
+
+* ---- EM correction factors (fitted / analytic), selected by turn count -----
+.param kem_r    = {nr_r <= 1 ? 1.25238 : (nr_r <= 4 ? 1.03636 : 1.07032)}
+.param kem_rlad = {nr_r <= 1 ? 0.799387 : (nr_r <= 4 ? 0.343626 : 0.513572)}
+.param kem_l1   = {nr_r <= 1 ? 2.13563 : (nr_r <= 4 ? 1.94164 : 1.61447)}
+.param kem_l    = {nr_r <= 1 ? 0.94555 : (nr_r <= 4 ? 0.925549 : 0.93249)}
+.param kem_cs   = {nr_r <= 1 ? 1.35915e+06 : (nr_r <= 4 ? 10.5563 : 17.2318)}
+.param kem_cox  = {nr_r <= 1 ? 1.21495 : (nr_r <= 4 ? 1.21443 : 1.15205)}
+.param kem_rsi  = {nr_r <= 1 ? 0.623148 : (nr_r <= 4 ? 3.07773 : 2.75795)}
+.param kem_csi  = {nr_r <= 1 ? 1.59139 : (nr_r <= 4 ? 0.493212 : 0.533174)}
+
+* ---- physical constants ----------------------------------------------------
+.param ind_mu0 = {1.25663706212e-6}
+.param ind_eps0 = {8.8541878128e-12}
+.param ind_pisq = {9.86960440108936}
+.param ind_koct = {3.31370849898476}
+.param ind_aoct = {0.828427124746190}
+
+* ---- PDK process constants (transcribed from sg13g2_inductor_analytic.spice,
+*      which cites the PDK source of each) -----------------------------------
+.param ind_ttm2 = {3.000e-6}
+.param ind_rsh2 = {11.0e-3}
+.param ind_rsh1 = {18.0e-3}
+.param ind_tc2 = {3.8e-3}
+.param ind_dw2 = {-0.140e-6}
+.param ind_rtv2 = {1.1}
+.param ind_casub = {3.233e-6}
+.param ind_cpsub = {31.175e-12}
+.param ind_ca21 = {13.0e-6}
+.param ind_rhosub = {0.5}
+.param ind_epssi = {11.9}
+.param ind_grid = {0.01e-6}
+
+* ---- geometry, read off the PCell ------------------------------------------
+.param ind_n = {nr_r}
+.param ind_pitch = {s + w + ind_grid}
+.param ind_din = {d}
+.param ind_dout = {d + 2*(ind_n-1)*ind_pitch + 2*w}
+.param ind_davg = {(ind_din + ind_dout)/2}
+.param ind_fill = {(ind_dout - ind_din)/(ind_dout + ind_din)}
+.param ind_len = {ind_koct*ind_n*(d + w + (ind_n-1)*ind_pitch)}
+.param ind_weff = {w + ind_dw2}
+
+* ---- analytic element values (the EM correction multiplies these) ----------
+.param ind_lmw = {2.25*ind_mu0*ind_n*ind_n*ind_davg/(1 + 3.55*ind_fill)}
+.param ind_rshT = {ind_rsh2*mc_rsh}
+.param ind_rdc = {ind_rshT*ind_len/ind_weff}
+.param ind_nvia = {floor((w/1e-6 + 0.06)/1.96)}
+.param ind_narr = {2*ind_n*min(ind_n-1,1)}
+.param ind_ltm1 = {2*(1.70711*w + 0.9143*s)}
+.param ind_rcros = {ind_narr*ind_rtv2/(ind_nvia*ind_nvia) + (ind_n-1)*ind_rsh1*mc_rsh*ind_ltm1/ind_weff + 1e-9}
+.param ind_lu = {ind_mu0*ind_len*ind_ttm2/(2*ind_weff)}
+.param ind_novl = {2*(ind_n-1)}
+.param ind_cs0 = {ind_novl*ind_weff*ind_weff*ind_ca21 + 1e-21}
+.param ind_aband = {ind_aoct*(ind_dout*ind_dout - ind_din*ind_din)}
+.param ind_edge = {ind_koct*(ind_dout + ind_din)}
+.param ind_coxh0 = {(ind_aband*ind_casub + ind_edge*ind_cpsub)/2}
+.param ind_rhos = {ind_rhosub*mc_rsub}
+.param ind_aout = {ind_aoct*ind_dout*ind_dout}
+.param ind_aeq = {sqrt(ind_aout/3.14159265358979)}
+.param ind_rsi0 = {1.41421356237*ind_rhos/(4*ind_aeq)}
+.param ind_csi0 = {ind_eps0*ind_epssi*ind_rhos/ind_rsi0}
+
+* ---- EM-corrected element values -------------------------------------------
+* Rser carries mc_rsh and tc1 so that the corner/temperature scaling of the
+* metal loss survives; the EM correction sets its level at 27 C, typ.
+.param em_rser = {kem_r*(ind_rdc + ind_rcros)}
+.param em_rlad = {kem_rlad*2*ind_rdc}
+.param em_l1 = {kem_l1*ind_lu/ind_pisq}
+.param em_lm1 = {em_l1}
+.param em_lm2 = {em_l1/4}
+.param em_lm3 = {em_l1/9}
+.param em_lm4 = {em_l1/16}
+.param em_lm5 = {em_l1/25}
+.param em_lm6 = {em_l1/36}
+.param em_lm7 = {em_l1/49}
+.param em_lm8 = {em_l1/64}
+.param em_lm9 = {em_l1/81}
+.param em_lm10 = {em_l1/100}
+.param em_lint = {em_lm1+em_lm2+em_lm3+em_lm4+em_lm5+em_lm6+em_lm7+em_lm8+em_lm9+em_lm10}
+.param em_ltot = {kem_l*ind_lmw}
+.param em_lmain = {em_ltot - em_lint}
+.param em_cs = {kem_cs*ind_cs0}
+.param em_coxh = {kem_cox*ind_coxh0}
+.param em_rsi = {kem_rsi*ind_rsi0}
+.param em_csi = {kem_csi*ind_csi0}
+
+* ---- netlist ---------------------------------------------------------------
+Rser    la    n02  r={em_rser}  tc1={ind_tc2}
+Rk1  n02 n03 r={em_rlad} tc1={ind_tc2}
+Lk1  n02 n03 {em_lm1}
+Rk2  n03 n04 r={em_rlad} tc1={ind_tc2}
+Lk2  n03 n04 {em_lm2}
+Rk3  n04 n05 r={em_rlad} tc1={ind_tc2}
+Lk3  n04 n05 {em_lm3}
+Rk4  n05 n06 r={em_rlad} tc1={ind_tc2}
+Lk4  n05 n06 {em_lm4}
+Rk5  n06 n07 r={em_rlad} tc1={ind_tc2}
+Lk5  n06 n07 {em_lm5}
+Rk6  n07 n08 r={em_rlad} tc1={ind_tc2}
+Lk6  n07 n08 {em_lm6}
+Rk7  n08 n09 r={em_rlad} tc1={ind_tc2}
+Lk7  n08 n09 {em_lm7}
+Rk8  n09 n10 r={em_rlad} tc1={ind_tc2}
+Lk8  n09 n10 {em_lm8}
+Rk9  n10 n11 r={em_rlad} tc1={ind_tc2}
+Lk9  n10 n11 {em_lm9}
+Rk10 n11 n12 r={em_rlad} tc1={ind_tc2}
+Lk10 n11 n12 {em_lm10}
+
+Lmain   n12   lb   {em_lmain}
+Cser    la    lb   {em_cs}
+
+Coxa    la    n20  {em_coxh}
+Rsia    n20   sub  r={em_rsi}
+Csia    n20   sub  {em_csi}
+Coxb    lb    n21  {em_coxh}
+Rsib    n21   sub  r={em_rsi}
+Csib    n21   sub  {em_csi}
+
+.ends inductor
