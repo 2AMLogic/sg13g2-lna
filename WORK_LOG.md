@@ -1,5 +1,9 @@
 # Work Log
 
+### 2026-10-08
+
+- **PR #60**: sim: stamped EM inductor model and lossy-inductor variant bench (issue #56, partial: 45-cell run blocked on fleet klt)
+
 ### 2026-09-26
 
 - **PR #54**: spec: DR-0004 draft — the achievable (gain, NF, P_dc) envelope on npn13G2, plus the lna-core-envelope campaign behind it
