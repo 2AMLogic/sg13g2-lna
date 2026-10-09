@@ -80,9 +80,11 @@ def parse_netlist(path: Path) -> dict[str, list[str]]:
     return cards
 
 
-def build(cell_dir: Path) -> Path:
+def build(cell_dir: Path, repo: Path = REPO) -> Path:
+    """``repo`` is the root ``realization.json``'s ``netlist`` resolves against
+    (overridable so unit tests can point at a temp netlist)."""
     rz = json.loads((cell_dir / "realization.json").read_text())
-    netlist = REPO / rz["netlist"]
+    netlist = repo / rz["netlist"]
     cards = parse_netlist(netlist)
 
     in_scope = rz["in_scope"]
