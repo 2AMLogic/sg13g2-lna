@@ -7,8 +7,10 @@ open-source xschem + ngspice flow.
 
 **Status: core schematic and simulation campaigns committed.** The cascode
 core lives in [`design/`](design/), with characterization benches and records
-under [`sim/`](sim/). Input/output matching remains open in issue #27, and
-layout is still pending. The committed [`T1 report`](signoff/t1-report.json)
+under [`sim/`](sim/). Input/output matching remains open in issue #27. The
+block's layout is still pending: [`layout/`](layout/) holds only a partial
+bring-up of the cascode core and the DR-0003 bias island, whose DRC and LVS
+are not clean (issue #63). The committed [`T1 report`](signoff/t1-report.json)
 currently records zero T1 items met; these artifacts do not establish signoff.
 
 **Built agent-native.** Every specification, decision record, testbench, and
@@ -72,6 +74,7 @@ append-only rule and the corner-label mapping.
 | OSDI device models (`psp103`, `psp103_nqs`, `r3_cmc`, `mosvar`) | compiled from the PDK's own Verilog-A with OpenVAF-Reloaded `v24.0.1mob`, checksum-pinned | [`sim/tools/build-osdi.sh`](sim/tools/build-osdi.sh), restated in `sim/pdk.json` `osdi_toolchain` | every bench that instantiates `sg13_hv_pmos`/`sg13_hv_nmos`: `biasref-topology`, `lna-bias-pvt`, `lna-characterization`, `lna-core-envelope`. Run `sim/tools/build-osdi.sh` once per PDK install, and run `sim/tools/build-osdi.sh --check` to verify. The output goes into the PDK install and is not committed here. |
 | python3 (stdlib only) | none | each runner's preflight | the result parsers and derivation scripts. |
 | klayout-tools (`klt`), signoff | `0.6.0` | [`.github/workflows/signoff.yml`](.github/workflows/signoff.yml), [`signoff/README.md`](signoff/README.md) | only the T1 signoff gate. The ngspice benches do not need `klt`. |
+| klayout-tools (`klt`), layout evidence | `0.7.0` PyPI release, run as `uvx --isolated --from klayout-tools==0.7.0 klt` | [`layout/run_flow.sh`](layout/run_flow.sh) (`KLT_RELEASE`), [`layout/README.md`](layout/README.md) | the `klt drc`/`extract`/`lvs` reports under `layout/lna_core/`. Layout generation also needs the pip `klayout` package (`0.30.12` was used) and the two PyCell shims from `layout/tools/fetch-pcell-deps.sh`. |
 | klayout-tools (`klt`), inductor-variant campaign | floor `>= 0.7.0`, recorded in `sim/pdk.json` `klt_variant_campaign.min_version` (the single source; `run_lna_variant.sh` reads it and fails fast below it). It needs a `klt` with `expr` measurements and `options.osdi_preload` / `options.stage_model_inputs`, which `0.6.0` lacks (all three first appear in the klayout-tools `0.7.0` changelog). Developed with client `klt 0.7.0`. This is a floor, not the signoff pin. | [`sim/lna-characterization/README.md`](sim/lna-characterization/README.md) §"Status of the 45-cell run" and §"Nominal-cell probe" | the `klt sim` inductor-variant campaign (`sim/lna-characterization/run_lna_variant.sh`). The batch path also needs a fleet runner image with the same features. The runner image recorded in that section (`klt 0.5.0`) lacks them, which is why the 45-cell run has not been executed. |
 
 xschem is not needed to rerun anything. The circuit-level benches consume

@@ -47,6 +47,26 @@ run_case() {
 fresh_tree() {
   tree="$(mktemp -d)"
   cp -R "$ROOT/signoff" "$tree/signoff"
+  # The manifest's file-backed citations are repo-root-relative and are
+  # graded (and re-hashed) by the render, so a pristine copy must carry
+  # them too -- otherwise every cited row renders unreadable_evidence and
+  # the pristine case fails for a reason that is not drift (issue #63).
+  python3 - "$ROOT" "$tree" <<'PY'
+import json, os, shutil, sys
+
+root, tree = sys.argv[1], sys.argv[2]
+with open(os.path.join(root, "signoff", "manifest.json")) as f:
+    evidence = json.load(f).get("evidence", {})
+for entry in evidence.values():
+    for e in entry if isinstance(entry, list) else [entry]:
+        rel = e.get("file") if isinstance(e, dict) else None
+        if not rel:
+            continue
+        src = os.path.join(root, rel)
+        dst = os.path.join(tree, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+PY
   echo "$tree"
 }
 

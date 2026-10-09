@@ -1,0 +1,17 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": {
+    "file": "lna_core.gds",
+    "deck": "sg13g2",
+    "top": "lna_core"
+  },
+  "reference": {
+    "netlist": "../../design/netlist/lna.spice",
+    "form": "subckt-call",
+    "deck": "sg13g2"
+  },
+  "options": {
+    "combine_devices": true
+  }
+}

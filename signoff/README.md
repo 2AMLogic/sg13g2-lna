@@ -19,16 +19,32 @@
 | `t1-report.json` | The **verdict of record**: the committed `klt signoff --format json` output. CI re-renders the report on every push and PR and fails on any byte-drift (`.github/scripts/check-signoff.sh`), so a manifest citation whose artifact has since changed fails rather than rotting. |
 | `design-evidence-tiers.md` | Vendored copy of the T1-T4 evidence-tier checklist `klt signoff` parses (see provenance below). Vendored so the render is reproducible from this repo alone, independent of whichever doc a given installed `klt` build happens to bundle (see "Why the checklist doc is vendored"). |
 
-Today every item renders `unmet` with `reason: "no_evidence"` — the honest
-statement of the gap for a block at this stage, though a richer one than
-"nothing exists": this block *does* have committed evidence (schematic +
-derived netlist in `design/`, four `sim/` campaigns, a characterization
-report in `measurements/`, and a partially ratified
-`spec/target-spec.md`). None of it is a `klt`-native evidence envelope,
-which is the only thing any row here can cite:
+Today every item renders `unmet`. Items 3 and 4 render `check_failed`,
+and the rest render `no_evidence`. The block does have committed evidence:
+the schematic and its derived netlist in `design/`, four `sim/` campaigns,
+a characterization report in `measurements/`, a partially ratified
+`spec/target-spec.md`, and (since issue #63) a partial layout with `klt`
+DRC/extract/LVS envelopes in `layout/`. Only `klt`-native envelopes can be
+cited here, so the rows break down as follows:
 
-- **Items 2, 3, 4, 7 and 11 need a layout** (GDS, DRC, LVS, extraction,
-  supply spec). `layout/` is a stub — there is nothing to run or cite.
+- **Items 3 and 4 cite failing evidence** from issue #63's layout bring-up.
+  That layout (`layout/lna_core/`) draws the cascode core and the DR-0003
+  bias island, 6 of the netlist's 30 instances, from the PDK's own PyCells.
+  Item 3 cites `layout/lna_core/drc_report.json` (`status: "violations"`,
+  36 `cont.width.1` on PDK-PyCell contact bars, klayout-tools#2943). Item 4
+  cites `layout/lna_core/lvs_full_report.json` (`status: "mismatch"`
+  against `design/netlist/lna.spice`). Both pin the GDS hash, and both
+  render `unmet`/`check_failed`. That is a statement that the evidence
+  exists and fails, not a claim. **Scope guard:** these citations point
+  at a partial layout. If a klt fix (klayout-tools#2943, #2864, #2679)
+  would make either report pass, complete the layout scope or withdraw
+  the citation first. Otherwise a partial cell would render the block's
+  row `met`. See `layout/README.md` → "Signoff citations".
+- **Items 2, 7 and 11 still need the block's layout.** Item 2 is
+  deliberately uncited. It accepts any passing envelope, and a partial
+  layout does not back "Layout" for the block (`layout/README.md`).
+  Item 7 needs a `klt pex` run, and item 11 a supply spec, of a complete
+  layout.
 - **Items 5 and 6 accept only `klt sim` / `klt yield` envelopes** for this
   analog block. The committed campaigns (`sim/hbt-characterization/`,
   `sim/breakdown-extraction/`, `sim/lna-characterization/`,
@@ -52,8 +68,9 @@ which is the only thing any row here can cite:
   cannot check topical relevance for them, so citing them is this
   repo's responsibility, not the grader's. The honest default (per the
   grader contract's own guidance) is to leave them uncited until an
-  artifact genuinely backing each claim exists; no `klt` envelope exists
-  in this repo today.
+  artifact genuinely backing each claim exists. The only `klt` envelopes
+  in this repo today are the partial-layout reports above, and they back
+  none of items 1, 2, 9 and 10.
 
 Per issue #30: an all-`unmet` manifest is the honest machine-readable
 statement of the gap — never hold the manifest back until the block is
@@ -70,8 +87,8 @@ the item just to make a row go green.
   signal path, and `sim/pdk.json` instantiates only the `npn13G2` HBT —
   no RTL, no partition boundary. A `mixed-signal` declaration would be
   wrong here.
-- **`evidence`** — the map from item id to evidence entry, currently
-  empty. When evidence starts landing, cite it honestly:
+- **`evidence`** — the map from item id to evidence entry. It currently
+  holds items 3 and 4, both failing (see above). Cite honestly:
   - **File-backed** — `{"file": "<repo-root-relative path>", "content_hash": "sha256:<hash>"}`.
     Every citation MUST pin `content_hash` to the committed artifact it
     was produced against (`provenance.input.content_hash` of the cited
@@ -106,9 +123,10 @@ the item just to make a row go green.
     not a silent fall-through. The rendered report's per-row
     `graded_by_build: true` field (also new in 0.6.0) is the machine-checkable
     confirmation of that fact. What has not changed: this repo has no
-    layout, so there is no `klt erc` supply-spec run to cite — item 11 stays
-    uncited for the same reason items 2, 3, 4 and 7 do (no artifact exists
-    yet), and renders `unmet`/`no_evidence` — the exact "has a row, even if
+    layout of the block, only issue #63's partial core + island cell, so
+    there is no `klt erc` supply-spec run to cite. Item 11 stays uncited
+    for the same reason items 2 and 7 do (no artifact for the block exists
+    yet), and renders `unmet`/`no_evidence`, the exact "has a row, even if
     unmet" state issue #30 requires. Item 11's blocking work (the actual
     layout and supply-spec evidence) is tracked in the companion issue #35;
     the load-bearing upstream frictions for this block are already on file
@@ -184,7 +202,17 @@ exit-code contract: exit 0 (all items met) and exit 3 (ran successfully,
 at least one item unmet) are both successful renders — an all-unmet
 report is a correct verdict, not a CI failure. The payload gates on its
 own fields (`block`, `kind`, `schema_version`, 11 rendered items, no
-error envelope), not the exit code alone.
+error envelope), not the exit code alone. The self-test grades a
+throwaway copy of `signoff/`, and that copy also carries every file the
+manifest cites, at its repo-relative path (issue #63). Without them, a
+pristine copy would render each cited row `unreadable_evidence` and fail
+for a reason that is not drift.
+
+The cited envelopes are produced by a different `klt` than the one that
+grades them. `layout/run_flow.sh` writes them with the `0.7.0` release;
+this gate grades them with the `0.6.0` signoff pin. The 0.6.0 grader reads
+the 0.7.0 `drc`/`lvs` envelopes without error. That was checked when they
+were cited (issue #63), and the byte-drift gate re-checks it on every run.
 
 **Field gap closed under the current pin.** `klt 0.5.0` predated the
 report's `build` and `source_doc_content_hash` fields
