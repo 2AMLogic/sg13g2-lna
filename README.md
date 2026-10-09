@@ -156,6 +156,22 @@ grids go to the batch fleet as `klt sim` requests rather than being
 launched by hand. `run_lna_variant.sh` is the bench already written that
 way.
 
+### Run the CI checks locally
+
+`.github/scripts/run-local-checks.sh` runs, serially and in workflow order,
+the same self-test + check pairs as
+[`.github/workflows/signoff.yml`](.github/workflows/signoff.yml), each invoked
+exactly as CI invokes it. It keeps going after a failure, prints a
+PASS/FAIL/SKIP line per step and exits non-zero if any step failed. It never
+installs anything: the `klt` steps (need the release `klt` matching the
+workflow pin; a dev build would report spurious drift) and the `shell-lint`
+step (needs ShellCheck exactly 0.10.0) print `SKIP:` when the tool is absent,
+and the `sim-append-only` check runs only with `--base <ref>` (for example
+`--base origin/main`; the self-test always runs).
+`.github/scripts/test-run-local-checks.sh` (also the `local-checks-drift` CI
+job) fails unless every workflow command is run by a runner step exactly as
+CI runs it, in workflow order.
+
 ### Campaign index and the record of record
 
 Each experiment's README carries its regeneration command, its bench
