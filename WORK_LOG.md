@@ -2,6 +2,16 @@
 
 ### 2026-10-09
 
+- **Issue #101** (closed): tests: unit-test hbt-characterization/rederive_nf_fixed_t0.py (fixed-T0 NF correction) and run it in CI
+- **Issue #100** (closed): signoff: bump the grader klt pin 0.6.0 → 0.7.0 to match the layout flow that mints the cited evidence
+- **Issue #87** (closed): sim: validate committed-DUT variant reports and summarize ratified-row coverage
+- **Issue #84** (closed): ci: enforce vendored inductor-model checksum provenance
+- **Issue #94** (closed): Consolidate duplicated RF helpers in the core-envelope postprocessors
+- **PR #103**: sim: unit-test rederive_nf_fixed_t0.py and run it in CI (#101)
+- **PR #102**: signoff: bump grader klt pin 0.6.0 -> 0.7.0 to match the layout flow (#100)
+- **PR #99**: sim: validate committed-DUT variant reports and summarize ratified-row coverage
+- **PR #98**: ci: run vendored-model provenance check in signoff workflow
+- **PR #96**: Consolidate duplicated RF helpers in the core-envelope postprocessors
 - **Issue #64** (closed): test: unit tests and a CI job for the lna-characterization result-reduction code
 - **Issue #69** (closed): docs: add a 'Reproducing the results' index to the top-level README (T1 items 9 and 10)
 - **Issue #72** (closed): sim: pin and preflight the klt version floor for the inductor-variant campaign (currently prose only)
