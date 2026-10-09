@@ -5,7 +5,7 @@
   report rendered by `klt signoff --manifest` — never a hand-maintained
   checkbox list in an issue body.
 - **Date**: 2026-09-21, issue #30 (companion item-11 work item: #35).
-- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.6.0` from
+- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.7.0` from
   PyPI) and the vendored checklist below.
 - **Does not**: grade anything itself. Every row's verdict comes from the
   tool's own mechanical parse-and-grade; this directory only declares what
@@ -166,9 +166,9 @@ from", `KLT_TIERS_DOC`).
 | Field | Value |
 |---|---|
 | Source | `2AMLogic/klayout-tools` `docs/design-evidence-tiers.md` |
-| Pinned at | commit `c622e8addb362491664d44ba4d717f354ca88bbd` (2026-09-22, the `v0.6.0` tag commit) |
-| File SHA-256 | `63eeec72e3d849761cf32dcf091af5728b069b1515e32bb3138e9454303671e5` |
-| Last doc-touching upstream commit | `0882541638acaec9ceb43c4df77b47d5a1a179db` (feat(signoff): carry a mixed-signal manifest's declared partition boundary, #2303) |
+| Pinned at | commit `0e2362bda7309829398a35d54efaa989d5806065` (2026-10-08, the `v0.7.0` tag commit) |
+| File SHA-256 | `4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335` |
+| Last doc-touching upstream commit | `067f04858e37ec40985c8ad8aa56f4beade4b170` (feat(signoff): artifact-anchored generic evidence for T1 items 1/2/9/10) |
 | License | Apache-2.0 (klayout-tools is Apache-2.0; this copy is verbatim, unmodified) |
 
 **Upgrade procedure**: copy the newer doc from klayout-tools verbatim,
@@ -188,7 +188,7 @@ It is refreshed deliberately, in the same commit as whatever change
 re-grades the block:
 
 ```bash
-python3 -m pip install klayout-tools==0.6.0   # the pinned release
+python3 -m pip install klayout-tools==0.7.0   # the pinned release
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -210,9 +210,12 @@ for a reason that is not drift.
 
 The cited envelopes are produced by a different `klt` than the one that
 grades them. `layout/run_flow.sh` writes them with the `0.7.0` release;
-this gate grades them with the `0.6.0` signoff pin. The 0.6.0 grader reads
-the 0.7.0 `drc`/`lvs` envelopes without error. That was checked when they
+this gate grades them with the same `0.7.0` release. The grader reads
+the `drc`/`lvs` envelopes of the layout flow without error. That was checked when they
 were cited (issue #63), and the byte-drift gate re-checks it on every run.
+`.github/scripts/check-klt-pin.sh` (a CI step) fails if the pin named here, in
+`check-signoff.sh` or in `signoff.yml` differs from `layout/run_flow.sh`'s
+`KLT_RELEASE`, so the two cannot drift apart silently (issue #100).
 
 **Field gap closed under the current pin.** `klt 0.5.0` predated the
 report's `build` and `source_doc_content_hash` fields
