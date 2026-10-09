@@ -26,6 +26,7 @@ name: signoff
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
 # `hbt-reduction-tests` (hbt-characterization fixed-T0 NF re-derivation unit
 # tests and committed-record replay — issue #101),
+# `layout-reduction-tests` (layout/lvs_reference.py unit tests — issue #109),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
@@ -92,6 +93,19 @@ jobs:
 
       - name: hbt-characterization reduction unit tests
         run: python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
+
+  # LVS-reference derivation unit tests (issue #109): scope-partition check,
+  # m>1 rejection, per-class card rewrites and netlist-order output of
+  # layout/lvs_reference.py, on inline temp-dir fixtures. Stdlib-only,
+  # headless, no klayout/klt/PDK, single process.
+  layout-reduction-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: lvs_reference unit tests
+        run: python3 -I -m unittest discover -s layout/tests -v
 
   # Core-envelope replay (issue #83): re-run the committed, deterministic
   # derivation into a temp path and diff against the committed derived CSV.
