@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Check that committed layout evidence is mutually consistent (issue #86).
+# Headless, PDK-free, no klayout/klt; bash + python3 stdlib only. Read-only
+# on the checkout (regeneration runs in a temporary repo-shaped copy).
+#
+# Checks for layout/<cell> (default lna_core):
+#   1. sha256(<cell>.gds) == gds_sha256 in <cell>.provenance.json
+#   2. layout/lvs_reference.py regenerated from the current netlist
+#      byte-equals the committed <cell>.lvs_reference.spice
+#   3. provenance.input of drc_report.json and lvs_full_report.json has
+#      role == "layout" and content_hash == sha256:<committed GDS sha256>
+#
+# Usage: check-layout-freshness [--root DIR] [--cell NAME]
+set -eu
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+CELL=lna_core
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --root) ROOT="$2"; shift 2 ;;
+    --cell) CELL="$2"; shift 2 ;;
+    *) echo "usage: $0 [--root DIR] [--cell NAME]" >&2; exit 2 ;;
+  esac
+done
+
+exec python3 -I - "$ROOT" "$CELL" <<'PY'
+import hashlib, json, shutil, subprocess, sys, tempfile
+from pathlib import Path
+
+root, cell = Path(sys.argv[1]).resolve(), sys.argv[2]
+cd = root / "layout" / cell
+errs = []
+
+def fail(rel, msg):
+    errs.append(f"layout-freshness: {rel}: {msg}")
+
+def load(p):
+    try:
+        return json.loads(p.read_text())
+    except Exception as e:
+        fail(p.relative_to(root), f"unreadable JSON ({e})")
+        return None
+
+gds = cd / f"{cell}.gds"
+gds_sha = None
+if gds.is_file():
+    gds_sha = hashlib.sha256(gds.read_bytes()).hexdigest()
+else:
+    fail(gds.relative_to(root), "missing")
+
+# 1. GDS vs provenance
+prov = load(cd / f"{cell}.provenance.json")
+if prov is not None and gds_sha is not None:
+    want = prov.get("gds_sha256")
+    if want != gds_sha:
+        fail(f"layout/{cell}/{cell}.provenance.json",
+             f"gds_sha256 {want!r} != sha256 of committed GDS {gds_sha}")
+
+# 2. regenerate the LVS reference in a temp repo-shaped copy
+committed = cd / f"{cell}.lvs_reference.spice"
+rz = load(cd / "realization.json")
+if rz is not None:
+    net_rel = rz.get("netlist")
+    srcs = {
+        "layout/lvs_reference.py": root / "layout" / "lvs_reference.py",
+        f"layout/{cell}/realization.json": cd / "realization.json",
+        str(net_rel): root / str(net_rel),
+    }
+    missing = [k for k, v in srcs.items() if not v.is_file()]
+    if not net_rel or missing or not committed.is_file():
+        fail(f"layout/{cell}", f"missing inputs for regeneration: "
+             f"{missing or [committed.name]}")
+    else:
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            for k, v in srcs.items():
+                (t / k).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(v, t / k)
+            r = subprocess.run(
+                [sys.executable, "-I", str(t / "layout/lvs_reference.py"),
+                 str(t / "layout" / cell)],
+                capture_output=True, text=True)
+            out = t / "layout" / cell / f"{cell}.lvs_reference.spice"
+            if r.returncode != 0:
+                fail(f"layout/{cell}/{cell}.lvs_reference.spice",
+                     "regeneration failed against current netlist: "
+                     + (r.stderr.strip() or r.stdout.strip()))
+            elif out.read_bytes() != committed.read_bytes():
+                fail(f"layout/{cell}/{cell}.lvs_reference.spice",
+                     f"stale: differs from regeneration of {net_rel}")
+
+# 3. report envelopes pinned to the committed GDS
+for name in ("drc_report.json", "lvs_full_report.json"):
+    rel = f"layout/{cell}/{name}"
+    rep = load(cd / name)
+    if rep is None:
+        continue
+    inp = (rep.get("provenance") or {}).get("input")
+    if not isinstance(inp, dict):
+        fail(rel, "missing provenance.input")
+        continue
+    if inp.get("role") != "layout":
+        fail(rel, f"provenance.input.role is {inp.get('role')!r}, want 'layout'")
+    ch = inp.get("content_hash")
+    if not isinstance(ch, str) or not ch.startswith("sha256:"):
+        fail(rel, f"provenance.input.content_hash missing or malformed ({ch!r})")
+    elif gds_sha is not None and ch[len("sha256:"):] != gds_sha:
+        fail(rel, f"provenance.input.content_hash {ch} != sha256:{gds_sha} (committed GDS)")
+
+if errs:
+    print("\n".join(errs), file=sys.stderr)
+    print(f"layout-freshness: FAILED ({len(errs)} problem(s))", file=sys.stderr)
+    sys.exit(1)
+print(f"layout-freshness: ok ({cell})")
+PY

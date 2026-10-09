@@ -285,3 +285,24 @@ under the curated deck. Then item 3 would render `met` for a cell that is
 not the block. Before re-running the flow under such a klt, either complete
 the layout scope or withdraw the item-3 citation. The same applies to item
 4 if #2864 and #2679 both land.
+
+## CI: layout-freshness
+
+The `layout-freshness` job in `.github/workflows/signoff.yml` runs
+`.github/scripts/check-layout-freshness` (self-test first:
+`.github/scripts/test-check-layout-freshness.sh`). It needs only bash and
+python3 stdlib: no klayout, klt or PDK. It fails, naming the relationship, if:
+
+1. `sha256(lna_core.gds)` differs from `gds_sha256` in
+   `lna_core.provenance.json`;
+2. regenerating the LVS reference with `layout/lvs_reference.py` from the
+   current `design/netlist/lna.spice` (in a temporary repo-shaped copy) is not
+   byte-identical to the committed `lna_core.lvs_reference.spice` (this also
+   catches a netlist edit that leaves a device outside the instance
+   partition);
+3. `provenance.input` in `drc_report.json` or `lvs_full_report.json` is
+   missing, has a `role` other than `layout`, or has a `content_hash` that is
+   not `sha256:` plus the committed GDS hash.
+
+Regenerating the GDS and re-running the reports stays a deliberate local
+step (`layout/run_flow.sh`); CI only checks that the committed files agree.
