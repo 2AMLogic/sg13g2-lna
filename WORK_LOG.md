@@ -1,5 +1,36 @@
 # Work Log
 
+### 2026-10-09
+
+- **Issue #64** (closed): test: unit tests and a CI job for the lna-characterization result-reduction code
+- **Issue #69** (closed): docs: add a 'Reproducing the results' index to the top-level README (T1 items 9 and 10)
+- **Issue #72** (closed): sim: pin and preflight the klt version floor for the inductor-variant campaign (currently prose only)
+- **Issue #75** (closed): ci: mechanically check that record ids cited in docs resolve to committed sim/ evidence
+- **Issue #63** (closed): layout: bring up the klt layout/DRC/LVS flow on the core + bias island (T1 items 2, 3, 4)
+- **Issue #66** (closed): Dedupe PVT corner->section tables repeated across sim run scripts
+- **Issue #67** (closed): ci: enforce the sim/ append-only rule mechanically (fail PRs that modify or delete committed records)
+- **Issue #83** (closed): ci: replay the committed core-envelope derivation against retained RF data
+- **Issue #86** (closed): ci: layout evidence freshness gate (GDS hash vs provenance, regenerated LVS reference vs committed)
+- **Issue #78** (closed): Auditor: retain literal @path comment-body guard
+- **Issue #88** (closed): ci: check the committed netlist's device inventory against design/lna.sch, and drop the leaked local sch_path
+- **Issue #80** (closed): signoff: enforce the partial-layout scope guard before accepting met block rows
+- **Issue #79** (closed): Auditor: refine unresolved-variable confinement guard for temporary LVS diagnostics
+- **PR #65**: test: unit tests and CI job for lna-characterization reduction code
+- **PR #71**: docs: add a 'Reproducing the results' index to the top-level README
+- **PR #74**: sim: preflight klt >= 0.7.0 for the inductor-variant campaign (#72)
+- **PR #76**: ci: check cited record ids resolve to sim/ evidence
+- **PR #77**: layout: bring up the klt layout/DRC/LVS flow on the core + bias island (#63)
+- **PR #81**: ci: enforce the sim/ append-only rule mechanically (#67)
+- **PR #85**: ci: replay the committed core-envelope derivation against retained RF data
+- **PR #91**: ci: layout-freshness gate for committed layout evidence
+- **PR #92**: ci: netlist-freshness gate for lna.sch vs committed netlist (#88)
+- **PR #93**: ci: layout-citation scope guard in the signoff drift check (#80)
+
+### 2026-10-08
+
+- **Issue #57** (closed): spec: correct the NF and Gain disclosure notes per decision record 0004, Option A (no ratified value changes)
+- **PR #62**: spec: correct NF and Gain disclosure notes per decision record 0004, Option A
+
 ### 2026-10-08
 
 - **PR #60**: sim: stamped EM inductor model and lossy-inductor variant bench (issue #56, partial: 45-cell run blocked on fleet klt)
