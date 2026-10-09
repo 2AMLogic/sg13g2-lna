@@ -1,0 +1,101 @@
+"""Numerical self-tests for the shared envelope_rf helpers (issue #94).
+
+Hand-checkable cases that fail if an equation or the 50 Ohm normalization
+changes. Run: python3 -I -m unittest discover -s sim/lna-core-envelope/tests
+"""
+
+import importlib.util
+import math
+import tempfile
+import unittest
+from pathlib import Path
+
+_P = Path(__file__).resolve().parents[1] / "envelope_rf.py"
+_spec = importlib.util.spec_from_file_location("envelope_rf", _P)
+rf = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(rf)
+
+
+class EnvelopeRfTests(unittest.TestCase):
+    def test_nf_reref(self):
+        self.assertAlmostEqual(rf.nf_reref(3.0, 290.0, 290.0), 3.0, places=12)
+        # F=2 (3.0103 dB): 580 K -> 290 K doubles F-1 (F=3); 290 K -> 580 K halves it (F=1.5)
+        f2 = 10 * math.log10(2.0)
+        self.assertAlmostEqual(rf.nf_reref(f2, 580.0, 290.0),
+                               10 * math.log10(3.0), places=12)
+        self.assertAlmostEqual(rf.nf_reref(f2, 290.0, 580.0),
+                               10 * math.log10(1.5), places=12)
+        self.assertAlmostEqual(rf.nf_reref(0.0, 300.0, 290.0), 0.0, places=12)
+
+    def test_s_to_y_known_two_ports(self):
+        y0 = 1 / 50.0
+        # matched through line: S = [[0,1],[1,0]] has no finite Y; use
+        # series 50 Ohm resistor: S11=S22=1/3, S21=S12=2/3 -> Y = [[y0,-y0],[-y0,y0]]
+        y = rf.s_to_y(1 / 3, 2 / 3, 2 / 3, 1 / 3)
+        for got, want in zip(y, (y0, -y0, -y0, y0)):
+            self.assertAlmostEqual(got, want, places=12)
+        # open ports (S11=S22=1, no coupling): Y=0
+        y = rf.s_to_y(1 + 0j, 0, 0, 1 + 0j)
+        for v in y:
+            self.assertAlmostEqual(abs(v), 0.0, places=12)
+        # matched termination, no coupling: Y11=Y22=y0
+        y = rf.s_to_y(0, 0, 0, 0)
+        self.assertAlmostEqual(y[0], y0, places=12)
+        self.assertAlmostEqual(y[3], y0, places=12)
+
+    def test_s_y_roundtrip(self):
+        s = (0.3 - 0.2j, 0.05 + 0.01j, 2.5 - 1.0j, -0.4 + 0.3j)
+        back = rf.y_to_s(*rf.s_to_y(*s))
+        for a, b in zip(s, back):
+            self.assertAlmostEqual(abs(a - b), 0.0, places=12)
+
+    def test_ga_max_db(self):
+        self.assertAlmostEqual(rf.ga_max_db(0, 0, 10, 0), 20.0, places=12)
+        # |s11|^2 = 0.5 and |s22|^2 = 0.5 each add 3.0103 dB
+        r = math.sqrt(0.5)
+        self.assertAlmostEqual(rf.ga_max_db(r, 0, 1, r),
+                               2 * 10 * math.log10(2.0), places=12)
+
+    def test_tank_q_shunt_loss(self):
+        s = (0.1, 0.0, 10.0, 0.2)
+        f = 2.44175e9
+        ideal = rf.ga_max_db(*s)
+        self.assertLess(rf.ga_max_with_tank_q(*s, 10.0, f), ideal)
+        # monotone in Q; huge Q approaches the ideal value
+        self.assertLess(rf.ga_max_with_tank_q(*s, 5.0, f),
+                        rf.ga_max_with_tank_q(*s, 50.0, f))
+        self.assertAlmostEqual(rf.ga_max_with_tank_q(*s, 1e12, f), ideal, places=6)
+        # independent construction: add G=1/(Q*2*pi*f*Lc) to Y22 by hand
+        y0 = 0.02
+        y = list(rf.s_to_y(*s))
+        y[3] += 1 / (10.0 * 2 * math.pi * f * 5e-9)
+        dn = (y0 + y[0]) * (y0 + y[3]) - y[1] * y[2]
+        s22 = ((y0 + y[0]) * (y0 - y[3]) + y[1] * y[2]) / dn
+        s11 = ((y0 - y[0]) * (y0 + y[3]) + y[1] * y[2]) / dn
+        s21 = -2 * y[2] * y0 / dn
+        want = (20 * math.log10(abs(s21)) - 10 * math.log10(1 - abs(s11) ** 2)
+                - 10 * math.log10(1 - abs(s22) ** 2))
+        self.assertAlmostEqual(rf.ga_max_with_tank_q(*s, 10.0, f), want, places=12)
+
+    def test_parse_table_inband_layout(self):
+        g = 1.0e9
+        vals = [g, 0.1, 0.2, g, 3.0, 4.0, g, 0.01, 0.02, g, 0.5, 0.6,
+                g, 1.5, g, 2.5, g, 0.9, g, 3.5, 0.0, g, 1.25, 0.0]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.dat"
+            p.write_text("\n" + " ".join(repr(v) for v in vals) + "\n\n")
+            (r,) = rf.parse_table(p)
+        self.assertEqual(r["freq_hz"], 1.0e9)
+        self.assertEqual(r["s11"], 0.1 + 0.2j)
+        self.assertEqual(r["s21"], 3.0 + 4.0j)
+        self.assertEqual(r["s12"], 0.01 + 0.02j)
+        self.assertEqual(r["s22"], 0.5 + 0.6j)
+        self.assertEqual(r["k"], 1.5)
+        self.assertEqual(r["mu"], 2.5)
+        self.assertEqual(r["mag_delta"], 0.9)
+        self.assertEqual(r["nf"], 3.5 + 0j)
+        self.assertEqual(r["nfmin"], 1.25 + 0j)
+
+
+if __name__ == "__main__":
+    unittest.main()
