@@ -90,6 +90,10 @@ step "reduction-tests: lna-characterization unit tests" \
 step "hbt-reduction-tests: hbt-characterization unit tests" \
   python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
 
+# --- job: layout-reduction-tests
+step "layout-reduction-tests: lvs_reference unit tests" \
+  python3 -I -m unittest discover -s layout/tests -v
+
 # --- job: envelope-replay
 step "envelope-replay: self-test" \
   python3 -I -m unittest discover -s sim/lna-core-envelope/tests -v
