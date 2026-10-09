@@ -652,3 +652,22 @@ HBT_VCES="0.8 1.0 1.2 1.4" HBT_NX_LIST="1" \
 full grid documented under "Sweep grid" above. A cut-down grid is useful
 for iterating on the testbench; **only full-grid runs should be committed
 as records**, since every table in this README is a whole-grid statement.
+
+### Tests for the fixed-T0 NF re-derivation
+
+`rederive_nf_fixed_t0.py` (no PDK, no ngspice) is pinned by stdlib unit
+tests under `tests/` (issue #101), run in CI by the `hbt-reduction-tests`
+job of `.github/workflows/signoff.yml`:
+
+```bash
+python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
+```
+
+They check `corrected_nf_db` against hand-computed values at −40 °C and
+125 °C and the identity at 27 °C, the model-card validity-box boundaries
+of `classify_validity` (plus reproduction of record
+`20260918-203652-4293920`'s committed `validity_flags` column), an
+end-to-end `main` run on rows trimmed verbatim from both source records
+(`tests/fixtures/`), and a byte-for-byte replay of correction record
+`20260921-124900-d6da30a` into a temporary directory. Nothing is written
+under `records/`.

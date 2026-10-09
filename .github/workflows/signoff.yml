@@ -24,6 +24,8 @@ name: signoff
 # backed by evidence for a partial cell.
 #
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
+# `hbt-reduction-tests` (hbt-characterization fixed-T0 NF re-derivation unit
+# tests and committed-record replay — issue #101),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
@@ -71,6 +73,20 @@ jobs:
 
       - name: lna-characterization reduction unit tests
         run: python3 -I -m unittest discover -s sim/lna-characterization/tests -v
+
+  # Unit tests for the hbt-characterization fixed-T0 NF re-derivation
+  # (rederive_nf_fixed_t0.py, issue #101): hand-computed corrected_nf_db
+  # values, validity-box boundaries, a trimmed-fixture end-to-end run and a
+  # byte-for-byte replay of the committed correction record into a temp dir.
+  # Stdlib-only, headless, PDK-free, single process; never writes under sim/.
+  hbt-reduction-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: hbt-characterization reduction unit tests
+        run: python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
 
   # Core-envelope replay (issue #83): re-run the committed, deterministic
   # derivation into a temp path and diff against the committed derived CSV.
