@@ -11,7 +11,8 @@
 #   --base <ref>  also run the sim-append-only check against <ref>
 #                 (CI uses origin/<pull-request base branch>, full history).
 # The workflow stays the authority; .github/scripts/test-run-local-checks.sh
-# fails if a script the workflow runs is missing from this runner.
+# fails if any workflow command is not run here by a `step` exactly as CI
+# runs it (whole-command match, workflow order).
 set -u
 
 base=""
@@ -20,7 +21,7 @@ while [ $# -gt 0 ]; do
     --base)
       [ $# -ge 2 ] || { echo "usage: $0 [--base <ref>]" >&2; exit 2; }
       base="$2"; shift 2 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "usage: $0 [--base <ref>]" >&2; exit 2 ;;
   esac
 done
@@ -118,6 +119,9 @@ step "layout-freshness: check" .github/scripts/check-layout-freshness
 # --- job: model-provenance
 step "model-provenance: self-test" .github/scripts/test-check-model-sources.sh
 step "model-provenance: check" sim/models/check_sources.sh
+
+# --- job: local-checks-drift
+step "local-checks-drift: self-test" .github/scripts/test-run-local-checks.sh
 
 # --- job: shell-lint (pinned ShellCheck 0.10.0, never installed here)
 if ! command -v shellcheck >/dev/null 2>&1; then

@@ -163,12 +163,14 @@ the same self-test + check pairs as
 [`.github/workflows/signoff.yml`](.github/workflows/signoff.yml), each invoked
 exactly as CI invokes it. It keeps going after a failure, prints a
 PASS/FAIL/SKIP line per step and exits non-zero if any step failed. It never
-installs anything: the `klt` steps (need the release `klt` matching the workflow pin; a dev build would report spurious drift) and the
-`shell-lint` step (needs ShellCheck exactly 0.10.0) print `SKIP:` when the tool
-is absent, and the `sim-append-only` check runs only with
-`--base <ref>` (for example `--base origin/main`; the self-test always runs).
-`.github/scripts/test-run-local-checks.sh` fails if the workflow runs a script
-the runner does not.
+installs anything: the `klt` steps (need the release `klt` matching the
+workflow pin; a dev build would report spurious drift) and the `shell-lint`
+step (needs ShellCheck exactly 0.10.0) print `SKIP:` when the tool is absent,
+and the `sim-append-only` check runs only with `--base <ref>` (for example
+`--base origin/main`; the self-test always runs).
+`.github/scripts/test-run-local-checks.sh` (also the `local-checks-drift` CI
+job) fails unless every workflow command is run by a runner step exactly as
+CI runs it, in workflow order.
 
 ### Campaign index and the record of record
 

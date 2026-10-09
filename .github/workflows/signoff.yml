@@ -34,6 +34,8 @@ name: signoff
 # klt report envelopes agree with each other and the netlist — issue #86) and
 # `model-provenance` (vendored sim/models/ files still match the sha256 stamped
 # in sim/models/SOURCE.md — issue #84),
+# `local-checks-drift` (run-local-checks.sh still mirrors this workflow —
+# issue #108),
 # `sim-append-only` (pull requests only; fails a PR that modifies,
 # deletes or renames any committed file under sim/*/records/,
 # sim/*/netlist-snapshots/ or sim/*/corners/ — issue #67) and
@@ -192,6 +194,18 @@ jobs:
 
       - name: Vendored models match their recorded sha256
         run: sim/models/check_sources.sh
+
+  # Local-runner drift gate (issue #108): .github/scripts/run-local-checks.sh
+  # must invoke every command this workflow runs, exactly as CI does, in
+  # order. Bash + awk + diff only; read-only on the checkout.
+  local-checks-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Local runner mirrors this workflow
+        run: .github/scripts/test-run-local-checks.sh
 
   # ShellCheck gate (issue #105): static lint of the tracked first-party Bash
   # under sim/, layout/ and .github/scripts/ (tracked *.sh, plus extensionless
