@@ -156,6 +156,35 @@ this command any time `lna.sch` changes — a stale committed netlist is a
 review-blocking discrepancy, not a cosmetic one, per this repo's
 "regenerated on design change" evidence discipline.
 
+**Netlist-freshness CI gate (issue #88).** The `netlist-freshness` job
+(`.github/scripts/check-netlist-freshness`, self-test
+`test-check-netlist-freshness.sh`) parses the `C {sym} x y rot flip {name=...
+value=... ...}` records of `lna.sch` and compares the instance names, symbol
+types and `value`/parameter strings, plus the pin list, against
+`netlist/lna.spice`. It fails on any added, removed or changed device. Run it
+locally with `python3 -I .github/scripts/check-netlist-freshness`.
+**This is an inventory check and is weaker than a true xschem
+regeneration**: it needs neither xschem nor the PDK, so it does not compare
+connectivity or net naming (a pure rewire with unchanged devices passes). The
+authoritative step is still the `xschem -n` command above; a CI job that runs
+it would need xschem plus the PDK symbol libraries and is a possible later
+step.
+
+**The `** sch_path:` header line.** xschem stamps the invoking absolute path
+on the first line of the netlist, so it differs per machine and the committed
+copy embeds a developer path. It is deliberately **left as committed**:
+`sha256(design/netlist/lna.spice)` is cited by committed append-only
+evidence (`sim/lna-bias-pvt/records/20260921-173552-2aeafef.md`,
+`sim/lna-characterization/records/20260926-122301-088c734.md`,
+`sim/lna-core-envelope/records/20260926-180931-90b07a0.md`) and embedded in
+`layout/lna_core/lna_core.lvs_reference.spice` / `lvs_full_report.json`
+(`layout/lvs_reference.py` hashes the file bytes). Stripping the line would
+change the hash and orphan those citations, and `sim/` records cannot be
+edited. Any future byte-level comparison of the netlist must therefore ignore
+line 1; the freshness gate above does (it only reads device cards). Revisit
+when the netlist is next regenerated for a real design change, at which point
+downstream records are re-minted anyway.
+
 **A resolvable SG13G2 PDK install is required** (`PDK_ROOT`/`PDK` pointing
 at an `ihp-sg13g2/` open_pdks-shaped directory — see `CLAUDE.md`;
 klayout-tools' own `scripts/fetch-ihp-sg13g2.sh` fetches a pinned

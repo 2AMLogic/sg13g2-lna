@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Check the committed netlist's device inventory against design/lna.sch (issue #88).
+
+Parses the xschem text format of design/lna.sch (component records of the
+form `C {sym} x y rot flip {name=... value=... ...}`) and compares, against
+design/netlist/lna.spice: the instance names, the symbol types, and the
+value/parameter strings. Fails on any added, removed or changed device, and
+on a mismatch of the subcircuit pin list.
+
+WEAKER THAN A TRUE REGENERATION. This is an inventory check only. It does
+not run xschem and needs no PDK, so it cannot reproduce xschem's net naming
+and does NOT check connectivity (which node each pin lands on), net labels,
+or wiring. A schematic rewire with unchanged devices passes. The
+authoritative check remains regenerating with `xschem -n` (design/README.md)
+and diffing; running that in CI would need xschem plus the PDK symbol libs
+and is a possible later step. This gate catches the common staleness: a
+device or parameter edited in lna.sch without regenerating the netlist.
+
+Usage: check-netlist-freshness [--root DIR] [--sch FILE] [--netlist FILE]
+Exit 0 = inventory matches, 1 = drift, 2 = usage / unparsable input.
+Stdlib only, read-only.
+"""
+import argparse
+import os
+import re
+import sys
+
+# symbol basename -> (kind, n_nodes). kind "passive": `name n.. value k=v..`;
+# kind "device": `Xname n.. <model> k=v..` (spiceprefix=X, model= property).
+SYMBOLS = {
+    "res.sym": ("passive", 2),
+    "capa.sym": ("passive", 2),
+    "ind.sym": ("passive", 2),
+    "npn13G2.sym": ("device", 4),
+    "sg13_hv_pmos.sym": ("device", 4),
+    "sg13_hv_nmos.sym": ("device", 4),
+}
+IGNORED = {"lab_pin.sym", "iopin.sym"}  # connectivity only, no inventory
+PIN_SYMS = {"iopin.sym"}
+
+COMP = re.compile(r"^C \{([^}]*)\} (\S+) (\S+) (\S+) (\S+) \{(.*)\}\s*$")
+PROP = re.compile(r'(\w+)=("(?:[^"\\]|\\.)*"|\S+)')
+
+
+class Bad(Exception):
+    pass
+
+
+def props(text):
+    out = {}
+    for k, v in PROP.findall(text):
+        out[k] = v.strip('"')
+    return out
+
+
+def parse_sch(path):
+    """-> (devices {name: (type, {params})}, pins [names in order])."""
+    devs, pins = {}, []
+    with open(path) as f:
+        lines = f.read().splitlines()
+    if not lines or not lines[0].startswith("v {xschem version="):
+        raise Bad(f"{path}: not an xschem schematic (missing `v {{xschem version=` header)")
+    for ln in lines:
+        if not ln.startswith("C {"):
+            continue
+        m = COMP.match(ln)
+        if not m:
+            raise Bad(f"{path}: unparsable component record: {ln!r}")
+        sym, p = m.group(1), props(m.group(6))
+        base = os.path.basename(sym)
+        if base in PIN_SYMS:
+            pins.append(p.get("lab", ""))
+            continue
+        if base in IGNORED:
+            continue
+        if base not in SYMBOLS:
+            raise Bad(f"{path}: symbol {sym!r} (instance {p.get('name')}) is not "
+                      "understood by this checker; extend SYMBOLS deliberately")
+        kind, _ = SYMBOLS[base]
+        name = p.get("name")
+        if not name:
+            raise Bad(f"{path}: {sym} record without name=: {ln!r}")
+        rest = {k: v for k, v in p.items() if k not in ("name", "model", "spiceprefix", "value")}
+        if kind == "passive":
+            typ, rest = "passive:" + base, dict(rest, value=p.get("value", ""))
+            card = name
+        else:
+            # The PDK MOS symbols carry no spiceprefix= (their format string
+            # emits an X-card); the HBT symbol sets spiceprefix=X explicitly.
+            if p.get("spiceprefix", "X") != "X":
+                raise Bad(f"{path}: {name}: expected an X-card for {base}")
+            typ, card = "model:" + p.get("model", ""), "X" + name
+        if card in devs:
+            raise Bad(f"{path}: duplicate instance {card}")
+        devs[card] = (typ, rest)
+    return devs, pins
+
+
+def parse_netlist(path):
+    """-> (devices {card: (type, {params})}, subckt pins, iopin list)."""
+    devs, subckt, iopins = {}, None, []
+    with open(path) as f:
+        lines = f.read().splitlines()
+    for ln in lines:
+        s = ln.strip()
+        if s.startswith("**.subckt"):
+            subckt = s.split()[2:]  # [0]=**.subckt, [1]=cell name
+            continue
+        if s.startswith("*.iopin"):
+            iopins.append(s.split()[1])
+            continue
+        if not s or s.startswith("*") or s.startswith("."):
+            continue
+        tok = s.split()
+        card = tok[0]
+        first = card[0].upper()
+        if first == "X":
+            # find the model token: first token after name that is not a node;
+            # nodes are 4 for all devices handled here.
+            nodes = SYMBOLS_BY_PREFIX_NODES
+            model, params = tok[1 + nodes], tok[2 + nodes:]
+            typ, rest = "model:" + model, {}
+            for t in params:
+                k, _, v = t.partition("=")
+                rest[k] = v
+        elif first in "RCL":
+            typ = None  # resolved against the schematic symbol below
+            value, params = tok[3], tok[4:]
+            rest = {"value": value}
+            for t in params:
+                k, _, v = t.partition("=")
+                rest[k] = v
+            typ = "passive:" + {"R": "res.sym", "C": "capa.sym", "L": "ind.sym"}[first]
+        else:
+            raise Bad(f"{path}: unrecognised card {card!r}")
+        if card in devs:
+            raise Bad(f"{path}: duplicate card {card}")
+        devs[card] = (typ, rest)
+    if subckt is None:
+        raise Bad(f"{path}: no `**.subckt` line")
+    return devs, subckt, iopins
+
+
+SYMBOLS_BY_PREFIX_NODES = 4
+
+
+def compare(root, sch, netlist):
+    sch = sch or os.path.join(root, "design", "lna.sch")
+    netlist = netlist or os.path.join(root, "design", "netlist", "lna.spice")
+    sdev, spins = parse_sch(sch)
+    ndev, nsub, niop = parse_netlist(netlist)
+    errs = []
+    for c in sorted(set(sdev) - set(ndev)):
+        errs.append(f"in schematic but not in netlist (added, netlist stale): {c}")
+    for c in sorted(set(ndev) - set(sdev)):
+        errs.append(f"in netlist but not in schematic (removed): {c}")
+    for c in sorted(set(sdev) & set(ndev)):
+        (st, sp), (nt, np_) = sdev[c], ndev[c]
+        if st != nt:
+            errs.append(f"{c}: type changed: schematic {st} vs netlist {nt}")
+        for k in sorted(set(sp) | set(np_)):
+            if sp.get(k) != np_.get(k):
+                errs.append(f"{c}: parameter {k}: schematic {sp.get(k)!r} vs netlist {np_.get(k)!r}")
+    if sorted(spins) != sorted(nsub) or sorted(spins) != sorted(niop):
+        errs.append(f"pin list differs: schematic {spins} / .subckt {nsub} / iopin {niop}")
+    return errs, len(sdev)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    here = os.path.dirname(os.path.abspath(__file__))
+    ap.add_argument("--root", default=os.path.normpath(os.path.join(here, "..", "..")))
+    ap.add_argument("--sch")
+    ap.add_argument("--netlist")
+    a = ap.parse_args()
+    try:
+        errs, n = compare(a.root, a.sch, a.netlist)
+    except (Bad, OSError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 2
+    if errs:
+        print("netlist-freshness: FAIL -- design/netlist/lna.spice is stale vs design/lna.sch",
+              file=sys.stderr)
+        for e in errs:
+            print("  " + e, file=sys.stderr)
+        print("Regenerate per design/README.md. (Inventory check only; see script header.)",
+              file=sys.stderr)
+        return 1
+    print(f"netlist-freshness: OK -- {n} devices and the pin list match "
+          "(inventory check only; connectivity is NOT compared)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -22,6 +22,8 @@ name: signoff
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence),
+# `netlist-freshness` (design/lna.sch device inventory vs the committed
+# netlist — issue #88),
 # `layout-freshness` (committed layout GDS, provenance, LVS reference and
 # klt report envelopes agree with each other and the netlist — issue #86) and
 # `sim-append-only` (pull requests only; fails a PR that modifies,
@@ -93,6 +95,22 @@ jobs:
 
       - name: Cited record ids resolve to committed evidence
         run: .github/scripts/check-record-citations
+
+  # Netlist freshness (issue #88): the committed design/netlist/lna.spice
+  # must list the same devices (names, symbol types, values/params) as
+  # design/lna.sch. Inventory check only -- weaker than a true `xschem -n`
+  # regeneration (no connectivity, no PDK). Stdlib-only, headless.
+  netlist-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Netlist-freshness checker self-test
+        run: .github/scripts/test-check-netlist-freshness.sh
+
+      - name: Committed netlist device inventory matches the schematic
+        run: python3 -I .github/scripts/check-netlist-freshness
 
   # sim/ append-only gate (issue #67): sim/README.md "Append-only rule" —
   # committed evidence under sim/*/{records,netlist-snapshots,corners}/ is
