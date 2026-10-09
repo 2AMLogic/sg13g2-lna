@@ -167,7 +167,9 @@ HBT sets the RF behaviour.
 
 `records/*.md`, `records/*.csv`, `netlist-snapshots/**` and `corners/**`
 files are **never** edited or deleted after creation. A correction or a
-re-run always mints a new `<record-id>`.
+re-run always mints a new `<record-id>`. CI enforces this on every pull request
+(`sim-append-only` job, `.github/scripts/check-sim-append-only`); there is
+no override.
 
 ## Bench definitions carry with every number
 

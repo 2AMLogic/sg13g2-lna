@@ -18,6 +18,12 @@ name: signoff
 # an all-unmet report is a correct verdict, not a CI failure. The
 # checker self-test runs first — a drift gate that cannot fail is
 # indistinguishable from no gate at all.
+#
+# Sibling jobs: `reduction-tests` (lna-characterization unit tests),
+# `record-citations` (cited record ids resolve to committed evidence) and
+# `sim-append-only` (pull requests only; fails a PR that modifies,
+# deletes or renames any committed file under sim/*/records/,
+# sim/*/netlist-snapshots/ or sim/*/corners/ — issue #67).
 
 on:
   push:
@@ -69,3 +75,24 @@ jobs:
 
       - name: Cited record ids resolve to committed evidence
         run: .github/scripts/check-record-citations
+
+  # sim/ append-only gate (issue #67): sim/README.md "Append-only rule" —
+  # committed evidence under sim/*/{records,netlist-snapshots,corners}/ is
+  # never edited or deleted; corrections mint a new record id. Diffs the PR
+  # head against its merge base with the base branch; additions pass, M/D/T
+  # (renames reported as D) fail. No override. Bash + git only, PDK-free,
+  # single process. pull_request only: a push to main has no base to diff.
+  sim-append-only:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository (full history for the merge base)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Append-only checker self-test
+        run: .github/scripts/test-check-sim-append-only.sh
+
+      - name: No committed sim/ evidence modified, deleted or renamed
+        run: .github/scripts/check-sim-append-only --base "origin/${{ github.base_ref }}"
