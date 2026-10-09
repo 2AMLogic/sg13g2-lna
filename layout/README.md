@@ -286,6 +286,10 @@ not the block. Before re-running the flow under such a klt, either complete
 the layout scope or withdraw the item-3 citation. The same applies to item
 4 if #2864 and #2679 both land.
 
+CI enforces this: `.github/scripts/check-signoff-scope.py` (run by
+`check-signoff.sh`) fails a `met` item 2/3/4 row backed by this partial
+scope; see `signoff/README.md` "Layout scope guard".
+
 ## CI: layout-freshness
 
 The `layout-freshness` job in `.github/workflows/signoff.yml` runs

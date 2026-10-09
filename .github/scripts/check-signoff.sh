@@ -22,6 +22,9 @@
 # fresh render must parse, carry the expected block/kind, and contain no
 # top-level error block.
 #
+# After the render, check-signoff-scope.py rejects a `met` item 2/3/4 row
+# whose cited layout evidence covers only part of the block (issue #80).
+#
 # Requirements: klt on PATH (see signoff/README.md for the pinned
 # install). Headless — needs no PDK, no KLayout project, no network
 # beyond the pip install that put klt there.
@@ -86,6 +89,14 @@ case "$rc" in
   0|3) ;;  # ran clean: all-met (0) or tier: null with unmet items (3)
   *) cat "$err" >&2; fail "klt signoff did not run clean (exit $rc) — 0 (all T1 met) and 3 (>=1 unmet) are both valid verdicts; any other exit is a broken manifest/doc" ;;
 esac
+
+# Scope guard (issue #80): a met layout/DRC/LVS row must not be backed by
+# evidence for a partial cell. Reads the fresh render only to see whether a
+# row is `met`; never rewrites a verdict. Stdlib python, no PDK.
+HERE="$(cd "$(dirname "$0")" && pwd)"
+python3 -I "$HERE/check-signoff-scope.py" --root . \
+  --manifest "$MANIFEST" --report "$tmp" >&2 || \
+  fail "layout citation scope guard rejected the signoff evidence (see signoff-scope lines above)"
 
 if cmp -s "$tmp" "$RECORD"; then
   met="$(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["t1_met_count"])' "$RECORD")"
