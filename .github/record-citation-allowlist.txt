@@ -1,0 +1,8 @@
+# Record ids that docs may cite without committed sim/ evidence.
+# Format: <record-id> <reason>   (reason is mandatory; review each entry)
+
+# Format example in the record-id definition, not a claim.
+20260910-153000-7da7038 illustrative format example at sim/README.md (not a real record)
+
+# TEMPORARY: remove when #70 is resolved.
+20260921-154716-f718094 dangling citation in ADR 0003 and sim/biasref-topology/README.md, tracked in #70

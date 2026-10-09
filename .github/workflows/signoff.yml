@@ -54,3 +54,18 @@ jobs:
 
       - name: lna-characterization reduction unit tests
         run: python3 -I -m unittest discover -s sim/lna-characterization/tests -v
+
+  # Record-id citation gate (issue #75): every sim/ record id cited in
+  # tracked docs must resolve to committed evidence or be allowlisted in
+  # .github/record-citation-allowlist.txt. Stdlib-only, read-only on sim/.
+  record-citations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Citation-checker self-test
+        run: .github/scripts/test-check-record-citations.sh
+
+      - name: Cited record ids resolve to committed evidence
+        run: .github/scripts/check-record-citations
