@@ -132,17 +132,62 @@ sim_record_paths() {
   # sim_record_paths   (the experiment dir is the caller's ${SCRIPT_DIR})
   #
   # Mints this run's <record-id> -- <YYYYMMDD>-<HHMMSS>-<short-git-sha>,
-  # UTC, per sim/README.md "Directory / naming convention" -- and creates
+  # UTC, per sim/README.md "Directory / naming convention" -- and reserves
   # the three append-only output locations a record is written into.
   # Sets, in the caller: REPO_GIT_SHA, RECORD_ID, EXPERIMENT_DIR,
-  # SNAPSHOTS_OUT, CORNERS_OUT, RECORDS_DIR.
-  EXPERIMENT_DIR="${SCRIPT_DIR}"
-  REPO_GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-  RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-  SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-  CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-  RECORDS_DIR="${EXPERIMENT_DIR}/records"
-  mkdir -p "${SNAPSHOTS_OUT}" "${CORNERS_OUT}" "${RECORDS_DIR}"
+  # SNAPSHOTS_OUT, CORNERS_OUT, RECORDS_DIR -- only on success.
+  #
+  # The ID has one-second resolution, so two runs can mint the same one.
+  # The reservation is the exclusive creation of netlist-snapshots/<id>
+  # (plain `mkdir`, no -p: exactly one concurrent caller succeeds). A
+  # candidate ID is rejected, with a message on stderr and exit 4 BEFORE any
+  # path is returned, if corners/<id> or any records/<id>* already exists,
+  # or if the reservation is lost. Existing artifacts are never modified or
+  # removed. On a partial creation failure only the directories THIS call
+  # created are removed (rmdir, so never non-empty); a loser never touches
+  # the winner's reservation. Rejected? Wait for the next second and rerun.
+  local __srp_dir="${SCRIPT_DIR}"
+  local __srp_sha __srp_id __srp_snap __srp_corn __srp_rec
+  __srp_sha="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  __srp_id="$(date -u +%Y%m%d-%H%M%S)-${__srp_sha}"
+  __srp_snap="${__srp_dir}/netlist-snapshots/${__srp_id}"
+  __srp_corn="${__srp_dir}/corners/${__srp_id}"
+  __srp_rec="${__srp_dir}/records"
+
+  if [[ -e "${__srp_corn}" ]] || [[ -L "${__srp_corn}" ]] \
+     || compgen -G "${__srp_rec}/${__srp_id}*" >/dev/null; then
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: record id ${__srp_id} already has artifacts under ${__srp_dir} (corners/ or records/); refusing to reuse it. Wait for the next second and rerun." >&2
+    exit 4
+  fi
+
+  if ! mkdir -p "${__srp_dir}/netlist-snapshots"; then
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot create output directories under ${__srp_dir}" >&2
+    exit 4
+  fi
+  # The reservation: exclusive, atomic. Failure means someone else owns it
+  # (or it cannot be created); either way we remove nothing.
+  if ! mkdir "${__srp_snap}" 2>/dev/null; then
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: record id ${__srp_id} is already reserved or cannot be reserved (${__srp_snap}); refusing to reuse it. Wait for the next second and rerun." >&2
+    exit 4
+  fi
+  if ! mkdir -p "${__srp_dir}/corners" "${__srp_rec}" || ! mkdir "${__srp_corn}" 2>/dev/null; then
+    rmdir "${__srp_snap}" 2>/dev/null
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot create ${__srp_corn} for record id ${__srp_id} (exists or not writable); reservation released. Wait for the next second and rerun." >&2
+    exit 4
+  fi
+
+  # shellcheck disable=SC2034  # consumed by the sourcing runner
+  EXPERIMENT_DIR="${__srp_dir}"
+  # shellcheck disable=SC2034
+  REPO_GIT_SHA="${__srp_sha}"
+  # shellcheck disable=SC2034
+  RECORD_ID="${__srp_id}"
+  # shellcheck disable=SC2034
+  SNAPSHOTS_OUT="${__srp_snap}"
+  # shellcheck disable=SC2034
+  CORNERS_OUT="${__srp_corn}"
+  # shellcheck disable=SC2034
+  RECORDS_DIR="${__srp_rec}"
 }
 
 sim_jobs() {

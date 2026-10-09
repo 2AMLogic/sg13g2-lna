@@ -94,6 +94,10 @@ step "hbt-reduction-tests: hbt-characterization unit tests" \
 step "layout-reduction-tests: lvs_reference unit tests" \
   python3 -I -m unittest discover -s layout/tests -v
 
+# --- job: sim-record-paths-tests
+step "sim-record-paths-tests: sim_record_paths reservation tests" \
+  sim/tests/test-sim-record-paths.sh
+
 # --- job: envelope-replay
 step "envelope-replay: self-test" \
   python3 -I -m unittest discover -s sim/lna-core-envelope/tests -v
