@@ -353,3 +353,19 @@ The derivation half needs no PDK and no ngspice at all:
 ```bash
 sim/lna-core-envelope/derive_committed_record_envelope.py
 ```
+
+Running it with no arguments writes into `records/` (its default output),
+which is committed, append-only evidence — do not do that. To verify the
+committed derived CSV is reproducible, use the replay checker, which derives
+into a temporary directory, diffs against the committed record, and cleans up:
+
+```bash
+python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py
+python3 -I -m unittest discover -s sim/lna-core-envelope/tests -v   # checker self-test
+```
+
+CI runs both (`envelope-replay` job in `.github/workflows/signoff.yml`). This
+establishes replay consistency only, not correctness of the underlying
+scientific assumptions. If the check fails because of an intentional
+scientific correction to the derivation, mint a **new** evidence record with a
+new record id; never replace the historical output.

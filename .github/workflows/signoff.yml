@@ -20,6 +20,7 @@ name: signoff
 # indistinguishable from no gate at all.
 #
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
+# `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence) and
 # `sim-append-only` (pull requests only; fails a PR that modifies,
 # deletes or renames any committed file under sim/*/records/,
@@ -60,6 +61,21 @@ jobs:
 
       - name: lna-characterization reduction unit tests
         run: python3 -I -m unittest discover -s sim/lna-characterization/tests -v
+
+  # Core-envelope replay (issue #83): re-run the committed, deterministic
+  # derivation into a temp path and diff against the committed derived CSV.
+  # Stdlib-only, no PDK/ngspice; never writes under sim/*/records/.
+  envelope-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Envelope replay checker self-test
+        run: python3 -I -m unittest discover -s sim/lna-core-envelope/tests -v
+
+      - name: Committed envelope derivation replays against retained data
+        run: python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py
 
   # Record-id citation gate (issue #75): every sim/ record id cited in
   # tracked docs must resolve to committed evidence or be allowlisted in
