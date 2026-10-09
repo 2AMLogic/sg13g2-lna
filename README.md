@@ -119,6 +119,35 @@ sim/models/check_sources.sh            # vendored inductor model still matches i
 .github/scripts/check-signoff.sh       # T1 verdict of record is current (needs klt 0.7.0)
 ```
 
+The shell runners and checks are linted in CI by the `shell-lint` job
+([`signoff.yml`](.github/workflows/signoff.yml)) with ShellCheck **0.10.0**
+(official release tarball, sha256-verified in the workflow). To reproduce
+it locally, install that exact version (for example from the
+[koalaman/shellcheck v0.10.0 release](https://github.com/koalaman/shellcheck/releases/tag/v0.10.0)
+into a scratch directory, or `uvx --from shellcheck-py==0.10.0.1 shellcheck`),
+confirm `shellcheck --version` reports `0.10.0`, then run from the repo root:
+
+```bash
+mapfile -d '' -t files < <(
+  {
+    git ls-files -z -- 'sim/*.sh' 'layout/*.sh' '.github/scripts/*.sh'
+    git ls-files -z -- '.github/scripts/*' | while IFS= read -r -d '' f; do
+      case "${f##*/}" in *.*) continue ;; esac   # extensionless only
+      head -n 1 "$f" | grep -Eq '^#![[:space:]]*(/usr/bin/env[[:space:]]+)?(/[^[:space:]]*/)?bash([[:space:]]|$)' \
+        && printf '%s\0' "$f"
+    done
+  } | sort -z -u
+)
+[ "${#files[@]}" -gt 0 ] || { echo "empty discovery" >&2; exit 1; }
+shellcheck --shell=bash --severity=warning "${files[@]}"   # expect exit 0, 23 files today
+```
+
+Discovery covers tracked files only, so `.loom/`, `.claude/`, `.agents/`,
+the root `loom.sh`, evidence and the extensionless Python checks are out of
+scope. `--shell=bash` makes the source-only `sim/env.sh` lint as Bash.
+`-x` is deliberately not used, so no host-dependent `source` paths are
+followed.
+
 Full PVT grids are larger. `run_lna_sweep.sh` alone is 138 ngspice
 invocations, and `lna-core-envelope` is 675 decks. Each runner states its
 size and its concurrency knob (`*_JOBS`) in its own README. Run full grids
