@@ -47,67 +47,23 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import math
 import sys
 from pathlib import Path
 
+# Load the shared helper by explicit path so this works under `python3 -I`
+# (isolated mode does not put the script directory on sys.path).
+_spec = importlib.util.spec_from_file_location(
+    "envelope_rf", Path(__file__).resolve().with_name("envelope_rf.py"))
+_rf = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_rf)
+parse_table, nf_reref, ga_max_db, ga_max_with_tank_q = (
+    _rf.parse_table, _rf.nf_reref, _rf.ga_max_db, _rf.ga_max_with_tank_q)
+
 T0_IEEE = 290.0
-LC_H = 5e-9
-Z0 = 50.0
-Y0 = 1.0 / Z0
 
-INBAND_COLS = [
-    ("f", 1), ("s11", 2), ("f", 1), ("s21", 2), ("f", 1), ("s12", 2),
-    ("f", 1), ("s22", 2), ("f", 1), ("k", 1), ("f", 1), ("mu", 1),
-    ("f", 1), ("mag_delta", 1), ("f", 1), ("nf", 2), ("f", 1), ("nfmin", 2),
-]
 Q_GRID = [3, 5, 8, 10, 15, 20, 30, 50]
-
-
-def parse_table(path: Path):
-    out = []
-    for line in path.read_text().splitlines():
-        if not line.strip():
-            continue
-        vals = [float(x) for x in line.split()]
-        rec, i = {}, 0
-        for name, width in INBAND_COLS:
-            chunk = vals[i:i + width]
-            i += width
-            if name == "f":
-                rec["freq_hz"] = chunk[0]
-            elif width == 2:
-                rec[name] = complex(chunk[0], chunk[1])
-            else:
-                rec[name] = chunk[0]
-        out.append(rec)
-    return out
-
-
-def nf_reref(nf_db, t_from, t_to):
-    return 10 * math.log10(1 + (10 ** (nf_db / 10.0) - 1) * t_from / t_to)
-
-
-def s_to_y(s11, s12, s21, s22):
-    dn = (1 + s11) * (1 + s22) - s12 * s21
-    return (Y0 * ((1 - s11) * (1 + s22) + s12 * s21) / dn,
-            Y0 * (-2 * s12) / dn,
-            Y0 * (-2 * s21) / dn,
-            Y0 * ((1 + s11) * (1 - s22) + s12 * s21) / dn)
-
-
-def y_to_s(y11, y12, y21, y22):
-    dn = (Y0 + y11) * (Y0 + y22) - y12 * y21
-    return (((Y0 - y11) * (Y0 + y22) + y12 * y21) / dn,
-            (-2 * y12 * Y0) / dn,
-            (-2 * y21 * Y0) / dn,
-            ((Y0 + y11) * (Y0 - y22) + y12 * y21) / dn)
-
-
-def ga_max_db(s11, s12, s21, s22):
-    return (20 * math.log10(abs(s21))
-            - 10 * math.log10(1 - abs(s11) ** 2)
-            - 10 * math.log10(1 - abs(s22) ** 2))
 
 
 def main() -> int:
@@ -179,12 +135,8 @@ def main() -> int:
         row["gain_in_match_only_db"] = f"{gin:.4f}"
         row["ga_max_ideal_db"] = f"{min(ga_max_db(p['s11'], p['s12'], p['s21'], p['s22']) for p in ib):.4f}"
         for q in Q_GRID:
-            best = None
-            for p in ib:
-                x = 2 * math.pi * p["freq_hz"] * LC_H
-                y = s_to_y(p["s11"], p["s12"], p["s21"], p["s22"])
-                g = ga_max_db(*y_to_s(y[0], y[1], y[2], y[3] + 1.0 / (q * x)))
-                best = g if best is None else min(best, g)
+            best = min(ga_max_with_tank_q(p["s11"], p["s12"], p["s21"], p["s22"],
+                                          q, p["freq_hz"]) for p in ib)
             row[f"ga_max_q{q}_db"] = f"{best:.4f}"
         out_rows.append(row)
 
