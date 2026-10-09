@@ -1,0 +1,4 @@
+Circuit: fixture (trimmed from a committed raw log; ngspice banner dropped)
+OP ic1 0.0039403 ic2 0.00393483 ib1 5.4304E-06 vce1 0.802693 vce2 0.997307 vbe1 0.843494 idd 0.00471442 pdc 0.00848596
+GAIN lo 11.5657
+Note: run killed mid-flight
