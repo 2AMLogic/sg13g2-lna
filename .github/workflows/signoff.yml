@@ -36,7 +36,9 @@ name: signoff
 # in sim/models/SOURCE.md — issue #84),
 # `sim-append-only` (pull requests only; fails a PR that modifies,
 # deletes or renames any committed file under sim/*/records/,
-# sim/*/netlist-snapshots/ or sim/*/corners/ — issue #67).
+# sim/*/netlist-snapshots/ or sim/*/corners/ — issue #67) and
+# `shell-lint` (pinned ShellCheck 0.10.0 over the tracked first-party Bash
+# runners and checks — issue #105).
 
 on:
   push:
@@ -190,3 +192,60 @@ jobs:
 
       - name: Vendored models match their recorded sha256
         run: sim/models/check_sources.sh
+
+  # ShellCheck gate (issue #105): static lint of the tracked first-party Bash
+  # under sim/, layout/ and .github/scripts/ (tracked *.sh, plus extensionless
+  # files under .github/scripts/ whose first line is a Bash shebang; Python
+  # checks are excluded). ShellCheck is pinned to 0.10.0 from the official
+  # release tarball and verified against a committed sha256 before it runs.
+  # Explicit Bash dialect (covers the source-only sim/env.sh), warning
+  # threshold, no -x (no host-dependent source following), no suppressions
+  # added here. Serial, one process. Install failure, empty discovery and any
+  # lint finding all fail the job (bash -e -o pipefail).
+  shell-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned ShellCheck 0.10.0
+        run: |
+          set -euo pipefail
+          version=0.10.0
+          sha256=6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87
+          tarball="shellcheck-v${version}.linux.x86_64.tar.xz"
+          dir="${RUNNER_TEMP}/shellcheck-install"
+          mkdir -p "${dir}"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "${dir}/${tarball}" \
+            "https://github.com/koalaman/shellcheck/releases/download/v${version}/${tarball}"
+          echo "${sha256}  ${dir}/${tarball}" | sha256sum --check --strict -
+          tar -xJf "${dir}/${tarball}" -C "${dir}"
+          echo "${dir}/shellcheck-v${version}" >> "${GITHUB_PATH}"
+
+      - name: Installed ShellCheck is exactly 0.10.0
+        run: |
+          set -euo pipefail
+          shellcheck --version
+          shellcheck --version | grep -qx 'version: 0.10.0'
+
+      - name: Lint tracked first-party Bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' -t files < <(
+            {
+              git ls-files -z -- 'sim/*.sh' 'layout/*.sh' '.github/scripts/*.sh'
+              git ls-files -z -- '.github/scripts/*' | while IFS= read -r -d '' f; do
+                case "${f##*/}" in *.*) continue ;; esac
+                if head -n 1 "$f" | grep -Eq '^#![[:space:]]*(/usr/bin/env[[:space:]]+)?(/[^[:space:]]*/)?bash([[:space:]]|$)'; then
+                  printf '%s\0' "$f"
+                fi
+              done
+            } | sort -z -u
+          )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "ERROR: no shell scripts discovered; refusing to pass an empty lint" >&2
+            exit 1
+          fi
+          printf '%s\n' "${files[@]}"
+          shellcheck --shell=bash --severity=warning "${files[@]}"
