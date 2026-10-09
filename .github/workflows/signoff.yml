@@ -19,6 +19,10 @@ name: signoff
 # checker self-test runs first — a drift gate that cannot fail is
 # indistinguishable from no gate at all.
 #
+# The same check-signoff.sh also runs the layout-citation scope guard
+# (check-signoff-scope.py, issue #80): a met layout/DRC/LVS row may not be
+# backed by evidence for a partial cell.
+#
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence),

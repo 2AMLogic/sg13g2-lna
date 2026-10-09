@@ -234,6 +234,45 @@ machine-emitted field in the same report `check-signoff.sh` already
 byte-compares, rather than resting on a human keeping three numbers in
 sync by hand.
 
+## Layout scope guard
+
+A byte-consistent report can still overclaim: a layout envelope for a
+*partial* cell must not turn a block-level row `met`. `check-signoff.sh`
+therefore also runs `.github/scripts/check-signoff-scope.py` (stdlib only;
+self-tested by `test-check-signoff.sh`; no ngspice, PDK or layout
+regeneration) on the fresh render. It reads a row's status only to see
+whether it is `met`; it never rewrites a klt verdict.
+
+For every file cited on item 2 (Layout), 3 (DRC) or 4 (LVS) it requires,
+in the cited file's directory, `realization.json` and
+`<top_cell>.provenance.json`, and then:
+
+- **Scope from the partition.** `in_scope` and `out_of_scope` must
+  partition the instances of the netlist `realization.json` names (parsed
+  with `layout/lvs_reference.py`'s `parse_netlist`). Scope is `full` only
+  when `out_of_scope` is empty; there is no hand-kept completion flag.
+- **Input binding.** The report's `provenance.input.content_hash` (role
+  `layout`), the manifest entry's `content_hash` and the provenance file's
+  `gds_sha256` must be the same sha256.
+- **Verdict rule.** A partial scope with a `met` item 2/3/4 row fails,
+  one diagnostic per row ("N of M instances drawn"). That includes a
+  passing partial extraction envelope cited for item 2.
+- Missing or malformed scope metadata, a stale partition, or an input-hash
+  disagreement is a hard failure, never read as full scope.
+
+Allowed: uncited rows, and failing partial evidence (the current items 3
+and 4 stay cited and `unmet`).
+
+Remediation when it fires: either withdraw the partial citation from
+`manifest.json` and refresh the record, or complete the layout so that
+every netlist instance is in `in_scope` (empty `out_of_scope`) and supply
+evidence for it. A future full-block layout must therefore ship a
+`realization.json` partitioning its netlist, a `<top_cell>.provenance.json`
+with `gds_sha256`, and klt envelopes whose `provenance.input` is that GDS.
+Scope metadata confirms instance coverage only, not physical quality; klt
+still decides DRC and LVS outcomes. See `layout/README.md` "Signoff
+citations".
+
 ## Sources
 
 - `klayout-tools` grader contract: `docs/cli/signoff.md` → "Tier-verdict
