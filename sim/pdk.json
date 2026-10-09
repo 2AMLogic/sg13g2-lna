@@ -34,7 +34,7 @@
     "checked": "2026-09-21 (models present + loadable per the port's --check; see sim/biasref-topology/records/)"
   },
   "klt_variant_campaign": {
-    "_comment": "Minimum klayout-tools (klt) release for sim/lna-characterization/run_lna_variant.sh. This is the single recorded floor; the script reads min_version from here and fails fast below it (semantic version only, no feature-list parsing). Independent of the signoff pin (0.6.0, .github/workflows/signoff.yml). Evidence: klayout-tools CHANGELOG.md lists measurements[].expr, options.osdi_preload and options.stage_model_inputs all under 0.7.0 (2026-10-08) and none under 0.6.0 (2026-09-22); the campaign was developed with 0.7.0+g4cbdfa769875.",
+    "_comment": "Minimum klayout-tools (klt) release for sim/lna-characterization/run_lna_variant.sh. This is the single recorded floor; the script reads min_version from here and fails fast below it (semantic version only, no feature-list parsing). Independent of the signoff pin (0.7.0, .github/workflows/signoff.yml). Evidence: klayout-tools CHANGELOG.md lists measurements[].expr, options.osdi_preload and options.stage_model_inputs all under 0.7.0 (2026-10-08) and none under 0.6.0 (2026-09-22); the campaign was developed with 0.7.0+g4cbdfa769875.",
     "min_version": "0.7.0",
     "required_features": [
       "measurements[].expr",
