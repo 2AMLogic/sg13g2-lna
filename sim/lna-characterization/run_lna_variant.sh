@@ -112,11 +112,21 @@ for req in "${SNAPSHOTS_OUT}"/*.request.json; do
   fi
 done
 
-python3 "${SCRIPT_DIR}/lna_variant_campaign.py" summarize \
-  --corners-dir "${CORNERS_OUT}" \
-  --summary-csv "${RECORDS_DIR}/${RECORD_ID}-summary.csv" \
-  --compare-csv "${RECORDS_DIR}/${RECORD_ID}-compare.csv" \
-  --headlines-md "${CORNERS_OUT}/headlines.md" || true
+SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}"
+  --summary-csv "${RECORDS_DIR}/${RECORD_ID}-summary.csv"
+  --compare-csv "${RECORDS_DIR}/${RECORD_ID}-compare.csv"
+  --headlines-md "${CORNERS_OUT}/headlines.md"
+  --coverage-json "${CORNERS_OUT}/coverage.json")
+[[ -n "${LNA_VARIANTS:-}" ]] && SUMMARIZE_ARGS+=(--variants "${LNA_VARIANTS}")
+[[ -n "${LNA_VARIANT_SMOKE:-}" ]] && SUMMARIZE_ARGS+=(--grid smoke)
+# Reduction failure (incomplete/failed/duplicate/non-finite coverage) is NOT
+# masked: diagnostics, logs, reports and the record below are still written,
+# then the script exits nonzero at the end.
+SUMMARIZE_RC=0
+python3 "${SCRIPT_DIR}/lna_variant_campaign.py" summarize "${SUMMARIZE_ARGS[@]}" || SUMMARIZE_RC=$?
+if (( SUMMARIZE_RC != 0 )); then
+  echo "run_lna_variant.sh: reduction FAILED (exit ${SUMMARIZE_RC}); coverage incomplete -- see ${CORNERS_OUT}/headlines.md" >&2
+fi
 
 JOBS="$(python3 -I - "${CORNERS_OUT}" <<'PYEOF'
 import glob, json, sys
@@ -158,6 +168,11 @@ PYEOF
   else
     echo "- **Failed requests**: none."
   fi
+  if (( SUMMARIZE_RC != 0 )); then
+    echo "- **Reduction**: FAILED (exit ${SUMMARIZE_RC}) -- **coverage incomplete**; not a complete-grid result."
+  else
+    echo "- **Reduction**: ok (expected grid complete, all measurements finite)."
+  fi
   echo "- **Headlines (machine-generated)**:"
   echo
   cat "${CORNERS_OUT}/headlines.md" 2>/dev/null || echo "(none -- summarize found no reports)"
@@ -171,5 +186,8 @@ PYEOF
 echo "run_lna_variant.sh: wrote ${RECORDS_DIR}/${RECORD_ID}.md"
 if [[ ${#FAILED[@]} -gt 0 ]]; then
   echo "run_lna_variant.sh: failed: ${FAILED[*]}" >&2
+  exit 1
+fi
+if (( SUMMARIZE_RC != 0 )); then
   exit 1
 fi
