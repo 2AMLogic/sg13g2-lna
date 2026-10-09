@@ -27,6 +27,7 @@ name: signoff
 # `hbt-reduction-tests` (hbt-characterization fixed-T0 NF re-derivation unit
 # tests and committed-record replay — issue #101),
 # `layout-reduction-tests` (layout/lvs_reference.py unit tests — issue #109),
+# `sim-record-paths-tests` (sim/env.sh record-id reservation — issue #113),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
@@ -108,6 +109,18 @@ jobs:
 
       - name: lvs_reference unit tests
         run: python3 -I -m unittest discover -s layout/tests -v
+
+  # sim_record_paths reservation tests (issue #113): atomic record-id
+  # reservation, rejection of pre-existing artifacts and creation failures
+  # in sim/env.sh, on mktemp fixtures with date/git stubbed. No PDK/ngspice.
+  sim-record-paths-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: sim_record_paths reservation tests
+        run: sim/tests/test-sim-record-paths.sh
 
   # Core-envelope replay (issue #83): re-run the committed, deterministic
   # derivation into a temp path and diff against the committed derived CSV.
