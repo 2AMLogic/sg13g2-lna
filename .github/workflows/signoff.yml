@@ -42,3 +42,15 @@ jobs:
 
       - name: T1 verdict of record is current
         run: .github/scripts/check-signoff.sh
+
+  # Unit tests for the lna-characterization result-reduction code (issue
+  # #64). Stdlib-only, headless, PDK-free, single process: no ngspice, no
+  # parallelism. Tests only read committed files; sim/ stays append-only.
+  reduction-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: lna-characterization reduction unit tests
+        run: python3 -I -m unittest discover -s sim/lna-characterization/tests -v
