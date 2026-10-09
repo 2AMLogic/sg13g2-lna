@@ -301,20 +301,252 @@ def fmt(x, nd=4):
     return f"{x:.{nd}f}"
 
 
-def cmd_summarize(a):
-    cdir = Path(a.corners_dir)
-    rows = {}  # (variant, label, temp, vdd) -> merged dict
-    status = {}
+# --- expected grid, validation and ideal-baseline row coverage (issue #87) ---
+
+OK_STATUSES = {"ok", "pass", "passed", "success", "succeeded", "completed", "complete"}
+GRID_FULL = "full"
+GRID_SMOKE = "smoke"
+
+
+def norm_key(label, temp, vdd):
+    return (label, float(temp), round(float(vdd), 4))
+
+
+def expected_grid(grid: str = GRID_FULL):
+    """Expected (label, temp, vdd) cells, derived from the generator constants
+    (the same ones request() uses), in canonical order."""
+    if grid == GRID_SMOKE:
+        return [norm_key(*NOMINAL)]
+    return [norm_key(lab, t, v) for lab in LABELS for t in TEMPS for v in VDDS]
+
+
+def cell_text(key):
+    return f"{key[0]}/{key[1]:g}C/{key[2]:.2f}V"
+
+
+def _is_finite_number(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def cell_status_ok(c: dict):
+    """(ok, detail). A cell is failed on a non-ok status string or an error field."""
+    st = c.get("status")
+    if c.get("error"):
+        return False, f"error={c.get('error')!r}"
+    if st is not None and str(st).strip().lower() not in OK_STATUSES:
+        return False, f"status={st!r}"
+    return True, ""
+
+
+def collect_reports(cdir: Path, required_variants, grid: str):
+    """Read *.report.json and validate each (variant, analysis) separately.
+
+    Returns (cells, issues, counts):
+      cells[(variant, analysis)] -> {key: {"values": {...}, "status": s}} for
+          cells that are in the grid, first occurrences only (valid or not);
+      issues -> list of dicts {kind, variant, analysis, cell, measurement, detail};
+      counts[(variant, analysis)] -> {"expected", "valid"}.
+    Nothing is dropped silently: every anomaly is an issue.
+    """
+    issues = []
+
+    def issue(kind, variant, analysis, cell=None, measurement=None, detail=""):
+        issues.append({"kind": kind, "variant": variant, "analysis": analysis,
+                       "cell": cell_text(cell) if isinstance(cell, tuple) else cell,
+                       "measurement": measurement, "detail": detail})
+
+    grid_keys = expected_grid(grid)
+    gridset = set(grid_keys)
+    cells = {}
+    seen_reports = set()
     for rep in sorted(cdir.glob("*.report.json")):
         stem = rep.name[: -len(".report.json")]
-        analysis = next(an for an in ANALYSES if stem.endswith("_" + an))
-        variant = stem[: -len(analysis) - 1]
-        data = load_report(rep)
-        for c in data.get("corners", []):
-            key = (variant,) + corner_key(c)
-            rows.setdefault(key, {})
-            rows[key].update({k: v for k, v in corner_values(c).items()})
-            status.setdefault(key, {})[analysis] = c.get("status")
+        analysis = next((an for an in ANALYSES if stem.endswith("_" + an)), None)
+        variant = stem[: -len(analysis) - 1] if analysis else None
+        if analysis is None or variant not in VARIANTS:
+            issue("unexpected_report", variant, analysis, detail=rep.name)
+            continue
+        seen_reports.add((variant, analysis))
+        try:
+            data = load_report(rep)
+            corners = data.get("corners", [])
+            if not isinstance(corners, list):
+                raise ValueError("'corners' is not a list")
+        except Exception as e:  # unreadable/malformed report
+            issue("unreadable_report", variant, analysis, detail=f"{rep.name}: {e}")
+            continue
+        cmap = cells.setdefault((variant, analysis), {})
+        dup = set()
+        for idx, c in enumerate(corners):
+            try:
+                key = norm_key(*corner_key(c))
+            except Exception as e:
+                issue("malformed_cell", variant, analysis, cell=f"corners[{idx}]", detail=str(e))
+                continue
+            if key not in gridset:
+                issue("unexpected_cell", variant, analysis, cell=key)
+                continue
+            if key in cmap:
+                dup.add(key)
+                continue
+            cmap[key] = {"values": corner_values(c), "status": c.get("status"),
+                         "_ok": cell_status_ok(c)}
+        for key in sorted(dup, key=grid_keys.index):
+            issue("duplicate_cell", variant, analysis, cell=key,
+                  detail="cell appears more than once; excluded from reduction")
+
+    counts = {}
+    for variant in required_variants:
+        for analysis in ANALYSES:
+            cmap = cells.get((variant, analysis)) or {}
+            if (variant, analysis) not in seen_reports:
+                issue("missing_report", variant, analysis,
+                      detail=f"no {variant}_{analysis}.report.json (or unreadable)")
+            names = [m["name"] for m in measurements(analysis)]
+            dup_keys = {i["cell"] for i in issues if i["kind"] == "duplicate_cell"
+                        and i["variant"] == variant and i["analysis"] == analysis}
+            valid = 0
+            for key in grid_keys:
+                if key not in cmap:
+                    if (variant, analysis) in seen_reports:
+                        issue("missing_cell", variant, analysis, cell=key)
+                    continue
+                cell = cmap[key]
+                good = True
+                ok, detail = cell["_ok"]
+                if not ok:
+                    issue("failed_cell", variant, analysis, cell=key, detail=detail)
+                    good = False
+                for n in names:
+                    if n not in cell["values"]:
+                        issue("missing_measurement", variant, analysis, cell=key, measurement=n)
+                        good = False
+                    elif cell["values"][n] is None:
+                        issue("missing_measurement", variant, analysis, cell=key, measurement=n,
+                              detail="value is null")
+                        good = False
+                    elif not _is_finite_number(cell["values"][n]):
+                        issue("non_finite_value", variant, analysis, cell=key, measurement=n,
+                              detail=f"value={cell['values'][n]!r}")
+                        good = False
+                if cell_text(key) in dup_keys:
+                    good = False
+                cell["valid"] = good
+                valid += good
+            counts[(variant, analysis)] = {"expected": len(grid_keys), "valid": valid}
+    return cells, issues, counts
+
+
+# Ratified-row reductions of the ideal baseline: (row id, label, analysis,
+# measurement, reduce, target text, comparator, threshold, sampling, spec row)
+ROW_REDUCTIONS = [
+    ("gain", "In-band minimum |S21| [dB]", "sp_band", "s21_db_min", "min",
+     "> 15 dB", lambda v: v > 15.0,
+     "sp lin 11 pts 2.4-2.4835 GHz; vecmin(db(s_2_1)) over the 11 points", "Gain (S21)"),
+    ("s11", "Worst in-band |S11| [dB]", "sp_band", "s11_db_worst", "max",
+     "< -10 dB", lambda v: v < -10.0,
+     "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_1_1)) over the 11 points", "Input match (S11)"),
+    ("s22", "Worst in-band |S22| [dB]", "sp_band", "s22_db_worst", "max",
+     "< -10 dB", lambda v: v < -10.0,
+     "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_2_2)) over the 11 points", "Output match (S22)"),
+    ("stability", "Broadband minimum mu (Edwards-Sinsky)", "sp_stab", "mu_min", "min",
+     "> 1", lambda v: v > 1.0,
+     f"sp dec {N_STAB_DEC} pts/decade 10 MHz-30 GHz; vecmin(mu) over the sweep", "Stability"),
+    ("nf290", "NF at T0 = 290 K, band maximum of 3 sampled points [dB]", "noise", "nf290_db_worst", "max",
+     "< 1.5 dB", lambda v: v < 1.5,
+     "noise lin 3 pts (2.4, 2.44175, 2.4835 GHz) ONLY -- three-point sampling, not a continuous-band proof",
+     "Noise figure (NF)"),
+]
+PORT_CONVENTION = ("50 Ohm reference at both ports (sp port sources with portnum/z0; "
+                   "50 Ohm Thevenin source with noiseless Rs/RL for .noise)")
+
+DISCLOSURES = [
+    "NF290 is sampled at exactly 3 frequencies (lo/mid/hi of the band); this is not continuous-band coverage.",
+    "ngspice sp-analysis port NF / NFmin (nf_sp_db_*, nfmin_sp_db_*) are distinct from the ratified T0 = 290 K "
+    "value (nf290_db_*); only nf290_db_worst is compared with the NF target.",
+    "DC bias current and DC power are NOT measured by these three requests; the Power and bias rows are not covered.",
+    "Two-tone IIP3 is NOT measured by these three requests; the IIP3 row is not covered.",
+    "Supply (VDD) and band are configured bench conditions, not independently measured compliance results.",
+    "Comparisons describe sampled bench results only (ideal passives, as-committed unmatched DUT). A numeric pass "
+    "does not establish matched physical performance, complete spec compliance, signoff, or T1 item 5.",
+    "No missing observable is inferred from another campaign or DUT.",
+]
+
+
+def ideal_row_coverage(cells, counts, grid: str):
+    grid_keys = expected_grid(grid)
+    rows = []
+    for rid, label, analysis, meas, how, target, cmp_, sampling, specrow in ROW_REDUCTIONS:
+        c = counts.get(("ideal", analysis), {"expected": len(grid_keys), "valid": 0})
+        cm = cells.get(("ideal", analysis), {})
+        vals = [(cm[k]["values"][meas], k) for k in grid_keys
+                if k in cm and cm[k].get("valid")]
+        worst = None
+        for v, k in vals:  # first cell in canonical order wins ties
+            if worst is None or (v < worst[0] if how == "min" else v > worst[0]):
+                worst = (v, k)
+        complete = c["valid"] == c["expected"] and worst is not None
+        if not complete:
+            verdict = "NOT EVALUATED (coverage incomplete)"
+        else:
+            verdict = ("meets target at all sampled cells" if cmp_(worst[0])
+                       else "FAILS target at the worst sampled cell")
+        rows.append({
+            "row": rid, "spec_row": f"spec/target-spec.md: {specrow}", "label": label,
+            "analysis": analysis, "measurement": meas, "reduction": how,
+            "frequency_sampling": sampling, "port_convention": PORT_CONVENTION,
+            "target": target + " (strict inequality; equality fails)",
+            "worst_value": None if worst is None else worst[0],
+            "worst_cell": None if worst is None else cell_text(worst[1]),
+            "valid_cells": c["valid"], "expected_cells": c["expected"],
+            "coverage_complete": complete, "verdict": verdict,
+        })
+    return rows
+
+
+def coverage_markdown(rows, grid, complete, issues):
+    out = ["## Ideal-baseline ratified-row coverage (sampled bench results only)", ""]
+    out.append(f"- Coverage: **{'COMPLETE' if complete else 'INCOMPLETE'}** "
+               f"(grid `{grid}`, {len(expected_grid(grid))} expected cells per analysis; "
+               f"{len(issues)} validation issue(s))")
+    if grid == GRID_SMOKE:
+        out.append("- SMOKE grid (single nominal cell): not a PVT campaign, not a corner-box result.")
+    out.append("")
+    for r in rows:
+        w = "n/a" if r["worst_value"] is None else f"{r['worst_value']:.6g} @ {r['worst_cell']}"
+        out.append(f"- **{r['label']}** -- {r['verdict']}")
+        out.append(f"  - target: {r['target']} ({r['spec_row']})")
+        out.append(f"  - worst: {w}; valid/expected cells {r['valid_cells']}/{r['expected_cells']}")
+        out.append(f"  - measurement: `{r['analysis']}.{r['measurement']}` ({r['reduction']} over cells); "
+                   f"sampling: {r['frequency_sampling']}")
+        out.append(f"  - ports: {r['port_convention']}")
+    out += ["", "### Not covered / disclosures", ""] + [f"- {d}" for d in DISCLOSURES] + [""]
+    return out
+
+
+def cmd_summarize(a):
+    cdir = Path(a.corners_dir)
+    grid = getattr(a, "grid", GRID_FULL)
+    req = [v for v in (getattr(a, "variants", "") or "").split(",") if v]
+    for v in req:
+        if v not in VARIANTS:
+            raise SystemExit(f"summarize: unknown variant {v}")
+    if not req:
+        names = set()
+        for rep in cdir.glob("*.report.json"):
+            stem = rep.name[: -len(".report.json")]
+            an = next((x for x in ANALYSES if stem.endswith("_" + x)), None)
+            if an and stem[: -len(an) - 1] in VARIANTS:
+                names.add(stem[: -len(an) - 1])
+        req = [v for v in VARIANTS if v in names or v == "ideal"]
+    cells, issues, counts = collect_reports(cdir, req, grid)
+    rows = {}  # (variant, label, temp, vdd) -> merged dict
+    status = {}
+    for (variant, analysis), cmap in cells.items():
+        for key, cell in cmap.items():
+            k = (variant,) + key
+            rows.setdefault(k, {}).update(cell["values"])
+            status.setdefault(k, {})[analysis] = cell["status"]
     if not rows:
         raise SystemExit("summarize: no reports found")
     variants = [v for v in VARIANTS if any(k[0] == v for k in rows)]
@@ -391,8 +623,50 @@ def cmd_summarize(a):
                             ("mu_min", "mu min 10 MHz..30 GHz"), ("s22_mag_max", "max |S22| 10 MHz..30 GHz")]:
             lines.append(f"- {label}: {span(v, name, 4 if 'mu' in name or 'mag' in name else 3)}")
         lines.append("")
+    complete = not issues
+    banner = []
+    if not complete:
+        banner = [f"**COVERAGE INCOMPLETE** -- {len(issues)} validation issue(s); "
+                  "no complete-grid or pass claim may be drawn from this summary.", ""]
+    cov_rows = None
+    if "ideal" in req:
+        cov_rows = ideal_row_coverage(cells, counts, grid)
+        lines = banner + lines + coverage_markdown(cov_rows, grid, complete, issues)
+    else:
+        lines = banner + lines + ["Ideal baseline not requested; no ratified-row coverage summary.", ""]
+    if issues:
+        lines += ["## Validation issues", ""]
+        for i in issues:
+            lines.append("- " + _issue_text(i))
+        lines.append("")
     open(a.headlines_md, "w").write("\n".join(lines) + "\n")
     print(f"summarize: wrote {a.headlines_md}")
+    cj = getattr(a, "coverage_json", "")
+    if cj:
+        doc = {"coverage": "complete" if complete else "incomplete", "grid": grid,
+               "expected_cells_per_analysis": len(expected_grid(grid)),
+               "requested_variants": req,
+               "counts": {f"{v}/{an}": c for (v, an), c in sorted(counts.items())},
+               "ideal_rows": cov_rows, "disclosures": DISCLOSURES, "issues": issues}
+        Path(cj).write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        print(f"summarize: wrote {cj}")
+    if not complete:
+        print(f"summarize: COVERAGE INCOMPLETE: {len(issues)} issue(s)", file=sys.stderr)
+        for i in issues:
+            print("summarize: " + _issue_text(i), file=sys.stderr)
+        return 2
+    return 0
+
+
+def _issue_text(i):
+    parts = [i["kind"], f"variant={i['variant']}", f"analysis={i['analysis']}"]
+    if i.get("cell"):
+        parts.append(f"cell={i['cell']}")
+    if i.get("measurement"):
+        parts.append(f"measurement={i['measurement']}")
+    if i.get("detail"):
+        parts.append(i["detail"])
+    return " ".join(parts)
 
 
 def main():
@@ -409,9 +683,14 @@ def main():
     s.add_argument("--summary-csv", required=True)
     s.add_argument("--compare-csv", required=True)
     s.add_argument("--headlines-md", required=True)
+    s.add_argument("--coverage-json", default="", help="optional machine-readable coverage summary")
+    s.add_argument("--grid", choices=[GRID_FULL, GRID_SMOKE], default=GRID_FULL,
+                   help="expected grid: full 45-cell PVT box (default) or single nominal smoke cell")
+    s.add_argument("--variants", default="",
+                   help="comma list of variants that must be complete (default: ideal + any present)")
     s.set_defaults(fn=cmd_summarize)
     a = p.parse_args()
-    a.fn(a)
+    sys.exit(a.fn(a) or 0)
 
 
 if __name__ == "__main__":

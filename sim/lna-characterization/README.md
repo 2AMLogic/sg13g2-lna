@@ -750,6 +750,55 @@ dispatch host regardless). Once the fleet image carries a current `klt`, run
 which mints a new append-only record and writes the per-cell
 ideal-versus-lossy table (`-compare.csv`).
 
+### Report reduction, coverage validation and the ideal-baseline row summary (issue #87)
+
+`lna_variant_campaign.py summarize` validates the `klt sim` reports before it
+reduces them. The expected grid (5 corner labels x 3 temperatures x 3 supplies
+= 45 cells) and the per-analysis measurement names are derived from the same
+constants/`measurements()` the generator uses; `--grid smoke` expects the
+single nominal cell instead (labelled SMOKE, not a PVT result). Each
+(variant, analysis) report is validated separately, with distinct diagnostics
+for `missing_report`, `unreadable_report`, `missing_cell`, `duplicate_cell`
+(excluded, never silently replaced), `unexpected_cell`, `failed_cell` (non-ok
+status or error field), `missing_measurement` (absent or null) and
+`non_finite_value` (NaN/Inf/non-numeric). `--variants a,b` selects which
+variants must be complete (default: `ideal` plus any variant with a report).
+
+Any issue makes `summarize` exit 2 (after still writing the CSVs, headlines and
+an issue list for diagnosis), labels the headlines `COVERAGE INCOMPLETE`, and
+makes `run_lna_variant.sh` exit 1 at the end; the wrapper no longer masks the
+reduction (`|| true` removed) and still writes reports, logs and the record,
+including the failed-request provenance. Optional `--coverage-json` writes a
+deterministic machine-readable summary (no timestamps).
+
+For the `ideal` baseline the summary lists, per ratified row of
+`spec/target-spec.md`, the measurement, its frequency sampling, port convention,
+target, worst-cell identity (ties: first cell in canonical grid order) and
+valid/expected cell counts:
+
+| Row | Measurement | Reduction | Target (strict) |
+|---|---|---|---|
+| Gain | `sp_band.s21_db_min` | min over cells | > 15 dB |
+| S11 | `sp_band.s11_db_worst` | max over cells | < -10 dB |
+| S22 | `sp_band.s22_db_worst` | max over cells | < -10 dB |
+| Stability | `sp_stab.mu_min` (10 MHz-30 GHz) | min over cells | > 1 |
+| NF (T0 = 290 K) | `noise.nf290_db_worst` | max over cells | < 1.5 dB |
+
+Equality fails a strict target. A row with fewer valid cells than expected is
+`NOT EVALUATED`, never pass/fail. Disclosed limits: NF290 is sampled at only
+three frequencies (lo/mid/hi), not the continuous band; ngspice sp NF/NFmin
+are distinct from the T0 = 290 K value; DC bias/power and two-tone IIP3 are
+not measured by these three requests; supply and band are configured
+conditions, not measured compliance; numeric agreement on sampled cells is
+not matched physical performance, complete spec compliance, signoff or T1
+item 5.
+
+The unit tests use synthetic reports labelled as fixtures; they are not
+circuit evidence. Producing a real 45-cell record is still the fleet-execution
+work of #56 (see "Status of the 45-cell run": the fleet runner must support
+`measurements[].expr`, `options.osdi_preload` and `options.stage_model_inputs`,
+with job/result evidence retained).
+
 ### Nominal-cell probe (not a PVT record)
 
 `LNA_VARIANT_SMOKE=1 LNA_VARIANT_BACKEND=local KLT_NGSPICE_BINARY=<ngspice>=46
