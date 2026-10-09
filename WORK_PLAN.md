@@ -17,13 +17,13 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#56**: sim: replace the ideal inductors with EM-extracted lossy models from sg13g2-vco (removes the blocker on #27, T1 item 5 match and stability rows)
+- **#94**: Consolidate duplicated RF helpers in the core-envelope postprocessors
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#84**: ci: enforce vendored inductor-model checksum provenance
 
 ## PRs Awaiting Review
 
@@ -47,7 +47,9 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)*
+- **#84**: ci: enforce vendored inductor-model checksum provenance *(architect)*
+- **#87**: sim: express the committed DUT's 45-cell PVT grid as klt sim corners requests (first klt-native envelope for T1 item 5) *(architect)*
 
 ## Epics
 
@@ -60,11 +62,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 3 |
-| Architect / Hermit proposals | 0 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 
 <!-- guide:plan-body:end -->
