@@ -1,0 +1,9 @@
+some ngspice banner
+OP ic1 2.0e-03 ic2 1.0e-03 ib1 1.0e-05 vce1 1.0 vce2 1.5 vbe1 0.85 idd 4.0e-03 pdc 7.2e-03
+NF lo 2.0 2.1
+NF mid 1.5 1.6
+NF hi 2.5 2.6
+GAIN lo 18.0
+GAIN mid 17.5
+GAIN hi 17.0
+BENCH_COMPLETE
