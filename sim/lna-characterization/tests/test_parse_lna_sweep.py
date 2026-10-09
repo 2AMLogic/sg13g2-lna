@@ -81,7 +81,7 @@ class Iip3(unittest.TestCase):
         self.assertAlmostEqual(P.iip3_from(-50.0, -40.0, -130.0), -5.0)
 
     def test_three_to_one_point_is_drive_invariant(self):
-        # Ideal cubic: gain 10 dB, IIP3 = +5 dBm. PIM3 = 3*Pin + G*... i.e.
+        # Ideal cubic: gain 10 dB, IIP3 = +5 dBm, so
         # Pout - PIM3 = 2*(IIP3 - Pin). Every drive level must return +5.
         for pin in (-60.0, -45.0, -30.0):
             pout = pin + 10.0
@@ -170,7 +170,9 @@ class LogReaders(unittest.TestCase):
         pout = P.out_power_dbm(t)
         self.assertAlmostEqual(pout, 10 * math.log10(t * t / 100 / 1e-3), places=9)
         iip3 = P.iip3_from(pin, pout, P.out_power_dbm(i3))
-        self.assertTrue(-10.0 < iip3 < 30.0, iip3)
+        # Committed value for this point: records/20260926-122301-088c734-iip3.csv,
+        # row iip3_typ_27c_vdd1.80v_a1mv, iip3_dbm = -1.4345.
+        self.assertAlmostEqual(iip3, -1.4345, places=3)
 
     def test_read_table(self):
         with tempfile.TemporaryDirectory() as td:

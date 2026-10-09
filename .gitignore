@@ -10,6 +10,8 @@ bsim4v5.out
 # sim/ harness: per-corner ngspice logs under corners/ are committed evidence
 # (append-only record trail), so they escape the *.log rule.
 !sim/*/corners/**/*.log
+# unit-test fixtures (trimmed ngspice logs) are committed test inputs
+!sim/*/tests/fixtures/*.log
 sim/build/
 design/build/
 # synthesis / P&R scratch
