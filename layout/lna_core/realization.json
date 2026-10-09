@@ -1,0 +1,62 @@
+{
+  "_comment": "Layout scope and device realization for layout/lna_core (issue #63). Read by generate.py (what to draw) and layout/lvs_reference.py (what the LVS reference contains). 'in_scope' maps each design/netlist/lna.spice instance this bring-up draws to the PDK PyCell that realizes it; 'out_of_scope' lists every other instance with the reason it is not drawn. lvs_reference.py fails if the two lists do not partition the netlist exactly, so a netlist change cannot silently fall out of both.",
+  "netlist": "design/netlist/lna.spice",
+  "top_cell": "lna_core",
+  "parameters": {
+    "nx": {
+      "default": 8,
+      "applies_to": ["XQ1", "XQ2"],
+      "meaning": "npn13G2 emitter count (Nx) of the cascode pair. Issue #58's emitter-array decision lands as a change to this one value (generate.py --nx), not a redraw. Q3 stays Nx=1: DR-0003's island is a density match to Q1 at the netlist's own Nx=8 ratio, so changing nx without re-sizing the island is a design change this script does not make on its own."
+    }
+  },
+  "in_scope": {
+    "XQ1": {"pcell": "npn13G2", "params": {"Nx": "@nx"}, "role": "cascode core, common-emitter device"},
+    "XQ2": {"pcell": "npn13G2", "params": {"Nx": "@nx"}, "role": "cascode core, common-base device"},
+    "XQ3": {"pcell": "npn13G2", "params": {"Nx": 1}, "role": "DR-0003 bias island: diode-connected density-match reference"},
+    "R3b": {
+      "pcell": "rppd",
+      "params": {"w": "1u", "l": "1.005u"},
+      "role": "DR-0003 bias island: bref -> b1 coupling resistor",
+      "realization_note": "Schematic value is an ideal 330 ohm. Realized as rppd w=1u l=1.005u; the PyCell's own model-formula readout for that geometry is r=329.74 ohm (PyCell TEXT label, which includes the PDK's end resistance Rzspec). This choice is a layout-time realization, not a re-sizing of the design."
+    },
+    "Cbref": {
+      "pcell": "cmim",
+      "params": {"w": "64.5u", "l": "64.5u"},
+      "count": 16,
+      "role": "DR-0003 bias island: RF ground of the bref node",
+      "realization_note": "Schematic value is an ideal 100 pF. Realized as 16 parallel cmim units of 64.5 x 64.5 um: 16 x (4160.25 um^2 x 1.5 fF/um^2 + 258 um x 0.04 fF/um) = 100.0 pF at the cap_typ coefficients. cmim's own Cmax is 8 pF per instance, hence the bank."
+    },
+    "XMis": {
+      "pcell": "pmosHV",
+      "params": {"w": "512u", "l": "1u", "ng": "32"},
+      "role": "DR-0003 island feed: 12.8:1 mirror bank copying I_ref into bref",
+      "realization_note": "Schematic is ng=1 w=512u; drawn as 32 fingers of 16u (same total W, same L). The fingers' gates are tied by a GatPoly bus generate.py draws; the netlist's single device corresponds to 32 parallel layout devices."
+    }
+  },
+  "out_of_scope": {
+    "Le": "matching / degeneration inductor: no SG13G2 inductor model exists (design/README.md caveat 1, klayout-tools#1519); matching-network work is #27/#56",
+    "Lc": "load inductor: same as Le",
+    "Cin": "input coupling cap: part of the input match (#27)",
+    "Cout": "output coupling cap: part of the output match (#27)",
+    "Cbyp2": "cascode-base (vb2) bypass cap: belongs with the R2a/R2b divider, not drawn in this bring-up",
+    "Cvdd": "supply decoupling cap: a pad-ring / supply-network item, not this bring-up",
+    "R2a": "cascode-base bias divider (vb2): left as a port of this cell",
+    "R2b": "cascode-base bias divider (vb2): left as a port of this cell",
+    "XMb": "DR-0003 reference core (Stage-1 skeleton)",
+    "XQb": "DR-0003 reference core (Stage-1 skeleton)",
+    "Rp": "DR-0003 reference core (Stage-1 skeleton)",
+    "XMa": "DR-0003 reference core (Stage-1 skeleton)",
+    "XQa": "DR-0003 reference core (Stage-1 skeleton)",
+    "Rseed": "DR-0003 reference core (Stage-1 skeleton startup seed)",
+    "XMv": "DR-0003 reference core (Kuijk sum branch)",
+    "Rsum": "DR-0003 reference core (Kuijk sum branch)",
+    "XQc": "DR-0003 reference core (Kuijk sum branch)",
+    "XMnp1": "DR-0003 reference core (amp-servo loop)",
+    "XMnp2": "DR-0003 reference core (amp-servo loop)",
+    "Rtail": "DR-0003 reference core (amp-servo loop)",
+    "XMld": "DR-0003 reference core (amp-servo loop)",
+    "XMlm": "DR-0003 reference core (amp-servo loop)",
+    "XMref": "DR-0003 reference core (amp-servo loop)",
+    "Rl": "DR-0003 reference core (V_BG/Rl transduction)"
+  }
+}

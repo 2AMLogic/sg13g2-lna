@@ -1,5 +1,14 @@
 {
   "block": "sg13g2-lna",
   "kind": "analog",
-  "evidence": {}
+  "evidence": {
+    "3": {
+      "file": "layout/lna_core/drc_report.json",
+      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
+    },
+    "4": {
+      "file": "layout/lna_core/lvs_full_report.json",
+      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
+    }
+  }
 }

@@ -94,3 +94,6 @@ flow/build/
 .loom/gh-config-by-owner-*/
 .loom-local/
 # <<< loom-managed <<<
+
+# layout/: PyCell submodule shims fetched by layout/tools/fetch-pcell-deps.sh
+layout/build/
