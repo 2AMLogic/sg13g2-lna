@@ -30,6 +30,8 @@ name: signoff
 # netlist — issue #88),
 # `layout-freshness` (committed layout GDS, provenance, LVS reference and
 # klt report envelopes agree with each other and the netlist — issue #86) and
+# `model-provenance` (vendored sim/models/ files still match the sha256 stamped
+# in sim/models/SOURCE.md — issue #84),
 # `sim-append-only` (pull requests only; fails a PR that modifies,
 # deletes or renames any committed file under sim/*/records/,
 # sim/*/netlist-snapshots/ or sim/*/corners/ — issue #67).
@@ -153,3 +155,19 @@ jobs:
 
       - name: Committed layout evidence is fresh
         run: .github/scripts/check-layout-freshness
+
+  # Vendored-model provenance gate (issue #84): every model under sim/models/
+  # must still match the sha256 stamped in sim/models/SOURCE.md. A model is
+  # changed only by re-stamping it from its master repo. Bash + coreutils only:
+  # no network, PDK or simulator. Read-only on the checkout.
+  model-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Model-provenance checker self-test
+        run: .github/scripts/test-check-model-sources.sh
+
+      - name: Vendored models match their recorded sha256
+        run: sim/models/check_sources.sh
