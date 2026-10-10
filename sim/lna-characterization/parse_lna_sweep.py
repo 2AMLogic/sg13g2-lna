@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 import os
 import re
@@ -161,7 +162,10 @@ def build_sparam_rows(corners_dir: str) -> tuple[list[dict], dict, list[str]]:
         m = SP_NAME_RE.match(point_id)
         if not m:
             continue
-        if not is_complete(os.path.join(corners_dir, fname)):
+        if not is_complete(os.path.join(corners_dir, fname)) or any(
+            not os.path.isfile(os.path.join(corners_dir, point_id + d))
+            for d in (".inband.dat", ".stability.dat")
+        ):
             skipped.append(point_id)
             continue
         log = parse_sp_log(os.path.join(corners_dir, fname))
@@ -353,6 +357,143 @@ def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
             cell["iip3_spread_2pt_db"] = ""
 
 
+# --- Expected-point coverage ---------------------------------------------
+# Exit codes of `--strict` (only meaningful with --manifest): 0 when every
+# expected point is complete and every required drive pair is intact, else
+# STRICT_EXIT_BASE plus a bitmask of what is wrong, so each failure mode has
+# its own exit: 1 = expected log absent, 2 = log present but truncated or
+# missing its wrdata tables, 4 = a mandatory IIP3 drive pair is not intact.
+STRICT_EXIT_BASE = 16
+EXIT_MISSING, EXIT_FAILED, EXIT_PAIR = 1, 2, 4
+
+
+def read_manifest(path: str) -> dict:
+    """Parse an expected-point manifest (written by run_lna_sweep.sh).
+
+    Line format (blank lines and '#' comments ignored):
+        kind <campaign|smoke>
+        sp <point_id>
+        iip3 <point_id>
+        pair <point_id_lo> <point_id_hi>   # mandatory two-level drive pair
+    Nominal-only extra drive levels appear only as `iip3` lines, so they are
+    expected to exist but are never part of a required pair.
+    """
+    man = {"kind": "campaign", "sp": [], "iip3": [], "pairs": []}
+    with open(path) as fh:
+        for n, line in enumerate(fh, 1):
+            parts = line.split("#", 1)[0].split()
+            if not parts:
+                continue
+            key, args = parts[0], parts[1:]
+            if key == "kind" and len(args) == 1 and args[0] in ("campaign", "smoke"):
+                man["kind"] = args[0]
+            elif key in ("sp", "iip3") and len(args) == 1:
+                man[key].append(args[0])
+            elif key == "pair" and len(args) == 2:
+                man["pairs"].append(args)
+            else:
+                raise SystemExit(f"{path}:{n}: unrecognised manifest line: {line.strip()!r}")
+    if not man["sp"] and not man["iip3"]:
+        raise SystemExit(f"{path}: manifest lists no expected points")
+    known = set(man["iip3"])
+    for pair in man["pairs"]:
+        for pid in pair:
+            if pid not in known:
+                raise SystemExit(f"{path}: pair member {pid} is not a listed iip3 point")
+    return man
+
+
+def compute_coverage(corners_dir: str, man: dict) -> dict:
+    """Compare the expected inventory with what is on disk."""
+
+    def state(point_id: str, dats: tuple[str, ...]) -> str:
+        log = os.path.join(corners_dir, point_id + ".log")
+        if not os.path.isfile(log):
+            return "missing"
+        if not is_complete(log):
+            return "failed"
+        if any(not os.path.isfile(os.path.join(corners_dir, point_id + d)) for d in dats):
+            return "failed"
+        return "completed"
+
+    states: dict[str, str] = {}
+    for pid in man["sp"]:
+        states[pid] = state(pid, (".inband.dat", ".stability.dat"))
+    for pid in man["iip3"]:
+        states[pid] = state(pid, ())
+    expected = list(man["sp"]) + list(man["iip3"])
+    broken_pairs = []
+    for pair in man["pairs"]:
+        bad = [pid for pid in pair if states[pid] != "completed"]
+        if bad:
+            broken_pairs.append({"points": list(pair), "unavailable": bad})
+    on_disk = {f[:-4] for f in os.listdir(corners_dir) if f.endswith(".log")}
+    cov = {
+        "inventory_kind": man["kind"],
+        "expected": expected,
+        "completed": [p for p in expected if states[p] == "completed"],
+        "missing": [p for p in expected if states[p] == "missing"],
+        "failed": [p for p in expected if states[p] == "failed"],
+        "missing_drive_pairs": broken_pairs,
+        "unexpected": sorted(on_disk - set(expected)),
+    }
+    cov["status"] = (
+        "complete"
+        if not (cov["missing"] or cov["failed"] or broken_pairs)
+        else "partial"
+    )
+    return cov
+
+
+def strict_exit_code(cov: dict) -> int:
+    if cov["status"] == "complete":
+        return 0
+    mask = 0
+    if cov["missing"]:
+        mask |= EXIT_MISSING
+    if cov["failed"]:
+        mask |= EXIT_FAILED
+    if cov["missing_drive_pairs"]:
+        mask |= EXIT_PAIR
+    return STRICT_EXIT_BASE + mask
+
+
+def coverage_prose(cov: dict | None) -> list[str]:
+    """Record-prose lines stating the coverage result. A partial inventory is
+    never described as a full campaign; a smoke inventory is never described
+    as a PVT campaign even when complete."""
+    if cov is None:
+        return [
+            "- **Coverage**: no expected-point manifest (historical replay);"
+            " completeness NOT established."
+        ]
+    n_exp, n_done = len(cov["expected"]), len(cov["completed"])
+    smoke = cov["inventory_kind"] == "smoke"
+    if cov["status"] == "complete":
+        what = (
+            "smoke inventory complete -- a plumbing check, NOT a PVT campaign"
+            if smoke
+            else "campaign inventory complete"
+        )
+        return [f"- **Coverage**: {what}; {n_done}/{n_exp} expected points completed,"
+                " every mandatory IIP3 drive pair intact."]
+    lines = [
+        f"- **Coverage**: PARTIAL INVENTORY -- {n_done}/{n_exp} expected points"
+        " completed. This record is NOT a full campaign; every aggregate"
+        " below covers only the completed points."
+    ]
+    for key, label in (("missing", "Missing (no log)"), ("failed", "Failed (incomplete)")):
+        if cov[key]:
+            lines.append(f"  - {label}: {', '.join(cov[key])}")
+    for bp in cov["missing_drive_pairs"]:
+        lines.append(
+            "  - Broken mandatory drive pair (no IM3 slope check): "
+            + " + ".join(bp["points"])
+            + f" (unavailable: {', '.join(bp['unavailable'])})"
+        )
+    return lines
+
+
 def write_csv(path: str, rows: list[dict], fieldnames: list[str]) -> None:
     # lineterminator="\n" is deliberate: csv's default is "\r\n", which would
     # make the committed CSV differ (by line endings) from what a reviewer's
@@ -491,13 +632,58 @@ def main() -> int:
     ap.add_argument("--f1")
     ap.add_argument("--f2")
     ap.add_argument("--headlines", action="store_true")
+    ap.add_argument("--manifest", help="expected-point manifest; enables coverage")
+    ap.add_argument("--coverage-json", help="write the coverage sidecar here")
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="with --manifest: exit nonzero (16+mask) if any expected point or"
+        " mandatory drive pair is incomplete; reduction still runs and is"
+        " marked partial",
+    )
+    ap.add_argument("--coverage-prose", action="store_true",
+                    help="print record prose for --coverage-json (or historical)")
+    ap.add_argument("--coverage-status", action="store_true",
+                    help="print complete|partial|unknown for --coverage-json")
     args = ap.parse_args()
+
+    if args.coverage_prose or args.coverage_status:
+        cov = None
+        if args.coverage_json and os.path.isfile(args.coverage_json):
+            with open(args.coverage_json) as fh:
+                cov = json.load(fh)
+        if args.coverage_status:
+            print(cov["status"] if cov else "unknown")
+        else:
+            print("\n".join(coverage_prose(cov)))
+        return 0
 
     if args.headlines:
         print(headlines(args.summary_csv, args.iip3_csv))
         return 0
 
+    cov = None
+    if args.manifest:
+        cov = compute_coverage(args.corners_dir, read_manifest(args.manifest))
+        if args.coverage_json:
+            with open(args.coverage_json, "w") as fh:
+                json.dump(cov, fh, indent=2, sort_keys=True)
+                fh.write("\n")
+        print(
+            f"parse_lna_sweep.py: coverage {cov['status'].upper()} -- "
+            f"{len(cov['completed'])}/{len(cov['expected'])} expected points "
+            f"({len(cov['missing'])} missing, {len(cov['failed'])} failed, "
+            f"{len(cov['missing_drive_pairs'])} broken drive pair(s))",
+            file=sys.stderr,
+        )
+    elif args.strict:
+        raise SystemExit("--strict requires --manifest")
+
     sparam_rows, per_cell, sp_skipped = build_sparam_rows(args.corners_dir)
+    if not sparam_rows and cov is not None and args.strict:
+        print(f"parse_lna_sweep.py: {args.corners_dir}: no complete sp_* artefacts",
+              file=sys.stderr)
+        return strict_exit_code(cov)
     if not sparam_rows:
         raise SystemExit(
             f"{args.corners_dir}: no complete sp_* artefacts found"
@@ -524,6 +710,8 @@ def main() -> int:
                 + ", ".join(skipped),
                 file=sys.stderr,
             )
+    if cov is not None and args.strict:
+        return strict_exit_code(cov)
     return 0
 
 

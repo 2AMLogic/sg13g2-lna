@@ -271,6 +271,30 @@ print('a%smv' % s)
 " "$1"
 }
 
+# --- Expected-point manifest --------------------------------------------
+# Written from the SAME arrays the spawn loops below iterate (so smoke mode
+# and the nominal-only extra drive levels are reflected exactly), before any
+# ngspice process starts. The reducer compares it with the logs on disk, so a
+# log that never appeared is reported rather than invisible. Only AMPS_GRID
+# levels form mandatory drive pairs; AMPS_NOMINAL_ONLY levels are expected
+# at the nominal cell alone.
+MANIFEST="${RECORDS_DIR}/${RECORD_ID}-expected-points.txt"
+{
+  if [[ -n "${LNA_SWEEP_SMOKE:-}" ]]; then echo "kind smoke"; else echo "kind campaign"; fi
+  for _c in "${CORNER_LABELS[@]}"; do for _t in "${TEMPS[@]}"; do for _v in "${VDDS[@]}"; do
+    echo "sp sp_${_c}_${_t}c_vdd${_v}v"
+    _pair=()
+    for _a in "${AMPS_GRID[@]}"; do
+      _pid="iip3_${_c}_${_t}c_vdd${_v}v_$(amp_label_of "${_a}")"
+      echo "iip3 ${_pid}"; _pair+=("${_pid}")
+    done
+    [[ ${#_pair[@]} -ge 2 ]] && echo "pair ${_pair[0]} ${_pair[1]}"
+  done; done; done
+  for _a in "${AMPS_NOMINAL_ONLY[@]}"; do
+    echo "iip3 iip3_${NOMINAL_CORNER}_${NOMINAL_TEMP}c_vdd${NOMINAL_VDD}v_$(amp_label_of "${_a}")"
+  done
+} > "${MANIFEST}"
+
 echo "run_lna_sweep.sh: record ${RECORD_ID} (${LNA_SWEEP_JOBS} concurrent ngspice job(s))"
 echo "run_lna_sweep.sh: phase 1/2 -- S-parameters, NF, stability ($(( ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VDDS[@]} )) cells)"
 for corner_label in "${CORNER_LABELS[@]}"; do
@@ -312,14 +336,19 @@ fi
 SPARAM_CSV="${RECORDS_DIR}/${RECORD_ID}-sparam.csv"
 IIP3_CSV="${RECORDS_DIR}/${RECORD_ID}-iip3.csv"
 SUMMARY_CSV="${RECORDS_DIR}/${RECORD_ID}-summary.csv"
+COVERAGE_JSON="${RECORDS_DIR}/${RECORD_ID}-coverage.json"
 
 python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" \
   --corners-dir "${CORNERS_OUT}" \
   --sparam-csv "${SPARAM_CSV}" \
   --iip3-csv "${IIP3_CSV}" \
   --summary-csv "${SUMMARY_CSV}" \
+  --manifest "${MANIFEST}" --coverage-json "${COVERAGE_JSON}" \
   --band-lo "${F_BAND_LO}" --band-hi "${F_BAND_HI}" \
   --df "${DF}" --f1 "${F1}" --f2 "${F2}"
+
+COVERAGE_STATUS="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --coverage-status --coverage-json "${COVERAGE_JSON}")"
+COVERAGE_PROSE="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --coverage-prose --coverage-json "${COVERAGE_JSON}")"
 
 # --- Human-readable append-only record ---------------------------------
 MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
@@ -399,6 +428,7 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   else
     echo "- **Failed cells**: none."
   fi
+  echo "${COVERAGE_PROSE}"
   echo "${HEADLINES}"
   echo "- **Links**:"
   echo "  - Templates: \`testbench/tb_lna_sparam.spice.tmpl\`,"
@@ -411,6 +441,8 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "    \`records/${RECORD_ID}-sparam.csv\`"
   echo "  - Per-point IIP3 CSV: \`records/${RECORD_ID}-iip3.csv\`"
   echo "  - Per-cell summary CSV: \`records/${RECORD_ID}-summary.csv\`"
+  echo "  - Expected-point manifest: \`records/${RECORD_ID}-expected-points.txt\`;"
+  echo "    coverage result: \`records/${RECORD_ID}-coverage.json\`"
   echo "- **Timestamp / author**: $(date -u +%Y-%m-%dT%H:%M:%SZ), Loom Builder"
   echo "  (agent), issue #18."
 } > "${MD_OUT}"
@@ -421,6 +453,10 @@ echo "${HEADLINES}"
 
 if [[ ${#failed_points[@]} -gt 0 ]]; then
   echo "run_lna_sweep.sh: ${#failed_points[@]} failed point(s): ${failed_points[*]}" >&2
+  exit 1
+fi
+if [[ "${COVERAGE_STATUS}" != "complete" ]]; then
+  echo "run_lna_sweep.sh: coverage ${COVERAGE_STATUS} -- record is a PARTIAL inventory" >&2
   exit 1
 fi
 exit 0
