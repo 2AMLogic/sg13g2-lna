@@ -290,6 +290,34 @@ jobs:
       - name: Committed netlist matches a headless xschem regeneration
         run: .github/scripts/check-netlist-regen
 
+      # Issue #182: only reached when the regeneration above succeeded. The
+      # committed T1 item-1 source audit must equal a rebuild from this
+      # checkout AND name exactly the xschem/PDK identity that just ran.
+      - name: Source audit is bound to this successful regeneration
+        run: .github/scripts/design-source-audit check --live-tools
+
+  # T1 item-1 design-source audit (issue #182): signoff/design-source/
+  # inventory.json pins the schematic, symbol, xschemrc and derived netlist by
+  # sha256; audit.json is the artifact-anchored generic envelope the manifest
+  # cites for item 1. PDK-free freshness gate: any changed/missing/unlisted
+  # source byte, stale envelope pin or stale manifest pin fails until the
+  # evidence is regenerated (design/README.md). The self-test also runs the
+  # pinned klt grader over mutated trees, so klt is installed here.
+  design-source-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned klt
+        run: python3 -m pip install "klayout-tools==0.7.0"
+
+      - name: Design-source audit self-test
+        run: .github/scripts/test-design-source-audit.sh
+
+      - name: Design-source audit is fresh
+        run: .github/scripts/design-source-audit check
+
   # sim/ append-only gate (issue #67): sim/README.md "Append-only rule" —
   # committed evidence under sim/*/{records,netlist-snapshots,corners}/ is
   # never edited or deleted; corrections mint a new record id. Diffs the PR

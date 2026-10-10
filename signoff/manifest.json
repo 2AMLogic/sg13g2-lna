@@ -2,6 +2,10 @@
   "block": "sg13g2-lna",
   "kind": "analog",
   "evidence": {
+    "1": {
+      "file": "signoff/design-source/audit.json",
+      "content_hash": "sha256:68b8e2e34630d96dd85281ecb43f8379553188b994bd926a6632205adc86b3b0"
+    },
     "3": {
       "file": "layout/lna_core/drc_report.json",
       "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"

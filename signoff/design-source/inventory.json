@@ -1,0 +1,39 @@
+{
+  "block": "sg13g2-lna",
+  "generation": {
+    "netlist_command": "xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./lna.sch",
+    "pdk_release_tag": "v0.3.0",
+    "pdk_variant": "ihp-sg13g2",
+    "regen_check": ".github/scripts/check-netlist-regen",
+    "regen_check_sha256": "sha256:e57feb392f6eb77285979262b35ad330a25235d39b3498124bb110001e851ea1",
+    "xschem_version": "3.4.4"
+  },
+  "kind": "design-source-inventory",
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 19640,
+      "path": "design/lna.sch",
+      "role": "schematic",
+      "sha256": "sha256:f15333595c8ea14d0437eef02abc53a061745759dfc4b2655d7ccbeda92a62fd"
+    },
+    {
+      "bytes": 1030,
+      "path": "design/lna.sym",
+      "role": "symbol",
+      "sha256": "sha256:b022bb2b6b9a127788f6acb13bb08dd29cbb262423da8c785961e3c6daad0b5f"
+    },
+    {
+      "bytes": 3803,
+      "path": "design/xschemrc",
+      "role": "generation-config",
+      "sha256": "sha256:8d7df6fcc99d833c372066ae8e83816b434edf912b817a58ad09fca3d5cbfad0"
+    },
+    {
+      "bytes": 1200,
+      "path": "design/netlist/lna.spice",
+      "role": "derived-netlist",
+      "sha256": "sha256:23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1"
+    }
+  ]
+}

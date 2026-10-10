@@ -139,7 +139,7 @@ run_case "pristine tree passes" 0 "$t"
 # 2. Tampered committed record fails: the verdict-of-record no longer
 #    matches what klt actually renders.
 t="$(fresh_tree)"
-sed -i.bak 's/"t1_met_count": 0/"t1_met_count": 9/' "$t/signoff/t1-report.json"
+sed -i.bak 's/"t1_met_count": 1/"t1_met_count": 9/' "$t/signoff/t1-report.json"
 rm -f "$t/signoff/t1-report.json.bak"
 run_case "tampered record fails" 1 "$t"
 
