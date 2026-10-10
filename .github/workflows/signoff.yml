@@ -28,6 +28,8 @@ name: signoff
 # tests and committed-record replay — issue #101),
 # `biasop-reduction-tests` (lna-bias-pvt reduce_biasop.py unit tests and
 # committed-record replay — issue #117),
+# `biasref-reduction-tests` (biasref-topology reduce_biasref.py unit tests and
+# committed-record replay — issue #149),
 # `layout-reduction-tests` (layout/lvs_reference.py unit tests — issue #109),
 # `sim-record-paths-tests` (sim/env.sh record-id reservation — issue #113),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
@@ -123,6 +125,22 @@ jobs:
 
       - name: lna-bias-pvt reduction unit tests and committed-record replay
         run: python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -v
+
+  # biasref-topology five-phase reduction (reduce_biasref.py, issue #149):
+  # inline PDK-free fixtures for missing/duplicate lines and keys, trailing
+  # numeric junk, NaN/Inf/overflow, inventory and startup/op pairing, genuine
+  # startup failures kept as results, plus a replay of every committed phase
+  # CSV of both records from their retained logs into memory (the one known
+  # historical vsdb_v column drop is pinned by its correction record).
+  # Stdlib-only, no ngspice, single process; never writes under sim/.
+  biasref-reduction-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: biasref-topology reduction unit tests and committed-record replay
+        run: python3 -I -m unittest discover -s sim/biasref-topology/tests -v
 
   # LVS-reference derivation unit tests (issue #109): scope-partition check,
   # m>1 rejection, per-class card rewrites and netlist-order output of
