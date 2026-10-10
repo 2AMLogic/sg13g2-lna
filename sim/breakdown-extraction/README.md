@@ -452,3 +452,37 @@ an OSDI build step (`npn13G2` is a native ngspice VBIC level=9 model — see
 `sim/pdk.json`). `PDK_ROOT`/`PDK` may be left unset if the PDK is installed
 under one of the prefixes `sim/env.sh` checks. The run takes a few minutes and
 mints a **new** `<record-id>`; the committed record is never overwritten.
+
+## PDK-free summary replay (issue #145)
+
+The summary reduction (log-current interpolation, locus minima / fold-back
+classification, held-base monotonicity, leakage read-outs) lives in
+`reduce_breakdown.py`, which `run_breakdown_sweep.sh` imports; the replay uses
+the same code. It needs only `python3` (no PDK, ngspice, or `klt`) and takes
+explicit input and scratch-output paths (nothing is chosen by newest
+timestamp):
+
+```
+python3 -I sim/breakdown-extraction/reduce_breakdown.py \
+  --locus  sim/breakdown-extraction/records/<id>-bvceo-locus.csv \
+  --sweep  sim/breakdown-extraction/records/<id>-heldbase-sweep.csv \
+  --out-locus-summary /tmp/bvceo-summary.csv \
+  --out-sweep-summary /tmp/heldbase-summary.csv
+```
+
+Replay and byte-compare against the committed summaries of record
+`20260918-212948-013274f` (CI job `breakdown-replay`, also in
+`.github/scripts/run-local-checks.sh`):
+
+```
+python3 -I -m unittest discover -s sim/breakdown-extraction/tests -v
+python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
+```
+
+Malformed or missing inputs exit 2 with a diagnostic; a differing summary
+exits 1. A difference that is an intentional correction gets a **new** record,
+never an edit of the historical files. Note: the original inline reduction set
+`newline="\n"` but left `csv.DictWriter`'s default `\r\n` terminator, so a
+re-run would have emitted CRLF while the committed summaries are LF; the
+module now sets `lineterminator="\n"` explicitly (matching the committed
+bytes and the documented intent). No committed value changed.

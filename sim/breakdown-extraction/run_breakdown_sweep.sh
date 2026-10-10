@@ -387,142 +387,18 @@ mv "${CSV_B_RAW}" "${CSV_B}"
 
 # --- Summaries -----------------------------------------------------------
 HEADLINE="$(mktemp -t breakdown-headline)"
-python3 - "${CSV_A}" "${SUM_A}" "${CSV_B}" "${SUM_B}" "${HEADLINE}" <<'PYEOF'
-import csv, math, sys
+python3 - "${CSV_A}" "${SUM_A}" "${CSV_B}" "${SUM_B}" "${HEADLINE}" "${SCRIPT_DIR}" <<'PYEOF'
+import sys
 from collections import defaultdict
 
-csv_a, sum_a, csv_b, sum_b, headline_path = sys.argv[1:6]
+csv_a, sum_a, csv_b, sum_b, headline_path, script_dir = sys.argv[1:7]
+sys.path.insert(0, script_dir)
+import reduce_breakdown as rbd
+from reduce_breakdown import A_CRITERIA, B_READOUT_V, B_CRITERIA
 
-# Bench A extraction criteria, in A PER FINGER (Nx-invariant by
-# construction -- the forced-current grid is scaled by Nx in the
-# template). 5e-4 A/finger is DR-0001's nominal operating current
-# (I_C = 4.0 mA at Nx = 8).
-A_CRITERIA = [("1ua", 1e-6), ("10ua", 1e-5), ("100ua", 1e-4), ("500ua", 5e-4)]
-# Bench B: leakage read-out voltages, and the current criteria at which a
-# held-base breakdown voltage would be declared (per finger).
-B_READOUT_V = [("1p12", 1.12), ("1p40", 1.40), ("1p60", 1.60), ("2p00", 2.00)]
-B_CRITERIA = [("1ua", 1e-6), ("10ua", 1e-5)]
-
-
-def interp_x_at_y(pts, target):
-    """Linear-in-log(y) interpolation of x at a target y, over an
-    ascending-in-y run of (y, x) pairs."""
-    prev = None
-    for y, x in pts:
-        if prev is not None and prev[0] <= target <= y:
-            if y == prev[0]:
-                return x
-            f = (math.log(target) - math.log(prev[0])) / (math.log(y) - math.log(prev[0]))
-            return prev[1] + f * (x - prev[1])
-        prev = (y, x)
-    return None
-
-
-# ---------------- Bench A ----------------
-rows_a = list(csv.DictReader(open(csv_a)))
-groups = defaultdict(list)
-for r in rows_a:
-    groups[r["point_id"]].append(r)
-
-out_a = []
-for pid, pts in groups.items():
-    meta = pts[0]
-    good = [(float(p["ic_per_nx_a"]), float(p["vce_v"]))
-            for p in pts if p["vce_v"] not in ("", None)]
-    good.sort()
-    row = {
-        "point_id": pid, "role": meta["role"], "corner_label": meta["corner_label"],
-        "hbt_section": meta["hbt_section"], "temp_c": meta["temp_c"],
-        "nx": meta["nx"], "selft": meta["selft"],
-        "rb_label": meta["rb_label"], "rb_ohm": meta["rb_ohm"],
-        "n_points": len(pts), "n_converged": len(good),
-    }
-    for name, target in A_CRITERIA:
-        v = interp_x_at_y(good, target)
-        row[f"vce_at_{name}_per_nx_v"] = f"{v:.4f}" if v is not None else ""
-    if good:
-        imin, vmin = min(good, key=lambda t: t[1])
-        row["locus_min_vce_v"] = f"{vmin:.4f}"
-        row["locus_min_at_ic_per_nx_a"] = f"{imin:.4e}"
-        # A fold-back (snapback) exists only if the locus minimum is
-        # interior to the swept current range; a monotonically rising
-        # locus means the low-current end never needed an
-        # avalanche-sustained branch (leakage carries it instead), so no
-        # sustaining voltage is defined there.
-        row["locus_has_foldback"] = "yes" if good[0][0] < imin < good[-1][0] else "no"
-    else:
-        row["locus_min_vce_v"] = ""
-        row["locus_min_at_ic_per_nx_a"] = ""
-        row["locus_has_foldback"] = ""
-    out_a.append(row)
-
-fields_a = ["point_id", "role", "corner_label", "hbt_section", "temp_c", "nx", "selft",
-            "rb_label", "rb_ohm", "n_points", "n_converged"] + \
-           [f"vce_at_{n}_per_nx_v" for n, _ in A_CRITERIA] + \
-           ["locus_min_vce_v", "locus_min_at_ic_per_nx_a", "locus_has_foldback"]
-out_a.sort(key=lambda r: (r["role"], r["rb_label"], r["nx"], r["corner_label"],
-                          int(r["temp_c"]), r["selft"]))
-# newline="\n", not "": csv's default dialect terminates rows with CRLF,
-# which would make this committed append-only record differ byte-for-byte
-# from every other CSV in sim/ (all LF) and from its own re-run under git's
-# text normalisation.
-with open(sum_a, "w", newline="\n") as f:
-    w = csv.DictWriter(f, fieldnames=fields_a)
-    w.writeheader()
-    w.writerows(out_a)
-
-# ---------------- Bench B ----------------
-rows_b = list(csv.DictReader(open(csv_b)))
-groups_b = defaultdict(list)
-for r in rows_b:
-    groups_b[r["point_id"]].append(r)
-
-out_b = []
-for pid, pts in groups_b.items():
-    meta = pts[0]
-    seq = sorted((float(p["vce_v"]), float(p["ic_per_nx_a"])) for p in pts)
-    row = {
-        "point_id": pid, "role": meta["role"], "corner_label": meta["corner_label"],
-        "hbt_section": meta["hbt_section"], "temp_c": meta["temp_c"],
-        "nx": meta["nx"], "selft": meta["selft"],
-        "rb_label": meta["rb_label"], "rb_ohm": meta["rb_ohm"],
-        "n_points": len(seq),
-        "v_last_v": f"{seq[-1][0]:.2f}",
-        "ic_per_nx_max_a": f"{max(i for _, i in seq):.4e}",
-    }
-    # Monotone in I_C over the swept range? (The property that makes a
-    # voltage-driven sweep sound for this cell.)
-    mono = all(seq[k][1] >= seq[k - 1][1] * (1 - 1e-9) for k in range(1, len(seq)))
-    row["ic_monotone_in_vce"] = "yes" if mono else "no"
-    # V_CE at which I_C/finger first crosses each criterion (interpolated).
-    iv = [(i, v) for v, i in seq]
-    for name, target in B_CRITERIA:
-        crossed = [k for k in range(len(seq)) if seq[k][1] >= target]
-        if crossed:
-            k = crossed[0]
-            if k == 0:
-                v = seq[0][0]
-            else:
-                v = interp_x_at_y([iv[k - 1], iv[k]], target)
-                v = v if v is not None else seq[k][0]
-            row[f"vce_at_{name}_per_nx_v"] = f"{v:.4f}"
-        else:
-            row[f"vce_at_{name}_per_nx_v"] = ""
-    for name, target in B_READOUT_V:
-        hit = [i for v, i in seq if abs(v - target) < 1e-9]
-        row[f"ic_per_nx_at_{name}v_a"] = f"{hit[0]:.4e}" if hit else ""
-    out_b.append(row)
-
-fields_b = ["point_id", "role", "corner_label", "hbt_section", "temp_c", "nx", "selft",
-            "rb_label", "rb_ohm", "n_points", "v_last_v", "ic_per_nx_max_a",
-            "ic_monotone_in_vce"] + \
-           [f"vce_at_{n}_per_nx_v" for n, _ in B_CRITERIA] + \
-           [f"ic_per_nx_at_{n}v_a" for n, _ in B_READOUT_V]
-out_b.sort(key=lambda r: (r["role"], r["rb_label"], r["nx"], r["corner_label"], int(r["temp_c"])))
-with open(sum_b, "w", newline="\n") as f:
-    w = csv.DictWriter(f, fieldnames=fields_b)
-    w.writeheader()
-    w.writerows(out_b)
+# The summary reduction itself lives in reduce_breakdown.py (shared with
+# the PDK-free replay, issue #145); this heredoc only consumes its rows.
+out_a, out_b = rbd.reduce_files(csv_a, sum_a, csv_b, sum_b)
 
 # ---------------- Headline numbers the record narrates ----------------
 open_rows = [r for r in out_a if r["rb_label"] == "open" and r["role"] == "extraction"]
