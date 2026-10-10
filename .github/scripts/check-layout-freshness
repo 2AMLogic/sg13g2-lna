@@ -13,6 +13,8 @@
 #   4. lvs_inputs.json (issue #130) binds each LVS report's exact bytes to the
 #      GDS, reference netlist and request bytes of the invocation that made
 #      it; any changed relationship is reported by name
+#   5. the output named by extract_report.json (netlist_path, relative to the
+#      report dir, repo-local) hashes byte-for-byte to netlist_sha256 (#176)
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -96,7 +98,7 @@ if rz is not None:
 
 # 3. report envelopes pinned to the committed GDS
 # (extraction / scoped LVS are pinned to the GDS only; they are not signoff
-# evidence and no extracted-netlist digest is inferred from filenames.)
+# evidence. The extraction output digest is checked separately in step 5.)
 for name in ("drc_report.json", "lvs_full_report.json",
              "extract_report.json", "lvs_report.json"):
     rel = f"layout/{cell}/{name}"
@@ -114,6 +116,36 @@ for name in ("drc_report.json", "lvs_full_report.json",
         fail(rel, f"provenance.input.content_hash missing or malformed ({ch!r})")
     elif gds_sha is not None and ch[len("sha256:"):] != gds_sha:
         fail(rel, f"provenance.input.content_hash {ch} != sha256:{gds_sha} (committed GDS)")
+
+# 5. extraction output named by extract_report.json (issue #176): the file at
+# netlist_path (relative to the report's directory, repo-local) must hash,
+# byte for byte, to netlist_sha256.
+def check_extract_output():
+    rel = f"layout/{cell}/extract_report.json"
+    rep = load(cd / "extract_report.json") if (cd / "extract_report.json").is_file() else None
+    if not isinstance(rep, dict):
+        return  # missing/unreadable already reported by step 3
+    npath, nsha = rep.get("netlist_path"), rep.get("netlist_sha256")
+    ok = True
+    if not isinstance(npath, str) or not npath or "\0" in npath:
+        fail(rel, f"netlist_path missing or malformed ({npath!r})"); ok = False
+    elif Path(npath).is_absolute():
+        fail(rel, f"netlist_path {npath!r} is absolute; must be relative to the report directory"); ok = False
+    if not isinstance(nsha, str) or len(nsha) != 64 or any(c not in "0123456789abcdef" for c in nsha):
+        fail(rel, f"netlist_sha256 missing or malformed ({nsha!r}); want 64 lowercase hex"); ok = False
+    if not ok:
+        return
+    out = (cd / npath).resolve()
+    if not out.is_relative_to(root):
+        fail(rel, f"netlist_path {npath!r} escapes the repository"); return
+    if not out.is_file():
+        fail(rel, f"netlist_path {npath!r}: extraction output {out.relative_to(root)} missing"); return
+    got = hashlib.sha256(out.read_bytes()).hexdigest()
+    if got != nsha:
+        fail(rel, f"extraction output {out.relative_to(root)} sha256 {got} != "
+             f"netlist_sha256 {nsha}; rerun layout/run_flow.sh")
+
+check_extract_output()
 
 # 4. LVS input identity sidecar (written by layout/lvs_identity.py)
 def sha(p):
