@@ -201,13 +201,14 @@ class Malformed(ParserCase):
         self.assertNotEqual(p.returncode, 0)
         self.assertFalse((self.records / "rec.csv").exists())
 
-
     def _assert_invalid_point(self, frag):
         p = self.run_parser()
         self.assertEqual(p.returncode, 1)
         self.assertIn("no parsable points", p.stderr)
         self.assertFalse((self.records / "rec.csv").exists())
         self.assertNotIn("Traceback", p.stderr)
+        self.assertIn("failed point p001: invalid table", p.stderr)
+        self.assertIn(frag, p.stderr)
         return p
 
     def test_broadband_nan_mu_is_invalid_not_nonviolating(self):
@@ -245,6 +246,91 @@ class Malformed(ParserCase):
         # Fixture broadband mu has 0.99 (<1): finite, so a counted violation.
         self.assertEqual(self.run_parser().returncode, 0)
         self.assertEqual(self.rows()[0]["n_broadband_pts_mu_lt_1"], "1")
+
+
+class DeclaredGrid(ParserCase):
+    """#165: with the campaign's declared grid, a short table is invalid.
+
+    The stability table is rewritten onto a declared `sp dec 1 1e7 1e10` grid
+    (4 points: 1e7, 1e8, 1e9, 1e10) reusing the fixture's per-row values; the
+    in-band fixture already is `sp lin 2 2.4e9 2.48e9`. p002 is an intact
+    copy so the run still publishes and the failed-points list is visible.
+    """
+
+    GRID = ["--inband-grid", "2.4e9,2.48e9,2", "--stab-grid", "1e7,1e10,1"]
+
+    def setUp(self):
+        super().setUp()
+        rows = (FIX / "corners" / "p001.stability.dat").read_text().splitlines()
+        vals = [r.split()[1::2] for r in rows] + [rows[0].split()[1::2]]
+        lines = [" ".join(f"{f} {v}" for v in vs)
+                 for f, vs in zip(("1e7", "1e8", "1e9", "1e10"), vals)]
+        (self.corners / "p001.stability.dat").write_text("\n".join(lines) + "\n")
+        with open(self.manifest, "a") as fh:
+            fh.write("p002|s_ctrl_a8|ctrl|2stage|1|1|1|1|8|2|typ|26.85|1.8\n")
+        for ext in ("log", "inband.dat", "stability.dat"):
+            shutil.copy(self.corners / f"p001.{ext}", self.corners / f"p002.{ext}")
+
+    def run_grid(self, grid=True):
+        return subprocess.run(
+            [sys.executable, "-I", str(PARSER), "--record-id", "rec",
+             "--corners-dir", str(self.corners), "--records-dir", str(self.records),
+             "--manifest", str(self.manifest)] + (self.GRID if grid else []),
+            capture_output=True, text=True)
+
+    def drop_row(self, ext, idx):
+        dat = self.corners / f"p001.{ext}"
+        lines = dat.read_text().splitlines()
+        del lines[idx]
+        dat.write_text("\n".join(lines) + "\n")
+
+    def assert_p001_invalid(self, frag):
+        p = self.run_grid()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertNotIn("Traceback", p.stderr)
+        self.assertEqual([r["point_id"] for r in self.rows()], ["p002"])
+        self.assertIn("failed point p001: invalid table", p.stderr)
+        self.assertIn(frag, p.stderr)
+        md = (self.records / "rec.md").read_text()
+        self.assertIn("`p001`: invalid table", md)
+        self.assertIn("1 failed", md)
+
+    def test_full_declared_grid_reduces(self):
+        p = self.run_grid()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        rows = self.rows()
+        self.assertEqual([r["point_id"] for r in rows], ["p001", "p002"])
+        self.assertEqual(rows[0]["n_broadband_pts"], "4")
+        self.assertEqual(rows[0]["n_broadband_pts_mu_lt_1"], "1")
+
+    def test_dropped_stability_row_is_invalid_not_reduced(self):
+        # Dropping the mu=0.99 row would otherwise undercount the violation.
+        self.drop_row("stability.dat", 1)
+        self.assert_p001_invalid("requires 4")
+
+    def test_truncated_stability_tail_is_invalid(self):
+        self.drop_row("stability.dat", -1)
+        self.assert_p001_invalid("p001.stability.dat")
+
+    def test_dropped_inband_row_is_invalid(self):
+        self.drop_row("inband.dat", -1)
+        self.assert_p001_invalid("declared grid has 2")
+
+    def test_without_grid_args_historical_behaviour(self):
+        # No declared grid (historical replay): the short table still reduces.
+        self.drop_row("stability.dat", 1)
+        p = self.run_grid(grid=False)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        rows = self.rows()
+        self.assertEqual(rows[0]["point_id"], "p001")
+        self.assertEqual(rows[0]["n_broadband_pts"], "3")
+
+    def test_malformed_grid_arg_is_usage_error(self):
+        self.GRID = ["--stab-grid", "1e10,1e7,1"]
+        p = self.run_grid()
+        self.assertEqual(p.returncode, 2)
+        self.assertIn("0 < LO < HI", p.stderr)
+        self.assertFalse((self.records / "rec.csv").exists())
 
 
 if __name__ == "__main__":

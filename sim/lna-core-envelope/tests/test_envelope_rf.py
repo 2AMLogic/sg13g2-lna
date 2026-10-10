@@ -125,8 +125,7 @@ class TableIntegrity(unittest.TestCase):
                                         expected_points=2)), 2)
 
     def test_nan_inf_overflow(self):
-        self.rejects(
-                     [self.row().replace("2.5", "nan")], "non-finite")
+        self.rejects([self.row().replace("2.5", "nan")], "non-finite")
         self.rejects([self.row().replace("2.5", "inf")], "non-finite")
         self.rejects([self.row().replace("2.5", "1e999")], "non-finite")
 
@@ -147,6 +146,68 @@ class TableIntegrity(unittest.TestCase):
 
     def test_missing_declared_grid_points(self):
         self.rejects([self.row(1e9)], "declared grid", expected_points=2)
+
+
+class DeclaredGridCheck(unittest.TestCase):
+    """check_declared_grid against the live campaign grid (run_core_envelope.sh)."""
+
+    @staticmethod
+    def rows(freqs):
+        return [{"freq_hz": float(f"{f:.8e}")} for f in freqs]  # wrdata precision
+
+    def stab(self):
+        # ngspice `sp dec 40 1e7 3e10`: 140 points, last 2.98538262e10 (the
+        # committed record 20260926-180931-90b07a0 has exactly this).
+        return self.rows(1e7 * 10 ** (i / 40) for i in range(140))
+
+    def inband(self):
+        return self.rows(2.4e9 + i * (2.4835e9 - 2.4e9) / 10 for i in range(11))
+
+    def ok(self, rows, sweep, lo, hi, n):
+        rf.check_declared_grid(rows, "x.dat", sweep, lo, hi, n)
+
+    def bad(self, rows, sweep, lo, hi, n, frag):
+        with self.assertRaises(rf.TableError) as cm:
+            rf.check_declared_grid(rows, "x.dat", sweep, lo, hi, n)
+        self.assertIn(frag, str(cm.exception))
+        self.assertIn("x.dat", str(cm.exception))
+
+    def test_campaign_grids_pass(self):
+        self.assertAlmostEqual(self.stab()[-1]["freq_hz"], 2.98538262e10, delta=1e2)
+        self.ok(self.stab(), "dec", 1e7, 3e10, 40)
+        self.ok(self.inband(), "lin", 2.4e9, 2.4835e9, 11)
+
+    def test_stab_missing_middle_row(self):
+        r = self.stab()
+        del r[70]
+        self.bad(r, "dec", 1e7, 3e10, 40, "requires 140")
+
+    def test_stab_truncated_tail(self):
+        self.bad(self.stab()[:-1], "dec", 1e7, 3e10, 40, "requires 140")
+        self.bad(self.stab()[:100], "dec", 1e7, 3e10, 40, "requires 140")
+
+    def test_stab_missing_head(self):
+        self.bad(self.stab()[1:], "dec", 1e7, 3e10, 40, "declared start")
+
+    def test_stab_overshoot(self):
+        r = self.stab()
+        r[-1] = {"freq_hz": 3.1e10}
+        self.bad(r, "dec", 1e7, 3e10, 40, "declared stop")
+
+    def test_inband_count_and_endpoints(self):
+        self.bad(self.inband()[:-1], "lin", 2.4e9, 2.4835e9, 11, "declared grid has 11")
+        r = self.inband()
+        r[-1] = {"freq_hz": 2.5e9}
+        self.bad(r, "lin", 2.4e9, 2.4835e9, 11, "declared stop")
+
+    def test_empty(self):
+        self.bad([], "lin", 2.4e9, 2.4835e9, 11, "no points")
+
+    def test_parse_grid_arg(self):
+        self.assertEqual(rf.parse_grid_arg("1e7,3e10,40"), (1e7, 3e10, 40))
+        for bad in ("1e7,3e10", "3e10,1e7,40", "1e7,3e10,0", "0,1e9,5", "1e7,inf,4"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                rf.parse_grid_arg(bad)
 
 
 if __name__ == "__main__":

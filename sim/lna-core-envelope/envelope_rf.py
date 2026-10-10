@@ -94,6 +94,66 @@ def parse_table(path: Path, spec=INBAND_COLS, expected_points=None):
     return rows
 
 
+GRID_RTOL = 1e-6  # wrdata prints 9 significant digits
+
+
+def parse_grid_arg(text: str):
+    """Parse a declared-grid CLI value "LO,HI,N" into (lo, hi, n)."""
+    parts = text.split(",")
+    if len(parts) != 3:
+        raise ValueError(f"declared grid {text!r} must be LO,HI,N")
+    lo, hi, n = float(parts[0]), float(parts[1]), int(parts[2])
+    if not (math.isfinite(lo) and math.isfinite(hi) and 0 < lo < hi and n >= 1):
+        raise ValueError(f"declared grid {text!r} needs 0 < LO < HI and N >= 1")
+    return lo, hi, n
+
+
+def _close(a: float, b: float, rtol: float) -> bool:
+    return abs(a - b) <= rtol * max(abs(a), abs(b))
+
+
+def check_declared_grid(rows, name: str, sweep: str, lo: float, hi: float,
+                        n: int, rtol: float = GRID_RTOL):
+    """Check received rows against the campaign's declared sweep grid.
+
+    sweep="lin" (`sp lin N LO HI`): exactly N points, first == LO, last == HI.
+    sweep="dec" (`sp dec N LO HI`): first == LO, at least
+    floor(N*log10(HI/LO)) + 1 points (one spare allowed for ngspice's endpoint
+    rounding), and the last point within one decade-step below HI, never
+    above it. ngspice's `dec` sweep does not land exactly on HI, so the end
+    is checked by bracket, not equality.
+
+    Raises TableError; the caller treats the point as invalid evidence.
+    """
+    if not rows:
+        raise TableError(f"{name}: no points, declared grid {lo!r}..{hi!r}")
+    f0, f1, cnt = rows[0]["freq_hz"], rows[-1]["freq_hz"], len(rows)
+    if not _close(f0, lo, rtol):
+        raise TableError(
+            f"{name}: first frequency {f0!r} != declared start {lo!r}")
+    if sweep == "lin":
+        if cnt != n:
+            raise TableError(
+                f"{name}: {cnt} points, declared grid has {n} (lin)")
+        if not _close(f1, hi, rtol):
+            raise TableError(
+                f"{name}: last frequency {f1!r} != declared stop {hi!r}")
+    elif sweep == "dec":
+        n_min = math.floor(n * math.log10(hi / lo) + 1e-9) + 1
+        if not (n_min <= cnt <= n_min + 1):
+            raise TableError(
+                f"{name}: {cnt} points, declared grid dec {n} over "
+                f"{lo!r}..{hi!r} requires {n_min}")
+        floor_f = hi / 10 ** (1.0 / n)
+        if not (floor_f * (1 - rtol) <= f1 <= hi * (1 + rtol)):
+            raise TableError(
+                f"{name}: last frequency {f1!r} outside the declared stop "
+                f"step [{floor_f!r}, {hi!r}]")
+    else:
+        raise ValueError(f"unknown sweep type {sweep!r}")
+    return rows
+
+
 def db20(x: float) -> float:
     return 20 * math.log10(x)
 

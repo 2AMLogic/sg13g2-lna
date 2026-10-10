@@ -456,6 +456,8 @@ python3 -I "${PARSER}" \
   --corners-dir "${CORNERS_OUT}" \
   --records-dir "${RECORDS_DIR}" \
   --manifest "${MANIFEST}" \
+  --inband-grid "${F_BAND_LO},${F_BAND_HI},${N_INBAND}" \
+  --stab-grid "${F_STAB_LO},${F_STAB_HI},${N_STAB_DEC}" \
   --design-netlist-sha "${DESIGN_NETLIST_SHA}" \
   --ngspice-version "${NGSPICE_VERSION}" \
   --pdk-root "${PDK_ROOT}/${PDK}" \

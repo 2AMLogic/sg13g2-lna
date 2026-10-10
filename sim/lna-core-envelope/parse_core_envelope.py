@@ -111,7 +111,23 @@ def main() -> int:
     ap.add_argument("--reference-summary", default=None,
                     help="lna-characterization summary CSV the s_ctrl_a8 control "
                          "variant must reproduce (the runner's regression check)")
+    ap.add_argument("--inband-grid", default=None, metavar="LO,HI,N",
+                    help="declared in-band `sp lin N LO HI` grid; when given, "
+                         "every in-band table must match it exactly")
+    ap.add_argument("--stab-grid", default=None, metavar="LO,HI,NDEC",
+                    help="declared stability `sp dec NDEC LO HI` grid; when "
+                         "given, every stability table must cover it")
     args = ap.parse_args()
+
+    # Declared-grid enforcement (#165). Absent args = historical replay and
+    # reduced fixtures: only the per-row integrity checks apply.
+    try:
+        inband_grid = (_rf.parse_grid_arg(args.inband_grid)
+                       if args.inband_grid else None)
+        stab_grid = (_rf.parse_grid_arg(args.stab_grid)
+                     if args.stab_grid else None)
+    except ValueError as exc:
+        ap.error(str(exc))
 
     corners = Path(args.corners_dir)
     records = Path(args.records_dir)
@@ -180,8 +196,13 @@ def main() -> int:
         gain = {k: float(v) for k, v in GAIN_RE.findall(text)}
 
         try:
-            ib = parse_table(inband, INBAND_COLS)
+            ib = parse_table(inband, INBAND_COLS,
+                             expected_points=inband_grid[2] if inband_grid else None)
             sb = parse_table(stab, STAB_COLS)
+            if inband_grid:
+                _rf.check_declared_grid(ib, inband.name, "lin", *inband_grid)
+            if stab_grid:
+                _rf.check_declared_grid(sb, stab.name, "dec", *stab_grid)
         except _rf.TableError as exc:
             failed.append((pid, f"invalid table: {exc}"))
             continue
@@ -265,6 +286,8 @@ def main() -> int:
             "model_card_flags": ";".join(flags) if flags else "in_box",
         })
 
+    for p, why in failed:
+        print(f"parse_core_envelope.py: failed point {p}: {why}", file=sys.stderr)
     if not rows:
         print("parse_core_envelope.py: no parsable points", file=sys.stderr)
         return 1
