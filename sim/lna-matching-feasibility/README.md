@@ -58,17 +58,31 @@ designed network instead of a guess.
    −16.2 dB, with Cp = 0.41 pF and Cs = 0.36 pF.
 5. **Gain clears 15 dB at Q = 10.** |S21| is 20.06–20.46 dB across the
    band for all three topologies, and 19.85–20.20 dB with the EM Lc.
-6. **Inductor loss is what makes the match stable at this cell.** Every
-   Q = 20, Q = 10 and EM candidate has μ > 1 at all 140 frequencies from
-   10 MHz to 30 GHz. The margin is only parts per million, though: the
-   minimum is 1 + 3.6e-7 at Q = 10, at the 10 MHz edge of the sweep, where
-   both ports are DC-blocked. With ideal inductors μ ≤ 1 at 27–30 of the 140
-   points. The committed unmatched DUT's 45-cell minimum is 0.99999592. A
-   ppm-scale margin at one cell is not a stability result.
+6. **Every finite-Q candidate has μ > 1 at this cell, by a ppm-scale
+   margin.** Every Q = 20, Q = 10 and EM candidate has μ > 1 at all 140
+   frequencies from 10 MHz to 30 GHz. The minimum is 1 + 3.6e-7 at Q = 10
+   (1 + 8.8e-8 at Q = 20), at the 10 MHz edge of the sweep, where both ports
+   are DC-blocked. That margin is resolved: it is about 1000× the resolution
+   of the 10-significant-digit S-parameter tables. It is simply small. The
+   ideal-inductor case behaves differently by topology:
+   - `lp_power` and `lp_noise`: μ − 1 is about −4.7e-12 at 27 and 29 of the
+     140 points. That is below table resolution, so these points are μ = 1
+     to table precision, i.e. the lossless limit. They are **not** evidence
+     of μ < 1.
+   - `hp_power`: μ − 1 reaches −7.7e-7 at 30 points, a resolved deficit
+     (μ < 1).
+
+   So inductor loss is what lifts the low-pass candidates from the lossless
+   boundary μ = 1 to a resolved μ > 1, and it is what removes a real μ < 1
+   deficit for `hp_power`. The committed unmatched DUT's 45-cell minimum is
+   0.99999592. A ppm-scale margin at one cell is not a stability result.
 7. **The ideal (infinite-Q) case is a bound, not a design.** Its output
    tank has an unbounded Q: S22 is about 0 dB at the band edges and S21 peaks
-   at 44 dB. The unilateral solver is also least accurate here: its
-   band-centre S11 prediction is perfect, but simulation gives −18.6 dB.
+   at 44 dB. The unilateral solver is also least accurate here. For the
+   power-target candidates it predicts a perfect band-centre match (S11 at
+   the −300 dB numerical floor), but simulation gives −18.6 dB (`lp_power`)
+   and −18.4 dB (`hp_power`). For `lp_noise` it predicts the −12 dB target,
+   and simulation gives −10.3 dB.
 
 ### Ranked short list
 
@@ -101,8 +115,10 @@ NF290, then higher broadband μ. Element values are for Q = 10 at
 
 Every generated deck restates its bench in its header
 (`netlist-snapshots/<record-id>/*.spice`), so a number cannot be separated
-from the bench that produced it. The definitions match those of
-[`../lna-characterization/`](../lna-characterization/README.md):
+from the bench that produced it. The port, analysis and NF definitions
+match those of [`../lna-characterization/`](../lna-characterization/README.md).
+The verification decks differ in one respect, the floating output node
+described under "DC operating point" below:
 
 - **Ports**: ngspice `sp` port sources, `portnum` / `z0 = 50`, at both
   ports.
@@ -127,6 +143,31 @@ from the bench that produced it. The definitions match those of
   (`gt_minus_s21_db_mid`).
 - **Solver option**: `.options gmin=1e-10`, the same override and reason as
   in `../lna-characterization/README.md`.
+- **DC operating point (floating output node, verification decks only)**:
+  In the `lnam` subcircuit of `tb_match_verify.spice.tmpl`, the DUT's
+  `rfout` (node `xout`) connects only to capacitors: the committed 100 pF
+  `Cout`, the shunt `Cpout` and the series `Csout`. It has no DC path. So
+  every one of the 12 `verify_*.log` files in record
+  `20261010-201010-6aca84c` repeatedly reports
+  `singular matrix: check node xa.xout` / `xb.xout` (30 such lines per
+  log). For each OP solve, dynamic gmin stepping, true gmin stepping and
+  source stepping all fail. The operating point is reached only through
+  ngspice's last-resort "transient op" fallback, which the logs show
+  finishing successfully.
+  - The resulting OP is consistent: I_C1 is 3.938–3.943 mA in every
+    candidate. That is consistent with the 3.9403 mA from the
+    characterization decks, which have no floating node and no
+    singular-matrix warnings.
+  - The small-signal numbers (`sp`, `noise`, `ac`) are unaffected. A
+    purely capacitive node has a well-defined, non-singular admittance at
+    every f > 0, and its DC voltage does not bias any device, because
+    `Cout` blocks it from the collector.
+  - The bench is therefore **not** identical to `lna-characterization`'s,
+    whose logs show no singular-matrix warnings. Every verification OP in
+    this record depends on the fallback convergence path.
+  - Future records should give `xout` a DC-defining element, for example a
+    very large `noisy=0` resistor to ground, with its effect on μ bounded
+    against the ppm margin. This record has not been re-run with one.
 - **DUT**: `design/netlist/lna.spice` is inlined verbatim except for the
   lines marked `BENCH EDIT`:
   - **Le loss** is a resistor in parallel with `Le`, with R = Q·ω_mid·Le
@@ -195,8 +236,11 @@ The extracted spirals measure Q = 8.5 (5-turn) and Q = 10.3 (4-turn) at
 4. **Verification**. Each (candidate, Q case) pair is rendered as one deck
    and run once at the nominal cell: 12 decks. The solver's unilateral
    predictions are recorded beside the simulated numbers as a cross-check.
-   For the Q = 20, Q = 10 and EM cases they agree to within 0.025 dB on NF,
-   and the simulated S11 and S22 at f_mid are below −50 dB.
+   For the Q = 20, Q = 10 and EM cases they agree to within 0.025 dB on NF.
+   At f_mid, the simulated S22 is below −50 dB for every candidate, and the
+   simulated S11 is below −50 dB for the power-target candidates (`lp_power`,
+   `hp_power`). `lp_noise` lands on its −12 dB design target: −12.0 dB
+   simulated.
 5. **Reduction and ranking** use `matching_solver.py reduce`. The ranking
    rule is: rows met on the `q10` case, then lower worst-case NF290, then
    higher broadband μ.
@@ -225,9 +269,24 @@ geometries' L at 2.44175 GHz, in four classes:
 - **Ideal choke in the feed what-if.** The probe's choke is ideal, so the
   probe shows what the R3b branch costs. It does not show what a realizable
   replacement would deliver.
-- **μ margins are ppm-scale** at the 10 MHz sweep edge. At that size they
-  sit near the resolution of the S-parameter tables (10 significant digits,
-  `option numdgt=10`).
+- **μ margins are ppm-scale** at the 10 MHz sweep edge. The S-parameter
+  tables carry 10 significant digits (`option numdgt=10`), so μ is resolved
+  to roughly 1e-10.
+  - The finite-Q margins (+8.8e-8 to +3.6e-7) are well above that
+    resolution. They are resolved, just small.
+  - The ideal-inductor `lp_*` deficits (about −4.7e-12) are below that
+    resolution, so they read as μ = 1, the lossless limit.
+  - The reducer counts points with μ ≤ 1 without a resolution tolerance.
+    Its ideal-case counts therefore include those μ = 1 points.
+- **Floating DC node in the verification decks** (see "Bench definitions").
+  The OP comes from ngspice's transient-op fallback. The small-signal
+  numbers do not depend on it.
+- **Simulator identity is a version banner only.** This record ran on an
+  ngspice-46 binary borrowed from another sweep's build, because provisioned
+  workers ship ngspice 42, which cannot load the PSP103 OSDI v0.4 builds.
+  The record's Simulator line carries only the version banner. Future
+  records should also capture the binary's sha256 and build identity
+  (configure flags or source commit).
 
 ## Regenerating
 
