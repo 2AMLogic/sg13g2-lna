@@ -51,14 +51,20 @@ only valid source for statements about the DUTs *they* ran.
 >
 > **Second headline, new with the DR-0003 re-baseline and more consequential
 > than the first:** `NFmin` — the noise figure this circuit would deliver
-> under a *lossless, ideal* source-impedance noise match — is **2.0749 dB
-> at the best of the 45 cells, 2.3817 dB at the nominal cell, 2.7275 dB at
-> the worst**. Every one of those is **above** the RATIFIED `NF < 1.5 dB`
-> row. A matching network can only move NF *down towards* `NFmin`, never
-> below it, so **at this operating point the ratified NF row is not
-> reachable by matching at all** — it is short by 0.575 dB even at the best
-> cell, under an assumption (lossless match, infinite-Q passives) that is
-> already optimistic. That is a measurement, not a verdict on the spec: the
+> under a *lossless, ideal* source-impedance noise match — **re-referenced
+> to the ratified T0 = 290 K** (`nfmin290`, see "290 K-referenced `NFmin`"
+> below) is **1.7389 dB at the best of the 45 cells, 2.4454 dB at the
+> nominal cell, 3.4239 dB at the worst**. Scope: the **band-low sample
+> only** (2.4 GHz, the first in-band `sp` point) — not an in-band
+> extremum. Every one of those is **above** the RATIFIED `NF < 1.5 dB`
+> row (also a 290 K quantity). A matching network can only move NF *down
+> towards* `NFmin`, never below it, so **at this operating point the
+> ratified NF row is not reachable by matching at all** — it is short by
+> 0.239 dB even at the best cell, under an assumption (lossless match,
+> infinite-Q passives) that is already optimistic. (The raw ngspice `sp`
+> `NFmin`, 2.0749 / 2.3817 / 2.7275 dB, is referenced to each cell's
+> *analysis* temperature, −40 … 125 °C, and is not comparable with a
+> 290 K bar; it is kept only as context.) That is a measurement, not a verdict on the spec: the
 > ratified value is untouched here, and what it implicates is the bias
 > point and device sizing, not only issue #27's absent matching network.
 
@@ -140,7 +146,9 @@ after the list):
    `nf_sp_db`, alongside **`NFmin`** — the noise figure this circuit would
    give under an *ideal* source-impedance noise match, which is the number
    that says how much of the NF gap is the missing input match rather than
-   the device.
+   the device. Like `nf_sp_db`, the raw `NFmin` (`nfmin_sp_db_*`) is
+   referenced to the **analysis** temperature; see "290 K-referenced
+   `NFmin`" below before comparing it with any 290 K number.
 2. **A `.noise`-based NF** in a second, electrically isolated DUT copy
    (`Xb`), with its own ideal `VDD` source so the two branches cannot load
    each other at RF: a 50 Ω Thevenin source (`Rs`) and a 50 Ω load (`RL`),
@@ -228,6 +236,47 @@ second opinion about the same quantity. This is the same trap
 [issue #25](https://github.com/2AMLogic/sg13g2-lna/issues/25) describes in
 the precedent bench, caught here because both numbers are committed side by
 side instead of one being quietly chosen.
+
+### 290 K-referenced `NFmin` (issue #181)
+
+The ratified NF row and `nf290` are referenced to T0 = 290 K; the raw `sp`
+`NFmin` is referenced to the cell's analysis temperature T = `temp_c` +
+273.15 K. Comparing them directly mixes references (at 125 °C the raw value
+understates the 290 K floor by ~0.7 dB; at −40 °C it overstates it by
+~0.34 dB). The comparable quantity is re-referenced with the same
+`nf_reref` that `sim/lna-core-envelope/` uses (`envelope_rf.py`, loaded by
+path — one formula, not a second normalization):
+
+    F290 = 1 + (F_T − 1) · T / 290        (identity at T = 290 K)
+
+- **Basis and scope**: the summary's `NFmin` is the **band-low sample
+  only** (2.4 GHz, first point of the in-band `sp` grid). It is not an
+  in-band extremum. Every `NF − NFmin` gap is taken at that **same
+  frequency** and **both at 290 K**: `nf290_db_at_band_lo −
+  nfmin290_db_at_band_lo`. It is never taken against the full-band sampled
+  maximum `nf290_db_worst`.
+- **New records** (`run_lna_sweep.sh` passes `--nfmin290`) carry
+  `nfmin_analysis_temp_k`, `nfmin290_t_ref_k`, `nfmin290_db_at_band_lo` and
+  `nf290_minus_nfmin290_db_at_band_lo` in the summary CSV, and their
+  headline states the reference and the scope. The raw
+  `nfmin_sp_db_at_band_lo` column is unchanged and still labelled
+  analysis-temperature context (as is the measurements renderer row).
+- **Committed records are not rewritten.** For a historical record the
+  derivation is published as a separately generated, PDK-free view under
+  `views/`, read only from the committed summary CSV:
+
+      python3 -I sim/lna-characterization/parse_lna_sweep.py \
+          --nfmin290-view sim/lna-characterization/views/<record-id>-nfmin290.csv \
+          --summary-csv sim/lna-characterization/records/<record-id>-summary.csv \
+          --source-record <record-id>
+      python3 -I sim/lna-characterization/parse_lna_sweep.py \
+          --nfmin290-headline sim/lna-characterization/views/<record-id>-nfmin290.csv
+
+  Each view row carries `source_record_id`, `freq_hz` (the band-low basis),
+  the raw value, the analysis and reference temperatures, and the derived
+  columns. The input is the 4-decimal summary column, so a derived value is
+  good to about ±1e-4 dB. A unit test re-derives the committed view and
+  checks it byte for byte.
 
 ### Stability — k, μ and |Δ|, in-band **and** out-of-band
 
@@ -604,7 +653,8 @@ typ/27 °C/1.80 V.
 | in-band S11 | −3.0657 dB | **−2.9616 dB** (bcs/−40 °C/1.98 V) | −3.2227 dB (wcs/125 °C/1.62 V) |
 | in-band S22 | −0.0044 dB | **−0.0033 dB** (bcs/−40 °C/1.98 V) | −0.0059 dB (wcs/125 °C/1.62 V) |
 | `nf290` (worst in-band point per cell) | 2.6559 dB | **3.7759 dB** (wcs/125 °C/1.62 V) | 1.8432 dB (bcs/−40 °C/1.98 V) |
-| **`NFmin`** @ 2.4 GHz | **2.3817 dB** | **2.7275 dB** (wcs/125 °C/1.62 V) | **2.0749 dB** (bcs/−40 °C/1.98 V) |
+| **`nfmin290`** (`NFmin` re-referenced to 290 K; band-low 2.4 GHz sample only; `views/20260926-122301-088c734-nfmin290.csv`) | **2.4454 dB** | **3.4239 dB** (wcs/125 °C/1.62 V) | **1.7389 dB** (bcs/−40 °C/1.98 V) |
+| raw `NFmin` @ 2.4 GHz (analysis temperature; context only, not 290 K) | 2.3817 dB | 2.7275 dB (wcs/125 °C/1.62 V) | 2.0749 dB (bcs/−40 °C/1.98 V) |
 | in-band μ (min) | 1.000353 | **1.000275** (bcs/125 °C/1.98 V) | 1.000404 (wcs/125 °C/1.98 V) |
 | in-band k (min) | 3.824708 | **3.389937** (wcs/125 °C/1.98 V) | — |
 | broadband μ (min, 10 MHz–30 GHz) | 0.999997 | **0.99999592** at 595.7 MHz (bcs/−40 °C/1.98 V) | — |
@@ -619,18 +669,25 @@ typ/27 °C/1.80 V.
 
 **1. Is the ratified `NF < 1.5 dB` row still reachable under an ideal noise
 match? No — not at this operating point.** `NFmin` is the floor a lossless,
-ideal source-impedance transformation would reach, and on this DUT it is
-**2.0749 dB at the best cell** (bcs/−40 °C/1.98 V), **2.3817 dB nominal**,
-**2.7275 dB at the worst cell**. That is **0.575 / 0.882 / 1.228 dB above
-the ratified 1.5 dB bar** respectively, and **0 of 45 cells** have
-`NFmin < 1.5 dB`. Since no passive matching network can take NF *below*
+ideal source-impedance transformation would reach. Re-referenced to the
+ratified 290 K (`nfmin290`; band-low 2.4 GHz sample only, not an in-band
+extremum; derived in `views/20260926-122301-088c734-nfmin290.csv`), on this
+DUT it is **1.7389 dB at the best cell** (bcs/−40 °C/1.98 V), **2.4454 dB
+nominal**, **3.4239 dB at the worst cell** (wcs/125 °C/1.62 V). That is
+**0.239 / 0.945 / 1.924 dB above the ratified 1.5 dB bar** respectively,
+and **0 of 45 cells** have `nfmin290 < 1.5 dB`. (An earlier version of this
+paragraph quoted the raw analysis-temperature `NFmin`, 2.0749 / 2.3817 /
+2.7275 dB, and gaps of 0.575 / 0.882 / 1.228 dB against the bar. That mixed
+reference temperatures. The conclusion does not change.) Since no passive matching network can take NF *below*
 `NFmin` — and a real, finite-Q one lands above it — the NF row cannot be
 met by matching alone here. The historical `20260918…` record's argument
 ("~1.1 dB of the present NF is the absent noise match", `NFmin` 0.600 dB
 best / 0.751 dB nominal) was an argument **about a different circuit** and
 does not transfer. Two secondary facts make the same point from the other
-side: the nominal `nf290 − NFmin` gap is now only **0.274 dB** (was
-~1.1 dB) — i.e. the DR-0003 core already sits close to its own noise
+side: the nominal `nf290 − nfmin290` gap, both at 290 K and both at the
+2.4 GHz band-low sample, is now only **0.2105 dB** (range 0.1043 … 0.3520 dB
+over the 45 cells; the earlier mixed-reference figure was 0.274 dB, and the
+historical ~1.1 dB was a different circuit) — i.e. the DR-0003 core already sits close to its own noise
 optimum, so there is very little left for a matching network to recover —
 and `nf290` itself is **2.6559 dB nominal**, 1.16 dB over the bar. **This
 is a measurement, not a spec verdict**: nothing ratified is touched here,
@@ -669,6 +726,7 @@ Per-artifact layout of a record `<record-id>`:
 | `records/<record-id>-sparam.csv` | one row per (PVT cell × in-band frequency): S11/S21/S12/S22 (dB and linear), k, μ, \|Δ\|, NF, NFmin |
 | `records/<record-id>-iip3.csv` | one row per (PVT cell × drive level): P_in, P_out, P_IM3, gain, IIP3, OIP3, DFT cross-check, IM3/IM5 margin, FFT parameters |
 | `records/<record-id>-summary.csv` | one row per PVT cell: operating point, worst-case in-band S-params/NF, in-band and broadband k/μ/\|Δ\| minima with the frequency each occurs at, negative-resistance check, IIP3 at both drive levels, IM3 slope |
+| `views/<record-id>-nfmin290.csv` | separately generated, PDK-free view (issue #181): per PVT cell, the raw analysis-temperature `NFmin` at 2.4 GHz re-referenced to 290 K, with source record ID, analysis/reference temperatures and the same-frequency `nf290 − nfmin290` gap; the record's own CSVs are never rewritten |
 | `netlist-snapshots/<record-id>/*.spice` | the exact generated deck for every point |
 | `corners/<record-id>/*.log` | raw `ngspice -b` output for every point |
 | `corners/<record-id>/*.inband.dat` | raw complex in-band S-parameters + k/μ/\|Δ\|/NF/NFmin |
