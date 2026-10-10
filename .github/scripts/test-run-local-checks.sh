@@ -10,6 +10,8 @@
 # Block-scalar steps (`run: |` / `run: >`) are matched by step name and each
 # one must be handled explicitly below; an unknown one FAILS loudly:
 #   - "Install pinned ShellCheck 0.10.0": an install, never mirrored.
+#   - "Install xschem" / "Fetch pinned IHP-Open-PDK v0.3.0": installs, never
+#     mirrored (the runner probes for xschem + the PDK and SKIPs when absent).
 #   - "Installed ShellCheck is exactly 0.10.0": runner must probe the same
 #     `shellcheck --version | grep -qx 'version: 0.10.0'`.
 #   - "Lint tracked first-party Bash": body (minus `set -euo pipefail`,
@@ -101,6 +103,8 @@ check() {
         inlint=0
         case "$name" in
           "Install pinned ShellCheck 0.10.0") ;;
+          "Install xschem") ;;
+          "Fetch pinned IHP-Open-PDK v0.3.0") ;;
           "Installed ShellCheck is exactly 0.10.0")
             grep -qF "shellcheck --version | grep -qx 'version: 0.10.0'" "$rn" \
               || { echo "runner does not probe for ShellCheck exactly 0.10.0"; probs=1; } ;;
@@ -143,7 +147,7 @@ check() {
 # 5. sanity: extraction is not vacuous.
 n="$(wf_records "$WF" | grep -c '^CMD')"
 s="$(runner_steps "$RUNNER" | wc -l)"
-if [ "$n" -ge 15 ] && [ "$s" -ge 16 ]; then ok "extracted $n workflow run: commands, $s runner steps"
+if [ "$n" -ge 17 ] && [ "$s" -ge 18 ]; then ok "extracted $n workflow run: commands, $s runner steps"
 else bad "only $n workflow commands / $s runner steps extracted (extraction broken?)"; fi
 
 # 1. committed runner matches.

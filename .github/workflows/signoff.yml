@@ -32,6 +32,9 @@ name: signoff
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
+# `netlist-regen` (authoritative complement: headless xschem regeneration of
+# the netlist from the pinned PDK, compared against the committed one, so a
+# wiring-only edit is caught — issue #138),
 # `layout-freshness` (committed layout GDS, provenance, LVS reference and
 # klt report envelopes agree with each other and the netlist — issue #86) and
 # `model-provenance` (vendored sim/models/ files still match the sha256 stamped
@@ -173,6 +176,53 @@ jobs:
 
       - name: Committed netlist device inventory matches the schematic
         run: python3 -I .github/scripts/check-netlist-freshness
+
+  # Netlist regeneration (issue #138): the authoritative complement to
+  # netlist-freshness. Provisions xschem (Ubuntu 24.04 package, 3.4.4 -- the
+  # version check-netlist-regen pins) and the SG13G2 PDK release pinned in
+  # sim/pdk.json (v0.3.0 tarball, sha256-verified, same recipe as
+  # klayout-tools scripts/fetch-ihp-sg13g2.sh), runs the documented headless
+  # `xschem -n` in a scratch copy of design/ and diffs the result with the
+  # committed design/netlist/lna.spice (only the `** sch_path:` header and
+  # blank lines ignored). Exit 3 = tool setup failure, 4 = netlisting failure,
+  # 1 = drift. Never writes the checkout. The self-test runs first, with
+  # --require-tools so an unprovisioned runner cannot skip its way to green.
+  netlist-regen:
+    runs-on: ubuntu-latest
+    env:
+      PDK_ROOT: ${{ github.workspace }}/.pdk
+      PDK: ihp-sg13g2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install xschem
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xschem
+          xschem --version
+
+      - name: Fetch pinned IHP-Open-PDK v0.3.0
+        run: |
+          set -euo pipefail
+          version=0.3.0
+          sha256=f6afb7a8d2adf3e40acd3fd2c7892fc93510e6f760565409a8df2b5b242254fc
+          grep -q "\"release_tag\": \"v${version}\"" sim/pdk.json
+          tarball="${RUNNER_TEMP}/ihp-open-pdk.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "${tarball}" \
+            "https://github.com/IHP-GmbH/IHP-Open-PDK/archive/refs/tags/v${version}.tar.gz"
+          echo "${sha256}  ${tarball}" | sha256sum --check --strict -
+          mkdir -p "${PDK_ROOT}/${PDK}"
+          tar -xzf "${tarball}" -C "${PDK_ROOT}/${PDK}" --strip-components=2 "IHP-Open-PDK-${version}/${PDK}"
+          echo "${version}" > "${PDK_ROOT}/${PDK}/.fetched-version"
+
+      - name: Netlist-regeneration checker self-test
+        run: .github/scripts/test-check-netlist-regen.sh --require-tools
+
+      - name: Committed netlist matches a headless xschem regeneration
+        run: .github/scripts/check-netlist-regen
 
   # sim/ append-only gate (issue #67): sim/README.md "Append-only rule" —
   # committed evidence under sim/*/{records,netlist-snapshots,corners}/ is

@@ -166,9 +166,24 @@ locally with `python3 -I .github/scripts/check-netlist-freshness`.
 **This is an inventory check and is weaker than a true xschem
 regeneration**: it needs neither xschem nor the PDK, so it does not compare
 connectivity or net naming (a pure rewire with unchanged devices passes). The
-authoritative step is still the `xschem -n` command above; a CI job that runs
-it would need xschem plus the PDK symbol libraries and is a possible later
-step.
+authoritative step is the `xschem -n` command above, run in CI by the
+`netlist-regen` job (issue #138): `.github/scripts/check-netlist-regen`
+copies `design/` to a scratch directory, runs exactly that command there
+against the PDK release pinned in `sim/pdk.json` (v0.3.0, sha256-verified
+tarball) and xschem 3.4.4 (Ubuntu 24.04 package), and compares the result
+with the committed netlist line for line. Only the `** sch_path:` header and
+blank lines (which differ between xschem builds) are ignored, so connectivity,
+parameters, `.subckt` pin order and `*.iopin` order are all compared. Exit
+codes separate failures: 1 = drift, 3 = tool setup (xschem or PDK missing or
+wrong version, PDK symbol absent), 4 = netlisting failure (non-zero exit,
+error output, no/empty netlist). xschem exits 0 even when a symbol library is
+missing, hence the symbol preflight and the stderr scan. The check never
+writes the checkout. Its negative fixtures are
+`.github/scripts/test-check-netlist-regen.sh`; `run-local-checks.sh` runs both
+when xschem 3.4.4 and a PDK are found and prints SKIP otherwise. To regenerate
+after an intended schematic change, run the command above (it rewrites the
+committed netlist and its header; see the header note below before committing
+that).
 
 **The `** sch_path:` header line.** xschem stamps the invoking absolute path
 on the first line of the netlist, so it differs per machine and the committed

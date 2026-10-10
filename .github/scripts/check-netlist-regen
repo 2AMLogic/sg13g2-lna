@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Authoritative netlist check: regenerate design/netlist/lna.spice with headless xschem (issue #138).
+
+Complements check-netlist-freshness (the quick, PDK-free *inventory* check,
+issue #88), which cannot see a pure rewire. This check runs the documented
+headless netlisting command (design/README.md)
+
+    xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./lna.sch
+
+inside a scratch copy of design/ (the netlist is written to scratch, never to
+the checkout -- committed netlist bytes stay untouched; sha256 of that file is
+cited by append-only evidence) against the pinned SG13G2 PDK (sim/pdk.json),
+then compares the generated netlist with the committed one.
+
+Comparison: line-for-line after dropping exactly the machine-specific
+`** sch_path:` header line and normalising whitespace-only differences
+(trailing whitespace, blank lines -- xschem builds differ on blank lines).
+Everything else -- the `.subckt` interface order, `*.iopin` order, every
+device's node list (connectivity), parameters and comments -- must be equal.
+
+Exit codes (distinct so CI logs tell tool trouble from real drift):
+  0  regenerated netlist matches the committed one
+  1  DRIFT: generated netlist differs (diff printed)
+  2  usage error / unreadable input
+  3  TOOL SETUP failure: xschem missing or not the pinned version, PDK
+     missing / not the pinned release, a PDK symbol the schematic uses absent
+  4  NETLISTING failure: xschem exited non-zero, timed out, reported an
+     error on stderr/stdout, or produced no (or an empty) netlist
+
+Usage: check-netlist-regen [--root DIR] [--xschem CMD] [--pdk-root DIR] [--timeout S]
+Stdlib only. Read-only on the checkout.
+"""
+import argparse
+import difflib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+# xschem release the committed flow was verified with (Ubuntu 24.04 `xschem`
+# package, 3.4.4-1). Recorded here and in design/README.md.
+XSCHEM_VERSION = "3.4.4"
+PDK_VARIANT = "ihp-sg13g2"
+CANDIDATE_ROOTS = ["/usr/share/pdk", "/usr/local/share/pdk"]
+HEADER_RE = re.compile(r"^\*\*\s*sch_path:")
+# xschem chatter that is not an error: schematic comment blocks echoed as
+# "SKIP RECORD ... END SKIP RECORD", and the MODELS_* lines from the PDK rc.
+NOISE_RE = re.compile(r"^(\*|SKIP RECORD$|END SKIP RECORD$|MODELS_[A-Z]+:|\s*$)")
+ERROR_RE = re.compile(r"(^xschemrc:|error|warning|cannot|can't|not found|no such|failed|unable)", re.I)
+
+
+def die(code, msg):
+    print(f"check-netlist-regen: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def normalize(text):
+    out = []
+    for line in text.splitlines():
+        if HEADER_RE.match(line):
+            continue
+        line = line.rstrip()
+        if line:
+            out.append(line)
+    return out
+
+
+def find_pdk_root(arg):
+    cands = [arg] if arg else []
+    if not arg and os.environ.get("PDK_ROOT"):
+        cands.append(os.environ["PDK_ROOT"])
+    if not cands:
+        home = os.path.expanduser("~")
+        cands = CANDIDATE_ROOTS + [os.path.join(home, p) for p in ("share/pdk", ".ciel", ".volare")]
+    for c in cands:
+        if os.path.isfile(os.path.join(c, PDK_VARIANT, "libs.tech", "xschem", "xschemrc")):
+            return os.path.abspath(c)
+    die(3, f"no {PDK_VARIANT} install with libs.tech/xschem/xschemrc found (tried: {', '.join(cands)}); "
+           "set PDK_ROOT (CI fetches the pinned release)")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--root", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    ap.add_argument("--xschem", default="xschem")
+    ap.add_argument("--pdk-root")
+    ap.add_argument("--timeout", type=int, default=300)
+    args = ap.parse_args()
+    root = os.path.abspath(args.root)
+    sch = os.path.join(root, "design", "lna.sch")
+    committed = os.path.join(root, "design", "netlist", "lna.spice")
+    for p in (sch, committed, os.path.join(root, "design", "xschemrc"), os.path.join(root, "sim", "pdk.json")):
+        if not os.path.isfile(p):
+            die(2, f"missing input {p}")
+    with open(os.path.join(root, "sim", "pdk.json")) as f:
+        pin = json.load(f)["release_tag"].lstrip("v")
+
+    # --- tool setup
+    exe = shutil.which(args.xschem) if os.sep not in args.xschem else args.xschem
+    if not exe or not os.access(exe, os.X_OK):
+        die(3, f"xschem not found ({args.xschem})")
+    try:
+        ver = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as e:
+        die(3, f"cannot run '{exe} --version': {e}")
+    m = re.search(r"XSCHEM V(\d+\.\d+\.\d+)", ver.stdout + ver.stderr)
+    if not m or m.group(1) != XSCHEM_VERSION:
+        die(3, f"xschem version {m.group(1) if m else 'unknown'} != pinned {XSCHEM_VERSION}")
+    pdk_root = find_pdk_root(args.pdk_root)
+    marker = os.path.join(pdk_root, PDK_VARIANT, ".fetched-version")
+    have = open(marker).read().strip() if os.path.isfile(marker) else None
+    if have != pin:
+        die(3, f"PDK at {pdk_root} is version {have!r}, sim/pdk.json pins {pin!r}")
+    with open(sch) as f:
+        syms = sorted(set(re.findall(r"^C \{(sg13g2_pr/[^}]+)\}", f.read(), re.M)))
+    for s in syms:
+        if not os.path.isfile(os.path.join(pdk_root, PDK_VARIANT, "libs.tech", "xschem", s)):
+            die(3, f"PDK symbol library missing: {s}")
+    print(f"xschem {XSCHEM_VERSION}, PDK {PDK_VARIANT} v{pin} at {pdk_root}")
+
+    # --- regenerate in scratch
+    with tempfile.TemporaryDirectory(prefix="netlist-regen-") as tmp:
+        shutil.copytree(os.path.join(root, "design"), os.path.join(tmp, "design"),
+                        ignore=shutil.ignore_patterns("netlist"))
+        # PWD must follow cwd: xschem resolves relative paths through $PWD.
+        env = dict(os.environ, PDK_ROOT=pdk_root, PDK=PDK_VARIANT,
+                   PWD=os.path.join(tmp, "design"))
+        cmd = [exe, "-n", "-x", "-q", "-r", "--rcfile", "./xschemrc", "-o", "./netlist", "./lna.sch"]
+        try:
+            r = subprocess.run(cmd, cwd=os.path.join(tmp, "design"), env=env,
+                               capture_output=True, text=True, timeout=args.timeout)
+        except subprocess.TimeoutExpired:
+            die(4, f"xschem timed out after {args.timeout}s")
+        except OSError as e:
+            die(4, f"cannot run xschem: {e}")
+        if r.returncode != 0:
+            die(4, f"xschem exited {r.returncode}\n{r.stderr[-2000:]}")
+        errs = [l for l in (r.stdout + "\n" + r.stderr).splitlines()
+                if not NOISE_RE.match(l) and ERROR_RE.search(l)]
+        if errs:
+            die(4, "xschem reported problems:\n  " + "\n  ".join(errs[:20]))
+        gen = os.path.join(tmp, "design", "netlist", "lna.spice")
+        if not os.path.isfile(gen):
+            die(4, "xschem produced no netlist")
+        gen_lines = normalize(open(gen).read())
+        if not any(l.startswith("**.subckt") for l in gen_lines) or not any(l.startswith("X") or l.startswith("R") for l in gen_lines):
+            die(4, "generated netlist is empty or has no subcircuit/devices")
+
+    com_lines = normalize(open(committed).read())
+    if gen_lines == com_lines:
+        print(f"OK: regenerated netlist matches committed design/netlist/lna.spice ({len(com_lines)} lines compared)")
+        return 0
+    print("DRIFT: regenerated netlist differs from committed design/netlist/lna.spice "
+          "(sch_path header and blank lines ignored):")
+    sys.stdout.writelines(difflib.unified_diff(
+        [l + "\n" for l in com_lines], [l + "\n" for l in gen_lines], "committed", "regenerated", n=2))
+    print("Regenerate with the command in design/README.md and commit (see that file's header note).")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
