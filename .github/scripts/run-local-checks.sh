@@ -128,6 +128,10 @@ step "breakdown-replay: unit tests and replay self-test" \
 step "breakdown-replay: check_breakdown_replay.py" \
   python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
 
+# --- job: matching-feasibility-tests (issue #186)
+step "matching-feasibility-tests: solver unit tests and committed-record replay" \
+  python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v
+
 # --- job: record-citations
 step "record-citations: self-test" .github/scripts/test-check-record-citations.sh
 step "record-citations: check" .github/scripts/check-record-citations

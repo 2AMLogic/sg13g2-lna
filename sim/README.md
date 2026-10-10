@@ -324,3 +324,14 @@ a target-spec row.
   variant except the control is a **probe**, nothing under `design/`
   changes because of it, and no number here is a `target-spec.md`
   conformance claim.
+- **[`lna-matching-feasibility/`](lna-matching-feasibility/README.md)** —
+  issue #186: a **nominal-cell-only** matching-network feasibility study
+  for #27. One characterization run measures the committed DUT's input
+  impedance, collector-node admittance and noise parameters, an ideal-Le
+  sweep, the EM-extracted inductor geometries and a base-feed what-if
+  probe. A stdlib solver synthesizes three candidate L-section input
+  networks plus an Lc + shunt-C + series-C output network for each of four
+  inductor-Q cases (ideal, Q = 20, Q = 10, EM-extracted Lc). Each candidate
+  is verified with one single-cell run of the same sp/NF/stability bench as
+  `lna-characterization/`. This is exploration, not a result: one PVT cell,
+  no `target-spec.md` claim, and nothing under `design/` changes.
