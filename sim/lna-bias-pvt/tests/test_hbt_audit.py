@@ -252,7 +252,9 @@ class LegacyRecords(unittest.TestCase):
         self.assertTrue(logs)
         for p in logs:
             self.assertNotIn("HBTAUDIT", p.read_text(errors="replace"))
-        for rec in sorted((BIAS / "corners").iterdir()):
+        # Only the deterministic op-grid records (dirs holding op_*.log);
+        # corners/ also holds the issue-#90 Monte Carlo campaign's dirs.
+        for rec in sorted({p.parent for p in logs}):
             with self.assertRaises(ha.ReductionError):
                 ha.reduce_dir(str(rec), NETLIST.read_text())
 

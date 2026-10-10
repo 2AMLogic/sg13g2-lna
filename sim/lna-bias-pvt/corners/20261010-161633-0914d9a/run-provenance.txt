@@ -1,0 +1,10 @@
+record_id=20261010-161633-0914d9a
+client_klt=klt 0.7.0+g21e45ce7233b
+client_klt_bin_sha256=d160053cde1a8fc8f12e9744f23ce203cb04b1e2958c8fc5b10f9f5398eb26f7
+local_ngspice=** ngspice-46 : Circuit level simulation program (not used for any campaign unit)
+pdk_release=0.3.0 via tarball-marker
+backend=batch
+started_utc=2026-10-10T16:16:33Z
+mc_mismatch: klt_exit=4 finished_utc=2026-10-10T16:17:33Z
+mc_mismatch_replay: klt_exit=4 finished_utc=2026-10-10T16:18:33Z
+negctl_nominal: klt_exit=4 finished_utc=2026-10-10T16:19:34Z

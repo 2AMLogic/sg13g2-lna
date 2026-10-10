@@ -160,9 +160,11 @@ The coverage gaps, kept separate:
   pinned PDK ships `*_mismatch`/`*_stat` sections for both device families
   in this DUT (`npn13G2` in `cornerHBT.lib`; `sg13_hv_pmos`/`sg13_hv_nmos`
   in `cornerMOShv.lib`). This bench loads only the nominal sections (see
-  "No mismatch sections" above). It has not been verified that loading
-  those sections actually injects stochastic parameters into the
-  instantiated VBIC and PSP103.6/OSDI devices.
+  "No mismatch sections" above). A single-sample local probe (issue #90,
+  see "Full-DUT DC mismatch campaign" below) shows that loading the
+  `_mismatch` sections does inject per-instance stochastic parameters into
+  the instantiated VBIC and PSP103.6/OSDI devices. No distribution has been
+  measured yet.
 - **Resistor and passive tolerance: no bench covers it.** The bias
   resistors are ideal SPICE `R`s (see "Ideal passives" above). A device
   mismatch run on this netlist would therefore still hold every resistor
@@ -170,11 +172,14 @@ The coverage gaps, kept separate:
   part of the device-mismatch campaign.
 
 The first campaign on these observables is
-[#90](https://github.com/2AMLogic/sg13g2-lna/issues/90). **It is open and
-has not been run.** As scoped, it is a fleet-submitted `klt sim`
-`monte_carlo` request through this bench at one nominal point (27 °C,
-1.80 V, nominal process sections). When its record lands, the resulting
-distribution has these limits:
+[#90](https://github.com/2AMLogic/sg13g2-lna/issues/90). Its tooling is
+committed (see "Full-DUT DC mismatch campaign" below). **It has not
+produced a distribution yet:** on 2026-10-10 every fleet submission failed
+before simulating, because the batch fleet's runner image carries an older
+klt. It is a fleet-submitted `klt sim` `monte_carlo` campaign on the full
+DUT at one nominal point (27 °C, 1.80 V, nominal process sections plus
+per-instance mismatch). When its record lands, the resulting distribution
+has these limits:
 
 - It is a DC distribution at **one operating point**. It does not
   establish yield across the PVT box.
@@ -190,6 +195,191 @@ distribution has these limits:
 The spec-level statement is
 [`spec/target-spec.md`](../../spec/target-spec.md) §"Statistical coverage
 (T1 item 6)".
+
+## Full-DUT DC mismatch campaign (issue #90)
+
+**Status (2026-10-10): BLOCKED on the batch fleet. No distribution has been
+measured.** The request set was generated and validated, then submitted
+three times. All three fleet jobs failed in 5-8 s with exit 87,
+`batch_runner_version_mismatch`: the runner image runs klt `0.5.0` and the
+submitting client is `0.7.0+g21e45ce7233b`. Job ids:
+
+- `klt-sim-e0d3cfbf14b4` (main)
+- `klt-sim-15a0b8707586` (replay)
+- `klt-sim-c13c7cfcbe45` (negative control)
+
+All three ran on AMI `ami-0e40e3245f1923ac8`. The 0.5.0 runner has no
+`measurements[].expr`, `options.osdi_preload` or
+`options.stage_model_inputs`, and this DUT's DC observables need all three:
+an `op` quantity has no `.meas` form, and the MOS devices are PSP103 via
+OSDI. So `runner_version_check: "warn"` is not a workaround. A 0.5.0 client
+cannot be used either, because it has no `batch` backend. The tool-side
+gap is tracked as 2AMLogic/klayout-tools#2948 (comment of 2026-10-10).
+
+Failure record (no results):
+
+- `corners/20261010-161633-0914d9a/` holds the redacted fleet reports, the
+  run provenance and the reduction output (`complete: false`).
+- `netlist-snapshots/20261010-161633-0914d9a/` holds the bench, the
+  requests, the manifest and `request-validation.json`.
+- `records/20261010-161633-0914d9a.pdk-provenance.json` is the client-side
+  PDK identity written at reservation.
+
+Because the reduction was incomplete, nothing was published under
+`records/`. The raw reports were committed gzipped, with only
+`environment.remote.bucket` replaced, because klt itself treats that value
+as deployment-account detail.
+
+### What the campaign measures (bench definition)
+
+- **DUT**: the committed `design/netlist/lna.spice`, inlined with the same
+  convention as `testbench/tb_lna_biasop.spice.tmpl` (no device line
+  edited). `mc_campaign.py gen` writes it as a circuit body
+  (`bench_mc.spice`), with supply source `Vdd` (klt's `alter vdd=` target),
+  `Vss`, 50 Ω port terminations and `.options tnom=27 gmin=1e-10`.
+  `gmin` is ngspice's default value, made explicit as in the deterministic
+  bench.
+- **Observables** (`measurements[].expr`, evaluated after `op`):
+  - `ic1`, `ic2`, `ic3`, `ib1`, `vb1`, `vbref`;
+  - `idd = -i(Vdd)`, the full DUT's total supply current (Vdd is the only
+    supply source);
+  - `pdc = v(vdd)*(-i(vdd))`, i.e. VDD x I_DD of the same DUT;
+  - `vdd_node`, a check that the supply is ideal.
+
+  The historical topology-search core in `../biasref-topology/` is not used.
+- **Sampled-parameter read-backs**, recorded per sample so activation is
+  measured rather than inferred from section names:
+  - `@q.xdut.<q>.qnpn13g2[area]` for all six HBTs (Q1, Q2, Q3, Qa, Qb, Qc);
+  - `@n.xdut.<m>.nsg13_hv_*[delvto]` for XMnp1, XMnp2, XMis and XMref.
+- **Operating point**: typ, 27 °C, 1.80 V. Base seed `68001`.
+
+  | Request | Sections | n | Role |
+  |---|---|---|---|
+  | `mc_mismatch` | `hbt_typ_mismatch` + `mos_tt_mismatch` | 200 | The distribution. |
+  | `mc_mismatch` again | same file | 200 | Seeded replay, as a second fleet job. Ordered per-sample comparison; tolerance rel 1e-7 or abs 1e-15. |
+  | `negctl_nominal` | `hbt_typ` + `mos_tt` | 20 | Negative control (not the replay). |
+
+  In the negative control the per-sample ngspice seed still changes, but no
+  AGAUSS term is loaded. Every observable must collapse to one value,
+  read-backs must be area=1 and delvto=0, and the value is cross-checked
+  against the deterministic record `20260921-173552-2aeafef`
+  (typ/27 °C/1.80 V, same DUT sha256, rel tol 1e-4).
+- **Why `vary` is not the control.** klt derives the single
+  `.options seed=` from both the process and mismatch seed labels. SG13G2's
+  mismatch terms draw from that one global RNG, so `vary: "process"` with a
+  `_mismatch` section loaded would still re-draw every mismatch term
+  (2AMLogic/klayout-tools#2937). Only removing the `_mismatch` sections
+  removes the stochastic terms. The response's `family_mismatch` report
+  gives `active: null` for every family on sg13g2
+  (2AMLogic/klayout-tools#2961), so it is not used as evidence.
+
+### Sampling mechanism and PDK facts (verified 2026-10-10)
+
+- **PDK**: IHP-Open-PDK `0.3.0`, identified by the `.fetched-version`
+  tarball marker and matching the `sim/pdk.json` pin `v0.3.0`. Section
+  names:
+  - `cornerHBT.lib`: `hbt_{typ,bcs,wcs}`, `hbt_{typ,bcs,wcs}_mismatch`,
+    `hbt_typ_stat`;
+  - `cornerMOShv.lib`: `mos_{tt,ss,ff,sf,fs}`, `mos_*_mismatch`,
+    `mos_tt_stat`.
+
+  The `_mismatch` sections set the same process scalars as their nominal
+  twins (diffed line by line). They only swap in the
+  `*_mod_mismatch.lib` model text, so sampling them varies mismatch only,
+  not process.
+- **HBT** (`sg13g2_hbt_mod_mismatch.lib`, sha256 `1e493f25…`): each
+  `npn13G2` subcircuit instance draws
+  `.param qarea = agauss(1, 0.1, (mm_ok != 1 ? 0 : 1))`, which is passed as
+  the VBIC instance `area`, with `mm_ok=1` by default. That gives a 10 %
+  one-sigma emitter-area factor per instance. **It is not scaled with Nx**,
+  so the Nx=8 RF devices get the same relative sigma as the Nx=1 mirror
+  devices. That is the PDK's model, recorded as-is.
+- **MOS** (`sg13g2_moshv_mod_mismatch.lib`, sha256 `be170c96…`; sigmas in
+  `sg13g2_moshv_mismatch.lib`): per instance, `w` and `l` get
+  `agauss(·, 3 nm)`, and
+  - `delvto = agauss(0, σ/sqrt(m·l·w·1e12))` with σ = 7 mV (nmos) or
+    4.5 mV (pmos);
+  - `factuo = agauss(1, σ/sqrt(m·l·w·1e12))` with σ = 0.005 (nmos) or
+    0.004 (pmos).
+- **Activation**: klt writes `.options seed=<rndseed>` ahead of the `.lib`
+  cards. ngspice's numparam evaluates the `agauss` calls once per
+  subcircuit instance when it expands the netlist.
+- **OSDI**: `psp103.osdi`, `psp103_nqs.osdi` and `mosvar.osdi`, OSDI ABI
+  0.4, built by OpenVAF-Reloaded `v24.0.1mob` (`sim/tools/build-osdi.sh`).
+  Client-side sha256: `2e4299c4…`, `839b1644…`, `25e64a37…`. The requests
+  stage them byte-for-byte (`options.stage_model_inputs: true`).
+- **Activation evidence**: [`corners/mc-activation-probe-20261010/`](corners/mc-activation-probe-20261010/)
+  is a pre-submission probe, run locally with ngspice-46, one operating
+  point and one sample per run. It is not fleet evidence and not a
+  distribution. It contains:
+  - `probe_mm.spice`/`.log`: one hand deck at `.options seed=68001`;
+  - `klt_n1_local.*`: the campaign request cut to n=1 and run with
+    `--backend local`.
+
+  Both read back non-nominal, instance-distinct values: HBT `area` 0.84 to
+  1.36 and MOS `delvto` from -5.6 mV to +1.0 mV. In the klt sample, sample
+  0 (`rndseed` 1234184666) has q1_area 1.364, I_C1 4.84 mA and P_dc
+  10.07 mW (klt status `fail` against the 10 mW limit), so the sampled
+  area reaches the observables. That one sample says nothing about
+  frequency.
+
+  Reading note for `probe_mm.log`: the deck's last line,
+  `print @q.xdut.xq1.qnpn13g2[ic] -i(vdda)`, is parsed by ngspice as one
+  expression (`ic - i(vdda)`), not two values. The logged `7.979797e-03`
+  is that expression's value, **not** I_C1, and nothing here is claimed
+  from it. The file is left as committed (`corners/` is append-only).
+  The log also shows the VBIC warning "The temperature limiting function
+  received NaN." before gmin stepping converges; it does not affect the
+  area/delvto read-backs.
+
+### Reduction and limits
+
+`mc_campaign.py reduce` writes `<id>-mc-samples.csv`, with one row per
+requested sample index, including missing and failed samples, plus
+`<id>-mc-summary.{json,md}`. It reports:
+
+- finite / non-finite / missing counts, failure classes (error status,
+  missing or non-finite value, missing or duplicate sample) and diagnostic
+  counts;
+- mean, sample standard deviation (n-1), min and max;
+- counts of `I_C1 > 4.5 mA` (equality not counted) and `P_dc >= 10 mW`
+  (equality counted);
+- the replay comparison, the negative control, and an active-variation
+  check. The variation check asks that every read-back varies and that
+  corr(ln I_C1, ln(q1_area/q3_area)) > 0.5. Any zero-spread observable
+  other than the ideal `vdd_node` is flagged UNEXPLAINED.
+
+A report without `environment.remote` (`provider: aws-batch-fleet`,
+`state: done`) is not fleet evidence and makes the record incomplete
+(exit 2). `run_mc_campaign.sh` publishes to `records/` only when the
+reduction is complete. A failed control is still published, and the
+runner exits 1.
+
+Limits: one operating point; device mismatch only. RF statistical rows and
+resistor/passive tolerance are unmeasured. Tail counts are finite-sample
+observations, not qualified yield, and there is no `klt yield` verdict and
+no full-PVT statistical signoff. P_dc is VDD x I_DD of the full DUT. This
+campaign does not settle the < 10 mW row by itself, because it is not a PVT
+envelope.
+
+### Regeneration
+
+```bash
+export KLT_SIM_BACKEND=batch            # the runner refuses any other backend
+sim/lna-bias-pvt/run_mc_campaign.sh     # gen -> validate -> 3 fleet jobs -> reduce
+```
+
+`validate` runs under the klt CLI's own interpreter, read from the `klt`
+shebang. It calls the installed klt's request validators and corner/MC
+expansion, and refuses unknown top-level keys. klt has no dry-run mode
+(2AMLogic/klayout-tools#3064). It records the expanded per-sample seeds in
+`request-validation.json`.
+
+The runner never runs ngspice locally. Any `klt sim` exit other than
+0/3/4 stops the run (`corners/<id>/STOPPED`), with no local fallback.
+Re-run once the fleet runner image carries the client's klt. Unit tests:
+`python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -p test_mc_campaign.py`
+(synthetic reports only).
 
 ## Cold-start / regeneration
 
