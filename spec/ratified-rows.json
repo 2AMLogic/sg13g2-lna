@@ -1,0 +1,126 @@
+{
+  "_comment": "Transcription of the value/definition column (ic1: binding-conditions column) of the authoritative '## Ratified target table' in spec/target-spec.md, for sim/lna-characterization/render_results.py. Validated against the spec on every run; it does not ratify or relax anything. Edit only together with the spec row.",
+  "rows": [
+    {
+      "id": "gain",
+      "selector": "Gain (S21)",
+      "column": "value",
+      "status": "ratified",
+      "comparator": ">",
+      "limit": "15",
+      "unit": "dB",
+      "template": "{comparator} {limit} {unit}",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "nf",
+      "selector": "Noise figure (NF)",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "<",
+      "limit": "1.5",
+      "unit": "dB",
+      "template": "{comparator} {limit} {unit}",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "s11",
+      "selector": "Input match (S11)",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "<",
+      "limit": "-10",
+      "unit": "dB",
+      "template": "{comparator} {limit} {unit}",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "s22",
+      "selector": "Output match (S22)",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "<",
+      "limit": "-10",
+      "unit": "dB",
+      "template": "{comparator} {limit} {unit}",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "mu",
+      "selector": "Stability",
+      "column": "value",
+      "status": "ratified",
+      "comparator": ">",
+      "limit": "1",
+      "unit": "1",
+      "template": "μ {comparator} {limit} (Edwards–Sinsky)",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "negres",
+      "selector": "Stability",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "<",
+      "limit": "1",
+      "unit": "1",
+      "template": "max |S11|, max |S22| {comparator} {limit} with the other port at 50 Ω",
+      "anchor": "unique",
+      "classification": "requirement"
+    },
+    {
+      "id": "iip3",
+      "selector": "IIP3",
+      "column": "value",
+      "status": "not-ratified",
+      "comparator": ">",
+      "limit": "0",
+      "unit": "dBm",
+      "template": "Numeric: former DRAFT {comparator} {limit} {unit} remains DRAFT",
+      "anchor": "start",
+      "classification": "not-ratified"
+    },
+    {
+      "id": "supply",
+      "selector": "Supply",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "±",
+      "limit": "1.80",
+      "unit": "V",
+      "template": "{limit} {unit} {comparator} {tolerance_pct} %",
+      "anchor": "start",
+      "classification": "context",
+      "tolerance_pct": "10"
+    },
+    {
+      "id": "power",
+      "selector": "Power (P_dc)",
+      "column": "value",
+      "status": "ratified",
+      "comparator": "<",
+      "limit": "10",
+      "unit": "mW",
+      "template": "{comparator} {limit} {unit} DC",
+      "anchor": "start",
+      "classification": "requirement"
+    },
+    {
+      "id": "ic1",
+      "selector": "Power (P_dc)",
+      "column": "binding",
+      "status": "ratified",
+      "comparator": "≤",
+      "limit": "4.5",
+      "unit": "mA",
+      "template": "I_C {comparator} {limit} {unit} over corners",
+      "anchor": "unique",
+      "classification": "requirement"
+    }
+  ]
+}

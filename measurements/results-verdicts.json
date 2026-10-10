@@ -1,0 +1,1063 @@
+{
+  "claims": "numerical verdicts on a historical record only; no full-spec compliance, no T1 signoff, no spec ratification",
+  "coverage": {
+    "limitations": [
+      "historical record: the DUT has no matching networks (S11/S22 are the absence of a match, not a failed one)",
+      "the L/C-mismatch (fs/sf) axis of the ratified corner box is absent: passives are ideal primitives with no corner models",
+      "sf/fs cells fall back to the typ HBT section; the 45-cell grid is not the complete ratified corner box",
+      "NF is sampled at only three frequencies (band low/mid/high); continuous-band NF compliance is not established",
+      "NFmin is referenced to the analysis temperature, not 290 K; it is context only and carries no spec verdict",
+      "broadband stability is sampled on a 140-point 40 pts/decade grid (10 MHz to 29.85 GHz); narrower peaks can be missed",
+      "ideal infinite-Q passives make gain, NF and match optimistic and stability the least-damped case",
+      "45-cell coverage of a historical record is not proof of the complete ratified corner box or of continuous-band compliance"
+    ],
+    "status": "incomplete"
+  },
+  "grid": {
+    "cells": 45,
+    "corners": [
+      "bcs",
+      "fs",
+      "sf",
+      "typ",
+      "wcs"
+    ],
+    "stability_grid": {
+      "hi": 30000000000.0,
+      "lo": 10000000.0,
+      "mode": "dec",
+      "n": 40,
+      "points": 140
+    },
+    "temps_c": [
+      -40,
+      27,
+      125
+    ],
+    "vdd_v": [
+      1.62,
+      1.8,
+      1.98
+    ]
+  },
+  "inputs": {
+    "ratified_rows": {
+      "path": "spec/ratified-rows.json",
+      "sha256": "b36eb0219c9a23fc450d592c18712ee70457842a94ecf157b56786a9f689eb36"
+    },
+    "stability_tables": {
+      "sp_bcs_-40c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_-40c_vdd1.62v.stability.dat",
+        "sha256": "d99aeea660730b053dad371c1debee46cb06e1c0b36c229b7cbf9d671b5587b3"
+      },
+      "sp_bcs_-40c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_-40c_vdd1.80v.stability.dat",
+        "sha256": "59d016f76b55505f5c909b15395f54db5ffe5f4213834880f6f3095fcc46567e"
+      },
+      "sp_bcs_-40c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_-40c_vdd1.98v.stability.dat",
+        "sha256": "f4f64bda09fddffd2609fb94248e50869def5b0a4156757a85cdbb88d9763b3f"
+      },
+      "sp_bcs_125c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_125c_vdd1.62v.stability.dat",
+        "sha256": "d5f23f51540d773667b753fca6c616126092c01b19541895dbb16aab6ddf0fe8"
+      },
+      "sp_bcs_125c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_125c_vdd1.80v.stability.dat",
+        "sha256": "b0455381cfaff56348f94f03025281391a22ecf705345ae787f81d311b692054"
+      },
+      "sp_bcs_125c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_125c_vdd1.98v.stability.dat",
+        "sha256": "dfad53f82736dbd7ddb42a03d034d93c5abf0ad9eb4005e1cafcb7185352c735"
+      },
+      "sp_bcs_27c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_27c_vdd1.62v.stability.dat",
+        "sha256": "c604d746d1ec0938c80a5bd2f11e9cb2153a51c73f760f69ebf2f6a67d77031b"
+      },
+      "sp_bcs_27c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_27c_vdd1.80v.stability.dat",
+        "sha256": "3b43c1d43f4417aa07e98428fcf322bfdd8492106e506669c2c945c5195e5313"
+      },
+      "sp_bcs_27c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_bcs_27c_vdd1.98v.stability.dat",
+        "sha256": "558e65d79e68c2bee8e7465d36b146a8d999c7b66f25fc32895850bed20fde90"
+      },
+      "sp_fs_-40c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_-40c_vdd1.62v.stability.dat",
+        "sha256": "22906b53054fbb5575a94dd30a90392f46fd115193b06f1756fe65e88a34a330"
+      },
+      "sp_fs_-40c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_-40c_vdd1.80v.stability.dat",
+        "sha256": "4865a638342737976e6b51f1de05030fe559a41d24c660760709f6e792d048aa"
+      },
+      "sp_fs_-40c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_-40c_vdd1.98v.stability.dat",
+        "sha256": "fafba1fe05dff0756503b8863e90591e084359364e05fec69296c8d81f759ee7"
+      },
+      "sp_fs_125c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_125c_vdd1.62v.stability.dat",
+        "sha256": "ad94013e2950853a76fac029c738266c3f2f9a1d3f09a84970b2c91e7de15f93"
+      },
+      "sp_fs_125c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_125c_vdd1.80v.stability.dat",
+        "sha256": "d6c6881ff22697f2d6dfba29fe075d8f8dc890b736db12f4cc85cae01d0526e1"
+      },
+      "sp_fs_125c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_125c_vdd1.98v.stability.dat",
+        "sha256": "211e404005f0e2ddd899737bc64c0ed62574d261c60d5a0590dd1a232d59e3e1"
+      },
+      "sp_fs_27c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_27c_vdd1.62v.stability.dat",
+        "sha256": "941d423f5034aabc0e34ffe3f2abfde28096e766eb7a5a6c21ca3c0198fbb88a"
+      },
+      "sp_fs_27c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_27c_vdd1.80v.stability.dat",
+        "sha256": "1eabe1b7cbaed3b32266e731739342acaa876ec3908d7938504f7294b5b26cd2"
+      },
+      "sp_fs_27c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_fs_27c_vdd1.98v.stability.dat",
+        "sha256": "9f1bcfde049459f52fb45afc7d8695aa791cd4fdb2775094ab8b0361a27f67e2"
+      },
+      "sp_sf_-40c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_-40c_vdd1.62v.stability.dat",
+        "sha256": "48e2bd90f9a92c767df486b2d1e966da8179bb557dd4e64c6b5482709c5a5f49"
+      },
+      "sp_sf_-40c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_-40c_vdd1.80v.stability.dat",
+        "sha256": "9b6f71264d8677a36e09e4e014d57d804db81354a87200218d697f333c899617"
+      },
+      "sp_sf_-40c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_-40c_vdd1.98v.stability.dat",
+        "sha256": "44f3d25149b495f02626b24742aabe5658ebc66975235409ab0c090c554100e1"
+      },
+      "sp_sf_125c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_125c_vdd1.62v.stability.dat",
+        "sha256": "9ef9252e48dbefd40d1be7208196d408f5002e2cf0fea59ca0f1f1d79b006d8c"
+      },
+      "sp_sf_125c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_125c_vdd1.80v.stability.dat",
+        "sha256": "58164be53853ce6d3d8fa8f73fcea8bb3eec4bb55c9ca07ec0522e2a7b55b03b"
+      },
+      "sp_sf_125c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_125c_vdd1.98v.stability.dat",
+        "sha256": "0d1e3ea978751cad7c98e6732ae7722d2337ed9935ea7ece4901c0bdba77230e"
+      },
+      "sp_sf_27c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_27c_vdd1.62v.stability.dat",
+        "sha256": "c488d53d3c58da664eb43dece40a91e070798e0a28708f0a9cdb40be23297dfa"
+      },
+      "sp_sf_27c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_27c_vdd1.80v.stability.dat",
+        "sha256": "969f6eb83724fe46f5b1393d9fbd73daa9d0e02629290360c3ce660c48a5fd39"
+      },
+      "sp_sf_27c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_sf_27c_vdd1.98v.stability.dat",
+        "sha256": "988a4d0b373087f7855d8b91cb4a95f446785c2b83a7053e097ca66c3bc74de5"
+      },
+      "sp_typ_-40c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_-40c_vdd1.62v.stability.dat",
+        "sha256": "b2e0aeacfef7ee767f81c43aba993d28d87f3531b6fb1207335ae4a218980357"
+      },
+      "sp_typ_-40c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_-40c_vdd1.80v.stability.dat",
+        "sha256": "cdeaa1e1b798f3cdebb10c467798dd0801aea301629e1cb974d559fea77821c4"
+      },
+      "sp_typ_-40c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_-40c_vdd1.98v.stability.dat",
+        "sha256": "c4bc47c1c08c4f464c0c99f72ac1be84eb22a8ff721eb363bb9e9eff8820949c"
+      },
+      "sp_typ_125c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_125c_vdd1.62v.stability.dat",
+        "sha256": "22a4fcb3be95aa0eea507b3df727e89c06ad255ff44c3187168b7212d7ba8a3f"
+      },
+      "sp_typ_125c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_125c_vdd1.80v.stability.dat",
+        "sha256": "f87b92f77afcdb3910c0654c32c963b12173d7c199c5f58c175f82ac19df3077"
+      },
+      "sp_typ_125c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_125c_vdd1.98v.stability.dat",
+        "sha256": "5cd123e667d0273eb548dbb94c7bbb117f24697bb8a57321b08f01c122adfe66"
+      },
+      "sp_typ_27c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_27c_vdd1.62v.stability.dat",
+        "sha256": "ac42b5075c67e94fc00e07c24b882696f5151bd4ffe6fee1138e95c0aece7444"
+      },
+      "sp_typ_27c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_27c_vdd1.80v.stability.dat",
+        "sha256": "2866bfd8771a4ba745fc1a5444fac3b15fab7df80b29ea3289061503d513b55f"
+      },
+      "sp_typ_27c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_typ_27c_vdd1.98v.stability.dat",
+        "sha256": "0eb60856dbd773e87f393e41b29790f3190149244836672f2c2754ee3feaa15d"
+      },
+      "sp_wcs_-40c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_-40c_vdd1.62v.stability.dat",
+        "sha256": "9ba328fe10a7d48c0163bd659c2e0822d9c6021b9816c0acc28f6bd162a744b7"
+      },
+      "sp_wcs_-40c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_-40c_vdd1.80v.stability.dat",
+        "sha256": "d23cf15c2915b733bb443f82257a35ae9732fbe9864864ffe0ba2caaabce540c"
+      },
+      "sp_wcs_-40c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_-40c_vdd1.98v.stability.dat",
+        "sha256": "c3ed3b996725a6097172b1bd0874ea2755c35f72d43e3160c0fdd46ad655223b"
+      },
+      "sp_wcs_125c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_125c_vdd1.62v.stability.dat",
+        "sha256": "8ea031381ddfd038d6ed19906eab9a9f9939b6a55df438750b669ce384c99627"
+      },
+      "sp_wcs_125c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_125c_vdd1.80v.stability.dat",
+        "sha256": "6263b3eec9c6a60c84ade606888e4e04bb3b6c4e0ebcf8be753efb6022c93e55"
+      },
+      "sp_wcs_125c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_125c_vdd1.98v.stability.dat",
+        "sha256": "d38bd95d87839952b1fb8be0eda40f1a34d6f4eef86cc7f5896168f64b4ef7f9"
+      },
+      "sp_wcs_27c_vdd1.62v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_27c_vdd1.62v.stability.dat",
+        "sha256": "4507d9885cf6c7e6eb02f96c05fa2dd561a20714433431a3605a31e741be08f4"
+      },
+      "sp_wcs_27c_vdd1.80v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_27c_vdd1.80v.stability.dat",
+        "sha256": "e83fff735c40d4e4acb66f27fee633f8967fb71a782e9027d069b4e2ea3343b2"
+      },
+      "sp_wcs_27c_vdd1.98v": {
+        "path": "sim/lna-characterization/corners/20260926-122301-088c734/sp_wcs_27c_vdd1.98v.stability.dat",
+        "sha256": "2aaaece14809732b5a69d440fa5011d21b23f317564b2b55eaf6f7cd578b22b6"
+      }
+    },
+    "summary_csv": {
+      "path": "sim/lna-characterization/records/20260926-122301-088c734-summary.csv",
+      "sha256": "96f37d9ed0af8a822702674e9cdc29b709f66bee1730b0cbd8532b2cb7bc02ac"
+    }
+  },
+  "nominal_cell": "sp_typ_27c_vdd1.80v",
+  "record_id": "20260926-122301-088c734",
+  "rows": [
+    {
+      "best": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": 12.2159
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "gain",
+      "input_columns": [
+        "s21_db_min",
+        "s21_db_max"
+      ],
+      "label": "Gain (S21)",
+      "limit": {
+        "comparator": ">",
+        "source": "spec/ratified-rows.json#gain",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Gain (S21)",
+        "status": "ratified",
+        "unit": "dB",
+        "value": 15.0
+      },
+      "nominal": {
+        "band_max": 11.5657,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 11.4604
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell in-band minimum of |S21|; worst = min of cell minima, best = max of cell minima",
+      "tested_cells": 45,
+      "unit": "dB",
+      "worst": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 10.2748
+      }
+    },
+    {
+      "best": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": 1.8432
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "nf290",
+      "input_columns": [
+        "nf290_db_worst"
+      ],
+      "label": "Noise figure (NF), T0 = 290 K",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#nf",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Noise figure (NF)",
+        "status": "ratified",
+        "unit": "dB",
+        "value": 1.5
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 2.6559
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell maximum over 3 sampled frequencies (band low/mid/high); worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "dB",
+      "worst": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 3.7759
+      }
+    },
+    {
+      "best": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": 2.0749
+      },
+      "classification": "context",
+      "id": "nfmin",
+      "input_columns": [
+        "nfmin_sp_db_at_band_lo"
+      ],
+      "label": "NFmin (analysis-temperature referenced)",
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 2.3817
+      },
+      "statistic": "band-low value, referenced to the analysis temperature (NOT 290 K); worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "dB",
+      "worst": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 2.7275
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": -3.2227
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "s11",
+      "input_columns": [
+        "s11_db_worst"
+      ],
+      "label": "Input match (S11)",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#s11",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Input match (S11)",
+        "status": "ratified",
+        "unit": "dB",
+        "value": -10.0
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": -3.0657
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell in-band maximum; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "dB",
+      "worst": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": -2.9616
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": -0.0059
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "s22",
+      "input_columns": [
+        "s22_db_worst"
+      ],
+      "label": "Output match (S22)",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#s22",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Output match (S22)",
+        "status": "ratified",
+        "unit": "dB",
+        "value": -10.0
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": -0.0044
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell in-band maximum; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "dB",
+      "worst": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": -0.0033
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.80 V",
+        "freq_hz": 473151259.0,
+        "point_id": "sp_wcs_125c_vdd1.80v",
+        "value": 0.999998308
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "mu",
+      "inband_context": {
+        "cells_not_above_1": 0,
+        "column": "mu_inband_min",
+        "max": {
+          "cell": "wcs/−40 °C/1.62 V",
+          "point_id": "sp_wcs_-40c_vdd1.62v",
+          "value": 1.000441
+        },
+        "min": {
+          "cell": "bcs/125 °C/1.98 V",
+          "point_id": "sp_bcs_125c_vdd1.98v",
+          "value": 1.000275
+        },
+        "nominal": 1.000353
+      },
+      "input_columns": [
+        "raw stability columns 2 (Hz), 3 (mu)"
+      ],
+      "label": "Stability (mu, binding)",
+      "limit": {
+        "comparator": ">",
+        "source": "spec/ratified-rows.json#mu",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Stability",
+        "status": "ratified",
+        "unit": "1",
+        "value": 1.0
+      },
+      "nominal": {
+        "freq_hz": 562341325.0,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 0.99999683
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell broadband minimum over the 140-point 10 MHz-30 GHz grid; worst = min, best = max",
+      "tested_cells": 45,
+      "unit": "1",
+      "worst": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "freq_hz": 595662144.0,
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": 0.999995918
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "freq_hz": 56234132.5,
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": -2.14444773
+      },
+      "classification": "context",
+      "id": "k",
+      "inband_context": {
+        "column": "k_inband_min",
+        "max": {
+          "cell": "bcs/−40 °C/1.62 V",
+          "point_id": "sp_bcs_-40c_vdd1.62v",
+          "value": 4.404008
+        },
+        "min": {
+          "cell": "wcs/125 °C/1.98 V",
+          "point_id": "sp_wcs_125c_vdd1.98v",
+          "value": 3.389937
+        },
+        "nominal": 3.824708
+      },
+      "input_columns": [
+        "raw stability columns 0 (Hz), 1 (k)",
+        "k_inband_min"
+      ],
+      "label": "Stability (k, context only)",
+      "nominal": {
+        "freq_hz": 50118723.4,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": -2.79221413
+      },
+      "statistic": "cell broadband minimum of k; worst = min, best = max",
+      "tested_cells": 45,
+      "unit": "1",
+      "worst": {
+        "cell": "bcs/125 °C/1.98 V",
+        "freq_hz": 50118723.4,
+        "point_id": "sp_bcs_125c_vdd1.98v",
+        "value": -3.53008299
+      }
+    },
+    {
+      "best": {
+        "cell": "bcs/−40 °C/1.62 V",
+        "freq_hz": 10000000.0,
+        "point_id": "sp_bcs_-40c_vdd1.62v",
+        "value": 0.811067761
+      },
+      "classification": "context",
+      "id": "delta",
+      "input_columns": [
+        "raw stability columns 4 (Hz), 5 (abs delta)"
+      ],
+      "label": "Stability (|delta|, context only)",
+      "nominal": {
+        "freq_hz": 10000000.0,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 0.813573929
+      },
+      "statistic": "cell broadband maximum of |delta|; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "1",
+      "worst": {
+        "cell": "bcs/125 °C/1.62 V",
+        "freq_hz": 10000000.0,
+        "point_id": "sp_bcs_125c_vdd1.62v",
+        "value": 0.817548347
+      }
+    },
+    {
+      "best": {
+        "cell": "bcs/−40 °C/1.62 V",
+        "freq_hz": 10000000.0,
+        "point_id": "sp_bcs_-40c_vdd1.62v",
+        "value": 0.811067762
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 0,
+      "failing_point_ids": [],
+      "id": "negres_s11",
+      "input_columns": [
+        "raw stability columns 6 (Hz), 7 (abs S11)"
+      ],
+      "label": "Negative-resistance check (|S11|)",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#negres",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Stability",
+        "status": "ratified",
+        "unit": "1",
+        "value": 1.0
+      },
+      "nominal": {
+        "freq_hz": 10000000.0,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 0.81357393
+      },
+      "numerical_verdict": "pass",
+      "statistic": "cell broadband maximum of |S11|; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "1",
+      "worst": {
+        "cell": "bcs/125 °C/1.62 V",
+        "freq_hz": 10000000.0,
+        "point_id": "sp_bcs_125c_vdd1.62v",
+        "value": 0.817548348
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "freq_hz": 112201845.0,
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 1.00000006
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 45,
+      "failing_point_ids": [
+        "sp_bcs_-40c_vdd1.62v",
+        "sp_bcs_-40c_vdd1.80v",
+        "sp_bcs_-40c_vdd1.98v",
+        "sp_bcs_125c_vdd1.62v",
+        "sp_bcs_125c_vdd1.80v",
+        "sp_bcs_125c_vdd1.98v",
+        "sp_bcs_27c_vdd1.62v",
+        "sp_bcs_27c_vdd1.80v",
+        "sp_bcs_27c_vdd1.98v",
+        "sp_fs_-40c_vdd1.62v",
+        "sp_fs_-40c_vdd1.80v",
+        "sp_fs_-40c_vdd1.98v",
+        "sp_fs_125c_vdd1.62v",
+        "sp_fs_125c_vdd1.80v",
+        "sp_fs_125c_vdd1.98v",
+        "sp_fs_27c_vdd1.62v",
+        "sp_fs_27c_vdd1.80v",
+        "sp_fs_27c_vdd1.98v",
+        "sp_sf_-40c_vdd1.62v",
+        "sp_sf_-40c_vdd1.80v",
+        "sp_sf_-40c_vdd1.98v",
+        "sp_sf_125c_vdd1.62v",
+        "sp_sf_125c_vdd1.80v",
+        "sp_sf_125c_vdd1.98v",
+        "sp_sf_27c_vdd1.62v",
+        "sp_sf_27c_vdd1.80v",
+        "sp_sf_27c_vdd1.98v",
+        "sp_typ_-40c_vdd1.62v",
+        "sp_typ_-40c_vdd1.80v",
+        "sp_typ_-40c_vdd1.98v",
+        "sp_typ_125c_vdd1.62v",
+        "sp_typ_125c_vdd1.80v",
+        "sp_typ_125c_vdd1.98v",
+        "sp_typ_27c_vdd1.62v",
+        "sp_typ_27c_vdd1.80v",
+        "sp_typ_27c_vdd1.98v",
+        "sp_wcs_-40c_vdd1.62v",
+        "sp_wcs_-40c_vdd1.80v",
+        "sp_wcs_-40c_vdd1.98v",
+        "sp_wcs_125c_vdd1.62v",
+        "sp_wcs_125c_vdd1.80v",
+        "sp_wcs_125c_vdd1.98v",
+        "sp_wcs_27c_vdd1.62v",
+        "sp_wcs_27c_vdd1.80v",
+        "sp_wcs_27c_vdd1.98v"
+      ],
+      "id": "negres_s22",
+      "input_columns": [
+        "raw stability columns 10 (Hz), 11 (abs S22)"
+      ],
+      "label": "Negative-resistance check (|S22|)",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#negres",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Stability",
+        "status": "ratified",
+        "unit": "1",
+        "value": 1.0
+      },
+      "nominal": {
+        "freq_hz": 167880402.0,
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 1.00000013
+      },
+      "numerical_verdict": "fail",
+      "statistic": "cell broadband maximum of |S22|; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "1",
+      "worst": {
+        "cell": "bcs/125 °C/1.98 V",
+        "freq_hz": 188364909.0,
+        "point_id": "sp_bcs_125c_vdd1.98v",
+        "value": 1.00000018
+      }
+    },
+    {
+      "advisory_only": true,
+      "best": {
+        "cell": "bcs/125 °C/1.98 V",
+        "point_id": "sp_bcs_125c_vdd1.98v",
+        "value": 0.4979
+      },
+      "classification": "not-ratified",
+      "draft_advisory": {
+        "cells_meeting": 2,
+        "cells_not_meeting": 43,
+        "comparator": ">",
+        "unit": "dBm",
+        "value": 0.0
+      },
+      "id": "iip3",
+      "input_columns": [
+        "iip3_dbm_a2mv"
+      ],
+      "label": "IIP3 (numeric target DRAFT)",
+      "limit": {
+        "comparator": ">",
+        "source": "spec/ratified-rows.json#iip3",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "IIP3",
+        "status": "not-ratified",
+        "unit": "dBm",
+        "value": 0.0
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": -1.4171
+      },
+      "statistic": "value at 2 mV/tone; worst = min, best = max",
+      "tested_cells": 45,
+      "unit": "dBm",
+      "worst": {
+        "cell": "wcs/−40 °C/1.62 V",
+        "point_id": "sp_wcs_-40c_vdd1.62v",
+        "value": -2.3219
+      }
+    },
+    {
+      "cells_per_rail": {
+        "1.62": 15,
+        "1.80": 15,
+        "1.98": 15
+      },
+      "classification": "context",
+      "id": "supply",
+      "input_columns": [
+        "vdd_v"
+      ],
+      "label": "Supply",
+      "limit": {
+        "comparator": "±",
+        "source": "spec/ratified-rows.json#supply",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Supply",
+        "status": "ratified",
+        "tolerance_pct": 10.0,
+        "unit": "V",
+        "value": 1.8
+      },
+      "note": "coverage/context for the 1.80 V +/-10 % rail; not an RF performance pass",
+      "rails": [
+        1.62,
+        1.8,
+        1.98
+      ],
+      "statistic": "unique swept rails",
+      "tested_cells": 45,
+      "unit": "V"
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 7.18657
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 0,
+      "failing_point_ids": [],
+      "id": "power",
+      "input_columns": [
+        "pdc_w (x1000)"
+      ],
+      "label": "Power (P_dc)",
+      "limit": {
+        "comparator": "<",
+        "source": "spec/ratified-rows.json#power",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Power (P_dc)",
+        "status": "ratified",
+        "unit": "mW",
+        "value": 10.0
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 8.48596
+      },
+      "numerical_verdict": "pass",
+      "statistic": "cell DC power; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "mW",
+      "worst": {
+        "cell": "bcs/125 °C/1.98 V",
+        "point_id": "sp_bcs_125c_vdd1.98v",
+        "value": 9.76834
+      }
+    },
+    {
+      "best": {
+        "cell": "wcs/125 °C/1.62 V",
+        "point_id": "sp_wcs_125c_vdd1.62v",
+        "value": 3.65733
+      },
+      "classification": "requirement",
+      "coverage_status": "incomplete",
+      "failing_cells": 0,
+      "failing_point_ids": [],
+      "id": "ic1",
+      "input_columns": [
+        "ic1_a (x1000)"
+      ],
+      "label": "Collector current I_C1 (DR-0001 mandate)",
+      "limit": {
+        "comparator": "≤",
+        "source": "spec/ratified-rows.json#ic1",
+        "spec_file": "spec/target-spec.md",
+        "spec_row": "Power (P_dc)",
+        "status": "ratified",
+        "unit": "mA",
+        "value": 4.5
+      },
+      "nominal": {
+        "point_id": "sp_typ_27c_vdd1.80v",
+        "value": 3.9402999999999997
+      },
+      "numerical_verdict": "pass",
+      "statistic": "cell I_C1; worst = max, best = min",
+      "tested_cells": 45,
+      "unit": "mA",
+      "worst": {
+        "cell": "bcs/−40 °C/1.98 V",
+        "point_id": "sp_bcs_-40c_vdd1.98v",
+        "value": 4.15113
+      }
+    }
+  ],
+  "sampling": {
+    "inband": "in-band S-parameter grid of the summary CSV",
+    "nf290": "three frequencies: band low, mid, high",
+    "stability": "140 points, 40 pts/decade, 10 MHz to 29.85 GHz"
+  },
+  "schema": "results-verdicts/1",
+  "temperature_references": {
+    "nf290_db_worst": "T0 = 290 K (requirement)",
+    "nfmin_sp_db_at_band_lo": "analysis temperature (context; not relabeled as 290 K)"
+  }
+}

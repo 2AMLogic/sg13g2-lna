@@ -39,6 +39,8 @@ name: signoff
 # klt report envelopes agree with each other and the netlist — issue #86) and
 # `model-provenance` (vendored sim/models/ files still match the sha256 stamped
 # in sim/models/SOURCE.md — issue #84),
+# `results-table-drift` (generated results table + verdict JSON in measurements/
+# match the record and the ratified rows — issue #141),
 # `local-checks-drift` (run-local-checks.sh still mirrors this workflow —
 # issue #108),
 # `sim-append-only` (pull requests only; fails a PR that modifies,
@@ -277,6 +279,25 @@ jobs:
 
       - name: Vendored models match their recorded sha256
         run: sim/models/check_sources.sh
+
+  # Results-table drift gate (issue #141): the generated results table in
+  # measurements/README.md and measurements/results-verdicts.json must equal a
+  # fresh render of the explicitly selected record's summary CSV and raw
+  # stability tables against the limits in spec/ratified-rows.json (itself
+  # validated against spec/target-spec.md). Stdlib python only, PDK-free,
+  # read-only on the checkout. Numerical verdicts are for a historical record
+  # with incomplete coverage; they are not full-spec compliance or T1 signoff.
+  results-table-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Results renderer self-test
+        run: python3 -I -m unittest discover -s sim/lna-characterization/tests -p test_render_results.py -v
+
+      - name: Committed results table and verdict JSON are fresh
+        run: python3 -I sim/lna-characterization/render_results.py --check
 
   # Local-runner drift gate (issue #108): .github/scripts/run-local-checks.sh
   # must invoke every command this workflow runs, exactly as CI does, in
