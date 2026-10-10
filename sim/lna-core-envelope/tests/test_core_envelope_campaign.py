@@ -224,6 +224,113 @@ class GateVerdict(unittest.TestCase):
         self.assertTrue(v["pass"], v["problems"])
         self.assertIn("plumbing only", v["scope"])
 
+    # --- provenance / authorization boundary (issue #158) ---
+    # "Live-shaped" fixtures below are SHAPE-ONLY: invented values with the
+    # synthetic marker stripped, to exercise the predicate. Never evidence.
+    CLIENT = "klt 0.7.0+gabc"
+
+    def _rewrite(self, fn):
+        for rep in self.cd.glob("*.report.json"):
+            d = json.loads(rep.read_text())
+            fn(rep.name, d)
+            rep.write_text(json.dumps(d))
+
+    def _live_shaped(self):
+        syn.write_reports(self.snap, self.cd)
+        self._rewrite(lambda n, d: d.pop("synthetic_fixture"))
+        return C.verify_gate(self.snap, self.cd, self.CLIENT)
+
+    def test_synthetic_passes_but_does_not_authorize(self):
+        v = self.verdict()
+        self.assertTrue(v["pass"], v["problems"])
+        self.assertEqual(v["provenance"], "synthetic")
+        self.assertIn("provenance", C.authorizes_campaign(v, self.CLIENT))
+
+    def test_mixed_does_not_authorize(self):
+        syn.write_reports(self.snap, self.cd)
+        first = sorted(self.cd.glob("*.report.json"))[0]
+        d = json.loads(first.read_text())
+        d.pop("synthetic_fixture")
+        first.write_text(json.dumps(d))
+        v = C.verify_gate(self.snap, self.cd, self.CLIENT)
+        self.assertTrue(v["pass"], v["problems"])
+        self.assertEqual(v["provenance"], "mixed")
+        self.assertNotEqual(C.authorizes_campaign(v, self.CLIENT), "")
+
+    def test_live_shaped_authorizes(self):
+        v = self._live_shaped()
+        self.assertTrue(v["pass"], v["problems"])
+        self.assertEqual(v["provenance"], "live")
+        self.assertEqual(C.authorizes_campaign(v, self.CLIENT), "")
+        self.assertNotEqual(C.authorizes_campaign(v, "klt 0.8.0"), "")
+
+    def test_legacy_verdict_refused(self):
+        v = self._live_shaped()
+        legacy = {k: x for k, x in v.items() if k != "provenance"}
+        legacy["schema"] = "core-envelope-gate/1"
+        self.assertIn("rerun", C.authorizes_campaign(legacy, self.CLIENT))
+        nofield = dict(v)
+        del nofield["provenance"]
+        self.assertNotEqual(C.authorizes_campaign(nofield, self.CLIENT), "")
+        self.assertNotEqual(C.authorizes_campaign([], self.CLIENT), "")
+
+    def test_failed_live_verdict_refused(self):
+        v = self._live_shaped()
+        v["pass"] = False
+        self.assertNotEqual(C.authorizes_campaign(v, self.CLIENT), "")
+
+    def test_check_gate_verdict_cli(self):
+        v = self._live_shaped()
+        p = Path(self.tmp.name) / "v.json"
+        p.write_text(json.dumps(v))
+        self.assertEqual(C.main(["check-gate-verdict", str(p), self.CLIENT]), 0)
+        v["provenance"] = "synthetic"
+        p.write_text(json.dumps(v))
+        self.assertEqual(C.main(["check-gate-verdict", str(p), self.CLIENT]), 1)
+
+    def _first_corner(self, fn):
+        syn.write_reports(self.snap, self.cd)
+        def go(n, d):
+            if n.startswith("gate__s_fixi_a80__ideal__op"):
+                fn(d)
+        self._rewrite(go)
+        return C.verify_gate(self.snap, self.cd, self.CLIENT)
+
+    def test_wrong_corner_identity_fails(self):
+        for mutate in (lambda c: c.update(temperature_c=125.0),
+                       lambda c: c.update(process={"name": "ss"}),
+                       lambda c: c.update(supply_v={"vdd": 1.62}),
+                       lambda c: c.pop("temperature_c"),
+                       lambda c: c.pop("supply_v"),
+                       lambda c: c.pop("process")):
+            with self.subTest():
+                v = self._first_corner(lambda d: mutate(d["corners"][0]))
+                self.assertFalse(v["pass"])
+                self.assertTrue(any("corner identity" in p for p in v["problems"]), v["problems"])
+
+    def test_duplicate_measurement_fails(self):
+        v = self._first_corner(lambda d: d["corners"][0]["measurements"].append(
+            dict(d["corners"][0]["measurements"][0])))
+        self.assertFalse(v["pass"])
+        self.assertTrue(any("duplicate measurement" in p for p in v["problems"]))
+
+    def test_malformed_shapes_fail_without_exception(self):
+        cases = [
+            lambda d: d.update(corners=["x"]),
+            lambda d: d["corners"][0].update(measurements=5),
+            lambda d: d["corners"][0].update(measurements=["x", {"value": 1}]),
+            lambda d: d.update(environment="x"),
+            lambda d: d["corners"][0].update(temperature_c="hot"),
+        ]
+        for fn in cases:
+            with self.subTest():
+                v = self._first_corner(fn)
+                self.assertFalse(v["pass"])
+                self.assertTrue(v["problems"])
+        self.cd.joinpath("gate__s_fixi_a80__ideal__op.report.json").write_text("[1]")
+        v = C.verify_gate(self.snap, self.cd, self.CLIENT)
+        self.assertTrue(any("malformed report" in p for p in v["problems"]))
+
     def test_runner_client_mismatch_fails(self):
         v = self.verdict(runner="0.6.0")
         self.assertFalse(v["pass"])

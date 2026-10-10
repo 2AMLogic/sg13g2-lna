@@ -72,15 +72,7 @@ RECORDS="${SCRIPT_DIR}/records"
 if [[ "${MODE}" == campaign ]]; then
   V="${CORE_ENV_GATE_VERDICT:-}"
   [[ -f "${V}" ]] || { echo "run_core_envelope_campaign.sh: campaign needs CORE_ENV_GATE_VERDICT=<gate-verdict.json> from a passing gate." >&2; exit 3; }
-  python3 -I - "${V}" "${KLT_VERSION}" <<'PYEOF' || exit 3
-import json, sys
-v = json.load(open(sys.argv[1]))
-if v.get("schema") != "core-envelope-gate/1" or v.get("pass") is not True:
-    sys.exit("run_core_envelope_campaign.sh: gate verdict is not a passing core-envelope-gate/1 document.")
-if v.get("client_klt_version") != sys.argv[2]:
-    sys.exit("run_core_envelope_campaign.sh: gate verdict was produced by client "
-             f"{v.get('client_klt_version')!r}, current client is {sys.argv[2]!r}; rerun the gate.")
-PYEOF
+  python3 -I "${GEN}" check-gate-verdict "${V}" "${KLT_VERSION}" || exit 3
 fi
 
 python3 -I "${GEN}" gen --record-id "${RECORD_ID}" --set "${MODE}" --backend batch --git-sha "${GIT_SHA}"
