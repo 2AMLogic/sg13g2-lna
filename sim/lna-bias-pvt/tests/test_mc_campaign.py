@@ -46,19 +46,26 @@ def sample_values(rng, mismatch=True):
     return v
 
 
+BENCH_SHA = mc.sha256_bytes(mc.bench_netlist().encode())
+
+
 def report(n, mismatch=True, seed=1, job="klt-sim-x", state="done", mutate=None):
     rng = random.Random(seed)
+    process = "typ_mismatch" if mismatch else "typ"
     corners = []
     for i in range(n):
         vals = sample_values(rng, mismatch)
         corners.append({
-            "corner_id": f"p/1.800V/27C/mc{i}", "status": "pass",
+            "corner_id": f"{process}/1.800V/27C/mc{i}", "status": "pass",
+            "process": process, "supply_v": {"vdd": 1.8}, "temperature_c": 27,
             "monte_carlo": {"sample_index": i, "seed": 1000 + i, "process_seed": 1,
                             "mismatch_seed": 2000 + i},
             "measurements": [{"name": k, "value": vals[k]} for k in mc.ALL_MEAS],
             "diagnostics": []})
     rep = {"schema_version": 3, "status": "pass", "corners": corners,
-           "environment": {"engine_version": "ngspice-46",
+           "environment": {"engine_version": "ngspice-46", "netlist_sha256": BENCH_SHA,
+                           "corner_section_libs": [{"name": "cornerHBT.lib"},
+                                                   {"name": "cornerMOShv.lib"}],
                            "monte_carlo": {"n": n, "seed": mc.SEED, "vary": "mismatch"},
                            "remote": {"provider": "aws-batch-fleet", "job_id": job,
                                       "state": state, "runner_klt_version": "0.7.0",
@@ -168,8 +175,10 @@ class TestReduce(Base):
         self.assertEqual(main["failures"]["failed_error"], 1)
         self.assertEqual(main["failures"]["failed_missing_idd"], 1)
         self.assertEqual(main["diagnostic_counts"], {"nonconvergence": 1})
-        self.assertEqual(main["stats"]["ic1"]["n_nonfinite"], 1)
-        self.assertEqual(main["stats"]["idd"]["n_missing"], 1)
+        self.assertEqual(main["excluded_value_counts"]["ic1"]["n_nonfinite"], 1)
+        self.assertEqual(main["excluded_value_counts"]["idd"]["n_missing"], 1)
+        self.assertEqual(main["stats"]["ic1"]["n_nonfinite"], 0)
+        self.assertEqual(main["stats"]["ic1"]["n_finite"], mc.N_MAIN - 3)
         self.assertEqual(main["samples_ok"], mc.N_MAIN - 3)
         # allow_nan=False: the summary is strict JSON even with NaN inputs
         json.loads((self.out / "t-mc-summary.json").read_text())
@@ -220,7 +229,11 @@ class TestReduce(Base):
         self.assertFalse(s["variation"]["pass"])
 
     def test_negative_control_that_varies_fails(self):
-        self.write_all(neg=report(mc.N_NEGCTL, mismatch=True, job="z"))
+        def nominal_id(rep):
+            for c in rep["corners"]:
+                c["process"] = "typ"
+                c["corner_id"] = c["corner_id"].replace("typ_mismatch", "typ")
+        self.write_all(neg=report(mc.N_NEGCTL, mismatch=True, job="z", mutate=nominal_id))
         _, s = self.reduce()
         self.assertFalse(s["negative_control"]["pass"])
         self.assertFalse(s["controls_pass"])
@@ -230,6 +243,61 @@ class TestReduce(Base):
         _, s = self.reduce()
         self.assertFalse(s["replay"]["pass"])
         self.assertGreater(s["replay"]["n_mismatches"], 0)
+
+    def test_errored_sample_with_finite_values_is_excluded_from_stats(self):
+        def err(rep):
+            rep["corners"][1]["status"] = "error"
+            for m in rep["corners"][1]["measurements"]:
+                if m["name"] == "ic1":
+                    m["value"] = 1.0
+        self.write_all(main=report(mc.N_MAIN, mutate=err))
+        _, s = self.reduce()
+        main = s["runs"]["mc_mismatch"]["summary"]
+        self.assertEqual(main["failures"], {"failed_error": 1})
+        self.assertEqual(main["samples_ok"], mc.N_MAIN - 1)
+        self.assertEqual(main["stats"]["ic1"]["n_finite"], mc.N_MAIN - 1)
+        self.assertLess(main["stats"]["ic1"]["max"], 1.0)
+        self.assertEqual(main["excluded_value_counts"]["ic1"]["n_finite"], 1)
+
+    def test_limit_fail_with_valid_values_stays_usable(self):
+        def lim(rep):
+            rep["corners"][2]["status"] = "fail"
+        self.write_all(main=report(mc.N_MAIN, mutate=lim))
+        _, s = self.reduce()
+        main = s["runs"]["mc_mismatch"]["summary"]
+        self.assertEqual(main["samples_ok"], mc.N_MAIN)
+        self.assertEqual(main["stats"]["ic1"]["n_finite"], mc.N_MAIN)
+
+    def test_wrong_dut_hash_is_rejected(self):
+        def bad(rep):
+            rep["environment"]["netlist_sha256"] = "0" * 64
+        self.write_all(main=report(mc.N_MAIN, mutate=bad))
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertFalse(s["complete"])
+        self.assertTrue(any("netlist_sha256" in p for p in s["problems"]))
+
+    def test_wrong_corner_identity_is_rejected(self):
+        def bad(rep):
+            for i, c in enumerate(rep["corners"]):
+                c["corner_id"] = f"wrong_process/1.200V/125C/mc{i}"
+                c["process"], c["supply_v"], c["temperature_c"] = "wrong_process", {"vdd": 1.2}, 125
+        self.write_all(main=report(mc.N_MAIN, mutate=bad))
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertFalse(s["controls_pass"])
+        self.assertTrue(any("process 'wrong_process'" in p for p in s["problems"]))
+        self.assertTrue(any("temperature_c 125" in p for p in s["problems"]))
+
+    def test_missing_provenance_and_wrong_section_libs_rejected(self):
+        def bad(rep):
+            del rep["corners"][0]["process"]
+            rep["environment"]["corner_section_libs"] = [{"name": "cornerHBT.lib"}]
+        self.write_all(main=report(mc.N_MAIN, mutate=bad))
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("missing process" in p for p in s["problems"]))
+        self.assertTrue(any("corner_section_libs" in p for p in s["problems"]))
 
     def test_not_fleet_evidence(self):
         def local(rep):

@@ -406,8 +406,43 @@ def fleet_identity(report: dict) -> dict:
     return {k: rem.get(k) for k in keys}
 
 
-def extract_samples(report: dict, n_expected: int) -> tuple[list[dict], list[str]]:
-    """One row per sample_index 0..n-1 (missing samples become explicit rows)."""
+def expected_identity(snapshot_dir: Path, request_name: str) -> dict:
+    """Operating-corner identity a report must carry, read from the frozen request."""
+    req = json.loads((Path(snapshot_dir) / request_name).read_text())
+    corners = req["corners"]
+    proc = corners["process"][0]
+    return {"process": proc["name"],
+            "supply_v": {k: v[0] for k, v in corners["supply_v"].items()},
+            "temperature_c": corners["temperature_c"][0],
+            "libs": sorted(Path(s["lib"]).name for s in proc["sections"])}
+
+
+def _corner_id(ident: dict, idx: int) -> str:
+    v = "/".join(f"{x:.3f}V" for x in ident["supply_v"].values())
+    return f"{ident['process']}/{v}/{ident['temperature_c']:g}C/mc{idx}"
+
+
+def check_corner_identity(c: dict, idx: int, ident: dict) -> list[str]:
+    """Problems for one report corner whose process/supply/temperature/id differ from the request."""
+    out = []
+    for key, want in (("process", ident["process"]), ("supply_v", ident["supply_v"]),
+                      ("temperature_c", ident["temperature_c"]),
+                      ("corner_id", _corner_id(ident, idx))):
+        got = c.get(key)
+        if got is None:
+            out.append(f"sample {idx}: missing {key} (request has {want!r})")
+        elif got != want:
+            out.append(f"sample {idx}: {key} {got!r} != request {want!r}")
+    return out
+
+
+def extract_samples(report: dict, n_expected: int,
+                    ident: dict | None = None) -> tuple[list[dict], list[str]]:
+    """One row per sample_index 0..n-1 (missing samples become explicit rows).
+
+    With `ident` (see expected_identity) every present corner must also carry the
+    request's process, supply, temperature and corner id.
+    """
     issues = []
     by_idx: dict[int, dict] = {}
     for c in report.get("corners", []):
@@ -420,6 +455,8 @@ def extract_samples(report: dict, n_expected: int) -> tuple[list[dict], list[str
             issues.append(f"duplicate sample_index {idx}")
             by_idx[idx]["duplicate"] = True
             continue
+        if ident is not None:
+            issues.extend(check_corner_identity(c, idx, ident))
         vals = {}
         for m in c.get("measurements") or []:
             if isinstance(m, dict) and m.get("name") in ALL_MEAS:
@@ -492,8 +529,17 @@ def pearson(xs: list, ys: list):
 
 def summarize_run(rows: list[dict]) -> dict:
     ok = [r for r in rows if r["classification"] == "ok"]
-    col = {k: [r["values"].get(k) for r in rows if r["present"] and not r["duplicate"]]
-           for k in ALL_MEAS}
+    # Distribution statistics use usable samples only; values read from failed
+    # rows are counted separately and never move the mean/min/max.
+    col = {k: [r["values"].get(k) for r in ok] for k in ALL_MEAS}
+    excluded = [r for r in rows if r["present"] and not r["duplicate"]
+                and r["classification"] != "ok"]
+    excluded_values = {
+        k: {"n_finite": sum(1 for r in excluded if _finite(r["values"].get(k))),
+            "n_nonfinite": sum(1 for r in excluded if r["values"].get(k) is not None
+                               and not math.isfinite(r["values"][k])),
+            "n_missing": sum(1 for r in excluded if r["values"].get(k) is None)}
+        for k in ALL_MEAS}
     fails: dict[str, int] = {}
     for r in rows:
         if r["classification"] != "ok":
@@ -512,6 +558,7 @@ def summarize_run(rows: list[dict]) -> dict:
         "diagnostic_counts": diag,
         "status_counts": _count(r["status"] for r in rows),
         "stats": {k: stats(v) for k, v in col.items()},
+        "excluded_value_counts": excluded_values,
         "count_ic1_gt_bar": sum(1 for v in ic1 if v > I_C1_BAR_A),
         "count_ic1_eq_bar": sum(1 for v in ic1 if v == I_C1_BAR_A),
         "count_pdc_ge_bar": sum(1 for v in pdc if v >= P_DC_BAR_W),
@@ -646,7 +693,16 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
                 problems.append(f"{run}: fleet job state {fid['state']!r}")
             if (emc.get("n"), emc.get("seed"), emc.get("vary")) != (n, SEED, "mismatch"):
                 problems.append(f"{run}: environment.monte_carlo {emc} != request")
-            rows, issues = extract_samples(rep, n)
+            if env.get("netlist_sha256") != m["bench_sha256"]:
+                problems.append(f"{run}: environment.netlist_sha256 "
+                                f"{env.get('netlist_sha256')!r} != frozen bench {m['bench_sha256']}")
+            ident = expected_identity(snapshot_dir, m["requests"][req_stem]["request"])
+            libs = sorted(str(x.get("name")) for x in env.get("corner_section_libs") or []
+                          if isinstance(x, dict))
+            if libs != ident["libs"]:
+                problems.append(f"{run}: environment.corner_section_libs {libs} != request "
+                                f"{ident['libs']}")
+            rows, issues = extract_samples(rep, n, ident)
             problems.extend(f"{run}: {i}" for i in issues)
             rows_of[run] = rows
             entry["summary"] = summarize_run(rows)
