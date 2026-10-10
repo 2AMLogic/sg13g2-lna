@@ -33,6 +33,8 @@ name: signoff
 # `layout-reduction-tests` (layout/lvs_reference.py unit tests — issue #109),
 # `sim-record-paths-tests` (sim/env.sh record-id reservation — issue #113),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
+# `breakdown-replay` (breakdown summary reduction replayed against the
+# committed record — issue #145),
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
@@ -190,6 +192,22 @@ jobs:
 
       - name: Committed envelope derivation replays against retained data
         run: python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py
+
+  # Breakdown-summary replay (issue #145): regenerate both committed summary
+  # CSVs into scratch from the explicitly named committed locus/sweep CSVs
+  # and compare byte-for-byte. Stdlib-only; no PDK/ngspice/klt; never writes
+  # under sim/*/records/.
+  breakdown-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Breakdown reduction unit tests and replay self-test
+        run: python3 -I -m unittest discover -s sim/breakdown-extraction/tests -v
+
+      - name: Committed breakdown summaries replay byte-identically
+        run: python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
 
   # Record-id citation gate (issue #75): every sim/ record id cited in
   # tracked docs must resolve to committed evidence or be allowlisted in

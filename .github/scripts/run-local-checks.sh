@@ -120,6 +120,12 @@ step "envelope-replay: self-test" \
 step "envelope-replay: check_envelope_replay.py" \
   python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py
 
+# --- job: breakdown-replay
+step "breakdown-replay: unit tests and replay self-test" \
+  python3 -I -m unittest discover -s sim/breakdown-extraction/tests -v
+step "breakdown-replay: check_breakdown_replay.py" \
+  python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
+
 # --- job: record-citations
 step "record-citations: self-test" .github/scripts/test-check-record-citations.sh
 step "record-citations: check" .github/scripts/check-record-citations
