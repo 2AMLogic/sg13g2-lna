@@ -183,9 +183,22 @@ class Requests(unittest.TestCase):
     def test_gate_is_one_nominal_cell_per_analysis(self):
         gm = C.load_manifest(self.gate)
         self.assertEqual(gm["set"], "gate")
-        self.assertEqual(len(gm["requests"]), 4)
+        self.assertEqual(len(gm["requests"]), 5)
         for r in gm["requests"]:
             self.assertEqual(r["expected_cells"], [["typ", 27, 1.8]])
+        by_loss = {}
+        for r in gm["requests"]:
+            by_loss.setdefault(r["loss"], []).append(r["analysis"])
+        self.assertEqual(sorted(by_loss["ideal"]), sorted(C.GATE_ANALYSES))
+        self.assertEqual(by_loss["lc_em"], ["sp_band"])
+
+    def test_gate_exercises_em_model_include(self):
+        nl = self.gate / "gate__s_fixi_a80__lc_em__sp_band.spice"
+        inc = [ln for ln in nl.read_text().splitlines() if ln.startswith(".include ")]
+        self.assertEqual(len(inc), 1)
+        rel = inc[0].split('"')[1]
+        self.assertFalse(Path(rel).is_absolute())
+        self.assertEqual((self.gate / rel).resolve(), C.EM_MODEL.resolve())
 
     def test_bad_record_id(self):
         with self.assertRaises(SystemExit):

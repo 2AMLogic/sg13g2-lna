@@ -14,15 +14,19 @@
 #     it) or CORE_ENV_BACKEND=batch. Anything else exits 3. There is no local
 #     fallback, and a failed submit is never retried on another backend.
 #   * The client must meet the floor in sim/pdk.json (klt_variant_campaign).
-#   * `gate` submits ONE nominal cell per analysis kind (4 requests, 1 cell each)
-#     and writes gate-verdict.json. A pass validates plumbing only.
+#   * `gate` submits ONE nominal cell per analysis kind on the ideal basis, plus
+#     one lc_em sp_band request that exercises the EM-inductor `.include`
+#     (5 requests, 1 cell each), and writes gate-verdict.json. A pass validates
+#     plumbing only.
 #   * `campaign` refuses to start without a PASSING gate verdict produced by the
 #     SAME client version (CORE_ENV_GATE_VERDICT).
-#   * Stop on the first error: a non-zero `klt sim` exit with no usable report
-#     stops the run at once; any non-zero exit leaves the run unpublished. The
-#     reducer output reaches records/ only if the reduction is COMPLETE and the
-#     control replay holds. Failed, partial or smoke-only results are never
-#     written under records/.
+#   * Stop on the first error: ANY non-zero `klt sim` exit stops the run at once
+#     (exit 4, corners/<id>/STOPPED), whether or not a report was written; no
+#     further request is submitted and nothing is published. The reducer output
+#     reaches records/ only if the reduction is COMPLETE, the control replay
+#     holds, summary.json is not a synthetic fixture, and none of the four
+#     target files already exists. Failed, partial or smoke-only results are
+#     never written under records/.
 #
 # Prerequisite (compatibility): the batch runner image must carry the same klt
 # as the client (klt itself reports batch_runner_version_mismatch). The known
@@ -113,8 +117,23 @@ if (( RC != 0 )); then
   echo "run_core_envelope_campaign.sh: reduction exit ${RC}; NOT published to records/ (see ${CORNERS}/reduction/)." >&2
   exit "${RC}"
 fi
+RED_OUT="${CORNERS}/reduction"
+SUFFIXES=(cells.csv split.csv summary.json summary.md)
+# Never publish a synthetic fixture, an incomplete summary, or a partial set.
+python3 -I - "${RED_OUT}/${RECORD_ID}-summary.json" <<'PYEOF' || exit 2
+import json, sys
+s = json.load(open(sys.argv[1]))
+if s.get("synthetic_fixture") is not False:
+    sys.exit("run_core_envelope_campaign.sh: summary.json synthetic_fixture is not false; NOT publishing.")
+if s.get("complete") is not True:
+    sys.exit("run_core_envelope_campaign.sh: summary.json is not complete; NOT publishing.")
+PYEOF
+for sfx in "${SUFFIXES[@]}"; do
+  [[ -f "${RED_OUT}/${RECORD_ID}-${sfx}" ]] || { echo "run_core_envelope_campaign.sh: reduction lacks ${RECORD_ID}-${sfx}; NOT publishing." >&2; exit 2; }
+  [[ -e "${RECORDS}/${RECORD_ID}-${sfx}" ]] && { echo "run_core_envelope_campaign.sh: ${RECORDS}/${RECORD_ID}-${sfx} exists; records are append-only. Nothing published." >&2; exit 4; }
+done
 mkdir -p "${RECORDS}"
-for f in "${CORNERS}/reduction/${RECORD_ID}-"*; do
-  ( set -o noclobber; cat "${f}" > "${RECORDS}/$(basename "${f}")" )
+for sfx in "${SUFFIXES[@]}"; do
+  ( set -o noclobber; cat "${RED_OUT}/${RECORD_ID}-${sfx}" > "${RECORDS}/${RECORD_ID}-${sfx}" )
 done
 echo "run_core_envelope_campaign.sh: published ${RECORDS}/${RECORD_ID}-{cells.csv,split.csv,summary.json,summary.md}"

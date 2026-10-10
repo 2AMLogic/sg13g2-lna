@@ -131,9 +131,69 @@ class CompleteCampaign(Base):
         self.assertEqual(self.reduce(), 0)
         g = self.summary()["cases"]["grid__s_fixi_a80__ideal"]
         self.assertEqual(g["n_nf290_pass"], 45 - 3)  # wcs at 125 C, three supplies
-        self.assertAlmostEqual(g["worst_hot_gap_db"], 0.12)
-        self.assertEqual(g["worst_hot_cell"], "wcs/125C/1.62V")
+        self.assertAlmostEqual(g["worst_hot_gap_nf290_db"], 0.12)
+        self.assertEqual(g["worst_hot_gap_nf290_cell"], "wcs/125C/1.62V")
         self.assertAlmostEqual(g["worst_nf290_db_worst"], 1.62)
+        self.assertEqual(g["hot_cells_expected"], 15)
+        self.assertEqual(g["hot_cells_counted_nf290"], 15)
+        self.assertEqual(g["hot_cells_counted_nfmin290"], 15)
+        self.assertNotIn("worst_hot_gap_db", g)  # ambiguous unqualified name is gone
+
+    def test_hot_gap_uses_all_15_hot_cells_not_the_3_split_cells(self):
+        # Only sf/125/1.98 fails, and it is NOT one of the 3 divider-sweep cells.
+        self.assertNotIn(("sf", 125, 1.98), [tuple(c) for c in C.HOT_CELLS])
+
+        def ov(stem, case, an, cell, vals):
+            if case != "grid__s_fixi_a80__ideal" or tuple(cell) != ("sf", 125, 1.98):
+                return
+            if an == "noise":
+                vals["nf290_db_worst"] = 1.71
+                vals["nf290_db_f00"] = 1.71
+        self.build(override=ov)
+        self.assertEqual(self.reduce(), 0, self.err)
+        g = self.summary()["cases"]["grid__s_fixi_a80__ideal"]
+        self.assertEqual(g["n_nf290_pass"], 44)
+        self.assertAlmostEqual(g["worst_hot_gap_nf290_db"], 0.21)
+        self.assertEqual(g["worst_hot_gap_nf290_cell"], "sf/125C/1.98V")
+        self.assertEqual(g["hot_cells_counted_nf290"], 15)
+        md = (self.out / "t-summary.md").read_text()
+        self.assertIn("sf/125C/1.98V", md)
+        self.assertIn("15/15 hot cells counted", md)
+
+    def test_hot_gap_nfmin290_reported_separately(self):
+        # NFmin worst hot cell (wcs/125/1.98, not a split cell) differs from the
+        # 50 Ohm-source NF worst hot cell (fs/125/1.62): the two are not conflated.
+        def ov(stem, case, an, cell, vals):
+            if case != "grid__s_fixi_a80__ideal":
+                return
+            if an == "sp_band" and tuple(cell) == ("wcs", 125, 1.98):
+                vals["nfmin_sp_db_worst"] = 1.9
+            if an == "noise" and tuple(cell) == ("fs", 125, 1.62):
+                vals["nf290_db_worst"] = 1.6
+                vals["nf290_db_f00"] = 1.6
+        self.build(override=ov)
+        self.assertEqual(self.reduce(), 0, self.err)
+        g = self.summary()["cases"]["grid__s_fixi_a80__ideal"]
+        self.assertEqual(g["worst_hot_gap_nf290_cell"], "fs/125C/1.62V")
+        self.assertAlmostEqual(g["worst_hot_gap_nf290_db"], 0.1)
+        self.assertEqual(g["worst_hot_gap_nfmin290_cell"], "wcs/125C/1.98V")
+        want = R.nf_reref(1.9, 125 + 273.15, 290.0) - 1.5
+        self.assertAlmostEqual(g["worst_hot_gap_nfmin290_db"], want)
+
+    def test_hot_gap_excludes_invalid_bias_and_reports_count(self):
+        def ov(stem, case, an, cell, vals):
+            if case == "grid__s_fixi_a80__ideal" and tuple(cell) == ("sf", 125, 1.62):
+                if an == "op":
+                    vals.update(ic2=0.0)
+                if an == "noise":
+                    vals["nf290_db_worst"] = 2.5
+                    vals["nf290_db_f00"] = 2.5
+        self.build(override=ov)
+        self.assertEqual(self.reduce(), 0, self.err)
+        g = self.summary()["cases"]["grid__s_fixi_a80__ideal"]
+        self.assertEqual(g["hot_cells_counted_nf290"], 14)
+        self.assertEqual(g["hot_cells_expected"], 15)
+        self.assertNotEqual(g["worst_hot_gap_nf290_cell"], "sf/125C/1.62V")
 
     def test_split_dnf_against_same_cell_baseline(self):
         def ov(stem, case, an, cell, vals):

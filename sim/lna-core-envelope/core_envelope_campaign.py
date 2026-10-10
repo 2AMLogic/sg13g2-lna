@@ -8,8 +8,10 @@ and the runner (run_core_envelope_campaign.sh) are the other two parts.
 
 What it generates (two sets, both under netlist-snapshots/<record-id>/):
 
-  gate      4 single-cell requests (typ / 27 C / 1.80 V), one per analysis kind,
-            for the larger-array variant on the ideal-passive basis. This is the
+  gate      5 single-cell requests (typ / 27 C / 1.80 V): one per analysis kind
+            for the larger-array variant on the ideal-passive basis, plus one
+            sp_band request on the lc_em basis (its relative `.include` of the EM
+            inductor model must be staged by the batch runner). This is the
             "one-cell gate": a live nominal probe that must succeed on the
             actual client / runner / PDK before the campaign is launched. It
             validates plumbing only, never the 45-cell specification.
@@ -121,6 +123,7 @@ HOT_CELLS = [("wcs", 125, 1.62), ("typ", 125, 1.80), ("bcs", 125, 1.98)]
 GRID_ANALYSES = ["op", "sp_band", "sp_stab", "noise"]
 SPLIT_ANALYSES = ["op", "sp_band", "noise"]
 GATE_ANALYSES = ["op", "sp_band", "sp_stab", "noise"]
+GATE_EM_ANALYSES = ["sp_band"]   # one lc_em request: validates EM-model include staging
 
 OP_MEASUREMENTS = [
     # name, expr, unit.  Instance Xa is the DUT in every op netlist.
@@ -291,7 +294,12 @@ def campaign_cases():
 
 
 def gate_cases():
-    return [make_case("gate", "s_fixi_a80", "ideal", 0, [LVC.norm_key(*NOMINAL)], GATE_ANALYSES)]
+    nom = [LVC.norm_key(*NOMINAL)]
+    return [make_case("gate", "s_fixi_a80", "ideal", 0, nom, GATE_ANALYSES),
+            # One lc_em request: its netlist carries a relative `.include` of the EM
+            # inductor model, so the gate proves the batch runner stages that file
+            # before the 82-request campaign depends on it.
+            make_case("gate", "s_fixi_a80", "lc_em", 0, nom, GATE_EM_ANALYSES)]
 
 
 # =============================================================================

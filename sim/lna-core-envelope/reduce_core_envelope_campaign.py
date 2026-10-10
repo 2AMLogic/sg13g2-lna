@@ -28,6 +28,11 @@ NF quantities (kept distinct, per the ratified NF row at T0 = 290 K):
   nfmin290_db_worst  ngspice sp-analysis NFmin (referenced to the analysis
                      temperature) re-referenced algebraically to 290 K, band
                      max. A noise-match bound, NOT the 50 Ohm-source NF.
+
+Hot-cell gap (per grid case): over ALL 15 grid cells at 125 C (decision record
+0004), never only the 3 divider-sweep cells. Reported separately as
+worst_hot_gap_nf290_db/_cell and worst_hot_gap_nfmin290_db/_cell (quantity minus
+1.5 dB; > 0 fails), with hot_cells_counted_<q> out of hot_cells_expected.
 """
 from __future__ import annotations
 
@@ -52,6 +57,9 @@ NF_LIMIT_DB = 1.5
 GAIN_MIN_DB = 15.0
 PDC_LIMIT_MW = 10.0
 T0_K = 290.0
+# Hot cells for the NF gap (decision record 0004): ALL grid cells at this
+# temperature (5 labels x 3 supplies = 15), NOT the 3 divider-sweep cells.
+HOT_TEMP_C = 125
 AE_UNIT_UM2 = 0.1152   # npn13G2 single-finger emitter area (same constant as parse_core_envelope.py)
 
 # Control-replay tolerance: the one parse_core_envelope.py applies (relative,
@@ -285,7 +293,6 @@ def case_summaries(man, rows, issues):
     cases = {}
     for r in rows:
         cases.setdefault(r["case"], []).append(r)
-    hot = {LVC.cell_text(k) for k in CAMP.hot_cells()}
     for cid, rs in cases.items():
         h = rs[0]
         n = len(rs)
@@ -305,14 +312,19 @@ def case_summaries(man, rows, issues):
             s["claim"] = (f"{s['n_nf290_pass']}/{n} cells with nf290 < {NF_LIMIT_DB} dB (50 Ohm source, "
                           "T0 = 290 K)" if complete else
                           f"INCOMPLETE: {len(ok)}/{n} cells valid; no N/{n} claim")
-            hotrows = [r for r in rs if LVC.cell_text(LVC.norm_key(r["corner_label"], r["temp_c"], r["vdd_v"])) in hot
-                       and r["temp_c"] == 125 and r["counts_for_pass"] and finite(r["nf290_db_worst"])]
-            hot_gap = [(r["nf290_db_worst"] - NF_LIMIT_DB, r) for r in hotrows]
-            if hot_gap:
-                g, r = max(hot_gap, key=lambda t: t[0])
-                s["worst_hot_gap_db"] = g
-                s["worst_hot_cell"] = LVC.cell_text(LVC.norm_key(r["corner_label"], r["temp_c"], r["vdd_v"]))
-            s["hot_cells_counted"] = len(hotrows)
+            # Hot cells = EVERY grid cell at HOT_TEMP_C (15 of the 45; DR-0004),
+            # not the 3 divider-sweep cells. Gap = quantity - NF limit (>0 fails),
+            # reported separately for the 50 Ohm-source NF and for NFmin@290.
+            hot_all = [r for r in rs if r["temp_c"] == HOT_TEMP_C]
+            s["hot_cells_expected"] = len(hot_all)
+            for col, tag in (("nf290_db_worst", "nf290"), ("nfmin290_db_worst", "nfmin290")):
+                hr = [r for r in hot_all if r["counts_for_pass"] and finite(r[col])]
+                s[f"hot_cells_counted_{tag}"] = len(hr)
+                if hr:
+                    r = max(hr, key=lambda x: x[col])
+                    s[f"worst_hot_gap_{tag}_db"] = r[col] - NF_LIMIT_DB
+                    s[f"worst_hot_gap_{tag}_cell"] = LVC.cell_text(
+                        LVC.norm_key(r["corner_label"], r["temp_c"], r["vdd_v"]))
             for col, how in (("nf290_db_worst", max), ("nfmin290_db_worst", max), ("s21_db_min", min),
                              ("pdc_mw", max), ("nfmin_budget_db", min)):
                 vs = [(r[col], r) for r in ok if finite(r[col])]
@@ -430,8 +442,13 @@ def markdown(summary, cases, splits, issues, replay_note, synthetic):
         if s["kind"] != "grid":
             continue
         L.append(f"- `{cid}`: {s['claim']}; complete {s['n_complete']}/{s['n_expected']}; "
-                 f"bias-invalid {s['n_bias_invalid']}; worst hot-cell gap "
-                 f"{s.get('worst_hot_gap_db', 'n/a')} at {s.get('worst_hot_cell', 'n/a')}; "
+                 f"bias-invalid {s['n_bias_invalid']}; worst {HOT_TEMP_C} C hot-cell gap to "
+                 f"{NF_LIMIT_DB} dB: nf290 {fmtv(s.get('worst_hot_gap_nf290_db', 'n/a'))} at "
+                 f"{s.get('worst_hot_gap_nf290_cell', 'n/a')} "
+                 f"({s['hot_cells_counted_nf290']}/{s['hot_cells_expected']} hot cells counted), "
+                 f"nfmin290 {fmtv(s.get('worst_hot_gap_nfmin290_db', 'n/a'))} at "
+                 f"{s.get('worst_hot_gap_nfmin290_cell', 'n/a')} "
+                 f"({s['hot_cells_counted_nfmin290']}/{s['hot_cells_expected']} counted); "
                  f"min NFmin budget {s.get('worst_nfmin_budget_db', 'n/a')}; "
                  f"emitter area {s['emitter_area_um2']:.4g} um^2 ({s['emitter_units']} units; device area, "
                  "not extracted layout)")

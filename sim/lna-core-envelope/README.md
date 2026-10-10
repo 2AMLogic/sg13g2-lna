@@ -483,6 +483,17 @@ temperature) re-referenced algebraically to 290 K, a noise-match bound that is
 not the 50 Ohm-source NF. `nfmin_budget_db = 1.5 - nfmin290` is the loss left
 for #27's matching network under this bench definition.
 
+Hot-cell gap (per grid case): taken over **all 15 grid cells at 125 C**
+(5 process labels x 3 supplies; the hot-cell set of decision record 0004), not
+over the 3 divider-sweep cells. It is reported separately for the two
+quantities: `worst_hot_gap_nf290_db` / `worst_hot_gap_nf290_cell` (50 Ohm-source
+NF at 290 K) and `worst_hot_gap_nfmin290_db` / `worst_hot_gap_nfmin290_cell`
+(NFmin re-referenced to 290 K, the basis of DR-0004's quoted hot-cell range).
+Gap = quantity - 1.5 dB, so > 0 fails. `hot_cells_counted_nf290` /
+`hot_cells_counted_nfmin290` out of `hot_cells_expected` (15) say how many hot
+cells were valid and finite; bias-invalid or incomplete cells are not counted.
+The summary.md line prints both gaps with their counts.
+
 Bias classification (`op` values, both HBTs, worse device decides):
 `forward_active` (V_BE >= 0.5 V, V_BC <= 0.3 V, I_C > 0, V_CE > 0),
 `marginal` (0.3 < V_BC <= 0.5 V), `saturated` (V_BC > 0.5 V), `cutoff`,
@@ -547,22 +558,27 @@ compatible fleet is asserted here.
 ```bash
 export KLT_SIM_BACKEND=batch      # the dispatch daemon already exports this
 sim/lna-core-envelope/run_core_envelope_campaign.sh gate
-# -> corners/<gate-id>/gate-verdict.json   (4 requests, 1 nominal cell each)
+# -> corners/<gate-id>/gate-verdict.json   (5 requests, 1 nominal cell each)
 CORE_ENV_GATE_VERDICT=sim/lna-core-envelope/corners/<gate-id>/gate-verdict.json \
     sim/lna-core-envelope/run_core_envelope_campaign.sh campaign
 ```
 
 - The gate submits the larger-array variant, ideal passives, at `typ`/27 C/1.80 V
-  once per analysis kind. `verify-gate` requires, per request: a batch job id,
+  once per analysis kind, plus one `lc_em` `sp_band` request at the same cell
+  so the batch runner's staging of the EM-inductor model's relative `.include`
+  is proven before the campaign depends on it. `verify-gate` requires, per request: a batch job id,
   runner `klt` equal to the client's, exactly one corner, ok status and every
   expected measurement finite. It records client/runner versions, PDK pin, job
   ids, instance types and any image identifier the report exposes. A pass
   validates **plumbing only**.
 - `campaign` refuses without a passing verdict from the **same** client version.
 - **Stop on error.** The runner refuses any backend other than `batch` (exit 3)
-  and never retries or falls back locally; the first non-zero `klt sim` exits
-  the run (exit 4, `corners/<id>/STOPPED`). Reduction goes to
-  `corners/<id>/reduction/` and is copied to `records/` only when complete and
-  the control replay holds. Failed, partial or smoke-only results are never
+  and never retries or falls back locally; any non-zero `klt sim` exit stops
+  the run at once, whether or not a report was written (exit 4,
+  `corners/<id>/STOPPED`). Reduction goes to `corners/<id>/reduction/` and is
+  copied to `records/` only when the reducer exits 0 (complete, control replay
+  holds), `summary.json` has `synthetic_fixture: false` and `complete: true`,
+  and none of the four `records/<id>-*` targets exists yet (all four are
+  checked before any is copied, so a clash cannot leave a partial publish). Failed, partial or smoke-only results are never
   published. Do not run `run_core_envelope.sh` (the serial local grid) on a
   shared worker.
