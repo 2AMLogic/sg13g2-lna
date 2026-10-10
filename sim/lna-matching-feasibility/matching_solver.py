@@ -706,7 +706,10 @@ def char_deck(a) -> str:
 # Characterization data -> solver inputs
 # ===========================================================================
 
-def load_char(cdir: Path):
+def load_char(cdir: Path, require_feed: bool = True):
+    """Read a characterization directory. `require_feed=False` (issue #193)
+    skips the R3b-choked what-if probe (char_feed.log), for characterization
+    directories of a different feed variant that have no such probe."""
     freqs = band_freqs()
     data = {"cases": {}, "em": {}}
     for case in CHAR_CASES:
@@ -731,13 +734,15 @@ def load_char(cdir: Path):
     for g in EM_GEOMS:
         zs = [complex(r, i) for r, i in zip(em[f"real(v({g}_b))"], em[f"imag(v({g}_b))"])]
         data["em"][g] = zs
-    for log in ("char.log", "char_feed.log"):
+    logs = ("char.log", "char_feed.log") if require_feed else ("char.log",)
+    for log in logs:
         if not re.search(r"^BENCH_COMPLETE", (cdir / log).read_text(), re.M):
             raise ValueError(f"{log}: no BENCH_COMPLETE marker")
     data["le_sweep"] = parse_le_sweep(cdir / "char.log", "LESWEEP")
-    data["feed_sweep"] = parse_le_sweep(cdir / "char_feed.log", "FEEDSWEEP")
     data["op"] = parse_op(cdir / "char.log")
-    data["feed_op"] = parse_op(cdir / "char_feed.log")
+    if require_feed:
+        data["feed_sweep"] = parse_le_sweep(cdir / "char_feed.log", "FEEDSWEEP")
+        data["feed_op"] = parse_op(cdir / "char_feed.log")
     return data
 
 
