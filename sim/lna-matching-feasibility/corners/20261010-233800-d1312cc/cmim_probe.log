@@ -1,0 +1,34 @@
+Warning: singular matrix:  check node cp_em5
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xcem4.1
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xcem4.1
+
+Warning: singular matrix:  check node xcem4.1
+
+Warning: singular matrix:  check node xcem4.1
+
+Warning: singular matrix:  check node xcem4.1
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- finite resonant base-feed study (issue #193), mim-cap probe
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+DAT_WRITTEN cmim_probe.dat
+BENCH_COMPLETE
+Note: Simulation executed from .control section 
