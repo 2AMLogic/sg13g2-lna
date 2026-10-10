@@ -83,6 +83,7 @@ run_full() {
     PATH="$STUBS:$PATH"; PDK_ROOT="$1"; export PDK_ROOT
     # shellcheck disable=SC1090
     source "$ENV_SH" >/dev/null 2>&1
+    # shellcheck disable=SC2034  # read by sim_record_paths (sourced env.sh) as the experiment dir
     SCRIPT_DIR="$E"
     sim_require_pdk t.sh --osdi
     sim_record_paths

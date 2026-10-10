@@ -153,7 +153,9 @@ sim_require_pdk() {
     exit 3
   fi
   SIM_PDK_PROVENANCE_JSON="${__srp_json}"
+  # shellcheck disable=SC2034  # consumed by the sourcing runner's record prose
   SIM_PDK_RELEASE="$(printf '%s' "${__srp_json}" | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["installed_release_raw"])')"
+  # shellcheck disable=SC2034  # consumed by the sourcing runner's record prose
   SIM_PDK_ID_ROUTE="$(printf '%s' "${__srp_json}" | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["identity_route"])')"
 }
 
