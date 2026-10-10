@@ -1,0 +1,45 @@
+* sg13g2-lna -- matching-network feasibility study, BASE-FEED WHAT-IF probe
+* (issue #186). Generated from
+* sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl by
+* sim/lna-matching-feasibility/matching_solver.py (gen-char) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit this template and re-run.
+*
+* ONE PVT cell only (hbt_typ / mos_tt / 27 C / 1.80 V). A DESIGN-SPACE
+* PROBE, not a candidate and not a proposal to edit design/: it asks how the
+* input impedance, the optimum noise source impedance and NFmin move with Le
+* when Q1's base-bias feed resistor R3b (330 Ohm from the AC-grounded `bref`
+* node) is isolated at RF by an ideal 1 uH choke in series with it. DC is
+* unchanged (the choke is a DC short; the OP line below is compared with the
+* characterization deck's). Everything else is the committed DUT.
+*
+* Bench: 50 Ohm `sp` ports (portnum/z0 = 50), `sp lin 1 @@F_MID@@ @@F_MID@@ 1`
+* at the band centre per Le value (donoise: NFmin/Rn/SOpt, NFmin referenced
+* to the analysis temperature, 300.15 K). `.options gmin=1e-10` as in
+* sim/lna-characterization.
+
+.lib "@@MODELS_LIB@@" hbt_typ
+.lib "@@MOS_LIB@@" mos_tt
+
+.options temp=27 tnom=27 gmin=1e-10
+
+@@DUT@@
+
+Vdda vdda 0 dc 1.8
+Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50
+Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50
+Xa vdda 0 pin pout lna
+
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let idd = -i(vdda)
+echo "OP ic1 $&ic1 ic2 $&ic2 idd $&idd"
+
+@@LE_SWEEP@@
+echo "BENCH_COMPLETE"
+.endc
+.end
