@@ -10,6 +10,9 @@
 #   3. provenance.input of drc_report.json, lvs_full_report.json,
 #      extract_report.json and lvs_report.json (scoped LVS) has
 #      role == "layout" and content_hash == sha256:<committed GDS sha256>
+#   4. lvs_inputs.json (issue #130) binds each LVS report's exact bytes to the
+#      GDS, reference netlist and request bytes of the invocation that made
+#      it; any changed relationship is reported by name
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -111,6 +114,60 @@ for name in ("drc_report.json", "lvs_full_report.json",
         fail(rel, f"provenance.input.content_hash missing or malformed ({ch!r})")
     elif gds_sha is not None and ch[len("sha256:"):] != gds_sha:
         fail(rel, f"provenance.input.content_hash {ch} != sha256:{gds_sha} (committed GDS)")
+
+# 4. LVS input identity sidecar (written by layout/lvs_identity.py)
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+side_rel = f"layout/{cell}/lvs_inputs.json"
+side = load(cd / "lvs_inputs.json") if (cd / "lvs_inputs.json").is_file() else None
+if side is None and not (cd / "lvs_inputs.json").is_file():
+    fail(side_rel, "missing (regenerate with layout/run_flow.sh)")
+if side is not None:
+    reps = side.get("reports") if isinstance(side, dict) else None
+    if not isinstance(side, dict) or side.get("schema") != "sg13g2-lna.lvs-inputs/1" \
+            or not isinstance(reps, dict):
+        fail(side_rel, "malformed (bad schema or reports)")
+        reps = None
+    for rep_name, req_name in (("lvs_report.json", "lvs_request.json"),
+                               ("lvs_full_report.json", "lvs_full_request.json")):
+        if reps is None:
+            break
+        rel = f"{side_rel}[{rep_name}]"
+        e = reps.get(rep_name)
+        keys = ("request", "request_sha256", "reference", "reference_sha256",
+                "gds", "gds_sha256", "report_sha256")
+        if not isinstance(e, dict) or any(not isinstance(e.get(k), str) for k in keys):
+            fail(rel, "missing or malformed entry")
+            continue
+        def cmp(what, recorded, path):
+            if not path.is_file():
+                fail(rel, f"{what}: {path.relative_to(root) if path.is_relative_to(root) else path} missing")
+            elif sha(path) != recorded:
+                fail(rel, f"{what} changed since this LVS ran "
+                     f"(recorded {recorded[:12]}, now {sha(path)[:12]}); rerun layout/run_flow.sh")
+        if e["request"] != req_name:
+            fail(rel, f"request is {e['request']!r}, want {req_name!r}")
+        cmp(f"request {req_name}", e["request_sha256"], cd / req_name)
+        cmp(f"report {rep_name}", e["report_sha256"], cd / rep_name)
+        # reference / GDS: paths come from the committed request, and the
+        # recorded paths must agree with them.
+        try:
+            spec = json.loads((cd / req_name).read_bytes())
+            ref_p = (cd / spec["reference"]["netlist"]).resolve()
+            gds_p = (cd / spec["layout"]["file"]).resolve()
+        except Exception as ex:
+            fail(rel, f"cannot resolve reference/layout from {req_name} ({ex})")
+            continue
+        for what, path, key in (("reference", ref_p, "reference"), ("gds", gds_p, "gds")):
+            try:
+                want = str(path.relative_to(root))
+            except ValueError:
+                want = str(path)
+            if e[key] != want:
+                fail(rel, f"{what} path {e[key]!r} != {want!r} named by {req_name}")
+        cmp(f"reference netlist {e['reference']}", e["reference_sha256"], ref_p)
+        cmp(f"GDS {e['gds']}", e["gds_sha256"], gds_p)
 
 if errs:
     print("\n".join(errs), file=sys.stderr)

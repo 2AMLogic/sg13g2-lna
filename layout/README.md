@@ -310,7 +310,19 @@ python3 stdlib: no klayout, klt or PDK. It fails, naming the relationship, if:
    not `sha256:` plus the committed GDS hash. This only pins the extraction and
 scoped-LVS reports to the same GDS; it does not make them block signoff
 evidence (the partial-scope guard above still applies), and no
-extracted-netlist digest is inferred from filenames.
+extracted-netlist digest is inferred from filenames;
+4. `lna_core/lvs_inputs.json` (written by `layout/lvs_identity.py`, called from
+   `run_flow.sh` only after a successful `klt lvs` invocation, exit 0 or the
+   recorded mismatch exit 3) is missing/malformed, or the current bytes of an
+   LVS report, its committed request, its reference netlist (path taken from
+   the request: the scoped `lna_core.lvs_reference.spice`, or
+   `design/netlist/lna.spice` for the full compare) or the GDS differ from what
+   the recorded invocation used. The failure names which relationship changed.
+   The sidecar is published atomically (tmp + rename) and only attests input
+   identity: it never changes a report's verdict (both compares remain
+   `mismatch`) and promotes no signoff row. If a run is interrupted between
+   publishing a report and its sidecar entry, the report hash no longer matches
+   and the gate fails rather than attesting the old report.
 
 Regenerating the GDS and re-running the reports stays a deliberate local
 step (`layout/run_flow.sh`); CI only checks that the committed files agree.
