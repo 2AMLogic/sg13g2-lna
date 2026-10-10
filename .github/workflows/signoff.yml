@@ -26,6 +26,8 @@ name: signoff
 # Sibling jobs: `reduction-tests` (lna-characterization unit tests),
 # `hbt-reduction-tests` (hbt-characterization fixed-T0 NF re-derivation unit
 # tests and committed-record replay — issue #101),
+# `biasop-reduction-tests` (lna-bias-pvt reduce_biasop.py unit tests and
+# committed-record replay — issue #117),
 # `layout-reduction-tests` (layout/lvs_reference.py unit tests — issue #109),
 # `sim-record-paths-tests` (sim/env.sh record-id reservation — issue #113),
 # `envelope-replay` (core-envelope derivation replayed against retained data),
@@ -101,6 +103,20 @@ jobs:
 
       - name: hbt-characterization reduction unit tests
         run: python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
+
+  # lna-bias-pvt DC/startup reduction (reduce_biasop.py, issue #117): inline
+  # PDK-free fixtures for missing keys/lines, duplicates, nonfinite values,
+  # inventory and op/startup pairing, genuine bar/startup failures kept as
+  # results, plus a byte-for-byte replay of both committed records' retained
+  # logs into temp outputs. Stdlib-only, no ngspice, single process.
+  biasop-reduction-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: lna-bias-pvt reduction unit tests and committed-record replay
+        run: python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -v
 
   # LVS-reference derivation unit tests (issue #109): scope-partition check,
   # m>1 rejection, per-class card rewrites and netlist-order output of
