@@ -86,6 +86,56 @@ the bench is committed beside the results.
   The committed records show every instance riding inside that box; the
   closest calls are Q3's cold-`wcs` `V_BREF` and Q2's hot `V_CE1` margins.
 
+## Statistical observables (T1 item 6): none measured yet
+
+This bench's DC observables are the block's **initial statistical
+observables**. They are `I_C1` (against DR-0001's `I_C1 ≤ 4.5 mA` mandate)
+and the full-DUT total `I_DD` and `P_dc = VDD·I_DD` (against the ratified
+< 10 mW Power row). They come first because they describe the same
+committed DUT as the RF benches. They are also directly set by the DR-0003
+core's mirror/servo devices, whose mismatch moves the bias current.
+
+**Monte Carlo evidence for them is absent.** No record under
+[`records/`](records/) is a statistical run. Every record is the
+deterministic 45-cell corner grid described above, and the corner spread it
+reports is process/temperature/supply spread, not a mismatch distribution.
+The coverage gaps, kept separate:
+
+- **Device mismatch is supported by the PDK models but not exercised.** The
+  pinned PDK ships `*_mismatch`/`*_stat` sections for both device families
+  in this DUT (`npn13G2` in `cornerHBT.lib`; `sg13_hv_pmos`/`sg13_hv_nmos`
+  in `cornerMOShv.lib`). This bench loads only the nominal sections (see
+  "No mismatch sections" above). It has not been verified that loading
+  those sections actually injects stochastic parameters into the
+  instantiated VBIC and PSP103.6/OSDI devices.
+- **Resistor and passive tolerance: no bench covers it.** The bias
+  resistors are ideal SPICE `R`s (see "Ideal passives" above). A device
+  mismatch run on this netlist would therefore still hold every resistor
+  ratio exact. Resistor-ratio tolerance needs its own treatment and is not
+  part of the device-mismatch campaign.
+
+The first campaign on these observables is
+[#90](https://github.com/2AMLogic/sg13g2-lna/issues/90). **It is open and
+has not been run.** As scoped, it is a fleet-submitted `klt sim`
+`monte_carlo` request through this bench at one nominal point (27 °C,
+1.80 V, nominal process sections). When its record lands, the resulting
+distribution has these limits:
+
+- It is a DC distribution at **one operating point**. It does not
+  establish yield across the PVT box.
+- It covers **device mismatch only**, and only as far as the campaign
+  shows that sampling reaches the instantiated models. It covers no
+  resistor/passive tolerance.
+- It says nothing statistical about any RF row (gain, NF, IIP3, S11/S22,
+  stability). Those are disclosed as unmeasured in
+  [`../lna-characterization/`](../lna-characterization/README.md).
+- An observed tail count against the 4.5 mA or 10 mW bar is a finite-sample
+  observation, not a qualified yield figure or `klt yield` verdict.
+
+The spec-level statement is
+[`spec/target-spec.md`](../../spec/target-spec.md) §"Statistical coverage
+(T1 item 6)".
+
 ## Cold-start / regeneration
 
 ```bash

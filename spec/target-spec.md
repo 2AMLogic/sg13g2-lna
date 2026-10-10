@@ -205,6 +205,88 @@ self-heating beyond the VBIC thermal network at ambient. These gaps gate
 the *verification* of the ratified rows — they do not weaken the ratified
 values themselves.
 
+## Statistical coverage (T1 item 6) — no statistical evidence exists yet
+
+**This section only discloses coverage. It does not ratify, relax or
+re-scope anything.** Every value and binding condition in the ratified
+target table above, and every decision record, is unchanged. Today **no
+row of this specification has statistical (mismatch / Monte Carlo)
+evidence.** Every committed number is a deterministic result on the 45-cell
+corner grid above, and this repo has not run any Monte Carlo campaign.
+Corner spread (for example `I_C1` 3.657–4.151 mA across the box) is
+process/temperature/supply spread. It is not a mismatch distribution and
+does not stand in for one.
+
+Two sources of statistical spread are kept apart here, because the existing
+benches relate to them differently:
+
+- **Device mismatch, supported by the PDK models.** The resolved v0.3.0
+  checkout ships `hbt_typ_mismatch`, `hbt_bcs_mismatch`, `hbt_wcs_mismatch`
+  and `hbt_typ_stat` in `cornerHBT.lib`, and `mos_{tt,ss,ff,sf,fs}_mismatch`
+  and `mos_tt_stat` in `cornerMOShv.lib` (section names read from the local
+  install, 2026-10-10). These sections apply to the DUT's real PDK devices:
+  the `npn13G2` HBTs and the DR-0003 core's `sg13_hv_pmos`/`sg13_hv_nmos`.
+  **No committed bench loads them.**
+  [`sim/lna-bias-pvt`](../sim/lna-bias-pvt/README.md) §"Method limits"
+  and [`sim/lna-characterization`](../sim/lna-characterization/README.md)
+  §"PVT grid and corner scope" both use the nominal sections only. It is
+  also **not yet verified** that loading these sections actually injects
+  stochastic parameters into the instantiated devices. That check is a
+  stated prerequisite of the campaign below, not something assumed here.
+- **Passive tolerance. No existing bench covers it.** Every R, C and L in
+  the DUT is a generic ideal SPICE primitive with no tolerance, tempco or
+  statistical model. See `sim/lna-characterization` §"Model limitations"
+  item 1 and `sim/lna-bias-pvt` §"Method limits", "Ideal passives". The
+  PDK's statistical resistor/capacitor libraries
+  (`resistors_stat.lib`, `capacitors_stat.lib`) parameterize PDK passive
+  devices, which the DUT does not instantiate. No inductor model exists at
+  all ([#5](https://github.com/2AMLogic/sg13g2-lna/issues/5)). As a result,
+  a device-mismatch Monte Carlo on the current netlist would still hold
+  every R, L and C at its exact value. **Resistor-ratio, capacitor and
+  inductor tolerance stay unmeasured even after such a run.**
+
+Per-row statistical standing:
+
+| Ratified row | Statistical standing | How device mismatch can reach it | Statistical evidence today |
+|---|---|---|---|
+| **Power (P_dc)**, together with DR-0001's `I_C1 ≤ 4.5 mA` mandate named in its binding conditions | **Initial statistical observables**: `I_C1`, total `I_DD` and `P_dc = VDD·I_DD` of the full committed DUT, as probed by the `sim/lna-bias-pvt` bench | Mismatch among the DR-0003 core's mirror/servo devices and the HBTs moves the bias current, so it also moves `I_DD` and `P_dc` | **None.** Monte Carlo evidence is absent until a completed campaign record exists. The thin corner margin (worst cell 0.23 mW under the bar) makes this the first row to measure |
+| **Gain (S21)**, **Noise figure**, **IIP3** | **Statistically unmeasured** | Through the operating point (`I_C1`, `V_CE`), which the characterization bench records beside every number, and through the HBT's own model parameters | **None** |
+| **Input match (S11)**, **Output match (S22)** | **Statistically unmeasured.** These rows are *not* classified as inherently non-statistical | The device's input and output impedances depend on its bias point and parameters. The passives are fixed only because the model makes them ideal, and that is the uncovered tolerance axis above, not evidence of zero spread | **None** |
+| **Stability** (μ, with k, \|Δ\| and the negative-resistance check) | **Statistically unmeasured.** *Not* classified as inherently non-statistical | μ is computed from the same S-parameters as above. The broadband deficit is ppm-scale (minimum μ = 0.99999592), so a small spread in either direction cannot be ruled out as negligible | **None** |
+| **Supply** | A binding condition (the supply axis of the corner box), not a measured response | The breakdown margin behind it rests on corner extraction. Statistical spread of BVCEO is unmeasured | **None** |
+| **Band** | A definition, not a measured quantity | — | Not applicable |
+
+No mismatch-induced RF sensitivity is ruled out by anything in this repo.
+The RF rows have no statistical measurement because none has been made, not
+because their physics is non-statistical. Earlier proposal text in
+[#68](https://github.com/2AMLogic/sg13g2-lna/issues/68) classified
+S-parameters and stability as non-statistical. **This specification does
+not adopt that classification.**
+
+**The planned campaign, and what it can and cannot establish.** The first
+statistical campaign is tracked by
+[#90](https://github.com/2AMLogic/sg13g2-lna/issues/90). **It is open and
+has not been run.** No result from it exists or is cited here. As scoped, it
+is a fleet-submitted `klt sim` `monte_carlo` request on the full committed
+DUT through the `sim/lna-bias-pvt` bench, at a single nominal point
+(27 °C, 1.80 V, nominal process sections). It reports the DC observables
+above. Even once its record exists, that distribution:
+
+- describes **one operating point**, not the 45-cell PVT box, so it
+  establishes **no full-PVT yield**;
+- covers **device mismatch only**, and only to the extent the campaign
+  demonstrates that the sampling actually reaches the instantiated models.
+  It covers **no passive tolerance**;
+- covers the **DC rows only**. It establishes **no statistical compliance
+  for Gain, NF, IIP3, S11, S22 or Stability**, since no RF bench is in its
+  scope;
+- is a sample of finite size. An observed tail count against the
+  `I_C1 ≤ 4.5 mA` or `< 10 mW` bar is an observation, **not a qualified
+  yield estimate and not a `klt yield` verdict**.
+
+Until that record exists, this section is the T1 item 6 statement for this
+block: **no statistical evidence for any row.**
+
 ## Open items that gate verification of the ratified rows
 
 1. **#26 — replace the placeholder bias divider: CLOSED (2026-09-21),
