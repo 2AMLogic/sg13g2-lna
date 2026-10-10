@@ -35,6 +35,8 @@ name: signoff
 # `envelope-replay` (core-envelope derivation replayed against retained data),
 # `breakdown-replay` (breakdown summary reduction replayed against the
 # committed record — issue #145),
+# `matching-feasibility-tests` (lna-matching-feasibility solver unit tests
+# and committed-record replay — issue #186),
 # `record-citations` (cited record ids resolve to committed evidence),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
@@ -211,6 +213,21 @@ jobs:
 
       - name: Committed breakdown summaries replay byte-identically
         run: python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
+
+  # Matching-network feasibility solver/reducer (matching_solver.py, issue
+  # #186): RF helpers, L-section and output-network synthesis, noise
+  # compromise, wrdata/log parsing and deck rendering on synthetic fixtures,
+  # plus a byte-for-byte replay of every committed record's reduction and a
+  # re-synthesis of its candidates from the retained characterization data.
+  # Stdlib-only, no PDK/ngspice, single process; never writes under sim/.
+  matching-feasibility-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: lna-matching-feasibility solver unit tests and committed-record replay
+        run: python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v
 
   # Record-id citation gate (issue #75): every sim/ record id cited in
   # tracked docs must resolve to committed evidence or be allowlisted in
