@@ -380,6 +380,9 @@ jobs:
       - name: Committed results table and verdict JSON are fresh
         run: python3 -I sim/lna-characterization/render_results.py --check
 
+      - name: 290 K noise-floor narrative matches the derived view
+        run: python3 -I sim/lna-characterization/render_results.py --check-narrative
+
   # Local-runner drift gate (issue #108): .github/scripts/run-local-checks.sh
   # must invoke every command this workflow runs, exactly as CI does, in
   # order. Bash + awk + diff only; read-only on the checkout.
