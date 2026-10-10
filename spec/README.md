@@ -19,12 +19,19 @@ spec/
                             (sg13g2-bandgap, sg13g2-pll, sg13g2-ldo) and
                             what is genuinely novel RF work with no fleet
                             precedent
-  decision-records/         one decision per record, numbered sequentially,
-                            append-only (create this directory when the
-                            first record is ready to write — copy a
-                            TEMPLATE.md from a sibling repo such as
-                            sg13g2-bandgap/spec/decision-records/ to start
-                            it)
+  decision-records/         exists; append-only, one decision per
+                            record, numbered sequentially. Copy
+                            decision-records/TEMPLATE.md to start a new
+                            record. Index:
+                              0001 bias/supply topology and supply
+                                   voltage (ratified via 0002)
+                              0002 first target-spec ratification
+                                   (ratified)
+                              0003 flat PVT bias reference topology
+                                   for Q1 (proposed)
+                              0004 achievable (gain, NF, P_dc)
+                                   envelope on npn13G2 (ruled
+                                   2026-10-08)
 ```
 
 See [`target-spec.md`](target-spec.md) for the target table (rows ratified
