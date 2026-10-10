@@ -116,12 +116,19 @@ def check_declared_grid(rows, name: str, sweep: str, lo: float, hi: float,
                         n: int, rtol: float = GRID_RTOL):
     """Check received rows against the campaign's declared sweep grid.
 
-    sweep="lin" (`sp lin N LO HI`): exactly N points, first == LO, last == HI.
+    sweep="lin" (`sp lin N LO HI`): exactly N points, first == LO, last == HI,
+    and every point i on LO + i*(HI-LO)/(N-1).
     sweep="dec" (`sp dec N LO HI`): first == LO, at least
     floor(N*log10(HI/LO)) + 1 points (one spare allowed for ngspice's endpoint
-    rounding), and the last point within one decade-step below HI, never
-    above it. ngspice's `dec` sweep does not land exactly on HI, so the end
-    is checked by bracket, not equality.
+    rounding), every point i on LO * 10**(i/N), and the last point within one
+    decade-step below HI, never above it. ngspice's `dec` sweep does not land
+    exactly on HI (it stops at the last grid point not above HI), so the end
+    is checked by bracket, not equality with HI.
+
+    Every received frequency is compared with its expected grid position
+    within `rtol` (wrdata's printed precision), so an off-grid sample standing
+    in for a missing grid sample is rejected even when count and endpoints
+    agree.
 
     Raises TableError; the caller treats the point as invalid evidence.
     """
@@ -151,6 +158,16 @@ def check_declared_grid(rows, name: str, sweep: str, lo: float, hi: float,
                 f"step [{floor_f!r}, {hi!r}]")
     else:
         raise ValueError(f"unknown sweep type {sweep!r}")
+    for i, row in enumerate(rows):
+        if sweep == "lin":
+            want = lo + i * (hi - lo) / (n - 1) if n > 1 else lo
+        else:
+            want = lo * 10 ** (i / n)
+        got = row["freq_hz"]
+        if not _close(got, want, rtol):
+            raise TableError(
+                f"{name}: point {i} frequency {got!r} off the declared {sweep} "
+                f"{n} grid over {lo!r}..{hi!r} (expected {want!r})")
     return rows
 
 

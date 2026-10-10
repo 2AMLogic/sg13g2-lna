@@ -200,6 +200,44 @@ class DeclaredGridCheck(unittest.TestCase):
         r[-1] = {"freq_hz": 2.5e9}
         self.bad(r, "lin", 2.4e9, 2.4835e9, 11, "declared stop")
 
+    def test_dec_offgrid_interior_substitution(self):
+        # Judge example: `sp dec 1 1e7 1e10` expects [1e7, 1e8, 1e9, 1e10];
+        # 2e8 standing in for the missing 1e8 keeps count and endpoints.
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1)
+        self.bad(self.rows([1e7, 2e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1,
+                 "point 1 frequency")
+        r = self.stab()
+        r[70] = {"freq_hz": (r[69]["freq_hz"] + r[71]["freq_hz"]) / 2}
+        self.bad(r, "dec", 1e7, 3e10, 40, "point 70 frequency")
+
+    def test_dec_offgrid_last_inside_bracket(self):
+        # Last point inside the stop bracket but not on the grid.
+        r = self.stab()
+        r[-1] = {"freq_hz": 2.99e10}
+        self.bad(r, "dec", 1e7, 3e10, 40, "point 139 frequency")
+
+    def test_dec_endpoint_rounding_preserved(self):
+        # Exact-decade stop (grid lands on HI) and the spare point allowed for
+        # ngspice's endpoint rounding (spare lands within rtol of HI).
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1)
+        # HI just below 1e10: floor() gives 3 points, ngspice may emit the
+        # 1e10 grid point as a 4th (within rtol of HI).
+        self.ok(self.rows([1e7, 1e8, 1e9]), "dec", 1e7, 9.999995e9, 1)
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 9.999995e9, 1)
+
+    def test_lin_offgrid_interior_substitution(self):
+        self.ok(self.rows([1e9, 2e9, 3e9, 4e9]), "lin", 1e9, 4e9, 4)
+        self.bad(self.rows([1e9, 2.5e9, 3e9, 4e9]), "lin", 1e9, 4e9, 4,
+                 "point 1 frequency")
+        r = self.inband()
+        r[5] = {"freq_hz": r[5]["freq_hz"] * 1.0001}
+        self.bad(r, "lin", 2.4e9, 2.4835e9, 11, "point 5 frequency")
+
+    def test_wrdata_precision_within_tolerance(self):
+        r = self.inband()
+        r[5] = {"freq_hz": r[5]["freq_hz"] * (1 + 5e-9)}
+        self.ok(r, "lin", 2.4e9, 2.4835e9, 11)
+
     def test_empty(self):
         self.bad([], "lin", 2.4e9, 2.4835e9, 11, "no points")
 
