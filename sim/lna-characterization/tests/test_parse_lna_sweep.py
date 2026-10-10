@@ -9,8 +9,12 @@ Run from the repo root (single process):
 
     python3 -I -m unittest discover -s sim/lna-characterization/tests
 """
+import contextlib
 import importlib.util
+import io
 import math
+import shutil
+import sys
 import os
 import tempfile
 import unittest
@@ -186,6 +190,177 @@ class LogReaders(unittest.TestCase):
             open(empty, "w").close()
             with self.assertRaises(SystemExit):
                 P.read_table(empty, 3)
+
+
+SP = "sp_typ_27c_vdd1.80v"
+A1 = "iip3_typ_27c_vdd1.80v_a1mv"
+A2 = "iip3_typ_27c_vdd1.80v_a2mv"
+A4 = "iip3_typ_27c_vdd1.80v_a4mv"
+BCS_SP = "sp_bcs_27c_vdd1.80v"
+BCS_A1 = "iip3_bcs_27c_vdd1.80v_a1mv"
+BCS_A2 = "iip3_bcs_27c_vdd1.80v_a2mv"
+
+
+def _write_table(path, ncols, nrows=2):
+    with open(path, "w") as fh:
+        for i in range(nrows):
+            fh.write(" ".join(f"{0.5 + 0.01 * (i + j):.4f}" for j in range(ncols)) + "\n")
+
+
+def make_cell(d: Path, sp_id: str, iip3_ids, sp_fix=SP, ip_fix=A1):
+    """Synthesise one cell's artefacts from the committed fixture logs. The
+    wrdata tables are synthetic: coverage tests care about which files exist
+    and are complete, not about the numbers."""
+    shutil.copy(FIX / f"{sp_fix}.log", d / f"{sp_id}.log")
+    _write_table(d / f"{sp_id}.inband.dat", 24)
+    _write_table(d / f"{sp_id}.stability.dat", 12)
+    for pid in iip3_ids:
+        shutil.copy(FIX / f"{ip_fix}.log", d / f"{pid}.log")
+
+
+MANIFEST_TEXT = f"""# test inventory
+kind campaign
+sp {SP}
+iip3 {A1}
+iip3 {A2}
+pair {A1} {A2}
+iip3 {A4}
+sp {BCS_SP}
+iip3 {BCS_A1}
+iip3 {BCS_A2}
+pair {BCS_A1} {BCS_A2}
+"""
+
+
+class Coverage(unittest.TestCase):
+    """Expected-point manifest: absent / truncated / dropped-level cases."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.addCleanup(self._td.cleanup)
+        self.td = Path(self._td.name)
+        self.cd = self.td / "corners"
+        self.cd.mkdir()
+        make_cell(self.cd, SP, [A1, A2, A4])
+        make_cell(self.cd, BCS_SP, [BCS_A1, BCS_A2])
+        self.manifest = self.td / "expected.txt"
+        self.manifest.write_text(MANIFEST_TEXT)
+
+    def run_main(self, *extra, manifest=True):
+        argv = [
+            "parse_lna_sweep.py",
+            "--corners-dir", str(self.cd),
+            "--sparam-csv", str(self.td / "sp.csv"),
+            "--iip3-csv", str(self.td / "ip.csv"),
+            "--summary-csv", str(self.td / "sum.csv"),
+            "--coverage-json", str(self.td / "cov.json"),
+        ]
+        if manifest:
+            argv += ["--manifest", str(self.manifest)]
+        argv += list(extra)
+        old = sys.argv
+        sys.argv = argv
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                return P.main()
+        finally:
+            sys.argv = old
+
+    def cov(self):
+        import json
+        return json.loads((self.td / "cov.json").read_text())
+
+    def test_valid_inventory_is_complete(self):
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertEqual(c["status"], "complete")
+        self.assertEqual((c["missing"], c["failed"], c["missing_drive_pairs"]), ([], [], []))
+        self.assertEqual(len(c["completed"]), len(c["expected"]), 8)
+        self.assertIn("complete", "\n".join(P.coverage_prose(c)))
+        self.assertNotIn("PARTIAL", "\n".join(P.coverage_prose(c)))
+
+    def test_valid_smoke_inventory(self):
+        for f in list(self.cd.glob("*bcs*")) + [self.cd / f"{A4}.log"]:
+            f.unlink()
+        self.manifest.write_text(
+            f"kind smoke\nsp {SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+        )
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertEqual(c["status"], "complete")
+        self.assertEqual(c["inventory_kind"], "smoke")
+        prose = "\n".join(P.coverage_prose(c))
+        self.assertIn("NOT a PVT campaign", prose)
+
+    def test_deleted_sp_log_is_reported_and_distinct_exit(self):
+        (self.cd / f"{BCS_SP}.log").unlink()
+        # diagnostic reduction still succeeds and is marked partial
+        self.assertEqual(self.run_main(), 0)
+        self.assertEqual(self.cov()["missing"], [BCS_SP])
+        self.assertEqual(self.cov()["status"], "partial")
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_MISSING)
+
+    def test_truncated_log_is_failed_not_missing(self):
+        shutil.copy(FIX / "sp_trunc.log", self.cd / f"{BCS_SP}.log")
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_FAILED)
+        c = self.cov()
+        self.assertEqual((c["missing"], c["failed"]), ([], [BCS_SP]))
+
+    def test_removed_iip3_level_breaks_drive_pair(self):
+        (self.cd / f"{BCS_A2}.log").unlink()
+        self.assertEqual(
+            self.run_main("--strict"),
+            P.STRICT_EXIT_BASE + P.EXIT_MISSING + P.EXIT_PAIR,
+        )
+        c = self.cov()
+        self.assertEqual(c["missing"], [BCS_A2])
+        self.assertEqual(c["missing_drive_pairs"],
+                         [{"points": [BCS_A1, BCS_A2], "unavailable": [BCS_A2]}])
+        prose = "\n".join(P.coverage_prose(c))
+        self.assertIn("PARTIAL INVENTORY", prose)
+        self.assertIn("NOT a full campaign", prose)
+        self.assertIn(BCS_A2, prose)
+
+    def test_nominal_only_level_is_not_a_required_pair_member(self):
+        # Dropping the nominal-only 4 mV level is a missing point but leaves
+        # the mandatory pair intact; non-nominal cells never list it at all.
+        (self.cd / f"{A4}.log").unlink()
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_MISSING)
+        c = self.cov()
+        self.assertEqual(c["missing_drive_pairs"], [])
+        self.assertNotIn(A4.replace("typ", "bcs"), c["expected"])
+
+    def test_extra_levels_on_disk_are_unexpected_not_required(self):
+        shutil.copy(FIX / f"{A1}.log", self.cd / "iip3_bcs_27c_vdd1.80v_a4mv.log")
+        self.assertEqual(self.run_main("--strict"), 0)
+        self.assertEqual(self.cov()["unexpected"], ["iip3_bcs_27c_vdd1.80v_a4mv"])
+
+    def test_sp_log_without_wrdata_is_failed(self):
+        (self.cd / f"{BCS_SP}.stability.dat").unlink()
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_FAILED)
+
+    def test_historical_replay_without_manifest_unchanged(self):
+        self.assertEqual(self.run_main(manifest=False), 0)
+        self.assertFalse((self.td / "cov.json").exists())
+        self.assertIn("NOT established", "\n".join(P.coverage_prose(None)))
+
+    def test_strict_requires_manifest(self):
+        with self.assertRaises(SystemExit):
+            self.run_main("--strict", manifest=False)
+
+    def test_manifest_rejects_bad_lines(self):
+        self.manifest.write_text("bogus line\n")
+        with self.assertRaises(SystemExit):
+            P.read_manifest(str(self.manifest))
+        self.manifest.write_text(f"sp {SP}\npair {A1} {A2}\n")
+        with self.assertRaises(SystemExit):
+            P.read_manifest(str(self.manifest))
+
+    def test_committed_record_dir_has_no_sidecars_required(self):
+        # Historical records predate the manifest; nothing is demanded of them.
+        self.assertFalse(
+            list((LNA / "records").glob(f"{RECORD}-expected-points.txt"))
+        )
 
 
 class RecordRegression(unittest.TestCase):

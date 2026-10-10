@@ -636,6 +636,29 @@ sim/lna-characterization/parse_lna_sweep.py \
 diff /tmp/check-summary.csv sim/lna-characterization/records/<record-id>-summary.csv
 ```
 
+**Expected-point coverage (issue #116).** Every new run writes
+`records/<record-id>-expected-points.txt` (the exact grid the runner
+selected: smoke mode, and the nominal-only extra drive levels, are reflected;
+only the `AMPS_GRID` pair is a mandatory `pair`) and, after reduction,
+`records/<record-id>-coverage.json` (expected / completed / missing / failed
+point IDs, plus broken drive pairs). The record's `Coverage` line cites the
+result; a partial inventory is stated as "PARTIAL INVENTORY ... NOT a full
+campaign" and the runner exits 1. To re-check standalone:
+
+```bash
+sim/lna-characterization/parse_lna_sweep.py --corners-dir ... \
+  --sparam-csv ... --iip3-csv ... --summary-csv ... \
+  --manifest records/<record-id>-expected-points.txt \
+  --coverage-json /tmp/check-coverage.json [--strict]
+```
+
+Without `--strict` the reduction is diagnostic (exit 0, sidecar marked
+`partial`). With `--strict` the exit is 0 when complete, else 16 plus a
+bitmask: 1 = expected log absent, 2 = log truncated / wrdata missing,
+4 = a mandatory IIP3 drive pair not intact. Records without a manifest
+(all historical ones) replay exactly as before and establish no
+completeness.
+
 ## Inductor-loss variants (issue #56)
 
 `Le` and `Lc` in the committed netlist are ideal, which is the most optimistic
