@@ -304,9 +304,13 @@ python3 stdlib: no klayout, klt or PDK. It fails, naming the relationship, if:
    byte-identical to the committed `lna_core.lvs_reference.spice` (this also
    catches a netlist edit that leaves a device outside the instance
    partition);
-3. `provenance.input` in `drc_report.json` or `lvs_full_report.json` is
-   missing, has a `role` other than `layout`, or has a `content_hash` that is
-   not `sha256:` plus the committed GDS hash.
+3. `provenance.input` in any of `drc_report.json`, `lvs_full_report.json`,
+   `extract_report.json` or the scoped-LVS `lvs_report.json` is missing (or the
+   report file itself is missing/unreadable), has a `role` other than `layout`, or has a `content_hash` that is
+   not `sha256:` plus the committed GDS hash. This only pins the extraction and
+scoped-LVS reports to the same GDS; it does not make them block signoff
+evidence (the partial-scope guard above still applies), and no
+extracted-netlist digest is inferred from filenames.
 
 Regenerating the GDS and re-running the reports stays a deliberate local
 step (`layout/run_flow.sh`); CI only checks that the committed files agree.

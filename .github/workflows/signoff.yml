@@ -191,7 +191,7 @@ jobs:
 
   # Layout freshness gate (issue #86): committed GDS hash == provenance,
   # LVS reference regenerates byte-identically from the current netlist, and
-  # the DRC/LVS report envelopes are pinned to the committed GDS. Bash +
+  # the DRC, extraction and (scoped + full) LVS report envelopes are pinned to the committed GDS. Bash +
   # python3 stdlib only: no klayout, klt or PDK; GDS regeneration stays out
   # of CI. Read-only on the checkout.
   layout-freshness:
