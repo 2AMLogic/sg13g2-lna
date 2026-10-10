@@ -16,6 +16,7 @@
 - [Results](#results)
 - [Model limitations](#model-limitations)
 - [Regeneration](#regeneration)
+- [Emitter-array and cascode-split campaign (issue #58, milestone A: offline preparation)](#emitter-array-and-cascode-split-campaign-issue-58-milestone-a-offline-preparation)
 
 ## What question this answers, and why it needed its own bench
 
@@ -419,3 +420,149 @@ establishes replay consistency only, not correctness of the underlying
 scientific assumptions. If the check fails because of an intentional
 scientific correction to the derivation, mint a **new** evidence record with a
 new record id; never replace the historical output.
+
+## Emitter-array and cascode-split campaign (issue #58, milestone A: offline preparation)
+
+**Status: tooling only.** This section and the files below prepare a
+campaign; they contain **no measured result** and make no claim about the NF
+row, no adoption of the larger emitter array, and no change to
+`spec/target-spec.md` or `design/`. Measurement and conditional adoption are
+milestone B of [#58](https://github.com/2AMLogic/sg13g2-lna/issues/58) and
+need the fleet gate below. Evidence from that milestone goes in
+`records/<id>-*` here, never in `sim/lna-characterization/records/`.
+
+| File | Role |
+|---|---|
+| `core_envelope_campaign.py` | `gen` (requests + netlists + `campaign-manifest.json`), `verify-snapshot`, `verify-gate`, `check-client`. Offline. |
+| `reduce_core_envelope_campaign.py` | Reducer: validates every report against the manifest, derives the measured columns, classifies bias, replays the control. Offline. |
+| `run_core_envelope_campaign.sh` | Fleet runner: `gate` then `campaign`, batch backend only, stop-on-error. Not run by CI. |
+| `tests/test_core_envelope_campaign.py`, `tests/test_reduce_core_envelope_campaign.py` | Offline tests (run in CI with the rest of `tests/`). |
+| `tests/synthetic_reports.py` | **Synthetic** report generator: invented numbers, every report carries `"synthetic_fixture": true`, reducer output is stamped SYNTHETIC and refused under `records/`. Not evidence. |
+
+### What is generated
+
+Two sizing variants, device targeting taken from `run_core_envelope.sh`'s
+variant table (a test parses that table and compares):
+
+- `s_ctrl_a8`: the committed netlist, device lines byte-identical.
+- `s_fixi_a80`: **only** `XQ1` and `XQ2` (the RF cascode pair) become
+  `Nx=10 m=8`, and the island mirror `XMis` becomes `w=51.2u`
+  (= 4096/(Nx*m), the A2 fix-I_C rule). The bias-core HBTs (`XQb Nx=8`,
+  `XQa`, `XQ3`, `XQc`) are not touched; a blanket `Nx=8` substitution would
+  hit `XQb`, which is why edits are whole-line, exactly-once matches.
+
+Request set (`gen --set campaign`, 82 requests):
+
+- **Grid**: 2 variants x 5 loss bases x 4 analyses. Each request is the full
+  45-cell box, 5 process labels (`typ bcs wcs sf fs`, with the established
+  section map: `sf`/`fs` use `hbt_typ` + `mos_sf`/`mos_fs`) x 3 temperatures
+  (-40/27/125 C) x 3 supplies (1.62/1.80/1.98 V).
+- **Loss bases, each stated separately**: `ideal` (as committed), `lc_em`
+  (EM-extracted 5-turn Lc, Le ideal), and `le_q20`/`le_q10`/`le_q5`
+  (Le with series R for Q = wL/R at 2.44175 GHz, Lc ideal). The Q cases are a
+  resistance **bracket**, used because a validated extracted Le is unavailable
+  (#56); they say nothing about runner compatibility.
+- **Analyses**: `op` (DC operating point: I_C1/I_C2, I_B, V_B2, V_BE, V_BC,
+  V_CE1, V_CE2, I_DD, P_dc), `sp_band` (11 points 2.4-2.4835 GHz; S-parameters,
+  ngspice sp NF/NFmin, input capacitance proxy `cin_ff_mid` = Im(Y11)/w at
+  2.44175 GHz from the S-parameters, 50 Ohm reference), `sp_stab` (10 MHz-30 GHz,
+  40 pts/decade, mu/k), `noise` (11 sampled points, 50 Ohm Thevenin source,
+  noiseless Rs/RL, NF at T0 = 290 K).
+- **Divider sweep**: 2 variants x 7 divider points x 3 analyses (`op`,
+  `sp_band`, `noise`), ideal-passive basis, at the three hot cells only
+  (`wcs`/125 C/1.62 V, `typ`/125 C/1.80 V, `bcs`/125 C/1.98 V; expressed with
+  the request `exclude` list so exactly 3 cells run, not the 9-cell product).
+  R2a + R2b stays at the committed 12 kOhm; R2a = 1000 - 250k Ohm for
+  k = -3..+3 (`dm3`..`dm1`, `d0` = committed 1k/11k, `dp1`..`dp3`; k > 0 raises
+  vb2). V_CE1/V_CE2 are **measured**, and each point is classified from them.
+
+NF quantities are kept distinct in the reducer: `nf290_db_worst` is the
+50 Ohm-source NF at 290 K (the quantity the ratified row compares);
+`nfmin290_db_worst` is ngspice sp NFmin (referenced to the analysis
+temperature) re-referenced algebraically to 290 K, a noise-match bound that is
+not the 50 Ohm-source NF. `nfmin_budget_db = 1.5 - nfmin290` is the loss left
+for #27's matching network under this bench definition.
+
+Bias classification (`op` values, both HBTs, worse device decides):
+`forward_active` (V_BE >= 0.5 V, V_BC <= 0.3 V, I_C > 0, V_CE > 0),
+`marginal` (0.3 < V_BC <= 0.5 V), `saturated` (V_BC > 0.5 V), `cutoff`,
+`reverse`, `nonfinite`, `missing`. Points outside the model-card
+V_CE box (0.4-2.0 V) are additionally flagged. Non-forward-active cells are
+retained and flagged, and excluded from pass counts. These thresholds are bench
+definitions, not a PDK statement.
+
+Costs are device-level only: emitter area is `Nx*m*0.1152 um^2` (80 vs 8
+units) and input capacitance is the bench `cin_ff_mid`. Neither is extracted
+layout area; interconnect and base-resistance parasitics are absent.
+
+### Commands (offline, safe anywhere)
+
+```bash
+# Tests (also run by CI): no klt, ngspice or PDK needed.
+python3 -I -m unittest discover -s sim/lna-core-envelope/tests -v
+
+# Generate a request set; refuses an existing record id (append-only).
+python3 -I sim/lna-core-envelope/core_envelope_campaign.py gen --record-id gate-demo --set gate
+python3 -I sim/lna-core-envelope/core_envelope_campaign.py verify-snapshot \
+    --snapshot-dir sim/lna-core-envelope/netlist-snapshots/gate-demo
+
+# Reduce reports (after a real run).
+python3 -I sim/lna-core-envelope/reduce_core_envelope_campaign.py \
+    --snapshot-dir sim/lna-core-envelope/netlist-snapshots/<id> \
+    --corners-dir  sim/lna-core-envelope/corners/<id> --out-dir /tmp/reduction \
+    --client-version "$(klt --version)" \
+    --reference-summary sim/lna-characterization/records/20260926-122301-088c734-summary.csv
+```
+
+`gen` writes `netlist-snapshots/<id>/` with per-request `.spice` and
+`.request.json` plus `campaign-manifest.json` (design-netlist and EM-model
+SHA-256, generator SHA-256, git SHA, PDK pin, client floor, every request's
+SHA-256, expected cells and measurement names; status
+`request-set-not-run`). `verify-snapshot` re-checks those hashes and re-derives
+each request's cell set. Reducer exit codes: 0 complete, 2 incomplete or
+invalid input, 3 control-replay drift.
+
+The reducer never drops anything silently: missing/unreadable reports, missing,
+duplicate, unexpected or failed cells, absent/null/non-finite measurements,
+runner/client version mismatch and snapshot tampering are each recorded as an
+issue; the case is then marked INCOMPLETE and no `N/45` claim is printed.
+The control (`grid__s_ctrl_a8__ideal`) is replayed against
+`sim/lna-characterization/records/20260926-122301-088c734-summary.csv` at the
+existing relative tolerance 1e-6 (the one `parse_core_envelope.py` enforces);
+investigate a difference, do not relax it.
+
+### Compatibility prerequisite and the one-cell gate
+
+Required: PDK `sim/pdk.json` pin (IHP-Open-PDK v0.3.0) with the PSP103 OSDI
+models built into the runner image, and `klt` >= the floor in
+`sim/pdk.json` (`klt_variant_campaign.min_version`, currently 0.7.0; needs
+`measurements[].expr`, `options.osdi_preload`, `options.stage_model_inputs`;
+the `op` kind and request `exclude` list are used as well). The batch runner
+image must carry the same `klt` as the client. The documented blocker is
+[2AMLogic/klayout-tools#2851](https://github.com/2AMLogic/klayout-tools/issues/2851)
+(0.5.0 client cannot use the batch backend); an open ticket is not proof of a
+current runtime failure and its closure is not proof of a working path. No
+compatible fleet is asserted here.
+
+```bash
+export KLT_SIM_BACKEND=batch      # the dispatch daemon already exports this
+sim/lna-core-envelope/run_core_envelope_campaign.sh gate
+# -> corners/<gate-id>/gate-verdict.json   (4 requests, 1 nominal cell each)
+CORE_ENV_GATE_VERDICT=sim/lna-core-envelope/corners/<gate-id>/gate-verdict.json \
+    sim/lna-core-envelope/run_core_envelope_campaign.sh campaign
+```
+
+- The gate submits the larger-array variant, ideal passives, at `typ`/27 C/1.80 V
+  once per analysis kind. `verify-gate` requires, per request: a batch job id,
+  runner `klt` equal to the client's, exactly one corner, ok status and every
+  expected measurement finite. It records client/runner versions, PDK pin, job
+  ids, instance types and any image identifier the report exposes. A pass
+  validates **plumbing only**.
+- `campaign` refuses without a passing verdict from the **same** client version.
+- **Stop on error.** The runner refuses any backend other than `batch` (exit 3)
+  and never retries or falls back locally; the first non-zero `klt sim` exits
+  the run (exit 4, `corners/<id>/STOPPED`). Reduction goes to
+  `corners/<id>/reduction/` and is copied to `records/` only when complete and
+  the control replay holds. Failed, partial or smoke-only results are never
+  published. Do not run `run_core_envelope.sh` (the serial local grid) on a
+  shared worker.
