@@ -1,0 +1,20 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- finite resonant base-feed study (issue #193), tuning deck
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 696
+DAT_WRITTEN tune_yser.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+DAT_WRITTEN tune_yser_mid.dat
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

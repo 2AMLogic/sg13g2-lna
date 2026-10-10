@@ -1,0 +1,36 @@
+* sg13g2-lna -- finite resonant base-feed study (issue #193), TUNING deck
+* Generated from sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl
+* by sim/lna-matching-feasibility/feed_study.py (tune-gen) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+*
+* Purpose: measure the SERIES-BRANCH admittance Yser(f) of each EM inductor
+* geometry in the feed study, so the tank capacitor can be sized with the
+* inductor's own self-capacitance (Cser) already inside Yser. The EM model is
+* a pi network: series branch (Rser + ladder + Lmain, in parallel with Cser)
+* between la and lb, plus a substrate shunt (Coxh + Rsi || Csi) at each end.
+* With la driven at 1 V AC and lb held at 0 V by a 0 V source, the current
+* into that source is exactly Yser (the shunts are driven/shorted, so they do
+* not appear). The substrate shunts are NOT part of the tank; they load the
+* nodes b1f / b1 and are simulated in the full feed decks.
+* One-port decks only: no PDK transistor models are used. ONE process point
+* and temperature (27 C, typ.), as in sim/models/sg13g2_inductor_em.spice.
+
+.include "@@EM_MODEL@@"
+
+.options temp=27 tnom=27 gmin=1e-10
+
+@@ONEPORTS@@
+
+.control
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+ac dec @@N_PER_DEC@@ @@F_LO@@ @@F_HI@@
+wrdata @@OUTDIR@@/tune_yser.dat @@VECS@@
+echo "DAT_WRITTEN tune_yser.dat"
+ac lin 1 @@F_MID@@ @@F_MID@@
+wrdata @@OUTDIR@@/tune_yser_mid.dat @@VECS@@
+echo "DAT_WRITTEN tune_yser_mid.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end
