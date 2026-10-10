@@ -1014,5 +1014,126 @@ class InvalidLogCoverage(Coverage):
         self.assertNotIn(BCS_A1, ids)
 
 
+class Nfmin290(unittest.TestCase):
+    """Issue #181: analysis-temperature NFmin re-referenced to T0 = 290 K."""
+
+    VIEW = LNA / "views" / f"{RECORD}-nfmin290.csv"
+
+    def test_hand_computed_cases(self):
+        # NFmin = 2.0 dB -> F_T = 10**0.2 = 1.5848931925, F_T - 1 = 0.5848931925.
+        #  -40 C: T = 233.15 K, (F-1)*T/290 = 0.4702339580 -> 10*log10(1.4702339580)
+        #   27 C: T = 300.15 K, (F-1)*T/290 = 0.6053644542 -> 10*log10(1.6053644542)
+        #  125 C: T = 398.15 K, (F-1)*T/290 = 0.8030180158 -> 10*log10(1.8030180158)
+        for temp_c, want in (("-40", 1.6738644943), ("27", 2.0557364265),
+                             ("125", 2.5600006622)):
+            self.assertAlmostEqual(P.nfmin290_db(2.0, temp_c), want, places=9, msg=temp_c)
+        self.assertAlmostEqual(P.analysis_temp_k("-40"), 233.15)
+        self.assertAlmostEqual(P.analysis_temp_k("125"), 398.15)
+
+    def test_identity_at_290k(self):
+        # temp_c = 16.85 C is exactly 290 K: the conversion is the identity.
+        for nf in (0.5, 2.0, 3.7759):
+            self.assertAlmostEqual(P.nfmin290_db(nf, 16.85), nf, places=12)
+        self.assertEqual(P.T0_REF_K, 290.0)
+
+    def test_reuses_core_envelope_nf_reref(self):
+        spec = importlib.util.spec_from_file_location(
+            "envelope_rf_check", LNA.parent / "lna-core-envelope" / "envelope_rf.py")
+        rf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rf)
+        for nf, t in ((2.0749, -40), (2.3817, 27), (2.7275, 125)):
+            self.assertEqual(P.nfmin290_db(nf, t), rf.nf_reref(nf, t + 273.15, 290.0))
+
+    def test_fields_use_band_lo_gap(self):
+        f = P.nfmin290_fields("27", 2.0, 2.5)
+        self.assertEqual(f["nfmin_analysis_temp_k"], "300.15")
+        self.assertEqual(f["nfmin290_t_ref_k"], "290.00")
+        self.assertEqual(f["nfmin290_db_at_band_lo"], "2.0557")
+        self.assertEqual(f["nf290_minus_nfmin290_db_at_band_lo"], "0.4443")
+
+    def derive(self):
+        return P.derive_nfmin290_view(str(LNA / "records" / f"{RECORD}-summary.csv"), RECORD)
+
+    def test_record_extrema_reproduced(self):
+        rows = self.derive()
+        self.assertEqual(len(rows), 45)
+        self.assertTrue(all(r["source_record_id"] == RECORD for r in rows))
+        self.assertTrue(all(r["nfmin290_t_ref_k"] == "290.00" for r in rows))
+        self.assertTrue(all(r["freq_hz"] == "2.400000e+09" for r in rows))
+        vals = {r["point_id"]: P.nfmin290_db(float(r["nfmin_sp_db_at_band_lo"]), r["temp_c"])
+                for r in rows}
+        # Independent arithmetic quoted in issue #181 / spec/target-spec.md;
+        # tolerance = half an LSB of the 4-decimal source column.
+        best, worst = min(vals, key=vals.get), max(vals, key=vals.get)
+        self.assertEqual(best, "sp_bcs_-40c_vdd1.98v")
+        self.assertEqual(worst, "sp_wcs_125c_vdd1.62v")
+        self.assertAlmostEqual(vals[best], 1.738852, delta=5e-5)
+        self.assertAlmostEqual(vals["sp_typ_27c_vdd1.80v"], 2.445396, delta=5e-5)
+        self.assertAlmostEqual(vals[worst], 3.423883, delta=5e-5)
+        nom = next(r for r in rows if r["point_id"] == "sp_typ_27c_vdd1.80v")
+        # Common reference and frequency: 2.6559 - 2.445396 = 0.2105 dB.
+        self.assertEqual(nom["nf290_minus_nfmin290_db_at_band_lo"], "0.2105")
+
+    def test_committed_view_rederives_byte_identical(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = os.path.join(td, "v.csv")
+            P.write_csv(out, self.derive(), list(P.NFMIN290_VIEW_COLS))
+            self.assertEqual(Path(out).read_bytes(), self.VIEW.read_bytes())
+
+    def test_headline_states_reference_and_scope(self):
+        with open(self.VIEW) as fh:
+            import csv
+            h = P.nfmin290_headline(list(csv.DictReader(fh)))
+        for needle in ("T0 = 290 K", "band-low sample only", "not an in-band extremum",
+                       "best 1.7389 dB at bcs/-40 C/VDD=1.98 V", "nominal 2.4454 dB",
+                       "worst 3.4239 dB at wcs/125 C/VDD=1.62 V", "0/45 cells below 1.5 dB",
+                       "both 290 K, same frequency", "nominal 0.2105 dB",
+                       "analysis-temperature NFmin (context only, not 290 K)"):
+            self.assertIn(needle, h)
+
+    def test_new_record_reduction_gets_new_headline(self):
+        # A reduction run with --nfmin290 adds the columns and switches the
+        # headline wording; without it the historical wording is kept.
+        h = GridHarness("run")
+        h.setUp()
+        try:
+            self.assertEqual(h.run_main("--nfmin290"), 0)
+            import csv
+            cells = list(csv.DictReader(io.StringIO((h.td / "sum.csv").read_text())))
+            for col in P.NFMIN290_FIELDS:
+                self.assertIn(col, cells[0])
+            text = P.headlines(str(h.td / "sum.csv"), str(h.td / "ip.csv"))
+            self.assertIn("NFmin re-referenced to T0 = 290 K", text)
+            self.assertNotIn("i.e. what an ideal noise match", text)
+            self.assertEqual(h.run_main(), 0)
+            cells = list(csv.DictReader(io.StringIO((h.td / "sum.csv").read_text())))
+            self.assertNotIn("nfmin290_db_at_band_lo", cells[0])
+            text = P.headlines(str(h.td / "sum.csv"), str(h.td / "ip.csv"))
+            self.assertIn("i.e. what an ideal noise match", text)
+        finally:
+            h.doCleanups()
+
+    def test_historical_record_headlines_unchanged(self):
+        # The committed record's own NFmin line is reproduced verbatim.
+        rec = LNA / "records"
+        text = P.headlines(str(rec / f"{RECORD}-summary.csv"), str(rec / f"{RECORD}-iip3.csv"))
+        md = (rec / f"{RECORD}.md").read_text().splitlines()
+        self.assertIn(
+            "- **NFmin (ngspice `sp`, at 2.4 GHz, i.e. what an ideal noise match would"
+            " give this circuit)**: best 2.0749 dB at bcs/-40 C/VDD=1.98 V.", text.split("\n"))
+        for line in text.split("\n"):
+            self.assertIn(line, md)
+
+    def test_readme_states_reference_and_scope(self):
+        readme = (LNA / "README.md").read_text()
+        for needle in ("re-referenced\n> to the ratified T0 = 290 K",
+                       "**band-low sample\n> only**",
+                       "**1.7389 dB at the best cell**", "**2.4454 dB\nnominal**",
+                       "**3.4239 dB at the worst cell**",
+                       "both at 290 K and both at the\n2.4 GHz band-low sample",
+                       "**0.2105 dB**", "F290 = 1 + (F_T − 1) · T / 290"):
+            self.assertIn(needle, readme)
+
+
 if __name__ == "__main__":
     unittest.main()
