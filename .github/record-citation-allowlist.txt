@@ -4,5 +4,4 @@
 # Format example in the record-id definition, not a claim.
 20260910-153000-7da7038 illustrative format example at sim/README.md (not a real record)
 
-# TEMPORARY: remove when #70 is resolved.
-20260921-154716-f718094 dangling citation in ADR 0003 and sim/biasref-topology/README.md, tracked in #70
+20260921-154716-f718094 intentional historical citation: ratified DR-0003 text (kept verbatim, corrected by its 2026-10-10 erratum) and the root README mismatch disclosure; the real Stage-1 record is 20260921-160018-a46ed37 (#70)
