@@ -21,11 +21,31 @@
 
 Today every item renders `unmet`. Items 3 and 4 render `check_failed`,
 and the rest render `no_evidence`. The block does have committed evidence:
-the schematic and its derived netlist in `design/`, four `sim/` campaigns,
-a characterization report in `measurements/`, a partially ratified
-`spec/target-spec.md`, and (since issue #63) a partial layout with `klt`
-DRC/extract/LVS envelopes in `layout/`. Only `klt`-native envelopes can be
-cited here, so the rows break down as follows:
+the schematic and its derived netlist in `design/`, six `sim/` experiments
+(indexed in the root `README.md` §"Campaign index and the record of
+record"), a characterization report in `measurements/`, a partially
+ratified `spec/target-spec.md`, and (since issue #63) a partial layout
+with `klt` DRC/extract/LVS envelopes in `layout/`.
+
+The engineering evidence for the current DUT (the DR-0003 flat-reference
+bias core on `main`, issue #33 / PR #40) is already re-baselined:
+
+- **RF**: `sim/lna-characterization/` record `20260926-122301-088c734`
+  (issue #49), the full 45-cell PVT grid. `measurements/README.md` reads
+  only this record.
+- **DC**: `sim/lna-bias-pvt/` record `20260921-173552-2aeafef`, whose DUT
+  sha256 matches today's `design/netlist/lna.spice`.
+
+The earlier DUT campaigns stay committed as append-only history and
+describe circuits that no longer exist: RF records
+`20260918-210908-4293920` (placeholder divider bias) and
+`20260921-131646-d6da30a` (mirror-reference bias, PR #34), and DC record
+`20260921-132025-d6da30a` (mirror-reference bias). Do not cite them for
+the current design. See `sim/lna-characterization/README.md` §"Which DUT
+each record describes".
+
+Only some evidence kinds can be cited for each row, so the rows break
+down as follows:
 
 - **Items 3 and 4 cite failing evidence** from issue #63's layout bring-up.
   That layout (`layout/lna_core/`) draws the cascode core and the DR-0003
@@ -45,25 +65,47 @@ cited here, so the rows break down as follows:
   layout does not back "Layout" for the block (`layout/README.md`).
   Item 7 needs a `klt pex` run, and item 11 a supply spec, of a complete
   layout.
-- **Items 5 and 6 accept only `klt sim` / `klt yield` envelopes** for this
-  analog block. The committed campaigns (`sim/hbt-characterization/`,
-  `sim/breakdown-extraction/`, `sim/lna-characterization/`,
-  `sim/lna-bias-pvt/`) are ngspice + bash + CSV/Markdown records, not
-  `klt` JSON envelopes, so the grader cannot read them even where the
-  engineering they represent is real. They also predate the 2026-09-21
-  bias-network change (f718094, #34) on `main`, so they are stale as
-  evidence against the current design sources anyway — "a passing report
-  against last week's netlist is evidence of nothing". The re-run
-  decision and the matching-network gap that would gate its verdicts are
-  tracked in #33 and #27.
-- **Item 8 is the only item a generic envelope may satisfy**, and the
-  natural artifact (`measurements/README.md`) is real but currently worse
-  than uncited: it documents itself as not-a-verdict (the spec it
-  compared against was DRAFT at the time) and its record ids predate
-  #34's design change. A hand-rolled wrapper asserting either `pass` or
-  `fail` over that stale report states more than the artifact supports.
-  Cite it after the characterization campaign is re-run against the
-  current design.
+- **Item 5 accepts only a `klt sim` envelope** for this analog block, and
+  none exists for the current DUT. The current RF and DC records above
+  are ngspice + bash + CSV/Markdown records, not `klt` JSON envelopes, so
+  the grader cannot read them even though they run against today's
+  netlist. The one `klt sim` campaign in the repo, the issue-#56
+  inductor-loss variant run (`sim/lna-characterization/run_lna_variant.sh`),
+  has no committed record: the batch fleet's runner image could not
+  execute it (`sim/lna-characterization/README.md` §"Status of the 45-cell
+  run"). A native envelope would still not render `met` today. The
+  current record misses the ratified gain, NF, S11, S22 and broadband μ
+  rows at every one of the 45 cells (`measurements/README.md`
+  §"Results against the ratified target table"). The IIP3 numeric target
+  is still DRAFT. All passives are ideal, so the RF figures are
+  optimistic and the "fs/sf (L/C mismatch)" binding corner is not
+  exercised. The matching-network gap is #27.
+- **Item 6 accepts only a `klt yield` envelope**, and no statistical
+  evidence exists at all. Every committed campaign uses the
+  `hbt_typ`/`hbt_bcs`/`hbt_wcs` corner sections, not the
+  `*_mismatch`/`*_stat` sections, and `spec/target-spec.md` lists
+  mismatch/Monte-Carlo as not covered. A corner matrix cannot stand in
+  for it. Disclosing which rows are statistical is tracked in #89.
+- **Item 8 is the only item a bare generic envelope may satisfy.** Its
+  natural artifact, `measurements/README.md`, is current: it reads only
+  the DR-0003 record `20260926-122301-088c734` and compares it against
+  the ratified rows of `spec/target-spec.md`. It still stays uncited,
+  for these reasons:
+  - It declares itself descriptive, not a conformance verdict. Its
+    comparisons are disclosed shortfalls against the target rows, and
+    no row is stated as passing.
+  - A `pass` wrapper would be false: gain, NF, S11, S22 and broadband μ
+    are short of their ratified rows.
+  - A `fail` wrapper would add a verdict the report itself declines to
+    give. The RF numbers come from ideal passives, and the design has
+    no matching network yet (#27). The row already renders `unmet`
+    without it.
+  - The superseded RF and DC records listed above are historical
+    evidence for circuits that no longer exist. They cannot back this
+    item for the current design.
+
+  Cite item 8 once a characterization report states per-row verdicts
+  against the ratified spec for the design it reads.
 - **Items 1, 2, 9 and 10 accept any passing native envelope** — the tool
   cannot check topical relevance for them, so citing them is this
   repo's responsibility, not the grader's. The honest default (per the
