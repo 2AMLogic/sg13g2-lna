@@ -238,6 +238,23 @@ class TestReduce(Base):
         self.assertFalse(s["negative_control"]["pass"])
         self.assertFalse(s["controls_pass"])
 
+    def test_negative_control_disagreeing_with_reference_fails(self):
+        def shift(rep):
+            for c in rep["corners"]:
+                for m in c["measurements"]:
+                    if m["name"] in ("ic1", "idd"):
+                        m["value"] *= 1.01
+                    elif m["name"] == "pdc":
+                        m["value"] = 1.8 * next(x["value"] for x in c["measurements"]
+                                                if x["name"] == "idd")
+        self.write_all(neg=report(mc.N_NEGCTL, mismatch=False, job="z", mutate=shift))
+        _, s = self.reduce()
+        nc = s["negative_control"]
+        self.assertTrue(nc["collapsed"])
+        self.assertFalse(nc["deterministic_reference"]["agrees"])
+        self.assertFalse(nc["pass"])
+        self.assertFalse(s["controls_pass"])
+
     def test_replay_divergence_fails(self):
         self.write_all(replay=report(mc.N_MAIN, seed=2, job="y"))
         _, s = self.reduce()

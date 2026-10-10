@@ -628,7 +628,8 @@ def negative_control(rows: list[dict]) -> dict:
             "max_minus_min": spread,
             "sampled_params_at_nominal": param_at_nominal,
             "collapsed": collapsed,
-            "pass": collapsed and param_at_nominal and len(ok) == len(rows) and len(seeds) > 1,
+            "pass": (collapsed and param_at_nominal and ref_ok
+                     and len(ok) == len(rows) and len(seeds) > 1),
             "deterministic_reference": {"record": DETERMINISTIC_REF["record"],
                                         "rel_tol": DETERMINISTIC_REF["rel_tol"],
                                         "values": ref, "agrees": ref_ok}}
