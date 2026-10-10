@@ -1,0 +1,1306 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": null,
+    "scope": "external"
+  },
+  "status": "fail",
+  "corner_count": 1,
+  "passed": 0,
+  "failed": 1,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 0,
+    "sim__corner__failed_count": 1,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "models_lib": {
+      "path": null,
+      "scope": "absent"
+    },
+    "models_lib_sha256": null,
+    "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+    "netlist_closure": [
+      {
+        "path": null,
+        "scope": "external",
+        "sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33"
+      }
+    ],
+    "osdi_preload": [
+      {
+        "name": "psp103.osdi",
+        "path": null,
+        "scope": "external",
+        "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+      },
+      {
+        "name": "psp103_nqs.osdi",
+        "path": null,
+        "scope": "external",
+        "sha256": "839b164483205601c09032951f6c41d3580f15e506dc40a7202950d3afbdfc7d"
+      },
+      {
+        "name": "mosvar.osdi",
+        "path": null,
+        "scope": "external",
+        "sha256": "25e64a374ab523dbfeb7ffed75dcb8b086ee10f06120a9074bd68b92d7b0fb41"
+      }
+    ],
+    "corner_section_libs": [
+      {
+        "name": "cornerHBT.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+      },
+      {
+        "name": "cornerMOShv.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+      }
+    ],
+    "monte_carlo": {
+      "n": 1,
+      "seed": 68001,
+      "vary": "mismatch",
+      "family_mismatch": [
+        {
+          "family": "bipolar",
+          "active": null,
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "family": "capacitor",
+          "active": null,
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "family": "resistor",
+          "active": null,
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "family": "other",
+          "active": null,
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "quantiles": [
+        0.0,
+        5.0,
+        50.0,
+        95.0,
+        100.0
+      ]
+    }
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 19,
+    "measurements_with_limits": 2,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "limit:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ic1\",\"max\"]",
+      "limit:[0,\"typ_mismatch/1.800V/27C/mc0\",\"pdc\",\"max\"]",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ib1\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ic2\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ic3\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"idd\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mis_delvto\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mnp1_delvto\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mnp2_delvto\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mref_delvto\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q1_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q2_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q3_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qa_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qb_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qc_area\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vb1\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vbref\"]/observation",
+      "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vdd_node\"]/observation"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"ic3\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mis_delvto\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mnp1_delvto\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mnp2_delvto\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"mref_delvto\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q1_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q2_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"q3_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qa_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qb_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"qc_area\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vb1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vbref\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ_mismatch/1.800V/27C/mc0\",\"vdd_node\"]/limits",
+        "reason": "characterization_without_limits"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.7.0+g21e45ce7233b",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "PDK_ROOT environment variable",
+      "version": null
+    },
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "ic1",
+      "unit": "A",
+      "limits": {
+        "max": 0.0045
+      },
+      "status": "fail",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.00484201436,
+        "margin": -0.00034201436000000016
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.00484201436,
+        "stddev": null,
+        "min": 0.00484201436,
+        "max": 0.00484201436,
+        "quantiles": {
+          "p0": 0.00484201436,
+          "p5": 0.00484201436,
+          "p50": 0.00484201436,
+          "p95": 0.00484201436,
+          "p100": 0.00484201436
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.00484201436,
+            "stddev": null,
+            "min": 0.00484201436,
+            "max": 0.00484201436,
+            "quantiles": {
+              "p0": 0.00484201436,
+              "p5": 0.00484201436,
+              "p50": 0.00484201436,
+              "p95": 0.00484201436,
+              "p100": 0.00484201436
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "ic2",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.00483503125,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.00483503125,
+        "stddev": null,
+        "min": 0.00483503125,
+        "max": 0.00483503125,
+        "quantiles": {
+          "p0": 0.00483503125,
+          "p5": 0.00483503125,
+          "p50": 0.00483503125,
+          "p95": 0.00483503125,
+          "p100": 0.00483503125
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.00483503125,
+            "stddev": null,
+            "min": 0.00483503125,
+            "max": 0.00483503125,
+            "quantiles": {
+              "p0": 0.00483503125,
+              "p5": 0.00483503125,
+              "p50": 0.00483503125,
+              "p95": 0.00483503125,
+              "p100": 0.00483503125
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "ic3",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.000490366346,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.000490366346,
+        "stddev": null,
+        "min": 0.000490366346,
+        "max": 0.000490366346,
+        "quantiles": {
+          "p0": 0.000490366346,
+          "p5": 0.000490366346,
+          "p50": 0.000490366346,
+          "p95": 0.000490366346,
+          "p100": 0.000490366346
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.000490366346,
+            "stddev": null,
+            "min": 0.000490366346,
+            "max": 0.000490366346,
+            "quantiles": {
+              "p0": 0.000490366346,
+              "p5": 0.000490366346,
+              "p50": 0.000490366346,
+              "p95": 0.000490366346,
+              "p100": 0.000490366346
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "ib1",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 6.57153032e-06,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 6.57153032e-06,
+        "stddev": null,
+        "min": 6.57153032e-06,
+        "max": 6.57153032e-06,
+        "quantiles": {
+          "p0": 6.57153032e-06,
+          "p5": 6.57153032e-06,
+          "p50": 6.57153032e-06,
+          "p95": 6.57153032e-06,
+          "p100": 6.57153032e-06
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 6.57153032e-06,
+            "stddev": null,
+            "min": 6.57153032e-06,
+            "max": 6.57153032e-06,
+            "quantiles": {
+              "p0": 6.57153032e-06,
+              "p5": 6.57153032e-06,
+              "p50": 6.57153032e-06,
+              "p95": 6.57153032e-06,
+              "p100": 6.57153032e-06
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "vb1",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.839373431,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.839373431,
+        "stddev": null,
+        "min": 0.839373431,
+        "max": 0.839373431,
+        "quantiles": {
+          "p0": 0.839373431,
+          "p5": 0.839373431,
+          "p50": 0.839373431,
+          "p95": 0.839373431,
+          "p100": 0.839373431
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.839373431,
+            "stddev": null,
+            "min": 0.839373431,
+            "max": 0.839373431,
+            "quantiles": {
+              "p0": 0.839373431,
+              "p5": 0.839373431,
+              "p50": 0.839373431,
+              "p95": 0.839373431,
+              "p100": 0.839373431
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "vbref",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.841542036,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.841542036,
+        "stddev": null,
+        "min": 0.841542036,
+        "max": 0.841542036,
+        "quantiles": {
+          "p0": 0.841542036,
+          "p5": 0.841542036,
+          "p50": 0.841542036,
+          "p95": 0.841542036,
+          "p100": 0.841542036
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.841542036,
+            "stddev": null,
+            "min": 0.841542036,
+            "max": 0.841542036,
+            "quantiles": {
+              "p0": 0.841542036,
+              "p5": 0.841542036,
+              "p50": 0.841542036,
+              "p95": 0.841542036,
+              "p100": 0.841542036
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "vdd_node",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 1.8,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 1.8,
+        "stddev": null,
+        "min": 1.8,
+        "max": 1.8,
+        "quantiles": {
+          "p0": 1.8,
+          "p5": 1.8,
+          "p50": 1.8,
+          "p95": 1.8,
+          "p100": 1.8
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 1.8,
+            "stddev": null,
+            "min": 1.8,
+            "max": 1.8,
+            "quantiles": {
+              "p0": 1.8,
+              "p5": 1.8,
+              "p50": 1.8,
+              "p95": 1.8,
+              "p100": 1.8
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "idd",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.00559311653,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.00559311653,
+        "stddev": null,
+        "min": 0.00559311653,
+        "max": 0.00559311653,
+        "quantiles": {
+          "p0": 0.00559311653,
+          "p5": 0.00559311653,
+          "p50": 0.00559311653,
+          "p95": 0.00559311653,
+          "p100": 0.00559311653
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.00559311653,
+            "stddev": null,
+            "min": 0.00559311653,
+            "max": 0.00559311653,
+            "quantiles": {
+              "p0": 0.00559311653,
+              "p5": 0.00559311653,
+              "p50": 0.00559311653,
+              "p95": 0.00559311653,
+              "p100": 0.00559311653
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "pdc",
+      "unit": "W",
+      "limits": {
+        "max": 0.01
+      },
+      "status": "fail",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.0100676097,
+        "margin": -6.76097000000004e-05
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.0100676097,
+        "stddev": null,
+        "min": 0.0100676097,
+        "max": 0.0100676097,
+        "quantiles": {
+          "p0": 0.0100676097,
+          "p5": 0.0100676097,
+          "p50": 0.0100676097,
+          "p95": 0.0100676097,
+          "p100": 0.0100676097
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.0100676097,
+            "stddev": null,
+            "min": 0.0100676097,
+            "max": 0.0100676097,
+            "quantiles": {
+              "p0": 0.0100676097,
+              "p5": 0.0100676097,
+              "p50": 0.0100676097,
+              "p95": 0.0100676097,
+              "p100": 0.0100676097
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "q1_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 1.36439584,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 1.36439584,
+        "stddev": null,
+        "min": 1.36439584,
+        "max": 1.36439584,
+        "quantiles": {
+          "p0": 1.36439584,
+          "p5": 1.36439584,
+          "p50": 1.36439584,
+          "p95": 1.36439584,
+          "p100": 1.36439584
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 1.36439584,
+            "stddev": null,
+            "min": 1.36439584,
+            "max": 1.36439584,
+            "quantiles": {
+              "p0": 1.36439584,
+              "p5": 1.36439584,
+              "p50": 1.36439584,
+              "p95": 1.36439584,
+              "p100": 1.36439584
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "q2_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.996663531,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.996663531,
+        "stddev": null,
+        "min": 0.996663531,
+        "max": 0.996663531,
+        "quantiles": {
+          "p0": 0.996663531,
+          "p5": 0.996663531,
+          "p50": 0.996663531,
+          "p95": 0.996663531,
+          "p100": 0.996663531
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.996663531,
+            "stddev": null,
+            "min": 0.996663531,
+            "max": 0.996663531,
+            "quantiles": {
+              "p0": 0.996663531,
+              "p5": 0.996663531,
+              "p50": 0.996663531,
+              "p95": 0.996663531,
+              "p100": 0.996663531
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "q3_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 1.06201425,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 1.06201425,
+        "stddev": null,
+        "min": 1.06201425,
+        "max": 1.06201425,
+        "quantiles": {
+          "p0": 1.06201425,
+          "p5": 1.06201425,
+          "p50": 1.06201425,
+          "p95": 1.06201425,
+          "p100": 1.06201425
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 1.06201425,
+            "stddev": null,
+            "min": 1.06201425,
+            "max": 1.06201425,
+            "quantiles": {
+              "p0": 1.06201425,
+              "p5": 1.06201425,
+              "p50": 1.06201425,
+              "p95": 1.06201425,
+              "p100": 1.06201425
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "qa_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 1.04950202,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 1.04950202,
+        "stddev": null,
+        "min": 1.04950202,
+        "max": 1.04950202,
+        "quantiles": {
+          "p0": 1.04950202,
+          "p5": 1.04950202,
+          "p50": 1.04950202,
+          "p95": 1.04950202,
+          "p100": 1.04950202
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 1.04950202,
+            "stddev": null,
+            "min": 1.04950202,
+            "max": 1.04950202,
+            "quantiles": {
+              "p0": 1.04950202,
+              "p5": 1.04950202,
+              "p50": 1.04950202,
+              "p95": 1.04950202,
+              "p100": 1.04950202
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "qb_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.844263953,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.844263953,
+        "stddev": null,
+        "min": 0.844263953,
+        "max": 0.844263953,
+        "quantiles": {
+          "p0": 0.844263953,
+          "p5": 0.844263953,
+          "p50": 0.844263953,
+          "p95": 0.844263953,
+          "p100": 0.844263953
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.844263953,
+            "stddev": null,
+            "min": 0.844263953,
+            "max": 0.844263953,
+            "quantiles": {
+              "p0": 0.844263953,
+              "p5": 0.844263953,
+              "p50": 0.844263953,
+              "p95": 0.844263953,
+              "p100": 0.844263953
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc_area",
+      "unit": "1",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 1.04150968,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 1.04150968,
+        "stddev": null,
+        "min": 1.04150968,
+        "max": 1.04150968,
+        "quantiles": {
+          "p0": 1.04150968,
+          "p5": 1.04150968,
+          "p50": 1.04150968,
+          "p95": 1.04150968,
+          "p100": 1.04150968
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 1.04150968,
+            "stddev": null,
+            "min": 1.04150968,
+            "max": 1.04150968,
+            "quantiles": {
+              "p0": 1.04150968,
+              "p5": 1.04150968,
+              "p50": 1.04150968,
+              "p95": 1.04150968,
+              "p100": 1.04150968
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "mnp1_delvto",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": -0.0056197128,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": -0.0056197128,
+        "stddev": null,
+        "min": -0.0056197128,
+        "max": -0.0056197128,
+        "quantiles": {
+          "p0": -0.0056197128,
+          "p5": -0.0056197128,
+          "p50": -0.0056197128,
+          "p95": -0.0056197128,
+          "p100": -0.0056197128
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": -0.0056197128,
+            "stddev": null,
+            "min": -0.0056197128,
+            "max": -0.0056197128,
+            "quantiles": {
+              "p0": -0.0056197128,
+              "p5": -0.0056197128,
+              "p50": -0.0056197128,
+              "p95": -0.0056197128,
+              "p100": -0.0056197128
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "mnp2_delvto",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": -0.0030632631,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": -0.0030632631,
+        "stddev": null,
+        "min": -0.0030632631,
+        "max": -0.0030632631,
+        "quantiles": {
+          "p0": -0.0030632631,
+          "p5": -0.0030632631,
+          "p50": -0.0030632631,
+          "p95": -0.0030632631,
+          "p100": -0.0030632631
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": -0.0030632631,
+            "stddev": null,
+            "min": -0.0030632631,
+            "max": -0.0030632631,
+            "quantiles": {
+              "p0": -0.0030632631,
+              "p5": -0.0030632631,
+              "p50": -0.0030632631,
+              "p95": -0.0030632631,
+              "p100": -0.0030632631
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "mis_delvto",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.000371335264,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.000371335264,
+        "stddev": null,
+        "min": 0.000371335264,
+        "max": 0.000371335264,
+        "quantiles": {
+          "p0": 0.000371335264,
+          "p5": 0.000371335264,
+          "p50": 0.000371335264,
+          "p95": 0.000371335264,
+          "p100": 0.000371335264
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.000371335264,
+            "stddev": null,
+            "min": 0.000371335264,
+            "max": 0.000371335264,
+            "quantiles": {
+              "p0": 0.000371335264,
+              "p5": 0.000371335264,
+              "p50": 0.000371335264,
+              "p95": 0.000371335264,
+              "p100": 0.000371335264
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "mref_delvto",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ_mismatch/1.800V/27C/mc0",
+        "value": 0.000414235143,
+        "margin": null
+      },
+      "monte_carlo": {
+        "n": 1,
+        "errored": 0,
+        "inconclusive": 0,
+        "mean": 0.000414235143,
+        "stddev": null,
+        "min": 0.000414235143,
+        "max": 0.000414235143,
+        "quantiles": {
+          "p0": 0.000414235143,
+          "p5": 0.000414235143,
+          "p50": 0.000414235143,
+          "p95": 0.000414235143,
+          "p100": 0.000414235143
+        },
+        "sigma_window": null,
+        "by_corner": [
+          {
+            "corner_id": "typ_mismatch/1.800V/27C",
+            "n": 1,
+            "errored": 0,
+            "inconclusive": 0,
+            "mean": 0.000414235143,
+            "stddev": null,
+            "min": 0.000414235143,
+            "max": 0.000414235143,
+            "quantiles": {
+              "p0": 0.000414235143,
+              "p5": 0.000414235143,
+              "p50": 0.000414235143,
+              "p95": 0.000414235143,
+              "p100": 0.000414235143
+            },
+            "sigma_window": null
+          }
+        ]
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "typ_mismatch/1.800V/27C/mc0",
+      "process": "typ_mismatch",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "fail",
+      "runtime_s": 0.237,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00484201436,
+          "unit": "A",
+          "status": "fail",
+          "margin": -0.00034201436000000016
+        },
+        {
+          "name": "ic2",
+          "value": 0.00483503125,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic3",
+          "value": 0.000490366346,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 6.57153032e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vb1",
+          "value": 0.839373431,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbref",
+          "value": 0.841542036,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vdd_node",
+          "value": 1.8,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00559311653,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.0100676097,
+          "unit": "W",
+          "status": "fail",
+          "margin": -6.76097000000004e-05
+        },
+        {
+          "name": "q1_area",
+          "value": 1.36439584,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "q2_area",
+          "value": 0.996663531,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "q3_area",
+          "value": 1.06201425,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "qa_area",
+          "value": 1.04950202,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "qb_area",
+          "value": 0.844263953,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "qc_area",
+          "value": 1.04150968,
+          "unit": "1",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "mnp1_delvto",
+          "value": -0.0056197128,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "mnp2_delvto",
+          "value": -0.0030632631,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "mis_delvto",
+          "value": 0.000371335264,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "mref_delvto",
+          "value": 0.000414235143,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/tmp/i90gen/probe1.art/typ_mismatch_1p800V_27C_mc0/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/tmp/i90gen/probe1.art/typ_mismatch_1p800V_27C_mc0/corner.cir"
+      },
+      "monte_carlo": {
+        "sample_index": 0,
+        "seed": 1234184666,
+        "process_seed": 1126143206,
+        "mismatch_seed": 1089402294
+      }
+    }
+  ]
+}

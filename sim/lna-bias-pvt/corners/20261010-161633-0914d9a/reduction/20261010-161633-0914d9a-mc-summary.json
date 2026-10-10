@@ -1,0 +1,1043 @@
+{
+  "bench_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+  "complete": false,
+  "controls_pass": false,
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "issue": 90,
+  "negative_control": {
+    "collapsed": false,
+    "deterministic_reference": {
+      "agrees": false,
+      "record": "20260921-173552-2aeafef",
+      "rel_tol": 0.0001,
+      "values": {
+        "ib1": {
+          "control": null,
+          "reference": 5.4304e-06,
+          "rel_diff": null
+        },
+        "ic1": {
+          "control": null,
+          "reference": 0.0039403,
+          "rel_diff": null
+        },
+        "ic3": {
+          "control": null,
+          "reference": 0.000506174,
+          "rel_diff": null
+        },
+        "idd": {
+          "control": null,
+          "reference": 0.00471442,
+          "rel_diff": null
+        },
+        "pdc": {
+          "control": null,
+          "reference": 0.00848596,
+          "rel_diff": null
+        },
+        "vb1": {
+          "control": null,
+          "reference": 0.843494,
+          "rel_diff": null
+        },
+        "vbref": {
+          "control": null,
+          "reference": 0.845286,
+          "rel_diff": null
+        }
+      }
+    },
+    "distinct_rndseeds": 0,
+    "max_minus_min": {
+      "ib1": null,
+      "ic1": null,
+      "ic2": null,
+      "ic3": null,
+      "idd": null,
+      "mis_delvto": null,
+      "mnp1_delvto": null,
+      "mnp2_delvto": null,
+      "mref_delvto": null,
+      "pdc": null,
+      "q1_area": null,
+      "q2_area": null,
+      "q3_area": null,
+      "qa_area": null,
+      "qb_area": null,
+      "qc_area": null,
+      "vb1": null,
+      "vbref": null,
+      "vdd_node": null
+    },
+    "pass": false,
+    "sampled_params_at_nominal": true,
+    "samples_expected": 20,
+    "samples_ok": 0
+  },
+  "pdk_pin": "v0.3.0",
+  "problems": [
+    "mc_mismatch: fleet job state 'failed'",
+    "mc_mismatch_replay: fleet job state 'failed'",
+    "negctl_nominal: fleet job state 'failed'"
+  ],
+  "record_id": "20261010-161633-0914d9a",
+  "replay": {
+    "abs_tol": 1e-15,
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "mismatches": [],
+    "n_mismatches": 0,
+    "pass": false,
+    "rel_tol": 1e-07,
+    "samples_compared": 0
+  },
+  "runs": {
+    "mc_mismatch": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": null,
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-0e40e3245f1923ac8",
+        "client_klt_version": "0.7.0+g21e45ce7233b",
+        "elapsed_seconds": 5,
+        "exit_code": "87",
+        "instance_type": "c7i.4xlarge",
+        "job_id": "klt-sim-e0d3cfbf14b4",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "mismatch",
+        "runner_klt_version": "0.5.0",
+        "state": "failed"
+      },
+      "monte_carlo": {
+        "n": 200,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 200,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": [
+        {
+          "name": "psp103.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+        },
+        {
+          "name": "psp103_nqs.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "839b164483205601c09032951f6c41d3580f15e506dc40a7202950d3afbdfc7d"
+        },
+        {
+          "name": "mosvar.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "25e64a374ab523dbfeb7ffed75dcb8b086ee10f06120a9074bd68b92d7b0fb41"
+        }
+      ],
+      "provenance_klt_version": "0.7.0+g21e45ce7233b",
+      "report_status": "error",
+      "request": "mc_mismatch.request.json",
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 0,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 0,
+        "diagnostic_counts": {
+          "batch_job_failed": 200
+        },
+        "failures": {
+          "failed_error": 200
+        },
+        "pdc_vs_vdd_idd_max_abs_err": null,
+        "samples_expected": 200,
+        "samples_ok": 0,
+        "samples_present": 200,
+        "stats": {
+          "ib1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic2": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic3": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "idd": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mis_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp1_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp2_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mref_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "pdc": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q1_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q2_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q3_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qa_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qb_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qc_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vb1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vbref": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vdd_node": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          }
+        },
+        "status_counts": {
+          "error": 200
+        }
+      }
+    },
+    "mc_mismatch_replay": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": null,
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-0e40e3245f1923ac8",
+        "client_klt_version": "0.7.0+g21e45ce7233b",
+        "elapsed_seconds": 5,
+        "exit_code": "87",
+        "instance_type": "m6i.4xlarge",
+        "job_id": "klt-sim-15a0b8707586",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "mismatch",
+        "runner_klt_version": "0.5.0",
+        "state": "failed"
+      },
+      "monte_carlo": {
+        "n": 200,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 200,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": [
+        {
+          "name": "psp103.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+        },
+        {
+          "name": "psp103_nqs.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "839b164483205601c09032951f6c41d3580f15e506dc40a7202950d3afbdfc7d"
+        },
+        {
+          "name": "mosvar.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "25e64a374ab523dbfeb7ffed75dcb8b086ee10f06120a9074bd68b92d7b0fb41"
+        }
+      ],
+      "provenance_klt_version": "0.7.0+g21e45ce7233b",
+      "report_status": "error",
+      "request": "mc_mismatch.request.json",
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 0,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 0,
+        "diagnostic_counts": {
+          "batch_job_failed": 200
+        },
+        "failures": {
+          "failed_error": 200
+        },
+        "pdc_vs_vdd_idd_max_abs_err": null,
+        "samples_expected": 200,
+        "samples_ok": 0,
+        "samples_present": 200,
+        "stats": {
+          "ib1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic2": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic3": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "idd": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mis_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp1_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp2_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mref_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "pdc": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q1_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q2_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q3_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qa_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qb_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qc_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vb1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vbref": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vdd_node": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 200,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          }
+        },
+        "status_counts": {
+          "error": 200
+        }
+      }
+    },
+    "negctl_nominal": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": null,
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-0e40e3245f1923ac8",
+        "client_klt_version": "0.7.0+g21e45ce7233b",
+        "elapsed_seconds": 8,
+        "exit_code": "87",
+        "instance_type": "c7i.4xlarge",
+        "job_id": "klt-sim-c13c7cfcbe45",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "mismatch",
+        "runner_klt_version": "0.5.0",
+        "state": "failed"
+      },
+      "monte_carlo": {
+        "n": 20,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 20,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": [
+        {
+          "name": "psp103.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+        },
+        {
+          "name": "psp103_nqs.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "839b164483205601c09032951f6c41d3580f15e506dc40a7202950d3afbdfc7d"
+        },
+        {
+          "name": "mosvar.osdi",
+          "path": null,
+          "scope": "external",
+          "sha256": "25e64a374ab523dbfeb7ffed75dcb8b086ee10f06120a9074bd68b92d7b0fb41"
+        }
+      ],
+      "provenance_klt_version": "0.7.0+g21e45ce7233b",
+      "report_status": "error",
+      "request": "negctl_nominal.request.json",
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 0,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 0,
+        "diagnostic_counts": {
+          "batch_job_failed": 20
+        },
+        "failures": {
+          "failed_error": 20
+        },
+        "pdc_vs_vdd_idd_max_abs_err": null,
+        "samples_expected": 20,
+        "samples_ok": 0,
+        "samples_present": 20,
+        "stats": {
+          "ib1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic2": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "ic3": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "idd": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mis_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp1_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mnp2_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "mref_delvto": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "pdc": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q1_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q2_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "q3_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qa_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qb_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "qc_area": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vb1": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vbref": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          },
+          "vdd_node": {
+            "max": null,
+            "mean": null,
+            "min": null,
+            "n_finite": 0,
+            "n_missing": 20,
+            "n_nonfinite": 0,
+            "stdev": null,
+            "zero_spread": null
+          }
+        },
+        "status_counts": {
+          "error": 20
+        }
+      }
+    }
+  },
+  "schema": "lna-bias-mc-summary/1",
+  "seed": 68001,
+  "temperature_c": 27,
+  "thresholds": {
+    "ic1_exceeds_if_gt_A": 0.0045,
+    "pdc_exceeds_if_ge_W": 0.01
+  },
+  "variation": {
+    "all_sampled_params_vary": false,
+    "corr_ln_ic1_vs_ln_q1_over_q3_area": null,
+    "pass": false,
+    "sampled_params": {
+      "mis_delvto": {
+        "expected_sigma_from_pdk_text": 0.00019887378220871646,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "mnp1_delvto": {
+        "expected_sigma_from_pdk_text": 0.0022135943621178654,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "mnp2_delvto": {
+        "expected_sigma_from_pdk_text": 0.0022135943621178654,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "mref_delvto": {
+        "expected_sigma_from_pdk_text": 0.0007115124735378852,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "q1_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "q2_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "q3_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "qa_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "qb_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      },
+      "qc_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": null,
+        "zero_spread": null
+      }
+    },
+    "zero_spread_explanations": {},
+    "zero_spread_quantities": []
+  },
+  "vdd_v": 1.8
+}

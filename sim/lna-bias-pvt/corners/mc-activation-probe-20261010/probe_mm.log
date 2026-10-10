@@ -1,0 +1,33 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * i90 single-sample mismatch activation probe
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+@q.xdut.xq1.qnpn13g2[area] = 1.074404e+00
+@q.xdut.xq2.qnpn13g2[area] = 8.868585e-01
+@q.xdut.xq3.qnpn13g2[area] = 1.130515e+00
+@q.xdut.xqa.qnpn13g2[area] = 1.034311e+00
+@q.xdut.xqb.qnpn13g2[area] = 8.793596e-01
+@q.xdut.xqc.qnpn13g2[area] = 1.173862e+00
+@n.xdut.xmnp1.nsg13_hv_nmos[delvto] = 1.032713e-03
+@n.xdut.xmnp2.nsg13_hv_nmos[delvto] = -2.42298e-03
+@n.xdut.xmis.nsg13_hv_pmos[delvto] = -7.98050e-05
+@n.xdut.xmref.nsg13_hv_pmos[delvto] = -5.87080e-04
+@n.xdut.xmnp1.nsg13_hv_nmos[w] = 9.996710e-06
+@n.xdut.xmnp1.nsg13_hv_nmos[factuo] = 1.001396e+00
+@q.xdut.xq1.qnpn13g2[ic] -i(vdda) = 7.979797e-03
+ngspice-46 done
