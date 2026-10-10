@@ -26,24 +26,71 @@ INBAND_COLS = [
 ]
 
 
-def parse_table(path: Path, spec=INBAND_COLS):
+class TableError(ValueError):
+    """The wrdata table violates its numeric contract (invalid evidence).
+
+    Distinct from a valid measurement that fails a target: callers treat this
+    as "the point is not complete evidence", never as a spec failure.
+    """
+
+
+def parse_table(path: Path, spec=INBAND_COLS, expected_points=None):
+    """Decode a wrdata table, validating it before any arithmetic.
+
+    Requires: the exact schema width per row, finite values (NaN/inf/overflow
+    rejected), identical repeated frequency scales within a row, and positive
+    strictly increasing frequencies down the table. `expected_points`, when a
+    caller knows the declared grid size, must equal the received row count;
+    None (historical replay, reduced fixtures) imposes no count.
+    """
+    width_total = sum(w for _, w in spec)
     rows = []
-    for line in path.read_text().splitlines():
+    prev_f = None
+    for lineno, line in enumerate(Path(path).read_text().splitlines(), 1):
         line = line.strip()
         if not line:
             continue
-        vals = [float(x) for x in line.split()]
-        rec, i = {}, 0
+        where = f"{Path(path).name}:{lineno}"
+        toks = line.split()
+        try:
+            vals = [float(x) for x in toks]
+        except ValueError as exc:
+            raise TableError(f"{where}: non-numeric field ({exc})") from None
+        if len(vals) != width_total:
+            raise TableError(
+                f"{where}: {len(vals)} columns, schema requires {width_total}")
+        bad = [i for i, v in enumerate(vals) if not math.isfinite(v)]
+        if bad:
+            raise TableError(
+                f"{where}: non-finite value ({toks[bad[0]]}) in column {bad[0]}")
+        rec, i, f_row = {}, 0, None
         for name, width in spec:
             chunk = vals[i:i + width]
             i += width
             if name == "f":
+                if f_row is not None and chunk[0] != f_row:
+                    raise TableError(
+                        f"{where}: inconsistent repeated frequency scale "
+                        f"({chunk[0]!r} != {f_row!r})")
+                f_row = chunk[0]
                 rec["freq_hz"] = chunk[0]
             elif width == 2:
                 rec[name] = complex(chunk[0], chunk[1])
             else:
                 rec[name] = chunk[0]
+        if f_row is not None:
+            if f_row <= 0:
+                raise TableError(f"{where}: non-positive frequency {f_row!r}")
+            if prev_f is not None and f_row <= prev_f:
+                raise TableError(
+                    f"{where}: frequency {f_row!r} not strictly increasing "
+                    f"(previous {prev_f!r})")
+            prev_f = f_row
         rows.append(rec)
+    if expected_points is not None and len(rows) != expected_points:
+        raise TableError(
+            f"{Path(path).name}: {len(rows)} points, declared grid has "
+            f"{expected_points}")
     return rows
 
 

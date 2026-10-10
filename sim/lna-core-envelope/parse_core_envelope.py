@@ -179,8 +179,12 @@ def main() -> int:
         nf = {k: (float(a), float(b)) for k, a, b in NF_RE.findall(text)}
         gain = {k: float(v) for k, v in GAIN_RE.findall(text)}
 
-        ib = parse_table(inband, INBAND_COLS)
-        sb = parse_table(stab, STAB_COLS)
+        try:
+            ib = parse_table(inband, INBAND_COLS)
+            sb = parse_table(stab, STAB_COLS)
+        except _rf.TableError as exc:
+            failed.append((pid, f"invalid table: {exc}"))
+            continue
         if not ib or not sb:
             failed.append((pid, "empty table"))
             continue

@@ -202,5 +202,50 @@ class Malformed(ParserCase):
         self.assertFalse((self.records / "rec.csv").exists())
 
 
+    def _assert_invalid_point(self, frag):
+        p = self.run_parser()
+        self.assertEqual(p.returncode, 1)
+        self.assertIn("no parsable points", p.stderr)
+        self.assertFalse((self.records / "rec.csv").exists())
+        self.assertNotIn("Traceback", p.stderr)
+        return p
+
+    def test_broadband_nan_mu_is_invalid_not_nonviolating(self):
+        dat = self.corners / "p001.stability.dat"
+        lines = dat.read_text().splitlines()
+        toks = lines[1].split()
+        toks[3] = "nan"  # mu column
+        lines[1] = " ".join(toks)
+        dat.write_text("\n".join(lines) + "\n")
+        self._assert_invalid_point("non-finite")
+
+    def test_surplus_column_is_invalid(self):
+        dat = self.corners / "p001.stability.dat"
+        lines = dat.read_text().splitlines()
+        lines[0] += " 1.0"
+        dat.write_text("\n".join(lines) + "\n")
+        self._assert_invalid_point("columns")
+
+    def test_invalid_point_is_skipped_with_diagnostic(self):
+        with open(self.manifest, "a") as fh:
+            fh.write("p002|s_ctrl_a8|ctrl|2stage|1|1|1|1|8|2|typ|26.85|1.8\n")
+        for ext in ("log", "inband.dat", "stability.dat"):
+            src = self.corners / (f"p001.{ext}")
+            shutil.copy(src, self.corners / f"p002.{ext}")
+        dat = self.corners / "p002.stability.dat"
+        dat.write_text(dat.read_text().replace("0.99", "inf"))
+        p = self.run_parser()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(len(self.rows()), 1)
+        md = (self.records / "rec.md").read_text()
+        self.assertIn("p002", md)
+        self.assertIn("invalid table", md)
+
+    def test_finite_instability_remains_measured_violation(self):
+        # Fixture broadband mu has 0.99 (<1): finite, so a counted violation.
+        self.assertEqual(self.run_parser().returncode, 0)
+        self.assertEqual(self.rows()[0]["n_broadband_pts_mu_lt_1"], "1")
+
+
 if __name__ == "__main__":
     unittest.main()

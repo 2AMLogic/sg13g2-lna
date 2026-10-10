@@ -97,5 +97,57 @@ class EnvelopeRfTests(unittest.TestCase):
         self.assertEqual(r["nfmin"], 1.25 + 0j)
 
 
+class TableIntegrity(unittest.TestCase):
+    G = 1.0e9
+
+    def row(self, f=None, **over):
+        g = self.G if f is None else f
+        v = [g, 0.1, 0.2, g, 3.0, 4.0, g, 0.01, 0.02, g, 0.5, 0.6,
+             g, 1.5, g, 2.5, g, 0.9, g, 3.5, 0.0, g, 1.25, 0.0]
+        for k, x in over.items():
+            v[int(k[1:])] = x
+        return " ".join(repr(x) for x in v)
+
+    def parse(self, lines, **kw):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.dat"
+            p.write_text("\n".join(lines) + "\n")
+            return rf.parse_table(p, **kw)
+
+    def rejects(self, lines, frag, **kw):
+        with self.assertRaises(rf.TableError) as cm:
+            self.parse(lines, **kw)
+        self.assertIn(frag, str(cm.exception))
+        self.assertIn("x.dat", str(cm.exception))
+
+    def test_valid_multirow(self):
+        self.assertEqual(len(self.parse([self.row(1e9), self.row(2e9)],
+                                        expected_points=2)), 2)
+
+    def test_nan_inf_overflow(self):
+        self.rejects(
+                     [self.row().replace("2.5", "nan")], "non-finite")
+        self.rejects([self.row().replace("2.5", "inf")], "non-finite")
+        self.rejects([self.row().replace("2.5", "1e999")], "non-finite")
+
+    def test_column_count(self):
+        self.rejects([self.row() + " 7.0"], "columns")
+        self.rejects([" ".join(self.row().split()[:-1])], "columns")
+
+    def test_inconsistent_scale(self):
+        self.rejects([self.row().replace("1.5", "1.5", 1).replace(
+            f"{self.G!r} 2.5", "2e9 2.5")], "inconsistent repeated frequency")
+
+    def test_duplicate_and_reversed(self):
+        self.rejects([self.row(1e9), self.row(1e9)], "strictly increasing")
+        self.rejects([self.row(2e9), self.row(1e9)], "strictly increasing")
+
+    def test_nonpositive_frequency(self):
+        self.rejects([self.row(0.0)], "non-positive")
+
+    def test_missing_declared_grid_points(self):
+        self.rejects([self.row(1e9)], "declared grid", expected_points=2)
+
+
 if __name__ == "__main__":
     unittest.main()
