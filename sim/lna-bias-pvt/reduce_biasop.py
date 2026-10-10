@@ -48,10 +48,22 @@ Exit codes: 0 ok, 2 malformed/incomplete input, 4 output already exists.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import math
 import os
 import re
 import sys
+
+# Shared helpers, loaded by explicit path so `python3 -I` works (isolated mode
+# does not put the script directory on sys.path). Issue #160.
+_spec = importlib.util.spec_from_file_location(
+    "reducer_common",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                 "tools", "reducer_common.py"))
+_rc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_rc)
+ReductionError, parse_kv_line, read_text, write_exclusive = (
+    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive)
 
 IC1_LIMIT_A = 4.5e-3
 PDC_LIMIT_W = 10e-3
@@ -87,10 +99,6 @@ SUMMARY_HEADER = ("point_id,corner_label,temp_c,vdd_v,ic1_a,ic2_a,ic3_a,"
                   "ic1_within_4p5ma,pdc_within_10mw")
 STARTUP_HEADER = ("point_id,corner_label,temp_c,vdd_v,ic1_end_a,ic1_op_a,"
                   "end_vs_op_pct,settled_spread_pct,verdict")
-
-
-class ReductionError(Exception):
-    """Malformed or incomplete evidence (never a measured bar violation)."""
 
 
 class WaveformError(ReductionError):
@@ -137,26 +145,6 @@ def startup_cells(smoke=False):
     return [NOMINAL_CELL] if smoke else list(STARTUP_CELLS)
 
 
-def parse_kv_line(text, tag, source):
-    """Return {key: raw_token} from the single `tag ...` line in text."""
-    lines = [ln for ln in text.splitlines() if ln.startswith(tag + " ")]
-    if not lines:
-        raise ReductionError("%s: no %s line" % (source, tag))
-    if len(lines) > 1:
-        raise ReductionError("%s: %d %s lines (expected exactly one)"
-                             % (source, len(lines), tag))
-    tokens = lines[0].split()[1:]
-    if len(tokens) % 2:
-        raise ReductionError("%s: %s line has an odd token count (key "
-                             "without value)" % (source, tag))
-    out = {}
-    for k, raw in zip(tokens[0::2], tokens[1::2]):
-        if k in out:
-            raise ReductionError("%s: %s key %r repeated" % (source, tag, k))
-        out[k] = raw
-    return out
-
-
 def finite(raw, key, source):
     try:
         val = float(raw)
@@ -175,14 +163,6 @@ def require(kv, keys, tag, source):
         raise ReductionError("%s: %s line missing required key(s): %s"
                              % (source, tag, ", ".join(missing)))
     return {k: finite(kv[k], k, source) for k in keys}
-
-
-def read_text(path):
-    try:
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            return fh.read()
-    except OSError as exc:
-        raise ReductionError("%s: unreadable (%s)" % (path, exc)) from None
 
 
 def check_inventory(corners_dir, op_list, su_list):
@@ -473,12 +453,6 @@ def reduce_all(corners_dir, smoke=False, require_audit=False):
         su_rows[startup_id(c)] = reduce_startup(corners_dir, c, op_rows)
     return (summary_text(op_rows, op_list), startup_text(su_rows, su_list),
             facts(op_rows, op_list, su_rows, su_list))
-
-
-def write_exclusive(path, text):
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-    with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
 
 
 def main(argv=None):

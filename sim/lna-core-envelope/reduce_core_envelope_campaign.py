@@ -52,6 +52,12 @@ CAMP = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(CAMP)
 LVC = CAMP.LVC
 
+# Shared RF helper, loaded by explicit path so `python3 -I` works.
+_rf_spec = importlib.util.spec_from_file_location("envelope_rf", HERE / "envelope_rf.py")
+_rf = importlib.util.module_from_spec(_rf_spec)
+_rf_spec.loader.exec_module(_rf)
+nf_reref = _rf.nf_reref
+
 # Ratified rows this campaign is read against (spec/target-spec.md, unchanged).
 NF_LIMIT_DB = 1.5
 GAIN_MIN_DB = 15.0
@@ -84,10 +90,6 @@ BIAS_CLASSES = ("forward_active", "marginal", "saturated", "cutoff", "reverse", 
 
 def finite(x) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
-
-
-def nf_reref(nf_db: float, t_from: float, t_to: float) -> float:
-    return 10 * math.log10(1 + (10 ** (nf_db / 10.0) - 1) * t_from / t_to)
 
 
 # =============================================================================
