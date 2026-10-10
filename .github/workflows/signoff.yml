@@ -94,7 +94,13 @@ jobs:
   # (rederive_nf_fixed_t0.py, issue #101): hand-computed corrected_nf_db
   # values, validity-box boundaries, a trimmed-fixture end-to-end run and a
   # byte-for-byte replay of the committed correction record into a temp dir.
-  # Stdlib-only, headless, PDK-free, single process; never writes under sim/.
+  # Also the production per-cell log parser (parse_hbt_log.awk via
+  # hbt_parse.sh, issue #144): strict numeric grammar, NaN/Inf/overflow
+  # rejection, missing-fT sentinels, divergence/incomplete blocks and cell
+  # verdicts, plus a replay of every retained log of both HBT records
+  # against the committed CSVs, under each awk on the runner.
+  # Stdlib-only, headless, PDK-free, no ngspice, single process; never
+  # writes under sim/.
   hbt-reduction-tests:
     runs-on: ubuntu-latest
     steps:

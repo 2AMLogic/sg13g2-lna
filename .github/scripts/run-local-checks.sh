@@ -87,6 +87,8 @@ step "reduction-tests: lna-characterization unit tests" \
   python3 -I -m unittest discover -s sim/lna-characterization/tests -v
 
 # --- job: hbt-reduction-tests
+# (fixed-T0 NF re-derivation, issue #101, and the production log parser
+# parse_hbt_log.awk / hbt_parse.sh with its retained-log replay, issue #144)
 step "hbt-reduction-tests: hbt-characterization unit tests" \
   python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
 
