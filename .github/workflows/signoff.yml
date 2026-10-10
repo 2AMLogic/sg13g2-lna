@@ -178,6 +178,9 @@ jobs:
       - name: core-envelope record lifecycle tests
         run: sim/tests/test-core-envelope-lifecycle.sh
 
+      - name: shared reducer helper tests
+        run: python3 -I -m unittest discover -s sim/tools/tests -v
+
   # Core-envelope replay (issue #83): re-run the committed, deterministic
   # derivation into a temp path and diff against the committed derived CSV.
   # Stdlib-only, no PDK/ngspice; never writes under sim/*/records/.
