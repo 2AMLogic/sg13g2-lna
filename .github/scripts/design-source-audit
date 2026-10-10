@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""Design-source inventory + T1 item-1 audit envelope (issue #182).
+
+T1 item 1 ("Design sources") has no `klt` verb. The pinned klt 0.7.0 grades
+it through an artifact-anchored generic envelope (signoff/design-evidence-
+tiers.md, "Not every item has a tool behind it"): the envelope declares
+`"t1_item": 1` and pins the audited artifact by path + content hash, and the
+manifest pins the same hash. This script owns that artifact and envelope:
+
+  signoff/design-source/inventory.json  the audited artifact: sha256 + size of
+                                        the schematic, symbol, xschemrc and
+                                        the derived netlist, plus the
+                                        generation procedure's identity
+  signoff/design-source/audit.json      the generic envelope (kind=generic,
+                                        t1_item=1) pinning the inventory
+
+Modes:
+  write  [--skip-regen-gate]   (re)generate both files. By default first runs
+                               .github/scripts/check-netlist-regen (the
+                               authoritative xschem regeneration, issue #138)
+                               and refuses to write unless it exits 0.
+                               --skip-regen-gate is for a host that cannot
+                               run that check; the result is NOT attested
+                               until CI's netlist-regen job passes `check
+                               --live-tools` on the same commit.
+  check  [--live-tools]        PDK-free freshness gate. Rebuilds the expected
+                               inventory and envelope from the checkout and
+                               requires the committed files to equal them, so
+                               a changed source/netlist/config byte, a missing
+                               or unlisted input, a stale outer binding (the
+                               envelope's hash, the manifest's hash) all fail
+                               with a specific message. --live-tools also
+                               requires the running xschem and the installed
+                               PDK to be exactly the identity the inventory
+                               records (CI runs it right after check-netlist-
+                               regen succeeds).
+
+Limits (also in signoff/README.md): the inventory is a static wrapper. It
+proves which bytes were audited and that they are the checkout's current
+bytes; it does not itself prove regeneration succeeded (that is
+check-netlist-regen, which `write` runs and CI re-runs) and says nothing
+about layout, RF performance, or whether the schematic is a good design.
+
+Exit codes: 0 ok, 1 stale/invalid evidence, 2 usage/unreadable input,
+3 regeneration gate or live-tool identity failed.
+Stdlib only.
+"""
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+INVENTORY = "signoff/design-source/inventory.json"
+AUDIT = "signoff/design-source/audit.json"
+MANIFEST = "signoff/manifest.json"
+REGEN_CHECK = ".github/scripts/check-netlist-regen"
+NETLIST_CMD = "xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./lna.sch"
+SOURCES = [
+    ("schematic", "design/lna.sch"),
+    ("symbol", "design/lna.sym"),
+    ("generation-config", "design/xschemrc"),
+    ("derived-netlist", "design/netlist/lna.spice"),
+]
+# design/ files that are documentation, not design sources.
+NOT_SOURCES = {"design/README.md"}
+
+
+class Stale(Exception):
+    pass
+
+
+def sha(data):
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def read(root, rel):
+    try:
+        with open(os.path.join(root, rel), "rb") as f:
+            return f.read()
+    except OSError as e:
+        raise Stale(f"missing or unreadable input {rel}: {e.strerror}")
+
+
+def dumps(obj):
+    return (json.dumps(obj, indent=2, sort_keys=True) + "\n").encode()
+
+
+def identity(root):
+    """Generation-procedure identity, derived only from committed files."""
+    chk = read(root, REGEN_CHECK).decode()
+    m = re.search(r'^XSCHEM_VERSION = "([^"]+)"', chk, re.M)
+    v = re.search(r'^PDK_VARIANT = "([^"]+)"', chk, re.M)
+    if not m or not v:
+        raise Stale(f"cannot read XSCHEM_VERSION/PDK_VARIANT from {REGEN_CHECK}")
+    try:
+        pdk = json.loads(read(root, "sim/pdk.json"))["release_tag"]
+    except (ValueError, KeyError) as e:
+        raise Stale(f"sim/pdk.json has no release_tag: {e}")
+    return {
+        "netlist_command": NETLIST_CMD,
+        "pdk_release_tag": pdk,
+        "pdk_variant": v.group(1),
+        "regen_check": REGEN_CHECK,
+        "regen_check_sha256": sha(chk.encode()),
+        "xschem_version": m.group(1),
+    }
+
+
+def design_files(root):
+    out = []
+    for d, _, files in os.walk(os.path.join(root, "design")):
+        for fn in files:
+            out.append(os.path.relpath(os.path.join(d, fn), root))
+    return sorted(out)
+
+
+def build_inventory(root):
+    listed = {p for _, p in SOURCES}
+    unlisted = [p for p in design_files(root) if p not in listed and p not in NOT_SOURCES]
+    if unlisted:
+        raise Stale("design/ file(s) not in the source inventory: " + ", ".join(unlisted)
+                    + " (add the role to SOURCES in " + os.path.relpath(__file__, root) + ")")
+    sources = []
+    for role, path in SOURCES:
+        data = read(root, path)
+        sources.append({"bytes": len(data), "path": path, "role": role, "sha256": sha(data)})
+    return {
+        "block": "sg13g2-lna",
+        "generation": identity(root),
+        "kind": "design-source-inventory",
+        "schema_version": 1,
+        "sources": sources,
+    }
+
+
+def build_audit(inv_bytes, inv):
+    g = inv["generation"]
+    return {
+        "kind": "generic",
+        "provenance": {"input": {"content_hash": sha(inv_bytes), "path": INVENTORY}},
+        "schema_version": 1,
+        "source": "'.github/scripts/design-source-audit write' (issue #182)",
+        "status": "pass",
+        "summary": (
+            "Design sources audited: " + ", ".join(s["path"] for s in inv["sources"])
+            + " pinned by sha256 in " + INVENTORY + ". Netlist generated with xschem "
+            + g["xschem_version"] + " against " + g["pdk_variant"] + " " + g["pdk_release_tag"]
+            + "; connectivity is checked by " + g["regen_check"]
+            + " (not by this envelope). Says nothing about layout or RF performance."),
+        "t1_item": 1,
+    }
+
+
+def expected(root):
+    inv = build_inventory(root)
+    inv_b = dumps(inv)
+    return inv, inv_b, dumps(build_audit(inv_b, inv))
+
+
+def cmd_write(root, skip_gate):
+    if skip_gate:
+        print("design-source-audit: WARNING --skip-regen-gate: the regeneration gate was not run "
+              "here; the audit is unattested until CI's netlist-regen job passes "
+              "`design-source-audit check --live-tools`", file=sys.stderr)
+    else:
+        r = subprocess.run([sys.executable, "-I", os.path.join(root, REGEN_CHECK), "--root", root])
+        if r.returncode != 0:
+            print(f"design-source-audit: {REGEN_CHECK} exited {r.returncode}; refusing to write "
+                  "an audit without a successful authoritative regeneration", file=sys.stderr)
+            return 3
+    try:
+        inv, inv_b, aud_b = expected(root)
+    except Stale as e:
+        print(f"design-source-audit: {e}", file=sys.stderr)
+        return 1
+    os.makedirs(os.path.join(root, os.path.dirname(INVENTORY)), exist_ok=True)
+    for rel, b in ((INVENTORY, inv_b), (AUDIT, aud_b)):
+        with open(os.path.join(root, rel), "wb") as f:
+            f.write(b)
+    print(f"wrote {INVENTORY} and {AUDIT}")
+    print(f"manifest item 1 content_hash must be {sha(inv_b)}")
+    return 0
+
+
+def live_tools(root, inv):
+    g = inv["generation"]
+    exe = shutil.which("xschem")
+    if not exe:
+        raise Stale("--live-tools: xschem not found")
+    out = subprocess.run([exe, "--version"], capture_output=True, text=True)
+    m = re.search(r"XSCHEM V(\d+\.\d+\.\d+)", out.stdout + out.stderr)
+    if not m or m.group(1) != g["xschem_version"]:
+        raise Stale(f"--live-tools: xschem {m.group(1) if m else 'unknown'} != inventory {g['xschem_version']}")
+    pdk_root = os.environ.get("PDK_ROOT", "")
+    marker = os.path.join(pdk_root, g["pdk_variant"], ".fetched-version")
+    have = open(marker).read().strip() if os.path.isfile(marker) else None
+    if have != g["pdk_release_tag"].lstrip("v"):
+        raise Stale(f"--live-tools: PDK at {pdk_root!r} is {have!r}, inventory records {g['pdk_release_tag']}")
+
+
+def cmd_check(root, live):
+    try:
+        committed_inv_b = read(root, INVENTORY)
+        committed_aud_b = read(root, AUDIT)
+        try:
+            c_inv = json.loads(committed_inv_b)
+            c_aud = json.loads(committed_aud_b)
+        except ValueError as e:
+            raise Stale(f"committed source audit is not valid JSON: {e}")
+        # 1. every listed input still has the recorded bytes, every source listed.
+        listed = {s.get("path"): s for s in c_inv.get("sources", [])}
+        for role, path in SOURCES:
+            if path not in listed:
+                raise Stale(f"{INVENTORY} does not list {path}")
+        for path, ent in listed.items():
+            data = read(root, path)
+            if ent.get("sha256") != sha(data) or ent.get("bytes") != len(data):
+                raise Stale(f"stale inventory: {path} changed since the audit "
+                            f"(recorded {ent.get('sha256')}, now {sha(data)}); regenerate with "
+                            "'.github/scripts/design-source-audit write' after check-netlist-regen passes")
+        # 2. outer bindings: envelope -> inventory, manifest -> inventory.
+        inv_hash = sha(committed_inv_b)
+        inp = (c_aud.get("provenance") or {}).get("input") or {}
+        if c_aud.get("t1_item") != 1 or c_aud.get("kind") != "generic" or c_aud.get("status") != "pass":
+            raise Stale(f"{AUDIT} is not a passing generic t1_item=1 envelope")
+        if inp.get("path") != INVENTORY or inp.get("content_hash") != inv_hash:
+            raise Stale(f"stale audit: {AUDIT} pins {inp.get('content_hash')} for {inp.get('path')}, "
+                        f"but {INVENTORY} hashes to {inv_hash}")
+        try:
+            ent = json.loads(read(root, MANIFEST)).get("evidence", {}).get("1")
+        except ValueError as e:
+            raise Stale(f"{MANIFEST} is not valid JSON: {e}")
+        if not isinstance(ent, dict) or ent.get("file") != AUDIT:
+            raise Stale(f"{MANIFEST} item 1 does not cite {AUDIT}")
+        if ent.get("content_hash") != inv_hash:
+            raise Stale(f"stale citation: {MANIFEST} item 1 pins {ent.get('content_hash')}, "
+                        f"inventory hashes to {inv_hash}")
+        # 3. byte-for-byte equal to a rebuild: catches identity drift (xschem
+        # pin, PDK pin, regen-check script edits) and hand edits to either file.
+        _, exp_inv_b, exp_aud_b = expected(root)
+        if committed_inv_b != exp_inv_b:
+            raise Stale(f"{INVENTORY} differs from a rebuild from the checkout (generation identity "
+                        "or format drift); regenerate it")
+        if committed_aud_b != exp_aud_b:
+            raise Stale(f"{AUDIT} differs from a rebuild from the checkout; regenerate it")
+        if live:
+            live_tools(root, c_inv)
+    except Stale as e:
+        print(f"design-source-audit: FAIL: {e}", file=sys.stderr)
+        return 3 if str(e).startswith("--live-tools") else 1
+    print("OK: design-source inventory, audit envelope and manifest item-1 citation are fresh"
+          + (" and bound to the live regeneration tools" if live else ""))
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("mode", choices=["write", "check"])
+    ap.add_argument("--root", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    ap.add_argument("--skip-regen-gate", action="store_true")
+    ap.add_argument("--live-tools", action="store_true")
+    a = ap.parse_args()
+    root = os.path.abspath(a.root)
+    if a.mode == "write":
+        return cmd_write(root, a.skip_regen_gate)
+    return cmd_check(root, a.live_tools)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

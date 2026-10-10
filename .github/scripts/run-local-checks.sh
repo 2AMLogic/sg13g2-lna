@@ -150,10 +150,16 @@ fi
 if [ "$regen_pdk" -eq 1 ]; then
   step "netlist-regen: self-test" .github/scripts/test-check-netlist-regen.sh --require-tools
   step "netlist-regen: check" .github/scripts/check-netlist-regen
+  step "netlist-regen: source audit bound to live tools" .github/scripts/design-source-audit check --live-tools
 else
   skip "netlist-regen: self-test (need xschem 3.4.4 and the SG13G2 PDK; CI provisions both)"
   skip "netlist-regen: check (need xschem 3.4.4 and the SG13G2 PDK)"
 fi
+
+# --- job: design-source-audit (issue #182; klt cases of the self-test SKIP
+# inside the script unless the pinned release klt is on PATH)
+step "design-source-audit: self-test" .github/scripts/test-design-source-audit.sh
+step "design-source-audit: check" .github/scripts/design-source-audit check
 
 # --- job: sim-append-only (CI: pull_request only)
 step "sim-append-only: self-test" .github/scripts/test-check-sim-append-only.sh

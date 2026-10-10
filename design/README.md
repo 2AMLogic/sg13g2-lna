@@ -156,6 +156,12 @@ this command any time `lna.sch` changes — a stale committed netlist is a
 review-blocking discrepancy, not a cosmetic one, per this repo's
 "regenerated on design change" evidence discipline.
 
+**Source audit (issue #182).** After any change under `design/`, once
+`.github/scripts/check-netlist-regen` passes, refresh the T1 item-1 evidence
+with `.github/scripts/design-source-audit write` and follow the steps in
+`signoff/README.md` (item 1). `design-source-audit check` fails on any
+changed, missing or unlisted source byte, including wiring-only edits.
+
 **Netlist-freshness CI gate (issue #88).** The `netlist-freshness` job
 (`.github/scripts/check-netlist-freshness`, self-test
 `test-check-netlist-freshness.sh`) parses the `C {sym} x y rot flip {name=...
