@@ -64,6 +64,24 @@ the bench is committed beside the results.
   extreme cells that bracket the old divider's measured min/max bias
   (`bcs/125 °C/1.98 V`, `wcs/−40 °C/1.62 V`).
 
+  **Waveform settling audit (issue #154).** The deck samples only `n`,
+  `n-10`, `n-25` of the transient (24.5 ns of a 12 us run), so the verdict
+  above is a tail-sample check. `reduce_biasop.startup_waveform_audit` is a
+  separately reported audit of every retained `startup_*.dat` sample in the
+  physical-time window **2 us <= t <= 12 us** (ramp ends at 1 us plus a 1 us
+  margin; the retained waveforms are within 0.6 % of final at 1.5 us). It
+  applies the same tolerances (spread <= 2 %, every sample within 5 % of the
+  paired DC `I_C1`, positive current) and requires finite values, strictly
+  increasing time, >= 1000 in-window samples, window endpoints covered and a
+  max sample gap <= 5 ns (5x the 1 ns step). Failures are named errors
+  (`WaveformTruncatedError`, `WaveformNonfiniteError`,
+  `WaveformNonmonotonicError`, `WaveformCoverageError`,
+  `WaveformSampleGapError`), never PASS. Limit: excursions shorter than the
+  1 ns sampling or outside the window are not seen. It never alters the
+  historical three-sample verdicts. Replay with `--waveform-audit-csv`;
+  reassessment of 20260921-173552-2aeafef is the derivation record
+  `records/20260921-173552-2aeafef-startup-waveform-audit.{csv,md}`.
+
 ## Method limits (what this experiment does NOT measure)
 
 - **No RF claim of any kind.** Replacing the divider *changes the RF
