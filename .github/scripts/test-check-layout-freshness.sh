@@ -8,6 +8,8 @@
 #   5. mutated drc_report content_hash    -> FAILS
 #   6. mutated lvs_full_report content_hash -> FAILS
 #   7. missing content_hash field         -> FAILS
+#   9. lvs_inputs.json (issue #130): missing, malformed, and independent
+#      mutation of each reference / request / report -> FAIL, naming it
 #   8. extract_report / lvs_report (scoped LVS): mutated hash, missing
 #      report, missing provenance.input, wrong role, malformed hash -> FAIL
 set -u
@@ -27,6 +29,13 @@ mk() { # mk <name>: repo-shaped copy of the inputs
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
   cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
+  cp "$SRC/$C"/{lvs_request.json,lvs_full_request.json} "$d/$C/"
+  cp "$SRC/layout/lvs_identity.py" "$d/layout/"
+  # fixture sidecar: what run_flow.sh would record after each klt lvs run
+  # (the committed tree's own sidecar is produced only by a real local run)
+  for p in "lvs_request.json lvs_report.json" "lvs_full_request.json lvs_full_report.json"; do
+    python3 -I "$d/layout/lvs_identity.py" "$d/$C" $p >/dev/null
+  done
 }
 run() { # run <name> <expect 0|1>
   if "$CHECKER" --root "$TMP/$1" >/dev/null 2>&1; then got=0; else got=1; fi
@@ -87,6 +96,61 @@ for r in extract_report lvs_report; do
     echo "PASS: $r failure names report"; pass=$((pass+1))
   else echo "FAIL: $r failure does not name report"; fail=$((fail+1)); fi
 done
+
+# --- issue #130: LVS input identity ---
+named() { # named <case> <substring>: failure output must contain it
+  if "$CHECKER" --root "$TMP/$1" 2>&1 | grep -q -- "$2"; then
+    echo "PASS: $1 failure names '$2'"; pass=$((pass+1))
+  else echo "FAIL: $1 failure does not name '$2'"; fail=$((fail+1)); fi
+}
+mk id-nosidecar; rm "$TMP/id-nosidecar/$C/lvs_inputs.json"
+run id-nosidecar 1 "missing lvs_inputs.json"; named id-nosidecar "lvs_inputs.json"
+mk id-badjson; echo '{not json' > "$TMP/id-badjson/$C/lvs_inputs.json"
+run id-badjson 1 "unparseable lvs_inputs.json"
+mk id-schema; echo '{"schema":"x","reports":{}}' > "$TMP/id-schema/$C/lvs_inputs.json"
+run id-schema 1 "wrong-schema lvs_inputs.json"
+mk id-noentry; python3 -I - "$TMP/id-noentry/$C/lvs_inputs.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); del d["reports"]["lvs_full_report.json"]
+json.dump(d, open(p, "w"))
+PY
+run id-noentry 1 "missing full-LVS sidecar entry"
+mk id-nofield; python3 -I - "$TMP/id-nofield/$C/lvs_inputs.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); del d["reports"]["lvs_report.json"]["reference_sha256"]
+json.dump(d, open(p, "w"))
+PY
+run id-nofield 1 "missing reference_sha256 field"
+# independent mutations (each leaves the GDS hash and every other input alone)
+mk id-ok2; run id-ok2 0 "sidecar-bearing tree"
+mk id-ref-scoped   # scoped reference: also trips check 2, so assert the sidecar names it
+echo "* tampered" >> "$TMP/id-ref-scoped/$C/lna_core.lvs_reference.spice"
+run id-ref-scoped 1 "mutated scoped reference"; named id-ref-scoped "reference netlist"
+mk id-ref-full; echo "* tampered" >> "$TMP/id-ref-full/design/netlist/lna.spice"
+run id-ref-full 1 "mutated full-LVS reference netlist"
+named id-ref-full "lvs_full_report.json\].*reference netlist"
+mk id-req; python3 -I - "$TMP/id-req/$C/lvs_request.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["options"]["combine_devices"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run id-req 1 "mutated scoped request"; named id-req "lvs_report.json\].*request lvs_request.json"
+mk id-freq; python3 -I - "$TMP/id-freq/$C/lvs_full_request.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["options"]["combine_devices"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run id-freq 1 "mutated full request"; named id-freq "lvs_full_report.json\].*request lvs_full_request.json"
+mk id-rep; echo " " >> "$TMP/id-rep/$C/lvs_report.json"
+run id-rep 1 "mutated scoped report bytes"; named id-rep "lvs_report.json\].*report lvs_report.json"
+mk id-frep; echo " " >> "$TMP/id-frep/$C/lvs_full_report.json"
+run id-frep 1 "mutated full report bytes"; named id-frep "lvs_full_report.json\].*report lvs_full_report.json"
+mk id-repath; python3 -I - "$TMP/id-repath/$C/lvs_full_request.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["reference"]["netlist"] = "lna_core.lvs_reference.spice"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run id-repath 1 "request repointed at another reference"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -12,6 +12,10 @@
 #   5. klt extract --deck sg13g2          extract_report.json + lna_core.extracted.spice
 #   6. klt lvs     lvs_request.json       lvs_report.json      (scoped reference)
 #   7. klt lvs     lvs_full_request.json  lvs_full_report.json (design/netlist/lna.spice as-is)
+#      after 6 and 7: layout/lvs_identity.py records lvs_inputs.json binding each
+#      report to its GDS, reference and request bytes (issue #130). It runs only
+#      after the tool invocation succeeded; set -e means a failed klt never
+#      reaches it, so an old report is never re-attested.
 #
 # klt: the PyPI *release* named below, run isolated through uvx so the
 # evidence is graded by a tagged build regardless of whatever klt a host has
@@ -45,6 +49,14 @@ run_klt() {
   echo "run_flow: klt $1 -> $(basename "${out}") (exit ${rc})"
 }
 
+# run_lvs <report.json> <request.json>: run_klt, then (only on a successful
+# invocation, exit 0 or recorded mismatch 3) bind the published report to the
+# GDS / reference / request bytes it was produced from (issue #130).
+run_lvs() {
+  run_klt "${CELL_DIR}/$1" lvs "$2"
+  python3 -I "${LAYOUT_DIR}/lvs_identity.py" "${CELL_DIR}" "$2" "$1"
+}
+
 "${LAYOUT_DIR}/tools/fetch-pcell-deps.sh"
 "${PYTHON}" "${CELL_DIR}/generate.py" "${NX_ARGS[@]}"
 python3 -I "${LAYOUT_DIR}/lvs_reference.py" "${CELL_DIR}"
@@ -52,7 +64,7 @@ python3 -I "${LAYOUT_DIR}/lvs_reference.py" "${CELL_DIR}"
 "${KLT_CMD[@]}" version --format json > "${CELL_DIR}/klt_version.json"
 run_klt "${CELL_DIR}/drc_report.json" drc lna_core.gds --deck sg13g2
 run_klt "${CELL_DIR}/extract_report.json" extract lna_core.gds --deck sg13g2 -o lna_core.extracted.spice
-run_klt "${CELL_DIR}/lvs_report.json" lvs lvs_request.json
-run_klt "${CELL_DIR}/lvs_full_report.json" lvs lvs_full_request.json
+run_lvs lvs_report.json lvs_request.json
+run_lvs lvs_full_report.json lvs_full_request.json
 
 echo "run_flow: done (repo ${REPO_ROOT})"
