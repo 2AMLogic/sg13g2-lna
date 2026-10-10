@@ -53,10 +53,22 @@ Exit codes: 0 ok, 2 malformed/incomplete input, 4 output already exists.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import math
 import os
 import re
 import sys
+
+# Shared helpers, loaded by explicit path so `python3 -I` works (isolated mode
+# does not put the script directory on sys.path). Issue #160.
+_spec = importlib.util.spec_from_file_location(
+    "reducer_common",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                 "tools", "reducer_common.py"))
+_rc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_rc)
+ReductionError, parse_kv_line, read_text, write_exclusive = (
+    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive)
 
 SPREAD_LIMIT_PCT = 2.0
 OP_MISMATCH_LIMIT_PCT = 5.0
@@ -97,10 +109,6 @@ NUMBER_RE = re.compile(r"[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\Z")
 LOG_RE = re.compile(r"(mpa|core|startup|servo|servo_startup)_.*\.log\Z")
 
 
-class ReductionError(Exception):
-    """Malformed or incomplete evidence (never a measured startup failure)."""
-
-
 def mpa_id(label, temp, feed):
     return "mpa_%s_%sc_i%s" % (label, temp, feed)
 
@@ -129,26 +137,6 @@ def grids(smoke):
             list(STARTUP_CELLS))
 
 
-def parse_kv_line(text, tag, source):
-    """Return {key: raw_token} from the single `tag ...` line in text."""
-    lines = [ln for ln in text.splitlines() if ln.startswith(tag + " ")]
-    if not lines:
-        raise ReductionError("%s: no %s measurement line" % (source, tag))
-    if len(lines) > 1:
-        raise ReductionError("%s: %d %s lines (expected exactly one)"
-                             % (source, len(lines), tag))
-    tokens = lines[0].split()[1:]
-    if len(tokens) % 2:
-        raise ReductionError("%s: %s line has an odd token count (key "
-                             "without value)" % (source, tag))
-    out = {}
-    for k, raw in zip(tokens[0::2], tokens[1::2]):
-        if k in out:
-            raise ReductionError("%s: %s key %r repeated" % (source, tag, k))
-        out[k] = raw
-    return out
-
-
 def finite(raw, key, source):
     if not NUMBER_RE.match(raw):
         raise ReductionError("%s: key %r value %r is not a finite decimal "
@@ -166,14 +154,6 @@ def require(kv, keys, tag, source):
         raise ReductionError("%s: %s line missing required key(s): %s"
                              % (source, tag, ", ".join(missing)))
     return {k: finite(kv[k], k, source) for k in keys}
-
-
-def read_text(path):
-    try:
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            return fh.read()
-    except OSError as exc:
-        raise ReductionError("%s: unreadable (%s)" % (path, exc)) from None
 
 
 def read_row(corners_dir, pid, tag, keys):
@@ -297,12 +277,6 @@ def reduce_all(corners_dir, phases=ALL_PHASES, smoke=False):
         out["servo-startup"] = [HEADERS["servo-startup"]] + startup_rows(
             corners_dir, su_cells, servo_startup_id, servo, servo_id, "servo")
     return {k: "\n".join(v) + "\n" for k, v in out.items()}
-
-
-def write_exclusive(path, text):
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-    with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
 
 
 def main(argv=None):
