@@ -58,6 +58,18 @@ PDC_LIMIT_W = 10e-3
 SPREAD_LIMIT_PCT = 2.0
 OP_MISMATCH_LIMIT_PCT = 5.0
 
+# Waveform-based startup settling audit (issue #154). Physical-time window,
+# independent of the simulator step. The deck ramps VDD over RAMP_S and runs
+# to TSTOP_S; the window opens one further microsecond after the ramp ends
+# (the retained waveforms are within 0.6 % of their final value at 1.5 us and
+# within 5e-5 % at 2 us) and closes at the final sample.
+RAMP_S = 1.0e-6
+SETTLE_MARGIN_S = 1.0e-6
+WINDOW_START_S = RAMP_S + SETTLE_MARGIN_S
+TSTOP_S = 1.2e-5
+MAX_SAMPLE_GAP_S = 5.0e-9      # 5x the deck's 1 ns tran step
+MIN_WINDOW_SAMPLES = 1000      # retained records carry ~10001
+
 CORNER_LABELS = ("typ", "bcs", "wcs", "sf", "fs")
 TEMPS = ("-40", "27", "125")
 VDDS = ("1.62", "1.80", "1.98")
@@ -79,6 +91,30 @@ STARTUP_HEADER = ("point_id,corner_label,temp_c,vdd_v,ic1_end_a,ic1_op_a,"
 
 class ReductionError(Exception):
     """Malformed or incomplete evidence (never a measured bar violation)."""
+
+
+class WaveformError(ReductionError):
+    """Base for named startup-waveform audit input errors."""
+
+
+class WaveformTruncatedError(WaveformError):
+    """Empty, missing, unreadable or too-short waveform / short row."""
+
+
+class WaveformNonfiniteError(WaveformError):
+    """A time or value token is non-numeric, nan or inf."""
+
+
+class WaveformNonmonotonicError(WaveformError):
+    """Timestamps are not strictly increasing."""
+
+
+class WaveformCoverageError(WaveformError):
+    """The waveform does not span the required settling window."""
+
+
+class WaveformSampleGapError(WaveformError):
+    """A gap between consecutive in-window samples exceeds the limit."""
 
 
 def op_id(cell):
@@ -224,6 +260,140 @@ def reduce_startup(corners_dir, cell, op_rows):
             "spread": spread, "verdict": verdict, "partner": partner}
 
 
+def parse_waveform(text, source):
+    """Parse ngspice `wrdata` text (time value per row) into two lists.
+    Raises a named WaveformError for any defect; never returns partial data."""
+    t, y = [], []
+    for n, line in enumerate(text.splitlines(), 1):
+        tok = line.split()
+        if not tok:
+            continue
+        if len(tok) < 2:
+            raise WaveformTruncatedError(
+                "%s:%d: row has %d column(s), need time and value"
+                % (source, n, len(tok)))
+        vals = []
+        for raw in tok[:2]:
+            try:
+                v = float(raw)
+            except ValueError:
+                raise WaveformNonfiniteError(
+                    "%s:%d: token %r is not a number" % (source, n, raw)
+                ) from None
+            if not math.isfinite(v):
+                raise WaveformNonfiniteError(
+                    "%s:%d: token %r is not finite" % (source, n, raw))
+            vals.append(v)
+        if t and vals[0] <= t[-1]:
+            raise WaveformNonmonotonicError(
+                "%s:%d: time %r is not after previous %r"
+                % (source, n, tok[0], t[-1]))
+        t.append(vals[0])
+        y.append(vals[1])
+    if not t:
+        raise WaveformTruncatedError("%s: no waveform samples" % source)
+    return t, y
+
+
+def startup_waveform_audit(times, values, opic, source="waveform",
+                           t_start=WINDOW_START_S, t_stop=TSTOP_S,
+                           max_gap=MAX_SAMPLE_GAP_S,
+                           min_samples=MIN_WINDOW_SAMPLES):
+    """Audit EVERY retained sample with t_start <= t <= t_stop against the
+    paired DC point. Separate from, and never replacing, startup_verdict()
+    (the historical three-sample check); the agreement tolerances are the
+    same SPREAD_LIMIT_PCT / OP_MISMATCH_LIMIT_PCT.
+
+    Returns a dict (verdict PASS, WINDOW-SPREAD-FAIL, WINDOW-OP-MISMATCH-FAIL
+    or WINDOW-LATCHED-ZERO) or raises a WaveformError subclass when the data
+    cannot support a verdict. Finiteness and strict time ordering are
+    re-checked here for direct callers.
+    """
+    if len(times) != len(values):
+        raise WaveformTruncatedError("%s: %d times but %d values"
+                                     % (source, len(times), len(values)))
+    if not times:
+        raise WaveformTruncatedError("%s: no waveform samples" % source)
+    for i, (a, b) in enumerate(zip(times, values)):
+        if not (math.isfinite(a) and math.isfinite(b)):
+            raise WaveformNonfiniteError("%s: sample %d is not finite"
+                                         % (source, i))
+        if i and a <= times[i - 1]:
+            raise WaveformNonmonotonicError(
+                "%s: sample %d time %r is not after %r"
+                % (source, i, a, times[i - 1]))
+    if times[-1] < t_stop - max_gap:
+        raise WaveformTruncatedError(
+            "%s: waveform ends at %.4g s, before %.4g s (truncated run)"
+            % (source, times[-1], t_stop - max_gap))
+    win = [(a, b) for a, b in zip(times, values) if t_start <= a <= t_stop]
+    if len(win) < min_samples:
+        raise WaveformCoverageError(
+            "%s: %d sample(s) in [%.4g, %.4g] s, need >= %d"
+            % (source, len(win), t_start, t_stop, min_samples))
+    if win[0][0] - t_start > max_gap:
+        raise WaveformCoverageError(
+            "%s: first in-window sample %.4g s is > %.3g s after window "
+            "start %.4g s" % (source, win[0][0], max_gap, t_start))
+    if t_stop - win[-1][0] > max_gap:
+        raise WaveformCoverageError(
+            "%s: last in-window sample %.4g s is > %.3g s before window "
+            "end %.4g s" % (source, win[-1][0], max_gap, t_stop))
+    worst = max(b[0] - a[0] for a, b in zip(win, win[1:]))
+    if worst > max_gap:
+        raise WaveformSampleGapError(
+            "%s: max in-window sample gap %.4g s exceeds %.4g s"
+            % (source, worst, max_gap))
+    ys = [b for _, b in win]
+    mx, mn, end = max(ys), min(ys), ys[-1]
+    mean = sum(ys) / len(ys)
+    spread = 100.0 * (mx - mn) / mean if mean > 0 else 999
+    dev = max(abs(100.0 * (v - opic) / opic) if opic > 0 else 999
+              for v in (mx, mn))
+    verdict = "PASS"
+    if spread > SPREAD_LIMIT_PCT:
+        verdict = "WINDOW-SPREAD-FAIL"
+    if dev > OP_MISMATCH_LIMIT_PCT:
+        verdict = "WINDOW-OP-MISMATCH-FAIL"
+    if mn <= 0:
+        verdict = "WINDOW-LATCHED-ZERO"
+    return {"n_samples": len(win), "max_gap_s": worst, "min_a": mn,
+            "max_a": mx, "end_a": end, "spread_pct": spread,
+            "max_dev_vs_op_pct": dev, "verdict": verdict}
+
+
+WAVEFORM_AUDIT_HEADER = ("point_id,corner_label,temp_c,vdd_v,window_start_s,"
+                         "window_end_s,n_samples,max_gap_s,ic1_min_a,"
+                         "ic1_max_a,ic1_op_a,window_spread_pct,"
+                         "max_dev_vs_op_pct,window_verdict,"
+                         "historical_verdict")
+
+
+def waveform_audit_all(corners_dir, smoke=False, require_audit=False):
+    """Audit each startup cell's retained <startup_id>.dat. Returns CSV text.
+    Reads the validated op/startup logs for the DC partner and the unchanged
+    historical verdict, so the two verdicts sit side by side."""
+    op_list, su_list = op_cells(smoke), startup_cells(smoke)
+    check_inventory(corners_dir, op_list, su_list)
+    op_rows = {op_id(c): reduce_op(corners_dir, c, require_audit)
+               for c in op_list}
+    out = [WAVEFORM_AUDIT_HEADER]
+    for c in su_list:
+        hist = reduce_startup(corners_dir, c, op_rows)
+        dat = os.path.join(corners_dir, hist["point_id"] + ".dat")
+        if not os.path.isfile(dat):
+            raise WaveformTruncatedError("%s: waveform file missing" % dat)
+        t, y = parse_waveform(read_text(dat), dat)
+        a = startup_waveform_audit(t, y, hist["opic"], dat)
+        out.append("%s,%s,%s,%s,%.6g,%.6g,%d,%.3g,%s,%s,%s,%.6f,%.6f,%s,%s" % (
+            hist["point_id"], hist["label"], hist["temp"], hist["vdd"],
+            WINDOW_START_S, TSTOP_S, a["n_samples"], a["max_gap_s"],
+            fmt_g6(a["min_a"]), fmt_g6(a["max_a"]), fmt_g6(hist["opic"]),
+            a["spread_pct"], a["max_dev_vs_op_pct"], a["verdict"],
+            hist["verdict"]))
+    return "\n".join(out) + "\n"
+
+
 def fmt_g6(x):
     return "%.6g" % x
 
@@ -317,12 +487,16 @@ def main(argv=None):
     ap.add_argument("--summary-csv", required=True)
     ap.add_argument("--startup-csv", required=True)
     ap.add_argument("--facts", help="write KEY=VALUE headline facts here")
+    ap.add_argument("--waveform-audit-csv",
+                    help="also write the physical-time startup waveform "
+                         "audit (issue #154) here; needs retained .dat files")
     ap.add_argument("--smoke", action="store_true",
                     help="nominal cell only (BIASOP_SMOKE inventory)")
     ap.add_argument("--require-audit", action="store_true",
                     help="require the DR-0003 audit keys vbg/vl/gsvo/cb3")
     a = ap.parse_args(argv)
-    outs = [a.summary_csv, a.startup_csv] + ([a.facts] if a.facts else [])
+    outs = [a.summary_csv, a.startup_csv] + ([a.facts] if a.facts else []) \
+        + ([a.waveform_audit_csv] if a.waveform_audit_csv else [])
     for p in outs:
         if os.path.exists(p):
             print("reduce_biasop: refusing to overwrite %s" % p,
@@ -331,11 +505,15 @@ def main(argv=None):
     try:
         summary, startup, fx = reduce_all(a.corners_dir, a.smoke,
                                           a.require_audit)
+        audit = (waveform_audit_all(a.corners_dir, a.smoke, a.require_audit)
+                 if a.waveform_audit_csv else None)
     except ReductionError as exc:
         print("reduce_biasop: MALFORMED EVIDENCE: %s" % exc, file=sys.stderr)
         return 2
     write_exclusive(a.summary_csv, summary)
     write_exclusive(a.startup_csv, startup)
+    if audit is not None:
+        write_exclusive(a.waveform_audit_csv, audit)
     if a.facts:
         write_exclusive(a.facts, "".join("%s=%s\n" % kv for kv in fx.items()))
     return 0

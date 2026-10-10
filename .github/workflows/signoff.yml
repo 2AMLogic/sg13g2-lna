@@ -126,6 +126,9 @@ jobs:
       - name: lna-bias-pvt reduction unit tests and committed-record replay
         run: python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -v
 
+      - name: lna-bias-pvt startup waveform settling audit and retained-waveform replay (issue #154)
+        run: python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -p test_startup_waveform_audit.py -v
+
   # biasref-topology five-phase reduction (reduce_biasref.py, issue #149):
   # inline PDK-free fixtures for missing/duplicate lines and keys, trailing
   # numeric junk, NaN/Inf/overflow, inventory and startup/op pairing, genuine

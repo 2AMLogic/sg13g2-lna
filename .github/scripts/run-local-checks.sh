@@ -95,6 +95,8 @@ step "hbt-reduction-tests: hbt-characterization unit tests" \
 # --- job: biasop-reduction-tests
 step "biasop-reduction-tests: lna-bias-pvt unit tests and committed-record replay" \
   python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -v
+step "biasop-reduction-tests: startup waveform settling audit and retained-waveform replay (issue #154)" \
+  python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -p test_startup_waveform_audit.py -v
 
 # --- job: biasref-reduction-tests
 step "biasref-reduction-tests: biasref-topology unit tests and committed-record replay" \

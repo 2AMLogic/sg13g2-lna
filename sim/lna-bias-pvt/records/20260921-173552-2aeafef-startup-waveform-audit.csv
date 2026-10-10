@@ -1,0 +1,4 @@
+point_id,corner_label,temp_c,vdd_v,window_start_s,window_end_s,n_samples,max_gap_s,ic1_min_a,ic1_max_a,ic1_op_a,window_spread_pct,max_dev_vs_op_pct,window_verdict,historical_verdict
+startup_bcs_125c_vdd1.98v,bcs,125,1.98,2e-06,1.2e-05,10001,1e-09,0.00412479,0.0041248,0.00412481,0.000040,0.000395,PASS,PASS
+startup_wcs_-40c_vdd1.62v,wcs,-40,1.62,2e-06,1.2e-05,10001,1e-09,0.00382174,0.00382174,0.00382145,0.000003,0.007475,PASS,PASS
+startup_typ_27c_vdd1.80v,typ,27,1.80,2e-06,1.2e-05,10001,1e-09,0.0039403,0.0039403,0.0039403,0.000032,0.000036,PASS,PASS
