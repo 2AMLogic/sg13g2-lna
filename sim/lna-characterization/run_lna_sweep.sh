@@ -44,6 +44,9 @@
 #                        only changes wall-clock time. Set 1 for a strictly
 #                        serial run.
 #   LNA_SWEEP_SMOKE=1    single nominal PVT cell, for plumbing checks.
+#   LNA_NF_NPTS=<n>      points of the 290 K NF sweep (odd, >= 11; default
+#                        11 = the S-parameter grid). Denser grid for
+#                        candidate final matching networks.
 set -euo pipefail
 
 # `declare -A` (bash 4.0) and the `wait -n` job pool below (bash 4.3) are
@@ -126,6 +129,17 @@ F_BAND_LO="2.4e9"
 F_BAND_MID="2.44175e9"
 F_BAND_HI="2.4835e9"
 N_INBAND=11
+# 290 K NF grid (issue #134): the independent .noise sweep covers the same
+# linear in-band grid as the S-parameters by default (11 points, 2.4 ..
+# 2.4835 GHz). LNA_NF_NPTS selects a denser validation grid (odd, >= 11, so
+# the band middle stays a grid point) for candidate final matching networks.
+N_NF="${LNA_NF_NPTS:-${N_INBAND}}"
+if ! [[ "${N_NF}" =~ ^[0-9]+$ ]] || (( N_NF < N_INBAND || N_NF % 2 == 0 )); then
+  echo "run_lna_sweep.sh: LNA_NF_NPTS must be an odd integer >= ${N_INBAND} (got '${N_NF}')." >&2
+  exit 3
+fi
+F_NF_LO="${F_BAND_LO}"
+F_NF_HI="${F_BAND_HI}"
 # Stability: CLAUDE.md requires out-of-band coverage; target-spec.md's
 # stability row asks for >= 3x the upper band edge (7.4505 GHz). This sweep
 # runs 10 MHz .. 30 GHz, i.e. 12x the upper band edge and ~240x below the
@@ -205,6 +219,7 @@ run_sparam_cell() {
   local log="${CORNERS_OUT}/${point_id}.log"
   local inband_dat="${CORNERS_OUT}/${point_id}.inband.dat"
   local stab_dat="${CORNERS_OUT}/${point_id}.stability.dat"
+  local nf_dat="${CORNERS_OUT}/${point_id}.nf290.dat"
 
   sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_sparam.spice.tmpl" "${netlist}" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
@@ -219,7 +234,11 @@ run_sparam_cell() {
     -e "s|@@F_STAB_HI@@|${F_STAB_HI}|g" \
     -e "s|@@N_STAB_DEC@@|${N_STAB_DEC}|g" \
     -e "s|@@INBAND_DAT@@|${inband_dat}|g" \
-    -e "s|@@STAB_DAT@@|${stab_dat}|g"
+    -e "s|@@STAB_DAT@@|${stab_dat}|g" \
+    -e "s|@@N_NF@@|${N_NF}|g" \
+    -e "s|@@F_NF_LO@@|${F_NF_LO}|g" \
+    -e "s|@@F_NF_HI@@|${F_NF_HI}|g" \
+    -e "s|@@NF_DAT@@|${nf_dat}|g"
 
   local rc=0
   ngspice -b "${netlist}" > "${log}" 2>&1 || rc=$?
@@ -284,6 +303,7 @@ MANIFEST="${RECORDS_DIR}/${RECORD_ID}-expected-points.txt"
   # Frequency-grid contract (same variables substituted into the deck's
   # `sp lin` / `sp dec` lines); applies to every sp cell, smoke included.
   echo "grid inband lin ${N_INBAND} ${F_BAND_LO} ${F_BAND_HI}"
+  echo "grid nf290 lin ${N_NF} ${F_NF_LO} ${F_NF_HI}"
   echo "grid stability dec ${N_STAB_DEC} ${F_STAB_LO} ${F_STAB_HI}"
   for _c in "${CORNER_LABELS[@]}"; do for _t in "${TEMPS[@]}"; do for _v in "${VDDS[@]}"; do
     echo "sp sp_${_c}_${_t}c_vdd${_v}v"
@@ -339,6 +359,7 @@ fi
 # --- Parse every raw artefact into the record CSVs ----------------------
 SPARAM_CSV="${RECORDS_DIR}/${RECORD_ID}-sparam.csv"
 IIP3_CSV="${RECORDS_DIR}/${RECORD_ID}-iip3.csv"
+NF_CSV="${RECORDS_DIR}/${RECORD_ID}-nf290.csv"
 SUMMARY_CSV="${RECORDS_DIR}/${RECORD_ID}-summary.csv"
 COVERAGE_JSON="${RECORDS_DIR}/${RECORD_ID}-coverage.json"
 
@@ -346,6 +367,7 @@ python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" \
   --corners-dir "${CORNERS_OUT}" \
   --sparam-csv "${SPARAM_CSV}" \
   --iip3-csv "${IIP3_CSV}" \
+  --nf-csv "${NF_CSV}" \
   --summary-csv "${SUMMARY_CSV}" \
   --manifest "${MANIFEST}" --coverage-json "${COVERAGE_JSON}" \
   --band-lo "${F_BAND_LO}" --band-hi "${F_BAND_HI}" \
@@ -419,6 +441,11 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  {${TEMPS_STR}} C x VDD {${VDDS_STR}} V ="
   echo "  $(( ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VDDS[@]} )) cells, each run for both phases."
   echo "- **In-band sweep**: ${N_INBAND} points, ${F_BAND_LO} .. ${F_BAND_HI} Hz."
+  echo "- **290 K NF sweep**: independent \`.noise\` run, ${N_NF} linearly spaced"
+  echo "  points, ${F_NF_LO} .. ${F_NF_HI} Hz (raw table: \`*.nf290.dat\`). The"
+  echo "  reported NF worst case is the maximum of these SAMPLES, not a"
+  echo "  continuous-band bound: a peak narrower than the grid spacing"
+  echo "  ($(python3 -c "print((${F_NF_HI}-${F_NF_LO})/(${N_NF}-1)/1e6)") MHz) can be missed."
   echo "- **Stability sweep**: ${F_STAB_LO} .. ${F_STAB_HI} Hz at ${N_STAB_DEC} points/decade"
   echo "  (>= 3x the upper band edge, as the stability spec row requires)."
   echo "- **Two-tone**: f1=${F1} Hz, f2=${F2} Hz, spacing=${FSPACE} Hz;"

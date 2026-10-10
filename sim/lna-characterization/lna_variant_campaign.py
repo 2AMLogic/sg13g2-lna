@@ -20,7 +20,15 @@ three requests per variant:
 
   sp_band   sp lin 11 2.4e9 2.4835e9 1      (S-params, ngspice sp NF/NFmin)
   sp_stab   sp dec 40 1e7 3e10              (k / mu / |S11| / |S22| sweep)
-  noise     noise v(nfout) vin lin 3 2.4e9 2.4835e9   (NF at T0 = 290 K)
+  noise     noise v(nfout) vin lin 11 2.4e9 2.4835e9  (NF at T0 = 290 K)
+
+The noise request samples the same 11 linear in-band points as sp_band by
+default (issue #134; `--nf-npts` selects a denser odd grid for candidate final
+matching networks). Every sample is retained as its own measurement
+(nf290_db_f00 ..), nf290_db_lo/mid/hi are kept as cross-checks at the grid
+points that coincide with the old three-point set, and the reducer reports the
+worst SAMPLED NF with its frequency. Records produced before #134 are
+three-point (lo/mid/hi) and stay as they are.
 
 Bench definitions (identical to run_lna_sweep.sh / README.md, restated in each
 generated netlist header): 50 Ohm at both ports (sp port sources with
@@ -43,6 +51,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import parse_lna_sweep as _sweep  # noqa: E402  (shares the #133 grid helpers)
 REPO = HERE.parent.parent
 DESIGN_NETLIST = REPO / "design" / "netlist" / "lna.spice"
 EM_MODEL = REPO / "sim" / "models" / "sg13g2_inductor_em.spice"
@@ -57,6 +67,30 @@ NOMINAL = ("typ", 27, 1.80)
 F_LO, F_MID, F_HI = 2.4e9, 2.44175e9, 2.4835e9
 N_BAND = 11  # index 5 is exactly F_MID
 F_STAB_LO, F_STAB_HI, N_STAB_DEC = 1e7, 3e10, 40
+# 290 K NF grid (issue #134): default = the S-parameter grid; denser grids
+# must be odd and >= N_BAND so F_MID stays a grid point.
+N_NF = N_BAND
+
+
+def check_nf_npts(n: int) -> int:
+    if not isinstance(n, int) or n < N_BAND or n % 2 == 0:
+        raise SystemExit(f"nf-npts must be an odd integer >= {N_BAND} (got {n!r})")
+    return n
+
+
+def nf_freqs(n: int = N_NF) -> list[float]:
+    """The 290 K NF frequency grid; same generator as the #133 validator."""
+    return _sweep.expected_grid({"mode": "lin", "n": check_nf_npts(n), "lo": F_LO, "hi": F_HI})
+
+
+def nf_sample_names(n: int = N_NF) -> list[str]:
+    return [f"nf290_db_f{i:02d}" for i in range(n)]
+
+
+def nf_grid_text(n: int = N_NF) -> str:
+    step = (F_HI - F_LO) / (n - 1) / 1e6
+    return (f"noise lin {n} pts {F_LO / 1e9:g}..{F_HI / 1e9:g} GHz ({step:.4g} MHz spacing); "
+            "sampled maximum, not a continuous-band bound -- a peak narrower than the spacing can be missed")
 
 # 5-turn device = the sibling extraction's p13 geometry (see sim/models/SOURCE.md
 # and the model header's "Extracted" line).
@@ -165,7 +199,7 @@ K = f"((1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag({DLT})^2)/(2*mag(s_1_2*s_2_1)))"
 MID = (N_BAND - 1) // 2
 
 
-def measurements(analysis: str):
+def measurements(analysis: str, nf_npts: int = N_NF):
     m = []
 
     def add(name, expr, unit=""):
@@ -202,22 +236,26 @@ def measurements(analysis: str):
         add("n_pts", "length(frequency)")
     elif analysis == "noise":
         nf = "10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50))"
+        n = check_nf_npts(nf_npts)
         add("nf290_db_lo", f"({nf})[0]", "dB")
-        add("nf290_db_mid", f"({nf})[1]", "dB")
-        add("nf290_db_hi", f"({nf})[2]", "dB")
+        add("nf290_db_mid", f"({nf})[{(n - 1) // 2}]", "dB")
+        add("nf290_db_hi", f"({nf})[{n - 1}]", "dB")
         add("nf290_db_worst", f"vecmax({nf})", "dB")
+        for i, name in enumerate(nf_sample_names(n)):
+            add(name, f"({nf})[{i}]", "dB")
     return m
 
 
-def analysis_card(analysis: str) -> dict:
+def analysis_card(analysis: str, nf_npts: int = N_NF) -> dict:
     if analysis == "sp_band":
         return {"kind": "sp", "args": f"lin {N_BAND} {F_LO:g} {F_HI:g} 1"}
     if analysis == "sp_stab":
         return {"kind": "sp", "args": f"dec {N_STAB_DEC} {F_STAB_LO:g} {F_STAB_HI:g}"}
-    return {"kind": "noise", "args": f"v(nfout) vin lin 3 {F_LO:g} {F_HI:g}"}
+    return {"kind": "noise", "args": f"v(nfout) vin lin {check_nf_npts(nf_npts)} {F_LO:g} {F_HI:g}"}
 
 
-def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None) -> dict:
+def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None,
+            nf_npts: int = N_NF) -> dict:
     labels = ["typ"] if smoke else LABELS
     temps = [27] if smoke else TEMPS
     vdds = [1.80] if smoke else VDDS
@@ -237,8 +275,8 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
         "netlist": netlist_name,
         "models": {"pdk": "ihp-sg13g2"},
         "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
-        "analysis": analysis_card(analysis),
-        "measurements": measurements(analysis),
+        "analysis": analysis_card(analysis, nf_npts),
+        "measurements": measurements(analysis, nf_npts),
         "options": {
             "timeout_s": 900,
             "keep_artifacts": True,
@@ -264,7 +302,7 @@ def cmd_gen(a):
             nl = out / f"{v}_{an}.spice"
             nl.write_text(netlist(v, an, rel_model))
             rq = out / f"{v}_{an}.request.json"
-            rq.write_text(json.dumps(request(v, an, nl.name, a.smoke, a.backend), indent=2) + "\n")
+            rq.write_text(json.dumps(request(v, an, nl.name, a.smoke, a.backend, a.nf_npts), indent=2) + "\n")
     print(f"gen: wrote {len(names) * len(ANALYSES)} request/netlist pairs in {out}")
 
 
@@ -338,7 +376,7 @@ def cell_status_ok(c: dict):
     return True, ""
 
 
-def collect_reports(cdir: Path, required_variants, grid: str):
+def collect_reports(cdir: Path, required_variants, grid: str, nf_npts: int = N_NF):
     """Read *.report.json and validate each (variant, analysis) separately.
 
     Returns (cells, issues, counts):
@@ -390,7 +428,10 @@ def collect_reports(cdir: Path, required_variants, grid: str):
                 dup.add(key)
                 continue
             cmap[key] = {"values": corner_values(c), "status": c.get("status"),
-                         "_ok": cell_status_ok(c)}
+                         "_ok": cell_status_ok(c),
+                         "_dup_meas": sorted({m["name"] for m in c.get("measurements", [])
+                                              if sum(1 for x in c["measurements"]
+                                                     if x["name"] == m["name"]) > 1})}
         for key in sorted(dup, key=grid_keys.index):
             issue("duplicate_cell", variant, analysis, cell=key,
                   detail="cell appears more than once; excluded from reduction")
@@ -402,7 +443,7 @@ def collect_reports(cdir: Path, required_variants, grid: str):
             if (variant, analysis) not in seen_reports:
                 issue("missing_report", variant, analysis,
                       detail=f"no {variant}_{analysis}.report.json (or unreadable)")
-            names = [m["name"] for m in measurements(analysis)]
+            names = [m["name"] for m in measurements(analysis, nf_npts)]
             dup_keys = {i["cell"] for i in issues if i["kind"] == "duplicate_cell"
                         and i["variant"] == variant and i["analysis"] == analysis}
             valid = 0
@@ -429,6 +470,18 @@ def collect_reports(cdir: Path, required_variants, grid: str):
                         issue("non_finite_value", variant, analysis, cell=key, measurement=n,
                               detail=f"value={cell['values'][n]!r}")
                         good = False
+                for n in cell["_dup_meas"]:
+                    issue("duplicate_measurement", variant, analysis, cell=key, measurement=n,
+                          detail="measurement appears more than once in the cell")
+                    good = False
+                if analysis == "noise" and good:
+                    samples = [cell["values"][n] for n in nf_sample_names(nf_npts)]
+                    if abs(max(samples) - cell["values"]["nf290_db_worst"]) > 1e-6:
+                        issue("inconsistent_nf_worst", variant, analysis, cell=key,
+                              measurement="nf290_db_worst",
+                              detail=f"reported worst {cell['values']['nf290_db_worst']!r} != "
+                                     f"max of {nf_npts} retained samples {max(samples)!r}")
+                        good = False
                 if cell_text(key) in dup_keys:
                     good = False
                 cell["valid"] = good
@@ -439,29 +492,35 @@ def collect_reports(cdir: Path, required_variants, grid: str):
 
 # Ratified-row reductions of the ideal baseline: (row id, label, analysis,
 # measurement, reduce, target text, comparator, threshold, sampling, spec row)
-ROW_REDUCTIONS = [
-    ("gain", "In-band minimum |S21| [dB]", "sp_band", "s21_db_min", "min",
-     "> 15 dB", lambda v: v > 15.0,
-     "sp lin 11 pts 2.4-2.4835 GHz; vecmin(db(s_2_1)) over the 11 points", "Gain (S21)"),
-    ("s11", "Worst in-band |S11| [dB]", "sp_band", "s11_db_worst", "max",
-     "< -10 dB", lambda v: v < -10.0,
-     "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_1_1)) over the 11 points", "Input match (S11)"),
-    ("s22", "Worst in-band |S22| [dB]", "sp_band", "s22_db_worst", "max",
-     "< -10 dB", lambda v: v < -10.0,
-     "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_2_2)) over the 11 points", "Output match (S22)"),
-    ("stability", "Broadband minimum mu (Edwards-Sinsky)", "sp_stab", "mu_min", "min",
-     "> 1", lambda v: v > 1.0,
-     f"sp dec {N_STAB_DEC} pts/decade 10 MHz-30 GHz; vecmin(mu) over the sweep", "Stability"),
-    ("nf290", "NF at T0 = 290 K, band maximum of 3 sampled points [dB]", "noise", "nf290_db_worst", "max",
-     "< 1.5 dB", lambda v: v < 1.5,
-     "noise lin 3 pts (2.4, 2.44175, 2.4835 GHz) ONLY -- three-point sampling, not a continuous-band proof",
-     "Noise figure (NF)"),
-]
+def row_reductions(nf_npts: int = N_NF):
+    return [
+        ("gain", "In-band minimum |S21| [dB]", "sp_band", "s21_db_min", "min",
+         "> 15 dB", lambda v: v > 15.0,
+         "sp lin 11 pts 2.4-2.4835 GHz; vecmin(db(s_2_1)) over the 11 points", "Gain (S21)"),
+        ("s11", "Worst in-band |S11| [dB]", "sp_band", "s11_db_worst", "max",
+         "< -10 dB", lambda v: v < -10.0,
+         "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_1_1)) over the 11 points", "Input match (S11)"),
+        ("s22", "Worst in-band |S22| [dB]", "sp_band", "s22_db_worst", "max",
+         "< -10 dB", lambda v: v < -10.0,
+         "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_2_2)) over the 11 points", "Output match (S22)"),
+        ("stability", "Broadband minimum mu (Edwards-Sinsky)", "sp_stab", "mu_min", "min",
+         "> 1", lambda v: v > 1.0,
+         f"sp dec {N_STAB_DEC} pts/decade 10 MHz-30 GHz; vecmin(mu) over the sweep", "Stability"),
+        ("nf290", f"NF at T0 = 290 K, band maximum of {nf_npts} sampled points [dB]", "noise", "nf290_db_worst", "max",
+         "< 1.5 dB", lambda v: v < 1.5,
+         nf_grid_text(nf_npts),
+         "Noise figure (NF)"),
+    ]
+
+
+ROW_REDUCTIONS = row_reductions()
 PORT_CONVENTION = ("50 Ohm reference at both ports (sp port sources with portnum/z0; "
                    "50 Ohm Thevenin source with noiseless Rs/RL for .noise)")
 
 DISCLOSURES = [
-    "NF290 is sampled at exactly 3 frequencies (lo/mid/hi of the band); this is not continuous-band coverage.",
+    "NF290 is the maximum over a discrete frequency grid (the same grid for every variant; see the row's "
+    "sampling text); a peak narrower than the grid spacing can be missed, so this is not continuous-band coverage. "
+    "Records produced before issue #134 are three-point (lo/mid/hi) and are not comparable as full-grid results.",
     "ngspice sp-analysis port NF / NFmin (nf_sp_db_*, nfmin_sp_db_*) are distinct from the ratified T0 = 290 K "
     "value (nf290_db_*); only nf290_db_worst is compared with the NF target.",
     "DC bias current and DC power are NOT measured by these three requests; the Power and bias rows are not covered.",
@@ -473,10 +532,17 @@ DISCLOSURES = [
 ]
 
 
-def ideal_row_coverage(cells, counts, grid: str):
+def nf_worst_frequency(values: dict, nf_npts: int):
+    """(frequency_hz, NF) of the first-maximum retained NF sample."""
+    freqs = nf_freqs(nf_npts)
+    i = max(range(nf_npts), key=lambda j: (values[nf_sample_names(nf_npts)[j]], -j))
+    return freqs[i], values[nf_sample_names(nf_npts)[i]]
+
+
+def ideal_row_coverage(cells, counts, grid: str, nf_npts: int = N_NF):
     grid_keys = expected_grid(grid)
     rows = []
-    for rid, label, analysis, meas, how, target, cmp_, sampling, specrow in ROW_REDUCTIONS:
+    for rid, label, analysis, meas, how, target, cmp_, sampling, specrow in row_reductions(nf_npts):
         c = counts.get(("ideal", analysis), {"expected": len(grid_keys), "valid": 0})
         cm = cells.get(("ideal", analysis), {})
         vals = [(cm[k]["values"][meas], k) for k in grid_keys
@@ -501,6 +567,11 @@ def ideal_row_coverage(cells, counts, grid: str):
             "valid_cells": c["valid"], "expected_cells": c["expected"],
             "coverage_complete": complete, "verdict": verdict,
         })
+        if rid == "nf290":
+            rows[-1]["nf_grid"] = {"mode": "lin", "n": nf_npts, "lo_hz": F_LO, "hi_hz": F_HI}
+            if worst is not None:
+                rows[-1]["worst_frequency_hz"], _ = nf_worst_frequency(
+                    cm[worst[1]]["values"], nf_npts) if complete else (None, None)
     return rows
 
 
@@ -516,6 +587,8 @@ def coverage_markdown(rows, grid, complete, issues):
         w = "n/a" if r["worst_value"] is None else f"{r['worst_value']:.6g} @ {r['worst_cell']}"
         out.append(f"- **{r['label']}** -- {r['verdict']}")
         out.append(f"  - target: {r['target']} ({r['spec_row']})")
+        if r.get("worst_frequency_hz") is not None:
+            w += f" at {r['worst_frequency_hz'] / 1e9:.6g} GHz"
         out.append(f"  - worst: {w}; valid/expected cells {r['valid_cells']}/{r['expected_cells']}")
         out.append(f"  - measurement: `{r['analysis']}.{r['measurement']}` ({r['reduction']} over cells); "
                    f"sampling: {r['frequency_sampling']}")
@@ -539,7 +612,8 @@ def cmd_summarize(a):
             if an and stem[: -len(an) - 1] in VARIANTS:
                 names.add(stem[: -len(an) - 1])
         req = [v for v in VARIANTS if v in names or v == "ideal"]
-    cells, issues, counts = collect_reports(cdir, req, grid)
+    nf_npts = check_nf_npts(getattr(a, "nf_npts", N_NF))
+    cells, issues, counts = collect_reports(cdir, req, grid, nf_npts)
     rows = {}  # (variant, label, temp, vdd) -> merged dict
     status = {}
     for (variant, analysis), cmap in cells.items():
@@ -547,6 +621,10 @@ def cmd_summarize(a):
             k = (variant,) + key
             rows.setdefault(k, {}).update(cell["values"])
             status.setdefault(k, {})[analysis] = cell["status"]
+            if analysis == "noise" and cell.get("valid"):
+                f_w, _ = nf_worst_frequency(cell["values"], nf_npts)
+                rows[k]["nf290_f_at_worst_hz"] = f_w
+                rows[k]["nf290_n_samples"] = nf_npts
     if not rows:
         raise SystemExit("summarize: no reports found")
     variants = [v for v in VARIANTS if any(k[0] == v for k in rows)]
@@ -566,7 +644,7 @@ def cmd_summarize(a):
 
     # ideal-vs-variant comparison, one row per (variant != ideal, cell)
     cmp_cols = [("s21_db_mid", "d_s21_db"), ("nf290_db_mid", "d_nf290_db"),
-                ("nfmin_sp_db_mid", "d_nfmin_db"), ("s11_db_mid", "d_s11_db"),
+                ("nf290_db_worst", "d_nf290_worst_db"), ("nfmin_sp_db_mid", "d_nfmin_db"), ("s11_db_mid", "d_s11_db"),
                 ("s22_db_mid", "d_s22_db"), ("mu_band_min", "d_mu_band")]
     with open(a.compare_csv, "w", newline="") as f:
         w = csv.writer(f)
@@ -622,6 +700,12 @@ def cmd_summarize(a):
                             ("s11_db_mid", "|S11| mid-band [dB]"), ("s22_db_mid", "|S22| mid-band [dB]"),
                             ("mu_min", "mu min 10 MHz..30 GHz"), ("s22_mag_max", "max |S22| 10 MHz..30 GHz")]:
             lines.append(f"- {label}: {span(v, name, 4 if 'mu' in name or 'mag' in name else 3)}")
+        nfw = [(r["nf290_db_worst"], r["nf290_f_at_worst_hz"], k) for k, r in rows.items()
+               if k[0] == v and r.get("nf290_db_worst") is not None and "nf290_f_at_worst_hz" in r]
+        if nfw:
+            w = max(nfw, key=lambda t: t[0])
+            lines.append(f"- NF @290 K worst SAMPLED point [dB]: max {w[0]:.3f} at {w[1] / 1e9:.6g} GHz, "
+                         f"{w[2][1]}/{w[2][2]:g}C/{w[2][3]:.2f}V -- {nf_grid_text(nf_npts)}")
         lines.append("")
     complete = not issues
     banner = []
@@ -630,7 +714,7 @@ def cmd_summarize(a):
                   "no complete-grid or pass claim may be drawn from this summary.", ""]
     cov_rows = None
     if "ideal" in req:
-        cov_rows = ideal_row_coverage(cells, counts, grid)
+        cov_rows = ideal_row_coverage(cells, counts, grid, nf_npts)
         lines = banner + lines + coverage_markdown(cov_rows, grid, complete, issues)
     else:
         lines = banner + lines + ["Ideal baseline not requested; no ratified-row coverage summary.", ""]
@@ -645,7 +729,8 @@ def cmd_summarize(a):
     if cj:
         doc = {"coverage": "complete" if complete else "incomplete", "grid": grid,
                "expected_cells_per_analysis": len(expected_grid(grid)),
-               "requested_variants": req,
+               "requested_variants": req, "nf290_grid": nf_grid_text(nf_npts),
+               "nf290_npts": nf_npts,
                "counts": {f"{v}/{an}": c for (v, an), c in sorted(counts.items())},
                "ideal_rows": cov_rows, "disclosures": DISCLOSURES, "issues": issues}
         Path(cj).write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
@@ -677,6 +762,8 @@ def main():
     g.add_argument("--variants", default="")
     g.add_argument("--smoke", action="store_true", help="single nominal cell")
     g.add_argument("--backend", default="")
+    g.add_argument("--nf-npts", type=int, default=N_NF,
+                   help=f"points of the 290 K NF sweep (odd, >= {N_BAND}); default {N_NF}")
     g.set_defaults(fn=cmd_gen)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
@@ -686,6 +773,8 @@ def main():
     s.add_argument("--coverage-json", default="", help="optional machine-readable coverage summary")
     s.add_argument("--grid", choices=[GRID_FULL, GRID_SMOKE], default=GRID_FULL,
                    help="expected grid: full 45-cell PVT box (default) or single nominal smoke cell")
+    s.add_argument("--nf-npts", type=int, default=N_NF,
+                   help="NF grid the reports were generated with (must match gen)")
     s.add_argument("--variants", default="",
                    help="comma list of variants that must be complete (default: ideal + any present)")
     s.set_defaults(fn=cmd_summarize)

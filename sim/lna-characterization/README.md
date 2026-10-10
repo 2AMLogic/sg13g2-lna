@@ -179,6 +179,31 @@ inferred:
   that reference). They differ by ~0.05 dB; quoting one as the other is
   exactly the kind of silent bench drift this repo's rules exist to
   prevent.
+- **Frequency coverage of `nf290` (issue #134).** Records produced from
+  issue #134 on measure `nf290`/`nf30015` with one `noise` run over the same
+  11 linearly spaced in-band points as the S-parameters (2.4 .. 2.4835 GHz,
+  8.35 MHz spacing; the band middle is a grid point). The raw
+  `freq / NF290 / freq / NF300.15` table is kept in
+  `corners/<record-id>/*.nf290.dat` and `records/<record-id>-nf290.csv`;
+  the summary's `nf290_db_worst` is the **maximum over those samples**, with
+  `nf290_f_at_worst_hz`, `nf290_n_samples`, `nf290_grid` and `nf290_sampling`
+  beside it. The old lo/mid/hi echoes stay as cross-checks (the parser
+  rejects a cell whose grid samples disagree with them by > 1e-3 dB). A
+  denser validation grid for candidate final matching networks:
+  `LNA_NF_NPTS=<odd n >= 11> run_lna_sweep.sh` (and the same variable for
+  `run_lna_variant.sh`, identical for every variant). **Limit:** this is a
+  sampled maximum. A peak narrower than the grid spacing can be missed, so it
+  is not a continuous-band proof; every across-band NF summary states the
+  grid next to the number. The missing/duplicate/non-finite checks reuse the
+  #133 grid validator (`validate_table`, manifest line
+  `grid nf290 lin <n> <lo> <hi>`).
+  **Historical records are untouched and are three-point:** every record
+  committed before #134 (e.g. `20260926-122301-088c734`) sampled `nf290` at
+  band lo / mid / hi only, its `nf290_db_worst` is the worst of those three
+  samples, and interior peaks between them were not checked. Re-parsing such a
+  directory reproduces the original CSV byte-for-byte (no new columns); when a
+  directory mixes both kinds, the three-point cells are labelled
+  `HISTORICAL three-point` in `nf290_grid`.
 
 **How to read the two methods' agreement (this is a result, not a caveat).**
 On the current record `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
@@ -589,6 +614,8 @@ Per-artifact layout of a record `<record-id>`:
 | `netlist-snapshots/<record-id>/*.spice` | the exact generated deck for every point |
 | `corners/<record-id>/*.log` | raw `ngspice -b` output for every point |
 | `corners/<record-id>/*.inband.dat` | raw complex in-band S-parameters + k/μ/\|Δ\|/NF/NFmin |
+| `corners/<record-id>/*.nf290.dat` | raw 290 K / 300.15 K NF over the in-band grid (issue #134; absent from historical three-point records) |
+| `records/<record-id>-nf290.csv` | the same table, one row per (PVT cell x NF frequency) (issue #134 onward) |
 | `corners/<record-id>/*.stability.dat` | raw broadband k/μ/\|Δ\|/\|S11\|/\|S21\|/\|S22\|, 140 frequencies |
 
 ## Regenerating
@@ -718,14 +745,15 @@ and runs **one analysis per request**, so each variant is three requests:
 |---|---|---|
 | `<v>_sp_band` | `sp lin 11 2.4e9 2.4835e9 1` | |S21|, |S11|, |S22| mid-band and worst-in-band; mu, k in-band; ngspice two-port NF and NFmin |
 | `<v>_sp_stab` | `sp dec 40 1e7 3e10` | mu min and #points mu < 1 and the lowest/highest such frequency; k min; max |S11|, max |S22|; #points |S22| > 1 + 1e-6 |
-| `<v>_noise` | `noise v(nfout) vin lin 3 2.4e9 2.4835e9` | NF at T0 = 290 K at band lo/mid/hi (Rs, RL noiseless, source noise re-added analytically, as in "Noise figure" above) |
+| `<v>_noise` | `noise v(nfout) vin lin 11 2.4e9 2.4835e9` (`--nf-npts`/`LNA_NF_NPTS` for a denser odd grid) | NF at T0 = 290 K at every grid point (`nf290_db_f00`..), lo/mid/hi cross-checks, and the sampled maximum; the reducer adds the worst sample's frequency (Rs, RL noiseless, source noise re-added analytically, as in "Noise figure" above) |
 
 Differences from `run_lna_sweep.sh` to keep in mind: one DUT copy per netlist
 (the original runs two copies in one deck); the DC operating point is **not**
 re-recorded (so the extra DC drop across the EM `Lc`'s series resistance,
 ~4 mA x ~7 ohm, is not quantified); the stability sweep does not report
-|Delta|; and the NF at 290 K is the three-point lo/mid/hi set, with the
-"worst" taken over those three.
+|Delta|; and the NF at 290 K is the 11-point in-band grid (issue #134; was
+three-point lo/mid/hi before), with the "worst" taken over the sampled points
+-- a sampled maximum, not a continuous-band bound.
 
 At the nominal cell the `ideal` variant through this harness reproduces
 the existing record `20260926-122301-088c734` (ngspice-47 local probe):

@@ -154,6 +154,34 @@ let mufacb = (1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*dltb) + mag(s_1_2*s_2_1
 wrdata @@STAB_DAT@@ kfacb mufacb mag(dltb) mag(s_1_1) mag(s_2_1) mag(s_2_2)
 echo "STAB_DAT_WRITTEN @@STAB_DAT@@"
 
+* --- NF (T0 = 290 K and 300.15 K) over the FULL in-band grid (issue #134)
+* One `noise` run over @@N_NF@@ linearly spaced points
+* @@F_NF_LO@@ .. @@F_NF_HI@@ Hz; same Xb branch, same noiseless 50 Ohm Rs/RL
+* and the same analytical source-noise reference as the lo/mid/hi echoes
+* below, which are kept as cross-checks (they coincide with grid points when
+* the grid is the default 11-point in-band grid). The raw table
+* (freq, NF_290, freq, NF_300.15) is written to @@NF_DAT@@; the parser takes
+* the sampled maximum and its frequency from it. A discrete grid cannot
+* exclude a peak narrower than its spacing.
+noise v(nfout) vin lin @@N_NF@@ @@F_NF_LO@@ @@F_NF_HI@@
+* A multi-point `noise` leaves its INTEGRATED-noise plot current; the
+* spectrum (the plot holding inoise_spectrum) is the one created just before
+* it. `$plots` lists plot names oldest-first, so the second-to-last name is
+* that spectrum plot -- no hard-coded `noiseN` (the counter is shared with
+* other analyses and is not stable).
+set lastplot = none
+set specplot = none
+foreach p $plots
+  set specplot = $lastplot
+  set lastplot = $p
+end
+echo "NF_SPECTRUM_PLOT $specplot"
+setplot $specplot
+let nfg290 = 10*log10(1 + (inoise_spectrum^2)/(4*1.380649e-23*290*50))
+let nfg30015 = 10*log10(1 + (inoise_spectrum^2)/(4*1.380649e-23*300.15*50))
+wrdata @@NF_DAT@@ nfg290 nfg30015
+echo "NF_DAT_WRITTEN @@NF_DAT@@"
+
 * --- NF and transducer gain at the band bottom / middle / top ---------
 * Each `ac`/`noise` pair is echoed immediately (current-plot gotcha).
 * NF_290  : IEEE/Friis convention, source reference temperature T0 = 290 K

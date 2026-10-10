@@ -390,9 +390,8 @@ def write_grid_table(path, kind, freqs=None, edit=None):
             fh.write(" ".join(f"{v:.8e}" for v in row) + "\n")
 
 
-class FrequencyGrid(unittest.TestCase):
-    """Raw-table frequency contract: a complete log with a bad table is not
-    a completed point."""
+class GridHarness(unittest.TestCase):
+    """Shared temp-dir/manifest harness (no tests of its own)."""
 
     def setUp(self):
         self._td = tempfile.TemporaryDirectory()
@@ -440,6 +439,11 @@ class FrequencyGrid(unittest.TestCase):
         self.assertTrue(any(needle in g["reason"] for g in hits), hits)
         self.assertEqual(hits[0]["point"], SP)
         self.assertIn("Invalid frequency grid", "\n".join(P.coverage_prose(c)))
+
+
+class FrequencyGrid(GridHarness):
+    """Raw-table frequency contract: a complete log with a bad table is not
+    a completed point."""
 
     def test_expected_grid_shapes(self):
         g = P.expected_grid({"mode": "dec", "n": 40, "lo": 1e7, "hi": 3e10})
@@ -566,6 +570,148 @@ class FrequencyGrid(unittest.TestCase):
             self.assertEqual(P.validate_table(str(f), kind, specs[kind]), [], f.name)
 
 
+NF_LINE = "grid nf290 lin 11 2.4e9 2.4835e9\n"
+# lo/mid/hi values of tests/fixtures/sp_typ_27c_vdd1.80v.log (the cross-check).
+NF_LMH = {0: 2.65592, 5: 2.65551, 10: 2.6551}
+
+
+def write_nf_table(path, freqs=None, nf=None, peak=None):
+    """Synthetic-fixture 290 K NF table: flat-ish, optionally an interior
+    peak that none of the lo/mid/hi samples can see."""
+    freqs = grid_freqs("inband") if freqs is None else freqs
+    with open(path, "w") as fh:
+        for i, f in enumerate(freqs):
+            v = NF_LMH.get(i, 2.6) if nf is None else nf[i]
+            if peak and i == peak[0]:
+                v = peak[1]
+            fh.write(f" {f:.8e} {v:.8e} {f:.8e} {v - 0.0677:.8e}\n")
+
+
+class Nf290Grid(GridHarness):
+    """Issue #134: the independent 290 K NF sweep covers the whole in-band
+    grid; malformed tables never produce a complete-grid summary."""
+
+    def setUp(self):
+        super().setUp()
+        self.manifest.write_text(
+            f"kind smoke\n{GRID_LINES}{NF_LINE}sp {SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n")
+        write_nf_table(self.cd / f"{SP}.nf290.dat")
+
+    def run_main(self, *extra):
+        return super().run_main("--nf-csv", str(self.td / "nf.csv"), *extra)
+
+    def summary(self):
+        import csv
+        return list(csv.DictReader(open(self.td / "sum.csv")))[0]
+
+    def test_valid_grid_reports_worst_sample_frequency_and_limits(self):
+        self.assertEqual(self.run_main("--strict"), 0)
+        r = self.summary()
+        self.assertEqual(r["nf290_n_samples"], "11")
+        self.assertEqual(r["nf290_db_worst"], "2.6559")  # band lo, first max
+        self.assertEqual(float(r["nf290_f_at_worst_hz"]), 2.4e9)
+        self.assertIn("lin 11 pts 2.4..2.4835 GHz", r["nf290_grid"])
+        self.assertIn("not a continuous-band bound", r["nf290_sampling"])
+        self.assertIn("8.35 MHz", r["nf290_sampling"])
+        self.assertEqual(r["nf290_db_at_band_mid"], "2.6555")  # cross-check retained
+        import csv
+        rows = list(csv.DictReader(open(self.td / "nf.csv")))
+        self.assertEqual(len(rows), 11)  # raw table retained
+        self.assertEqual({r["freq_hz"] for r in rows}, {f"{f:.6e}" for f in grid_freqs("inband")})
+
+    def test_interior_peak_beats_lo_mid_hi(self):
+        write_nf_table(self.cd / f"{SP}.nf290.dat", peak=(3, 2.9))
+        self.assertEqual(self.run_main("--strict"), 0)
+        r = self.summary()
+        self.assertEqual(r["nf290_db_worst"], "2.9000")
+        self.assertAlmostEqual(float(r["nf290_f_at_worst_hz"]), 2.4e9 + 3 * 8.35e6, delta=10)
+        self.assertEqual(r["nf290_db_at_band_lo"], "2.6559")  # 3-point view would say 2.6559
+        self.assertIn("2.9", P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv")))
+
+    def test_headline_states_grid_and_limit(self):
+        write_nf_table(self.cd / f"{SP}.nf290.dat", peak=(3, 2.9))
+        self.run_main()
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        nf_line = next(l for l in h.splitlines() if "NF (T0 = 290 K" in l)
+        self.assertIn("2.425050e+09 Hz", nf_line)
+        self.assertIn("lin 11 pts", nf_line)
+        self.assertIn("peak narrower than the spacing", nf_line)
+
+    def test_missing_interior_row_is_invalid(self):
+        f = grid_freqs("inband")
+        del f[4]
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=f, nf=[2.6] * 10)
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+        self.assertEqual(self.cov()["status"], "partial")
+        self.assertTrue(any(g["artifact"].endswith(".nf290.dat") for g in self.cov()["invalid_grids"]))
+
+    def test_missing_file_is_failed_point(self):
+        (self.cd / f"{SP}.nf290.dat").unlink()
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_FAILED)
+
+    def test_duplicate_and_nonfinite_samples_are_invalid(self):
+        f = grid_freqs("inband")
+        f[5] = f[4]
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=f)
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+        self.assertTrue(any("duplicate" in g["reason"] for g in self.cov()["invalid_grids"]))
+        for bad in (float("nan"), float("inf")):
+            nf = [2.6] * 11
+            nf[7] = bad
+            write_nf_table(self.cd / f"{SP}.nf290.dat", nf=nf)
+            self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+            self.assertTrue(any("non-finite" in g["reason"] for g in self.cov()["invalid_grids"]))
+
+    def test_without_manifest_gaps_and_short_tables_still_rejected(self):
+        why = P.validate_nf_table(str(self.cd / f"{SP}.nf290.dat"))
+        self.assertEqual(why, [])
+        f = grid_freqs("inband")
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=[f[0], f[5], f[10]], nf=[2.6] * 3)
+        self.assertTrue(P.validate_nf_table(str(self.cd / f"{SP}.nf290.dat")))  # 3 points
+        del f[4]
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=f, nf=[2.6] * 10)
+        self.assertTrue(P.validate_nf_table(str(self.cd / f"{SP}.nf290.dat")))
+
+    def test_grid_disagreeing_with_lo_mid_hi_crosscheck_is_excluded(self):
+        nf = [2.6] * 11
+        write_nf_table(self.cd / f"{SP}.nf290.dat", nf=nf)  # lo/mid/hi 2.6 != log
+        self.assertNotEqual(self.run_main("--strict"), 0)
+
+    def test_denser_grid_via_manifest(self):
+        n = 21
+        self.manifest.write_text(
+            f"kind smoke\n{GRID_LINES}grid nf290 lin {n} 2.4e9 2.4835e9\nsp {SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\n")
+        f = [2.4e9 + i * 4.175e6 for i in range(n)]
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=f,
+                       nf=[{0: 2.65592, 10: 2.65551, 20: 2.6551}.get(i, 2.6) for i in range(n)])
+        self.assertEqual(self.run_main("--strict"), 0)
+        self.assertEqual(self.summary()["nf290_n_samples"], "21")
+
+    def test_manifest_rejects_even_or_small_nf_grid(self):
+        for bad in ("grid nf290 lin 10 2.4e9 2.4835e9", "grid nf290 lin 3 2.4e9 2.4835e9"):
+            self.manifest.write_text(f"{GRID_LINES}{bad}\nsp {SP}\n")
+            with self.assertRaises(SystemExit):
+                P.read_manifest(str(self.manifest))
+
+    def test_historical_points_are_labelled_three_point_when_mixed(self):
+        # A directory with no nf290 tables at all keeps the historical column
+        # set; with one grid cell, the legacy cell is explicitly marked.
+        (self.cd / f"{SP}.nf290.dat").unlink()
+        self.manifest.write_text(
+            f"kind smoke\n{GRID_LINES}sp {SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n")
+        self.assertEqual(self.run_main("--strict"), 0)
+        self.assertNotIn("nf290_n_samples", self.summary())
+        import shutil as sh
+        for ext in (".log", ".inband.dat", ".stability.dat"):
+            sh.copy(self.cd / f"{SP}{ext}", self.cd / f"{BCS_SP}{ext}")
+        write_nf_table(self.cd / f"{SP}.nf290.dat")
+        rows, per_cell, _, _ = P.build_sparam_rows(str(self.cd))
+        self.assertEqual(per_cell[SP]["nf290_n_samples"], "11")
+        self.assertEqual(per_cell[BCS_SP]["nf290_n_samples"], "3")
+        self.assertIn("HISTORICAL three-point", per_cell[BCS_SP]["nf290_grid"])
+
+
 class RecordRegression(unittest.TestCase):
     """Re-parse a committed record's retained raw artefacts; the output must
     match the committed CSVs byte-for-byte and the record's headline text."""
@@ -575,7 +721,7 @@ class RecordRegression(unittest.TestCase):
         rec = LNA / "records"
         with tempfile.TemporaryDirectory() as td:
             out = {k: os.path.join(td, k + ".csv") for k in ("sparam", "iip3", "summary")}
-            sp, per_cell, sp_skipped = P.build_sparam_rows(str(corners))
+            sp, per_cell, sp_skipped, _nf = P.build_sparam_rows(str(corners))
             ip, ip_skipped = P.build_iip3_rows(str(corners))
             P.join_iip3_into_summary(per_cell, ip)
             P.write_csv(out["sparam"], sp, list(sp[0].keys()))

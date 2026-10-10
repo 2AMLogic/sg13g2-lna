@@ -28,6 +28,11 @@ testbench/:
       vector writes scale,re,im; a real vector writes scale,value):
         s_1_1(3) s_2_1(3) s_1_2(3) s_2_2(3) k(2) mu(2) |delta|(2)
         NF_sp(3) NFmin_sp(3)
+  sp_...nf290.dat      (issue #134; absent from historical records) wrdata
+      table, 4 columns: freq NF_290K freq NF_300.15K -- the independent
+      `.noise` NF over the full in-band grid (default 11 points, same as the
+      S-parameter grid). Records WITHOUT it carry the historical three-point
+      (lo/mid/hi) NF only and are labelled as such in the summary.
   sp_...stability.dat   wrdata table, 12 columns:
         k(2) mu(2) |delta|(2) |s11|(2) |s21|(2) |s22|(2)
   iip3_<corner>_<temp>c_vdd<vdd>v_a<amp>mv.log ngspice batch stdout:
@@ -151,12 +156,72 @@ def iip3_from(pin_dbm: float, pout_dbm: float, pim3_dbm: float) -> float:
     return pin_dbm + (pout_dbm - pim3_dbm) / 2.0
 
 
+# --- 290 K NF grid (issue #134) -------------------------------------------
+NF_BAND_LO, NF_BAND_HI = 2.4e9, 2.4835e9
+NF_MIN_POINTS = 11  # the S-parameter grid
+HIST_3PT = {"lo": 2.4e9, "mid": 2.44175e9, "hi": 2.4835e9}
+HIST_3PT_LABEL = "HISTORICAL three-point (lo/mid/hi: 2.4, 2.44175, 2.4835 GHz)"
+NF_XCHECK_TOL_DB = 1e-3  # grid sample vs the echoed lo/mid/hi at the same f
+
+
+def nf_grid_label(n: int, lo: float, hi: float) -> str:
+    return f"lin {n} pts {lo / 1e9:.5g}..{hi / 1e9:.5g} GHz"
+
+
+def nf_sampling_note(n: int, lo: float, hi: float) -> str:
+    step = (hi - lo) / (n - 1) / 1e6
+    return (f"sampled maximum over {n} points ({step:.4g} MHz spacing); not a"
+            " continuous-band bound -- a peak narrower than the spacing can be missed")
+
+
+def validate_nf_table(path: str, spec: dict | None = None) -> list[str]:
+    """Reasons (empty = valid) this nf290.dat is not a complete grid.
+    Delegates missing/duplicate/non-finite/ordering checks to the #133
+    validate_table. Without a manifest `spec`, the grid is the in-band band
+    edges with as many points as the table has, which still catches
+    interior gaps/duplicates (uneven spacing) and endpoint loss; the point
+    count must be an odd number >= NF_MIN_POINTS."""
+    if spec is None:
+        try:
+            with open(path) as fh:
+                n = sum(1 for line in fh if line.split())
+        except OSError as exc:
+            return [f"unreadable: {exc}"]
+        spec = {"mode": "lin", "n": max(n, 2), "lo": NF_BAND_LO, "hi": NF_BAND_HI}
+        why = []
+        if n < NF_MIN_POINTS or n % 2 == 0:
+            why.append(f"{n} NF points; need an odd count >= {NF_MIN_POINTS}")
+    else:
+        why = []
+    return why + validate_table(path, "nf290", spec)
+
+
+def nf_crosscheck(nf_grid, nf290_log: dict) -> list[str]:
+    """The grid samples that coincide with the echoed lo/mid/hi NF values must
+    agree with them (same bench, same convention); a mismatch means the two
+    noise paths of the deck have drifted apart."""
+    why = []
+    for tag, f_h in HIST_3PT.items():
+        for f, nf, _ in nf_grid:
+            if abs(f - f_h) <= FREQ_RTOL * f_h and tag in nf290_log:
+                if abs(nf - nf290_log[tag]) > NF_XCHECK_TOL_DB:
+                    why.append(f"NF grid sample at {f:.8e} Hz = {nf:.5f} dB disagrees with the"
+                               f" echoed {tag} value {nf290_log[tag]:.5f} dB")
+    return why
+
+
+def read_nf_grid(path: str) -> list[tuple[float, float, float]]:
+    return [(r[0], r[1], r[3]) for r in read_table(path, 4)]
+
+
 def build_sparam_rows(
-    corners_dir: str, exclude=()
-) -> tuple[list[dict], dict, list[str]]:
+    corners_dir: str, exclude=(), nf_spec=None
+) -> tuple[list[dict], dict, list[str], list[dict]]:
     """`exclude`: points whose tables failed grid validation; they are skipped
-    (reported as skipped) so their extrema never enter an aggregate."""
+    (reported as skipped) so their extrema never enter an aggregate.
+    `nf_spec`: manifest grid contract for nf290.dat (None = derive)."""
     rows: list[dict] = []
+    nf_rows: list[dict] = []
     per_cell: dict[str, dict] = {}
     skipped: list[str] = []
     for fname in sorted(os.listdir(corners_dir)):
@@ -173,6 +238,21 @@ def build_sparam_rows(
             skipped.append(point_id)
             continue
         log = parse_sp_log(os.path.join(corners_dir, fname))
+        nf_path = os.path.join(corners_dir, point_id + ".nf290.dat")
+        nf_grid = None
+        if os.path.isfile(nf_path) or nf_spec is not None:
+            bad = validate_nf_table(nf_path, nf_spec)
+            if bad:
+                skipped.append(point_id)
+                print(f"parse_lna_sweep.py: {point_id}: invalid 290 K NF grid: "
+                      + "; ".join(bad), file=sys.stderr)
+                continue
+            nf_grid = read_nf_grid(nf_path)
+            xbad = nf_crosscheck(nf_grid, log["nf290"])
+            if xbad:
+                skipped.append(point_id)
+                print(f"parse_lna_sweep.py: {point_id}: " + "; ".join(xbad), file=sys.stderr)
+                continue
         inband = read_table(os.path.join(corners_dir, point_id + ".inband.dat"), 24)
         stab = read_table(os.path.join(corners_dir, point_id + ".stability.dat"), 12)
 
@@ -265,7 +345,46 @@ def build_sparam_rows(
             "s22_mag_broadband_max": f"{s22_max:.6f}",
             "f_at_s22_mag_broadband_max_hz": f"{s22_max_f:.6e}",
         }
-    return rows, per_cell, skipped
+        cell = per_cell[point_id]
+        cell["_nf_grid"] = nf_grid
+        cell["_nf_3pt"] = log["nf290"]
+        if nf_grid is not None:
+            for f, nf, nf15 in nf_grid:
+                nf_rows.append({
+                    "point_id": point_id, "corner_label": m.group("corner"),
+                    "temp_c": m.group("temp"), "vdd_v": m.group("vdd"),
+                    "freq_hz": f"{f:.6e}", "nf290_db": f"{nf:.4f}",
+                    "nf30015_db": f"{nf15:.4f}",
+                })
+    finalize_nf_columns(per_cell)
+    return rows, per_cell, skipped, nf_rows
+
+
+def finalize_nf_columns(per_cell: dict) -> None:
+    """Replace nf290_db_worst by the grid maximum and add its frequency, the
+    grid definition and the sampling limit -- but only if at least one cell
+    carries a grid table. A directory of purely historical points keeps the
+    exact original column set (byte-identical re-derivation)."""
+    have = any(c["_nf_grid"] is not None for c in per_cell.values())
+    for c in per_cell.values():
+        grid, three = c.pop("_nf_grid"), c.pop("_nf_3pt")
+        if not have:
+            continue
+        if grid is not None:
+            f_w, nf_w, _ = max(grid, key=lambda t: t[1])  # first max wins ties
+            n = len(grid)
+            c["nf290_db_worst"] = f"{nf_w:.4f}"
+            c["nf290_f_at_worst_hz"] = f"{f_w:.6e}"
+            c["nf290_n_samples"] = str(n)
+            c["nf290_grid"] = nf_grid_label(n, grid[0][0], grid[-1][0])
+            c["nf290_sampling"] = nf_sampling_note(n, grid[0][0], grid[-1][0])
+        else:
+            tag = max(three, key=three.get)
+            c["nf290_f_at_worst_hz"] = f"{HIST_3PT[tag]:.6e}"
+            c["nf290_n_samples"] = "3"
+            c["nf290_grid"] = HIST_3PT_LABEL
+            c["nf290_sampling"] = ("three samples only; interior peaks between"
+                                   " them are NOT checked")
 
 
 def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
@@ -390,7 +509,11 @@ SCALE_RTOL = 1e-7
 SCALE_COLS = {
     "inband": (24, [0, 3, 6, 9, 12, 14, 16, 18, 21], ".inband.dat"),
     "stability": (12, [0, 2, 4, 6, 8, 10], ".stability.dat"),
+    # issue #134: independent 290 K .noise sweep (freq NF290 freq NF300.15).
+    # Optional in a manifest (historical manifests have no such grid).
+    "nf290": (4, [0, 2], ".nf290.dat"),
 }
+REQUIRED_GRIDS = {"inband", "stability"}
 
 
 def expected_grid(spec: dict) -> list[float]:
@@ -505,9 +628,13 @@ def read_manifest(path: str) -> dict:
                 raise SystemExit(f"{path}:{n}: unrecognised manifest line: {line.strip()!r}")
     if not man["sp"] and not man["iip3"]:
         raise SystemExit(f"{path}: manifest lists no expected points")
-    if man["grids"] and set(man["grids"]) != set(SCALE_COLS):
+    if man["grids"] and not REQUIRED_GRIDS <= set(man["grids"]):
         raise SystemExit(f"{path}: grid contract must define both "
-                         + " and ".join(sorted(SCALE_COLS)))
+                         + " and ".join(sorted(REQUIRED_GRIDS)))
+    ng = man["grids"].get("nf290")
+    if ng and (ng["mode"] != "lin" or ng["n"] < NF_MIN_POINTS or ng["n"] % 2 == 0):
+        raise SystemExit(f"{path}: nf290 grid must be lin with an odd point count"
+                         f" >= {NF_MIN_POINTS}")
     known = set(man["iip3"])
     for pair in man["pairs"]:
         for pid in pair:
@@ -532,12 +659,19 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
     states: dict[str, str] = {}
     invalid_grids: list[dict] = []
     for pid in man["sp"]:
-        states[pid] = state(pid, (".inband.dat", ".stability.dat"))
+        dats = (".inband.dat", ".stability.dat") + (
+            (".nf290.dat",) if "nf290" in man.get("grids", {}) else ())
+        states[pid] = state(pid, dats)
         if states[pid] == "completed" and man.get("grids"):
-            for kind, (_, _, ext) in SCALE_COLS.items():
-                for reason in validate_table(
-                    os.path.join(corners_dir, pid + ext), kind, man["grids"][kind]
-                ):
+            for kind in man["grids"]:
+                ext = SCALE_COLS[kind][2]
+                tbl = os.path.join(corners_dir, pid + ext)
+                reasons = validate_table(tbl, kind, man["grids"][kind])
+                if kind == "nf290" and not reasons:
+                    reasons = nf_crosscheck(
+                        read_nf_grid(tbl),
+                        parse_sp_log(os.path.join(corners_dir, pid + ".log"))["nf290"])
+                for reason in reasons:
                     invalid_grids.append(
                         {"point": pid, "artifact": pid + ext, "reason": reason}
                     )
@@ -673,11 +807,25 @@ def headlines(summary_csv: str, iip3_csv: str) -> str:
     )
     worst_nf = max(cells, key=lambda r: float(r["nf290_db_worst"]))
     best_nf = min(cells, key=lambda r: float(r["nf290_db_worst"]))
-    out.append(
-        f"- **NF (T0 = 290 K, worst in-band point per cell)**: worst "
-        f"{worst_nf['nf290_db_worst']} dB at {cell_label(worst_nf)}; best "
-        f"{best_nf['nf290_db_worst']} dB at {cell_label(best_nf)}."
-    )
+    if "nf290_grid" in worst_nf:
+        n_hist = sum(1 for r in cells if r["nf290_n_samples"] == "3")
+        out.append(
+            f"- **NF (T0 = 290 K, worst SAMPLED in-band point per cell)**: worst "
+            f"{worst_nf['nf290_db_worst']} dB at {worst_nf['nf290_f_at_worst_hz']} Hz,"
+            f" {cell_label(worst_nf)}; best-cell worst "
+            f"{best_nf['nf290_db_worst']} dB at {cell_label(best_nf)}. Grid:"
+            f" {worst_nf['nf290_grid']}; {worst_nf['nf290_sampling']}."
+            + (f" ({n_hist} cell(s) are HISTORICAL three-point only.)" if n_hist else "")
+        )
+    else:
+        # Historical (three-point) records: wording kept byte-identical so
+        # the committed record re-derives unchanged; the committed record's
+        # own text states these are three samples (lo/mid/hi).
+        out.append(
+            f"- **NF (T0 = 290 K, worst in-band point per cell)**: worst "
+            f"{worst_nf['nf290_db_worst']} dB at {cell_label(worst_nf)}; best "
+            f"{best_nf['nf290_db_worst']} dB at {cell_label(best_nf)}."
+        )
     nfmin = min(cells, key=lambda r: float(r["nfmin_sp_db_at_band_lo"]))
     out.append(
         f"- **NFmin (ngspice `sp`, at 2.4 GHz, i.e. what an ideal noise match "
@@ -762,6 +910,7 @@ def main() -> int:
     ap.add_argument("--corners-dir")
     ap.add_argument("--sparam-csv")
     ap.add_argument("--iip3-csv")
+    ap.add_argument("--nf-csv", help="raw per-(cell, frequency) 290 K NF table")
     ap.add_argument("--summary-csv")
     ap.add_argument("--band-lo")
     ap.add_argument("--band-hi")
@@ -817,9 +966,11 @@ def main() -> int:
     elif args.strict:
         raise SystemExit("--strict requires --manifest")
 
-    sparam_rows, per_cell, sp_skipped = build_sparam_rows(
+    man_grids = read_manifest(args.manifest)["grids"] if args.manifest else {}
+    sparam_rows, per_cell, sp_skipped, nf_rows = build_sparam_rows(
         args.corners_dir,
         exclude={g["point"] for g in cov["invalid_grids"]} if cov else (),
+        nf_spec=man_grids.get("nf290"),
     )
     if not sparam_rows and cov is not None and args.strict:
         print(f"parse_lna_sweep.py: {args.corners_dir}: no complete sp_* artefacts",
@@ -834,6 +985,8 @@ def main() -> int:
     join_iip3_into_summary(per_cell, iip3_rows)
 
     write_csv(args.sparam_csv, sparam_rows, list(sparam_rows[0].keys()))
+    if nf_rows and args.nf_csv:
+        write_csv(args.nf_csv, nf_rows, list(nf_rows[0].keys()))
     if iip3_rows:
         write_csv(args.iip3_csv, iip3_rows, list(iip3_rows[0].keys()))
     summary_rows = [per_cell[k] for k in sorted(per_cell)]

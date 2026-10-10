@@ -65,6 +65,10 @@ GOOD = {  # passes every ratified row
 def synth_values(analysis, overrides=None):
     vals = {m["name"]: 1.0 for m in V.measurements(analysis)}
     vals.update({k: v for k, v in GOOD.items() if k in vals})
+    if analysis == "noise":  # retained NF samples consistent with the reported worst
+        worst = vals["nf290_db_worst"]
+        for n in V.nf_sample_names():
+            vals[n] = worst
     vals.update(overrides or {})
     return vals
 
@@ -176,7 +180,8 @@ class Reduction(unittest.TestCase):
                 if a == an:
                     for c in corners:
                         for m in c["measurements"]:
-                            if m["name"] == meas:
+                            if m["name"] == meas or (
+                                    meas == "nf290_db_worst" and m["name"] in V.nf_sample_names()):
                                 m["value"] = val
             with tempfile.TemporaryDirectory() as d:
                 write_reports(d, mutate=mut)
@@ -354,6 +359,129 @@ class WrapperPropagation(unittest.TestCase):
             self.assertNotEqual(p.returncode, 0)
             self.assertTrue((Path(d) / "s.csv").exists() and (Path(d) / "h.md").exists())
             self.assertTrue((Path(d) / "ideal_noise.report.json").exists())
+
+
+class NoiseGrid(unittest.TestCase):
+    """Issue #134: 290 K NF over the full in-band grid (synthetic fixtures)."""
+
+    PEAK_IDX = 3  # interior, not one of lo/mid/hi
+
+    def peak_mutator(self, idx=PEAK_IDX, peak=1.4, base=1.0):
+        names = V.nf_sample_names()
+
+        def mut(v, a, c):
+            if a != "noise":
+                return
+            for cell in c:
+                for m in cell["measurements"]:
+                    if m["name"] in names:
+                        m["value"] = peak if m["name"] == names[idx] else base
+                    elif m["name"] in ("nf290_db_lo", "nf290_db_mid", "nf290_db_hi"):
+                        m["value"] = base
+                    elif m["name"] == "nf290_db_worst":
+                        m["value"] = peak
+        return mut
+
+    def test_default_grid_is_the_sparameter_grid(self):
+        self.assertEqual(V.N_NF, V.N_BAND)
+        self.assertEqual(len(V.nf_freqs()), 11)
+        self.assertAlmostEqual(V.nf_freqs()[V.MID], V.F_MID, delta=1.0)
+        self.assertEqual(V.nf_freqs()[0], V.F_LO)
+        card = V.analysis_card("noise")
+        self.assertEqual(card["args"], "v(nfout) vin lin 11 2.4e+09 2.4835e+09")
+
+    def test_baseline_and_lossy_variants_share_grid_and_conventions(self):
+        cards = {(v, a): (V.request(v, a, "x.spice", False, None)["analysis"],
+                          V.request(v, a, "x.spice", False, None)["measurements"])
+                 for v in V.VARIANTS for a in ("noise",)}
+        self.assertEqual(len({json.dumps(c, sort_keys=True) for c in cards.values()}), 1)
+        for v in V.VARIANTS:
+            self.assertEqual(len(V.measurements("noise")), 4 + 11)
+            self.assertIn("Rs vin nfin 50 noisy=0", V.netlist(v, "noise", "m.spice"))
+            self.assertIn("RL nfout 0 50 noisy=0", V.netlist(v, "noise", "m.spice"))
+
+    def test_interior_peak_is_the_worst_with_its_frequency(self):
+        with tempfile.TemporaryDirectory() as d:
+            write_reports(d, mutate=self.peak_mutator())
+            rc, cov, _ = run_summ(d)
+            self.assertEqual(rc, 0)
+            nf = next(r for r in cov["ideal_rows"] if r["row"] == "nf290")
+            self.assertAlmostEqual(nf["worst_value"], 1.4)
+            self.assertAlmostEqual(nf["worst_frequency_hz"], V.nf_freqs()[self.PEAK_IDX], delta=1.0)
+            self.assertEqual(nf["nf_grid"]["n"], 11)
+            self.assertIn("11 pts", nf["frequency_sampling"])
+            self.assertIn("peak narrower than the spacing", nf["frequency_sampling"])
+            # the three lo/mid/hi samples alone would have said 1.0
+            self.assertIn("GHz", (Path(d) / "h.md").read_text())
+            self.assertIn("worst SAMPLED", (Path(d) / "h.md").read_text())
+            self.assertIn("nf290_f_at_worst_hz", (Path(d) / "s.csv").read_text())
+
+    def test_missing_duplicate_nonfinite_samples_reject_complete_grid(self):
+        names = V.nf_sample_names()
+        def drop(v, a, c):
+            if a == "noise":
+                c[0]["measurements"] = [m for m in c[0]["measurements"] if m["name"] != names[4]]
+        def dup(v, a, c):
+            if a == "noise":
+                m = next(m for m in c[0]["measurements"] if m["name"] == names[4])
+                c[0]["measurements"].append(dict(m))
+        def nan(v, a, c):
+            if a == "noise":
+                for m in c[0]["measurements"]:
+                    if m["name"] == names[4]:
+                        m["value"] = float("nan")
+        for mut, kind in ((drop, "missing_measurement"), (dup, "duplicate_measurement"),
+                          (nan, "non_finite_value")):
+            with tempfile.TemporaryDirectory() as d:
+                write_reports(d, mutate=mut)
+                rc, cov, _ = run_summ(d)
+                self.assertNotEqual(rc, 0, kind)
+                self.assertIn(kind, kinds(cov))
+                nf = next(r for r in cov["ideal_rows"] if r["row"] == "nf290")
+                self.assertIn("NOT EVALUATED", nf["verdict"])
+                self.assertEqual(nf["valid_cells"], 44)
+
+    def test_reported_worst_must_match_retained_samples(self):
+        def mut(v, a, c):
+            if a == "noise":
+                for m in c[0]["measurements"]:
+                    if m["name"] == "nf290_db_worst":
+                        m["value"] = 0.5  # below every retained sample
+        with tempfile.TemporaryDirectory() as d:
+            write_reports(d, mutate=mut)
+            rc, cov, _ = run_summ(d)
+            self.assertNotEqual(rc, 0)
+            self.assertIn("inconsistent_nf_worst", kinds(cov))
+
+    def test_denser_validation_grid_is_configurable(self):
+        n = 41
+        self.assertEqual(len(V.measurements("noise", n)), 4 + n)
+        self.assertIn(f"lin {n} ", V.analysis_card("noise", n)["args"])
+        self.assertAlmostEqual(V.nf_freqs(n)[(n - 1) // 2], V.F_MID, delta=1.0)
+        # a report generated with the default grid is incomplete against 41 points
+        with tempfile.TemporaryDirectory() as d:
+            write_reports(d)
+            old = sys.argv
+            argv = ["x", "summarize", "--corners-dir", d, "--summary-csv", f"{d}/s.csv",
+                    "--compare-csv", f"{d}/c.csv", "--headlines-md", f"{d}/h.md",
+                    "--coverage-json", f"{d}/cov.json", "--nf-npts", str(n)]
+            sys.argv = argv
+            try:
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as cm:
+                        V.main()
+            finally:
+                sys.argv = old
+            self.assertNotEqual(cm.exception.code, 0)
+            cov = json.loads((Path(d) / "cov.json").read_text())
+            self.assertEqual(cov["nf290_npts"], n)
+            self.assertIn("missing_measurement", kinds(cov))
+
+    def test_bad_grid_sizes_rejected(self):
+        for n in (3, 10, 12, 0, -11):
+            with self.assertRaises(SystemExit):
+                V.check_nf_npts(n)
+
 
 
 if __name__ == "__main__":
