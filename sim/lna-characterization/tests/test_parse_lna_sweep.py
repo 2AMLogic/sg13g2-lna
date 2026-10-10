@@ -867,5 +867,152 @@ class RecordRegression(unittest.TestCase):
             self.assertIn(line, md_lines)
 
 
+class LogContract(unittest.TestCase):
+    """Issue #150: required-measurement integrity of raw SP / IIP3 logs."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.addCleanup(self._td.cleanup)
+        self.td = Path(self._td.name)
+        self.sp = (FIX / f"{SP}.log").read_text()
+        self.ip = (FIX / f"{A1}.log").read_text()
+
+    def reasons(self, kind, text):
+        f = self.td / "x.log"
+        f.write_text(text)
+        v = P.validate_sp_log if kind == "sp" else P.validate_iip3_log
+        parsed, why = v(str(f))
+        self.assertEqual(parsed is None, bool(why))
+        return " | ".join(why)
+
+    def test_valid_fixtures_match_lenient_parsers(self):
+        for kind, name, lenient in (("sp", SP, P.parse_sp_log),
+                                    ("iip3", A1, P.parse_iip3_log)):
+            v = P.validate_sp_log if kind == "sp" else P.validate_iip3_log
+            parsed, why = v(str(FIX / f"{name}.log"))
+            self.assertEqual(why, [])
+            self.assertEqual(parsed, lenient(str(FIX / f"{name}.log")))
+
+    def test_sp_missing_measurements(self):
+        txt = self.sp.replace("NF mid 2.65551 2.58781\n", "")
+        self.assertIn("NF: missing key mid", self.reasons("sp", txt))
+        txt = self.sp.replace("GAIN lo 11.5657\n", "")
+        self.assertIn("GAIN: missing key lo", self.reasons("sp", txt))
+        txt = "\n".join(ln for ln in self.sp.splitlines() if not ln.startswith("OP"))
+        self.assertIn("OP: missing block", self.reasons("sp", txt))
+        self.assertIn("OP: missing key pdc",
+                      self.reasons("sp", self.sp.replace(" pdc 0.00848596", "")))
+
+    def test_sp_duplicate_and_nonfinite(self):
+        self.assertIn("GAIN: duplicate key lo",
+                      self.reasons("sp", self.sp + "GAIN lo 1.0\n"))
+        self.assertIn("OP: duplicate block",
+                      self.reasons("sp", self.sp + "OP ic1 1\n"))
+        self.assertIn("OP: duplicate key ic1",
+                      self.reasons("sp", self.sp.replace("ic2", "ic1", 1)))
+        for bad in ("nan", "inf", "-inf", "1e999", "abc"):
+            r = self.reasons("sp", self.sp.replace("pdc 0.00848596", f"pdc {bad}"))
+            self.assertIn("key pdc: non-finite", r)
+            r = self.reasons("sp", self.sp.replace("NF hi 2.6551 2.5874",
+                                                   f"NF hi {bad} 2.5874"))
+            self.assertIn("NF: malformed", r)
+
+    def test_sp_odd_tokens(self):
+        r = self.reasons("sp", self.sp.replace("pdc 0.00848596", "pdc"))
+        self.assertIn("odd/empty key-value", r)
+
+    def test_iip3_missing_data(self):
+        for tag, expect in (("NPTS", "NPTS: missing block"),
+                            ("FFTDF", "FFTDF: missing block"),
+                            ("DFT", "DFT: missing block"),
+                            ("FFT", "FFT: missing block"),
+                            ("OP", "OP: missing block")):
+            txt = "\n".join(ln for ln in self.ip.splitlines()
+                            if ln.split()[:1] != [tag])
+            self.assertIn(expect, self.reasons("iip3", txt))
+        self.assertIn("FFT: missing key im5h",
+                      self.reasons("iip3", self.ip.replace(" im5h 7.74664E-11", "")))
+
+    def test_iip3_duplicates_odd_nonfinite_counts(self):
+        self.assertIn("FFT: duplicate block",
+                      self.reasons("iip3", self.ip + "FFT tone1 1\n"))
+        self.assertIn("NPTS: duplicate block",
+                      self.reasons("iip3", self.ip + "NPTS 4\n"))
+        self.assertIn("FFT: duplicate key tone1",
+                      self.reasons("iip3", self.ip.replace("FFT tone1", "FFT tone1 1 tone1")))
+        self.assertIn("odd/empty key-value",
+                      self.reasons("iip3", self.ip.replace("src2 0.000999618", "src2")))
+        for bad in ("nan", "inf", "1e999"):
+            self.assertIn("non-finite",
+                          self.reasons("iip3", self.ip.replace("im3l 6.5763E-09",
+                                                               f"im3l {bad}")))
+            self.assertIn("NPTS: non-finite",
+                          self.reasons("iip3", self.ip.replace("NPTS 65536", f"NPTS {bad}")))
+        for bad in ("0", "-4", "1.5", "65536 7"):
+            self.assertIn("NPTS:",
+                          self.reasons("iip3", self.ip.replace("NPTS 65536", f"NPTS {bad}")))
+        self.assertIn("FFTDF: non-finite",
+                      self.reasons("iip3", self.ip.replace("3.8147E+06", "nan")))
+
+    def test_iip3_zero_or_negative_amplitude(self):
+        self.assertIn("zero tone",
+                      self.reasons("iip3", self.ip.replace("FFT tone1 0.00187927",
+                                                           "FFT tone1 0")))
+        self.assertIn("negative amplitude",
+                      self.reasons("iip3", self.ip.replace("im5l 4.95399E-11",
+                                                           "im5l -1e-11")))
+
+
+class InvalidLogCoverage(Coverage):
+    """Marked-complete logs with bad measurements are not complete coverage."""
+
+    def _corrupt(self, pid, old, new):
+        f = self.cd / f"{pid}.log"
+        t = f.read_text()
+        self.assertIn(old, t)
+        f.write_text(t.replace(old, new))
+
+    def test_sp_missing_measurement_not_completed(self):
+        self._corrupt(BCS_SP, "NF mid 2.65551 2.58781\n", "")
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_LOG)
+        c = self.cov()
+        self.assertEqual(c["status"], "partial")
+        self.assertNotIn(BCS_SP, c["completed"])
+        self.assertEqual(c["invalid"], [BCS_SP])
+        self.assertEqual(c["invalid_logs"][0]["point"], BCS_SP)
+        self.assertEqual(c["invalid_logs"][0]["artifact"], BCS_SP + ".log")
+        self.assertIn("NF: missing key mid", c["invalid_logs"][0]["reason"])
+        self.assertIn("Invalid log measurement", "\n".join(P.coverage_prose(c)))
+
+    def test_sp_nonfinite_op_not_in_summary(self):
+        self._corrupt(BCS_SP, "pdc 0.00848596", "pdc nan")
+        self.assertEqual(self.run_main(), 0)
+        import csv
+        ids = [r["point_id"] for r in csv.DictReader(open(self.td / "sum.csv"))]
+        self.assertNotIn(BCS_SP, ids)
+        self.assertIn(SP, ids)
+
+    def test_iip3_invalid_breaks_pair_and_is_excluded(self):
+        self._corrupt(BCS_A2, "FFTDF 3.8147E+06\n", "")
+        self.assertEqual(
+            self.run_main("--strict"),
+            P.STRICT_EXIT_BASE + P.EXIT_PAIR + P.EXIT_LOG,
+        )
+        c = self.cov()
+        self.assertEqual(c["missing_drive_pairs"],
+                         [{"points": [BCS_A1, BCS_A2], "unavailable": [BCS_A2]}])
+        import csv
+        ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
+        self.assertNotIn(BCS_A2, ids)
+        self.assertIn(BCS_A1, ids)
+
+    def test_iip3_nan_without_manifest_no_traceback(self):
+        self._corrupt(BCS_A1, "im3l 6.5763E-09", "im3l nan")
+        self.assertEqual(self.run_main(manifest=False), 0)
+        import csv
+        ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
+        self.assertNotIn(BCS_A1, ids)
+
+
 if __name__ == "__main__":
     unittest.main()

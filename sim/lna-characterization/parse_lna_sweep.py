@@ -146,6 +146,152 @@ def parse_iip3_log(path: str) -> dict:
     return out
 
 
+# --- raw-log contract (issue #150) ----------------------------------------
+# BENCH_COMPLETE only says the deck ran to the end. The reducer additionally
+# consumes specific echoed measurements; a complete-marked log that lacks one,
+# repeats one, or carries a non-finite / malformed value is INVALID evidence
+# (distinct from a valid finite measurement that merely fails a spec row).
+SP_OP_REQUIRED = ("ic1", "ic2", "vce1", "vce2", "vbe1", "idd", "pdc")
+SP_TAGS = ("lo", "mid", "hi")
+IIP3_OP_REQUIRED = ("ic1", "idd")
+IIP3_DFT_REQUIRED = ("tone1", "tone2", "im3l", "im3h")
+IIP3_FFT_REQUIRED = ("tone1", "tone2", "im3l", "im3h", "im5l", "im5h", "src1")
+
+
+def _finite(tok: str):
+    """float(tok) if it is a finite number, else None (NaN/Inf/overflow/junk)."""
+    try:
+        v = float(tok)
+    except ValueError:
+        return None
+    return v if math.isfinite(v) else None
+
+
+def _read_pairs(tokens: list[str], label: str, store: dict, prefix: str,
+                why: list[str]) -> None:
+    """Parse `key value` token pairs of one OP/DFT/FFT line into `store`,
+    recording odd token counts, duplicate keys and non-finite values."""
+    if not tokens or len(tokens) % 2:
+        why.append(f"{label}: odd/empty key-value token list ({len(tokens)} tokens)")
+        tokens = tokens[: len(tokens) - len(tokens) % 2]
+    for i in range(0, len(tokens), 2):
+        key, val = prefix + tokens[i], _finite(tokens[i + 1])
+        if val is None:
+            why.append(f"{label}: key {tokens[i]}: non-finite or non-numeric value"
+                       f" {tokens[i + 1]!r}")
+        elif key in store:
+            why.append(f"{label}: duplicate key {tokens[i]}")
+        else:
+            store[key] = val
+
+
+def validate_sp_log(path: str) -> tuple[dict | None, list[str]]:
+    """(parsed, reasons). `parsed` has the parse_sp_log shape and is only
+    returned when reasons is empty (None otherwise)."""
+    try:
+        with open(path) as fh:
+            lines = [ln.split() for ln in fh]
+    except OSError as exc:
+        return None, [f"unreadable: {exc}"]
+    out: dict = {"gain": {}, "nf290": {}, "nf30015": {}}
+    why: list[str] = []
+    n_op = 0
+    for p in lines:
+        if not p:
+            continue
+        if p[0] == "OP":
+            n_op += 1
+            if n_op > 1:
+                why.append("OP: duplicate block")
+            _read_pairs(p[1:], "OP", out, "", why)
+        elif p[0] == "GAIN":
+            v = _finite(p[2]) if len(p) == 3 else None
+            if len(p) != 3 or v is None:
+                why.append(f"GAIN: malformed line {' '.join(p)!r}")
+            elif p[1] in out["gain"]:
+                why.append(f"GAIN: duplicate key {p[1]}")
+            else:
+                out["gain"][p[1]] = v
+        elif p[0] == "NF":
+            v = [_finite(t) for t in p[2:]] if len(p) == 4 else [None]
+            if len(p) != 4 or None in v:
+                why.append(f"NF: malformed line {' '.join(p)!r}")
+            elif p[1] in out["nf290"]:
+                why.append(f"NF: duplicate key {p[1]}")
+            else:
+                out["nf290"][p[1]] = v[0]
+                out["nf30015"][p[1]] = v[1]
+    if n_op == 0:
+        why.append("OP: missing block")
+    why += [f"OP: missing key {k}" for k in SP_OP_REQUIRED
+            if n_op and k not in out]
+    for blk in ("gain", "nf290"):
+        name = "GAIN" if blk == "gain" else "NF"
+        why += [f"{name}: missing key {t}" for t in SP_TAGS if t not in out[blk]]
+    return (out if not why else None), why
+
+
+def validate_iip3_log(path: str) -> tuple[dict | None, list[str]]:
+    """(parsed, reasons) for a two-tone log; parsed has the parse_iip3_log
+    shape and is only returned when reasons is empty."""
+    try:
+        with open(path) as fh:
+            lines = [ln.split() for ln in fh]
+    except OSError as exc:
+        return None, [f"unreadable: {exc}"]
+    out: dict = {}
+    why: list[str] = []
+    seen: dict[str, int] = {}
+    for p in lines:
+        if not p or p[0] not in ("OP", "NPTS", "FFTDF", "DFT", "FFT"):
+            continue
+        tag = p[0]
+        seen[tag] = seen.get(tag, 0) + 1
+        if seen[tag] > 1:
+            why.append(f"{tag}: duplicate block")
+            continue
+        if tag == "OP":
+            _read_pairs(p[1:], "OP", out, "", why)
+        elif tag in ("DFT", "FFT"):
+            _read_pairs(p[1:], tag, out, tag.lower() + "_", why)
+        elif len(p) != 2:
+            why.append(f"{tag}: expected exactly one value, got {len(p) - 1}")
+        else:
+            v = _finite(p[1])
+            if v is None:
+                why.append(f"{tag}: non-finite or non-numeric value {p[1]!r}")
+            elif tag == "NPTS":
+                if v < 1 or v != int(v):
+                    why.append(f"NPTS: count must be a positive integer, got {p[1]!r}")
+                else:
+                    out["npts"] = int(v)
+            elif v <= 0:
+                why.append(f"FFTDF: must be > 0, got {p[1]!r}")
+            else:
+                out["fft_df"] = v
+    for tag in ("OP", "NPTS", "FFTDF", "DFT", "FFT"):
+        if tag not in seen:
+            why.append(f"{tag}: missing block")
+    if "OP" in seen:
+        why += [f"OP: missing key {k}" for k in IIP3_OP_REQUIRED if k not in out]
+    for pref, req in (("dft", IIP3_DFT_REQUIRED), ("fft", IIP3_FFT_REQUIRED)):
+        if pref.upper() in seen:
+            why += [f"{pref.upper()}: missing key {k}" for k in req
+                    if f"{pref}_{k}" not in out]
+            for k in req:
+                v = out.get(f"{pref}_{k}")
+                if v is not None and v < 0:
+                    why.append(f"{pref.upper()}: key {k}: negative amplitude {v:g}")
+            for k in ("tone1", "tone2"):
+                if out.get(f"{pref}_{k}") == 0:
+                    why.append(f"{pref.upper()}: key {k}: zero tone amplitude")
+            if out.get(f"{pref}_im3l", 1) + out.get(f"{pref}_im3h", 1) <= 0:
+                why.append(f"{pref.upper()}: IM3 amplitudes are both zero")
+    if out.get("fft_src1") == 0:
+        why.append("FFT: key src1: zero source amplitude")
+    return (out if not why else None), why
+
+
 def iip3_from(pin_dbm: float, pout_dbm: float, pim3_dbm: float) -> float:
     """Standard two-tone extrapolation, valid only in the 3:1 IM3 region.
 
@@ -237,7 +383,12 @@ def build_sparam_rows(
         ):
             skipped.append(point_id)
             continue
-        log = parse_sp_log(os.path.join(corners_dir, fname))
+        log, bad_log = validate_sp_log(os.path.join(corners_dir, fname))
+        if bad_log:
+            skipped.append(point_id)
+            print(f"parse_lna_sweep.py: {point_id}: invalid sp log: "
+                  + "; ".join(bad_log), file=sys.stderr)
+            continue
         nf_path = os.path.join(corners_dir, point_id + ".nf290.dat")
         nf_grid = None
         if os.path.isfile(nf_path) or nf_spec is not None:
@@ -400,7 +551,12 @@ def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
         if not is_complete(os.path.join(corners_dir, fname)):
             skipped.append(point_id)
             continue
-        log = parse_iip3_log(os.path.join(corners_dir, fname))
+        log, bad_log = validate_iip3_log(os.path.join(corners_dir, fname))
+        if bad_log:
+            skipped.append(point_id)
+            print(f"parse_lna_sweep.py: {point_id}: invalid iip3 log: "
+                  + "; ".join(bad_log), file=sys.stderr)
+            continue
         amp = float(m.group("amp").replace("p", ".")) * 1e-3
         pin = avail_power_dbm(amp)
 
@@ -554,6 +710,7 @@ EXIT_MISSING, EXIT_FAILED, EXIT_PAIR = 1, 2, 4
 # 8 = a retained sp wrdata table exists but violates the frequency-grid
 # contract in the manifest (see validate_sp_tables).
 EXIT_GRID = 8
+EXIT_LOG = 32  # bit 5: structurally/numerically invalid raw log (issue #150)
 
 # --- Frequency-grid contract ---------------------------------------------
 # The grids are generated by testbench/tb_lna_sparam.spice.tmpl:
@@ -709,6 +866,8 @@ def read_manifest(path: str) -> dict:
 def compute_coverage(corners_dir: str, man: dict) -> dict:
     """Compare the expected inventory with what is on disk."""
 
+    invalid_logs: list[dict] = []
+
     def state(point_id: str, dats: tuple[str, ...]) -> str:
         log = os.path.join(corners_dir, point_id + ".log")
         if not os.path.isfile(log):
@@ -717,7 +876,12 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
             return "failed"
         if any(not os.path.isfile(os.path.join(corners_dir, point_id + d)) for d in dats):
             return "failed"
-        return "completed"
+        check = validate_sp_log if point_id in man["sp"] else validate_iip3_log
+        _, reasons = check(log)
+        for reason in reasons:
+            invalid_logs.append({"point": point_id, "artifact": point_id + ".log",
+                                 "reason": reason})
+        return "invalid" if reasons else "completed"
 
     states: dict[str, str] = {}
     invalid_grids: list[dict] = []
@@ -755,14 +919,17 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
         "completed": [p for p in expected if states[p] == "completed"],
         "missing": [p for p in expected if states[p] == "missing"],
         "failed": [p for p in expected if states[p] == "failed"],
+        "invalid": [p for p in expected if states[p] == "invalid"],
         "invalid_grids": invalid_grids,
+        "invalid_logs": invalid_logs,
         "frequency_grid_contract": man.get("grids") or "absent (legacy manifest)",
         "missing_drive_pairs": broken_pairs,
         "unexpected": sorted(on_disk - set(expected)),
     }
     cov["status"] = (
         "complete"
-        if not (cov["missing"] or cov["failed"] or invalid_grids or broken_pairs)
+        if not (cov["missing"] or cov["failed"] or invalid_grids or invalid_logs
+                or broken_pairs)
         else "partial"
     )
     return cov
@@ -780,6 +947,8 @@ def strict_exit_code(cov: dict) -> int:
         mask |= EXIT_PAIR
     if cov.get("invalid_grids"):
         mask |= EXIT_GRID
+    if cov.get("invalid_logs"):
+        mask |= EXIT_LOG
     return STRICT_EXIT_BASE + mask
 
 
@@ -818,6 +987,10 @@ def coverage_prose(cov: dict | None) -> list[str]:
     for ig in cov.get("invalid_grids", []):
         lines.append(
             f"  - Invalid frequency grid: {ig['point']} / {ig['artifact']}: {ig['reason']}"
+        )
+    for il in cov.get("invalid_logs", []):
+        lines.append(
+            f"  - Invalid log measurement: {il['point']} / {il['artifact']}: {il['reason']}"
         )
     for bp in cov["missing_drive_pairs"]:
         lines.append(
@@ -1085,6 +1258,7 @@ def main() -> int:
             f"{len(cov['completed'])}/{len(cov['expected'])} expected points "
             f"({len(cov['missing'])} missing, {len(cov['failed'])} failed, "
             f"{len(cov['invalid_grids'])} invalid-grid finding(s), "
+            f"{len(cov['invalid_logs'])} invalid-log finding(s), "
             f"{len(cov['missing_drive_pairs'])} broken drive pair(s))",
             file=sys.stderr,
         )
