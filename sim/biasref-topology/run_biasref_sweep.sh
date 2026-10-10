@@ -436,6 +436,7 @@ This is design-space input to DR-0003, the same class of evidence
 ## PDK
 
 - PDK_ROOT: \`${PDK_ROOT}\` (PDK: \`${PDK}\`, pinned release in \`sim/pdk.json\`)
+- PDK identity (verified): \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`
 - ngspice: \`${NGSPICE_VERSION}\`
 - OSDI models: \`${OSDI_DIR}\` (present + loadable per
   \`sim/tools/build-osdi.sh --check\`; \`sg13_hv_pmos\` = PSP103.6)

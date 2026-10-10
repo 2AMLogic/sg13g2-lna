@@ -292,6 +292,7 @@ relaxes any row.
 
 - PDK_ROOT: \`${PDK_ROOT}\` (PDK: \`${PDK}\`, pinned release in
   \`sim/pdk.json\`)
+- PDK identity (verified): \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`
 - ngspice: \`${NGSPICE_VERSION}\`
 
 ## DUT

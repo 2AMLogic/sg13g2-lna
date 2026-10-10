@@ -97,6 +97,8 @@ step "layout-reduction-tests: lvs_reference unit tests" \
 # --- job: sim-record-paths-tests
 step "sim-record-paths-tests: sim_record_paths reservation tests" \
   sim/tests/test-sim-record-paths.sh
+step "sim-pdk-identity-tests: installed-PDK identity preflight tests" \
+  sim/tests/test-pdk-identity.sh
 
 # --- job: envelope-replay
 step "envelope-replay: self-test" \
