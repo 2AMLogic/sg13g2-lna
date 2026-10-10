@@ -8,6 +8,8 @@
 #   5. mutated drc_report content_hash    -> FAILS
 #   6. mutated lvs_full_report content_hash -> FAILS
 #   7. missing content_hash field         -> FAILS
+#   8. extract_report / lvs_report (scoped LVS): mutated hash, missing
+#      report, missing provenance.input, wrong role, malformed hash -> FAIL
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -23,7 +25,7 @@ C=layout/lna_core
 mk() { # mk <name>: repo-shaped copy of the inputs
   d="$TMP/$1"; mkdir -p "$d/$C" "$d/design/netlist"
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
-  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json} "$d/$C/"
+  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
 }
 run() { # run <name> <expect 0|1>
@@ -59,6 +61,32 @@ del d["provenance"]["input"]["content_hash"]
 json.dump(d, open(p, "w"))
 PY
 run nofield 1 "missing content_hash field"
+
+mut() { python3 -I - "$TMP/$1/$C/$2.json" "$3" <<'PY'
+import json, sys
+p, how = sys.argv[1], sys.argv[2]; d = json.load(open(p))
+i = d["provenance"]["input"]
+if how == "hash": i["content_hash"] = "sha256:" + "0" * 64
+elif how == "malformed": i["content_hash"] = "deadbeef"
+elif how == "role": i["role"] = "netlist"
+elif how == "noinput": del d["provenance"]["input"]
+json.dump(d, open(p, "w"))
+PY
+}
+for r in extract_report lvs_report; do
+  mk $r-hash; mut $r-hash $r hash
+  run $r-hash 1 "mutated $r content_hash"
+  for how in malformed role noinput; do
+    mk $r-$how; mut $r-$how $r $how
+    run $r-$how 1 "$r $how"
+  done
+  mk $r-missing; rm "$TMP/$r-missing/$C/$r.json"
+  run $r-missing 1 "missing $r.json"
+  # failure must name the offending report
+  if "$CHECKER" --root "$TMP/$r-hash" 2>&1 | grep -q "$r.json"; then
+    echo "PASS: $r failure names report"; pass=$((pass+1))
+  else echo "FAIL: $r failure does not name report"; fail=$((fail+1)); fi
+done
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

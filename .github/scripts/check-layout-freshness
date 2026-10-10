@@ -7,7 +7,8 @@
 #   1. sha256(<cell>.gds) == gds_sha256 in <cell>.provenance.json
 #   2. layout/lvs_reference.py regenerated from the current netlist
 #      byte-equals the committed <cell>.lvs_reference.spice
-#   3. provenance.input of drc_report.json and lvs_full_report.json has
+#   3. provenance.input of drc_report.json, lvs_full_report.json,
+#      extract_report.json and lvs_report.json (scoped LVS) has
 #      role == "layout" and content_hash == sha256:<committed GDS sha256>
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
@@ -91,7 +92,10 @@ if rz is not None:
                      f"stale: differs from regeneration of {net_rel}")
 
 # 3. report envelopes pinned to the committed GDS
-for name in ("drc_report.json", "lvs_full_report.json"):
+# (extraction / scoped LVS are pinned to the GDS only; they are not signoff
+# evidence and no extracted-netlist digest is inferred from filenames.)
+for name in ("drc_report.json", "lvs_full_report.json",
+             "extract_report.json", "lvs_report.json"):
     rel = f"layout/{cell}/{name}"
     rep = load(cd / name)
     if rep is None:
