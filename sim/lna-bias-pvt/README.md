@@ -318,9 +318,19 @@ as deployment-account detail.
 
   Both read back non-nominal, instance-distinct values: HBT `area` 0.84 to
   1.36 and MOS `delvto` from -5.6 mV to +1.0 mV. In the klt sample, sample
-  0 (`rndseed` 1234184666) has q1_area 1.364 and I_C1 4.84 mA, so the
-  sampled area reaches the observable. That one sample says nothing about
+  0 (`rndseed` 1234184666) has q1_area 1.364, I_C1 4.84 mA and P_dc
+  10.07 mW (klt status `fail` against the 10 mW limit), so the sampled
+  area reaches the observables. That one sample says nothing about
   frequency.
+
+  Reading note for `probe_mm.log`: the deck's last line,
+  `print @q.xdut.xq1.qnpn13g2[ic] -i(vdda)`, is parsed by ngspice as one
+  expression (`ic - i(vdda)`), not two values. The logged `7.979797e-03`
+  is that expression's value, **not** I_C1, and nothing here is claimed
+  from it. The file is left as committed (`corners/` is append-only).
+  The log also shows the VBIC warning "The temperature limiting function
+  received NaN." before gmin stepping converges; it does not affect the
+  area/delvto read-backs.
 
 ### Reduction and limits
 
