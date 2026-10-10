@@ -281,6 +281,10 @@ print('a%smv' % s)
 MANIFEST="${RECORDS_DIR}/${RECORD_ID}-expected-points.txt"
 {
   if [[ -n "${LNA_SWEEP_SMOKE:-}" ]]; then echo "kind smoke"; else echo "kind campaign"; fi
+  # Frequency-grid contract (same variables substituted into the deck's
+  # `sp lin` / `sp dec` lines); applies to every sp cell, smoke included.
+  echo "grid inband lin ${N_INBAND} ${F_BAND_LO} ${F_BAND_HI}"
+  echo "grid stability dec ${N_STAB_DEC} ${F_STAB_LO} ${F_STAB_HI}"
   for _c in "${CORNER_LABELS[@]}"; do for _t in "${TEMPS[@]}"; do for _v in "${VDDS[@]}"; do
     echo "sp sp_${_c}_${_t}c_vdd${_v}v"
     _pair=()
