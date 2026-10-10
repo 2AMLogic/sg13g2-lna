@@ -712,6 +712,130 @@ class Nf290Grid(GridHarness):
         self.assertIn("HISTORICAL three-point", per_cell[BCS_SP]["nf290_grid"])
 
 
+class IIP3MethodValidity(unittest.TestCase):
+    """Per-cell IIP3 method validity (issue #137): synthetic data only."""
+
+    DPIN = P.avail_power_dbm(2e-3) - P.avail_power_dbm(1e-3)
+
+    def pair(self, slope, corner="typ", temp="27", vdd="1.80", iip3=(-5.0, -5.0)):
+        rows = []
+        for tag, amp, pim3, ip in (
+            ("a1mv", 1e-3, -100.0, iip3[0]),
+            ("a2mv", 2e-3, -100.0 + slope * self.DPIN, iip3[1]),
+        ):
+            rows.append(
+                {
+                    "point_id": f"iip3_{corner}_{temp}c_vdd{vdd}v_{tag}",
+                    "corner_label": corner,
+                    "temp_c": temp,
+                    "vdd_v": vdd,
+                    "amp_v_peak_per_tone": f"{amp:.6e}",
+                    "pin_avail_dbm_per_tone": f"{P.avail_power_dbm(amp):.4f}",
+                    "pim3_dbm": f"{pim3:.4f}",
+                    "iip3_dbm": f"{ip:.4f}",
+                }
+            )
+        return rows
+
+    def headline(self, rows, cells, tol=P.IIP3_SLOPE_TOL):
+        with tempfile.TemporaryDirectory() as td:
+            per_cell = {
+                i: {"corner_label": c[0], "temp_c": c[1], "vdd_v": c[2]}
+                for i, c in enumerate(cells)
+            }
+            P.join_iip3_into_summary(per_cell, rows)
+            sm = [dict(per_cell[k], **_SUMMARY_STUB) for k in sorted(per_cell)]
+            P.write_csv(os.path.join(td, "s.csv"), sm, list(sm[0].keys()))
+            P.write_csv(os.path.join(td, "i.csv"), rows, list(rows[0].keys()))
+            return P.headlines(os.path.join(td, "s.csv"), os.path.join(td, "i.csv"), tol)
+
+    def test_valid_and_documented_tolerance(self):
+        self.assertEqual(P.IIP3_SLOPE_TOL, 0.15)
+        v, why = P.classify_iip3_cell(self.pair(3.0))
+        self.assertEqual((v, why), ("valid", "slope 3.000 within 3 +/- 0.15"))
+
+    def test_slope_1_and_5_invalid_with_reasons(self):
+        self.assertEqual(
+            P.classify_iip3_cell(self.pair(1.0)),
+            ("invalid", "slope 1.000 outside 3 +/- 0.15"),
+        )
+        self.assertEqual(
+            P.classify_iip3_cell(self.pair(5.0)),
+            ("invalid", "slope 5.000 outside 3 +/- 0.15"),
+        )
+
+    def test_boundary_is_inclusive_and_deterministic(self):
+        for s, want in ((3.15, "valid"), (2.85, "valid"), (3.16, "invalid"), (2.84, "invalid")):
+            self.assertEqual(P.classify_iip3_cell(self.pair(s))[0], want, s)
+        self.assertEqual(P.classify_iip3_cell(self.pair(3.2), tol=0.2)[0], "valid")
+
+    def test_unknown_cases_do_not_raise(self):
+        full = self.pair(3.0)
+        self.assertEqual(P.classify_iip3_cell([])[0], "unknown")
+        v, why = P.classify_iip3_cell(full[:1])
+        self.assertEqual(v, "unknown")
+        self.assertIn("a2mv", why)
+        self.assertIn("duplicated", P.classify_iip3_cell(full + full[:1])[1])
+        for bad in ("nan", "inf", "-inf", ""):
+            rows = self.pair(3.0)
+            rows[1]["pim3_dbm"] = bad
+            v, why = P.classify_iip3_cell(rows)
+            self.assertEqual(v, "unknown", bad)
+            self.assertEqual(why, "nonfinite or unparsable pim3_dbm at a2mv")
+        rows = self.pair(3.0)
+        rows[1]["pin_avail_dbm_per_tone"] = rows[0]["pin_avail_dbm_per_tone"]
+        self.assertEqual(
+            P.classify_iip3_cell(rows),
+            ("unknown", "zero Pin step between drive levels"),
+        )
+
+    def test_invalid_pair_cannot_claim_cubic_assumption(self):
+        for slope in (1.0, 5.0):
+            h = self.headline(self.pair(slope), [("typ", "27", "1.80")])
+            self.assertNotIn("holds at every cell", h)
+            self.assertIn("NO accepted intercept", h)
+            self.assertIn("0 valid / 1 invalid / 0 unknown of 1 cells", h)
+            self.assertNotIn("across all points", h)
+
+    def test_all_valid_keeps_original_wording(self):
+        h = self.headline(self.pair(3.0), [("typ", "27", "1.80")])
+        self.assertIn("holds at every cell", h)
+        self.assertIn("IIP3 (two-tone, 2 drive points)", h)
+
+    def test_mixed_cells_extrema_only_over_valid(self):
+        rows = (
+            self.pair(3.0, "typ", "27", iip3=(-5.0, -4.0))
+            + self.pair(5.0, "bcs", "27", iip3=(-90.0, 90.0))  # invalid
+            + self.pair(1.0, "wcs", "27", iip3=(-80.0, 80.0))  # invalid
+        )
+        rows += self.pair(3.0, "tt", "85")[:1]  # unknown: a2mv missing
+        cells = [("typ", "27", "1.80"), ("bcs", "27", "1.80"), ("wcs", "27", "1.80"),
+                 ("tt", "85", "1.80")]
+        h = self.headline(rows, cells)
+        self.assertNotIn("holds at every cell", h)
+        self.assertIn("1 valid / 2 invalid / 1 unknown of 4 cells", h)
+        self.assertIn("min -5.0000 dBm at typ/27 C", h)
+        self.assertIn("max -4.0000 dBm at typ/27 C", h)
+        self.assertNotIn("90.0000", h)
+        self.assertNotIn("-80.0000", h)
+        self.assertIn("claimed only at the valid cells", h)
+
+    def test_zero_valid_cells_no_accepted_claim(self):
+        rows = self.pair(5.0, "bcs") + self.pair(1.0, "wcs")
+        h = self.headline(rows, [("bcs", "27", "1.80"), ("wcs", "27", "1.80")])
+        self.assertIn("NO accepted intercept", h)
+        self.assertIn("no cell has a validated slope", h)
+
+    def test_validity_does_not_change_summary_columns(self):
+        per_cell = {"c": {"corner_label": "typ", "temp_c": "27", "vdd_v": "1.80"}}
+        P.join_iip3_into_summary(per_cell, self.pair(5.0))
+        self.assertNotIn("iip3_method_validity", per_cell["c"])
+        self.assertEqual(per_cell["c"]["im3_slope_2pt"], "5.000")
+
+
+_SUMMARY_STUB = {'point_id': 'sp_bcs_-40c_vdd1.62v', 'ic1_a': '3.898010e-03', 'ic2_a': '3.896460e-03', 'vce1_v': '0.5967', 'vce2_v': '1.0233', 'vbe1_v': '0.8894', 'idd_a': '4.643000e-03', 'pdc_w': '7.521660e-03', 's11_db_worst': '-2.9695', 's21_db_min': '12.1454', 's21_db_max': '12.2799', 's22_db_worst': '-0.0036', 'k_inband_min': '4.404008', 'mu_inband_min': '1.000306', 'mag_delta_inband_max': '0.710134', 'nf_sp_db_at_band_lo': '2.2051', 'nfmin_sp_db_at_band_lo': '2.0823', 'nf290_db_worst': '1.8522', 'nf290_db_at_band_lo': '1.8522', 'nf290_db_at_band_mid': '1.8519', 'nf290_db_at_band_hi': '1.8516', 'nf30015_db_at_band_lo': '1.8009', 'gain_ac_db_at_band_lo': '12.2799', 'gain_ac_minus_s21_db': '-0.0000', 'k_broadband_min': '-2.950322', 'f_at_k_broadband_min_hz': '5.011872e+07', 'n_broadband_pts_k_lt_1': '61', 'n_broadband_pts': '140', 'mu_broadband_min': '0.999996', 'f_at_mu_broadband_min_hz': '5.956621e+08', 'n_broadband_pts_mu_lt_1': '61', 'mag_delta_broadband_max': '0.811068', 'f_at_mag_delta_broadband_max_hz': '1.000000e+07', 's11_mag_broadband_max': '0.811068', 'f_at_s11_mag_broadband_max_hz': '1.000000e+07', 's22_mag_broadband_max': '1.000000', 'f_at_s22_mag_broadband_max_hz': '1.584893e+08'}
+
+
 class RecordRegression(unittest.TestCase):
     """Re-parse a committed record's retained raw artefacts; the output must
     match the committed CSVs byte-for-byte and the record's headline text."""

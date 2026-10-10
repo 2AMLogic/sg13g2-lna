@@ -480,6 +480,69 @@ def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
             cell["iip3_spread_2pt_db"] = ""
 
 
+# --- IIP3 method validity (issue #137) -----------------------------------
+# IIP3 is an extrapolation that is meaningful only while IM3 rises 3:1 with
+# drive. Each PVT cell is classified from its 1 mV / 2 mV drive pair:
+#   valid   : |slope - 3| <= IIP3_SLOPE_TOL (inclusive; slope rounded to the
+#             3 decimals the summary CSV records, so the boundary is exact)
+#   invalid : finite slope with |slope - 3| >  IIP3_SLOPE_TOL
+#   unknown : slope cannot be formed (a drive level missing/duplicated, a
+#             nonfinite input, or zero Pin step)
+# The tolerance is a measurement-method policy, NOT a ratified spec limit; see
+# README "Stated limits of this IIP3 method". Raw intercepts are never
+# altered; this only gates which ones headlines() accepts. Coverage (are the
+# points present) stays separate: compute_coverage / --strict are unchanged.
+IIP3_SLOPE_TOL = 0.15
+IIP3_VALID, IIP3_INVALID, IIP3_UNKNOWN = "valid", "invalid", "unknown"
+_PAIR_FIELDS = ("pin_avail_dbm_per_tone", "pim3_dbm", "iip3_dbm")
+
+
+def classify_iip3_cell(
+    cell_rows: list[dict], tol: float = IIP3_SLOPE_TOL
+) -> tuple[str, str]:
+    """Return (validity, reason) for one cell's IIP3 rows. Never raises."""
+    lo = [r for r in cell_rows if r["point_id"].endswith("a1mv")]
+    hi = [r for r in cell_rows if r["point_id"].endswith("a2mv")]
+    missing = [n for n, g in (("a1mv", lo), ("a2mv", hi)) if len(g) != 1]
+    if missing:
+        return IIP3_UNKNOWN, (
+            "drive level(s) missing or duplicated: " + ", ".join(missing)
+        )
+    vals = {}
+    for name, r in (("a1mv", lo[0]), ("a2mv", hi[0])):
+        for f in _PAIR_FIELDS:
+            try:
+                v = float(r.get(f, ""))
+            except (TypeError, ValueError):
+                v = float("nan")
+            if not math.isfinite(v):
+                return IIP3_UNKNOWN, f"nonfinite or unparsable {f} at {name}"
+            vals[name, f] = v
+    dpin = vals["a2mv", _PAIR_FIELDS[0]] - vals["a1mv", _PAIR_FIELDS[0]]
+    if dpin == 0:
+        return IIP3_UNKNOWN, "zero Pin step between drive levels"
+    slope = round((vals["a2mv", "pim3_dbm"] - vals["a1mv", "pim3_dbm"]) / dpin, 3)
+    if not math.isfinite(slope):
+        return IIP3_UNKNOWN, "nonfinite slope"
+    if round(abs(slope - 3.0), 6) <= tol:
+        return IIP3_VALID, f"slope {slope:.3f} within 3 +/- {tol:g}"
+    return IIP3_INVALID, f"slope {slope:.3f} outside 3 +/- {tol:g}"
+
+
+def iip3_validity_by_cell(
+    cells: list[dict], iip3_rows: list[dict], tol: float = IIP3_SLOPE_TOL
+) -> dict:
+    """{(corner, temp, vdd): (validity, reason)} for every summary cell."""
+    by_cell: dict[tuple[str, str, str], list[dict]] = {}
+    for r in iip3_rows:
+        by_cell.setdefault((r["corner_label"], r["temp_c"], r["vdd_v"]), []).append(r)
+    out = {}
+    for c in cells:
+        key = (c["corner_label"], c["temp_c"], c["vdd_v"])
+        out[key] = classify_iip3_cell(by_cell.get(key, []), tol)
+    return out
+
+
 # --- Expected-point coverage ---------------------------------------------
 # Exit codes of `--strict` (only meaningful with --manifest): 0 when every
 # expected point is complete and every required drive pair is intact, else
@@ -781,7 +844,9 @@ def cell_label(r: dict) -> str:
     return f"{r['corner_label']}/{r['temp_c']} C/VDD={r['vdd_v']} V"
 
 
-def headlines(summary_csv: str, iip3_csv: str) -> str:
+def headlines(
+    summary_csv: str, iip3_csv: str, slope_tol: float = IIP3_SLOPE_TOL
+) -> str:
     cells = list(csv.DictReader(open(summary_csv)))
     iip3 = list(csv.DictReader(open(iip3_csv)))
     out = []
@@ -865,34 +930,87 @@ def headlines(summary_csv: str, iip3_csv: str) -> str:
         f"{s22bb['f_at_s22_mag_broadband_max_hz']} Hz ({cell_label(s22bb)})."
     )
     if iip3:
-        worst_iip3 = min(iip3, key=lambda r: float(r["iip3_dbm"]))
-        best_iip3 = max(iip3, key=lambda r: float(r["iip3_dbm"]))
-        nom = [
+        verdict = iip3_validity_by_cell(cells, iip3, slope_tol)
+        counts = {
+            k: sum(1 for v, _ in verdict.values() if v == k)
+            for k in (IIP3_VALID, IIP3_INVALID, IIP3_UNKNOWN)
+        }
+        all_valid = counts[IIP3_VALID] == len(cells)
+        # Accepted intercepts: every IIP3 point (including the nominal
+        # cell's extra drive levels) of a cell whose 1/2 mV pair is valid.
+        acc = [
             r
             for r in iip3
-            if r["corner_label"] == "typ"
-            and r["temp_c"] == "27"
-            and r["vdd_v"] == "1.80"
+            if verdict.get((r["corner_label"], r["temp_c"], r["vdd_v"]),
+                           (IIP3_UNKNOWN, ""))[0] == IIP3_VALID
         ]
-        nom_2mv = next((r for r in nom if r["point_id"].endswith("a2mv")), None)
-        out.append(
-            f"- **IIP3 (two-tone, {len(iip3)} drive points)**: "
-            + (
-                f"{nom_2mv['iip3_dbm']} dBm at the nominal cell "
-                f"(typ/27 C/VDD=1.80 V, 2 mV peak/tone drive); "
-                if nom_2mv
-                else ""
+        if acc:
+            worst_iip3 = min(acc, key=lambda r: float(r["iip3_dbm"]))
+            best_iip3 = max(acc, key=lambda r: float(r["iip3_dbm"]))
+            nom = [
+                r
+                for r in acc
+                if r["corner_label"] == "typ"
+                and r["temp_c"] == "27"
+                and r["vdd_v"] == "1.80"
+            ]
+            nom_2mv = next((r for r in nom if r["point_id"].endswith("a2mv")), None)
+            scope = (
+                f"{len(acc)} drive points"
+                if all_valid
+                else f"{len(acc)} drive points of {counts[IIP3_VALID]} "
+                f"method-valid cell(s) only"
             )
-            + f"across all points min {worst_iip3['iip3_dbm']} dBm at "
-            f"{cell_label(worst_iip3)}, max {best_iip3['iip3_dbm']} dBm at "
-            f"{cell_label(best_iip3)}."
-        )
-        slopes = [float(r["im3_slope_2pt"]) for r in cells if r.get("im3_slope_2pt")]
-        if slopes:
+            out.append(
+                f"- **IIP3 (two-tone, {scope})**: "
+                + (
+                    f"{nom_2mv['iip3_dbm']} dBm at the nominal cell "
+                    f"(typ/27 C/VDD=1.80 V, 2 mV peak/tone drive); "
+                    if nom_2mv
+                    else ""
+                )
+                + f"across all points min {worst_iip3['iip3_dbm']} dBm at "
+                f"{cell_label(worst_iip3)}, max {best_iip3['iip3_dbm']} dBm at "
+                f"{cell_label(best_iip3)}."
+            )
+        else:
+            out.append(
+                "- **IIP3 (two-tone)**: NO accepted intercept -- no PVT cell "
+                f"passed the IM3 slope validity check (3 +/- {slope_tol:g}); "
+                "raw extrapolated values remain in the IIP3 CSV but are not "
+                "claims."
+            )
+        slopes = [
+            float(r["im3_slope_2pt"])
+            for r in cells
+            if r.get("im3_slope_2pt")
+            and verdict[(r["corner_label"], r["temp_c"], r["vdd_v"])][0]
+            == IIP3_VALID
+        ]
+        if all_valid:
             out.append(
                 f"- **IM3 slope check (two drive levels per cell)**: slope in "
                 f"[{min(slopes):.3f}, {max(slopes):.3f}] (ideal cubic = 3.000) "
                 f"-> the extrapolation's 3:1 assumption holds at every cell."
+            )
+        else:
+            inv = "; ".join(
+                f"{k[0]}/{k[1]} C/VDD={k[2]} V: {why}"
+                for k, (v, why) in sorted(verdict.items())
+                if v != IIP3_VALID
+            )
+            rng = (
+                f"slope over valid cells in [{min(slopes):.3f}, {max(slopes):.3f}]"
+                if slopes
+                else "no cell has a validated slope"
+            )
+            out.append(
+                f"- **IM3 slope check (two drive levels per cell)**: tolerance "
+                f"3 +/- {slope_tol:g}; {counts[IIP3_VALID]} valid / "
+                f"{counts[IIP3_INVALID]} invalid / {counts[IIP3_UNKNOWN]} "
+                f"unknown of {len(cells)} cells; {rng}. The 3:1 assumption is "
+                f"claimed only at the valid cells; the other cells' IIP3 is "
+                f"discarded (not accepted). Not valid -- {inv}."
             )
     ic1 = [float(r["ic1_a"]) for r in cells]
     pdc = [float(r["pdc_w"]) for r in cells]
@@ -918,6 +1036,13 @@ def main() -> int:
     ap.add_argument("--f1")
     ap.add_argument("--f2")
     ap.add_argument("--headlines", action="store_true")
+    ap.add_argument(
+        "--iip3-slope-tol",
+        type=float,
+        default=IIP3_SLOPE_TOL,
+        help="headlines: accept a cell's IIP3 only if |IM3 slope - 3| <= this"
+        f" (default {IIP3_SLOPE_TOL}; measurement policy, see README)",
+    )
     ap.add_argument("--manifest", help="expected-point manifest; enables coverage")
     ap.add_argument("--coverage-json", help="write the coverage sidecar here")
     ap.add_argument(
@@ -945,7 +1070,7 @@ def main() -> int:
         return 0
 
     if args.headlines:
-        print(headlines(args.summary_csv, args.iip3_csv))
+        print(headlines(args.summary_csv, args.iip3_csv, args.iip3_slope_tol))
         return 0
 
     cov = None

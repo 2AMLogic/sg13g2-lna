@@ -401,6 +401,30 @@ written into every generated IIP3 deck's header as well as here.
    drive. The committed `im3_slope_2pt` per cell (and the 5-level sweep at
    the nominal cell) is what establishes that — if a slope departs from 3,
    the corresponding IIP3 number must be discarded, not explained.
+
+   **Slope tolerance (measurement policy, not a ratified spec).** The
+   reducer (`parse_lna_sweep.py`, `IIP3_SLOPE_TOL`, `--iip3-slope-tol`)
+   classifies each PVT cell from its 1 mV / 2 mV pair: `valid` when
+   `|im3_slope_2pt - 3| <= 0.15` (inclusive; the slope is the 3-decimal value
+   in the summary CSV), `invalid` when a finite slope is outside that band,
+   and `unknown` when no slope can be formed (a drive level missing or
+   duplicated, a nonfinite or unparsable input, or a zero Pin step).
+   Justification: the two-level IIP3 spread is `|slope - 3| * dPin / 2`, with
+   dPin = 6.02 dB for 1 mV -> 2 mV, so 0.15 caps the drive-level dependence of
+   the extrapolated intercept at about 0.45 dB; the committed records sit
+   within 0.02 of 3 (about 0.06 dB), so the band is loose enough not to
+   reject healthy cells and tight enough to reject slopes of 2 or 5. Changing
+   it is a method-policy decision and must be recorded with the result.
+   Headlines accept an intercept (min/max, nominal value) only from `valid`
+   cells -- all drive points of such a cell, including the nominal cell's
+   extra 0.5/4/8 mV levels. The "3:1 assumption holds at every cell" sentence
+   is emitted only when every cell is valid; otherwise the headline reports
+   valid/invalid/unknown counts and restricts claims to valid cells, and with
+   zero valid cells it states that no intercept is accepted. Raw `iip3_dbm`
+   values in the IIP3 CSV are never altered or dropped, and coverage
+   (`--manifest`/`--strict`: are the points present) is separate from this
+   validity (is the extrapolation physically meaningful). Committed records
+   are unchanged: they are all-valid and re-derive byte-identically.
 2. **Numerical noise floor.** The IM5 bins are measured purely as a floor
    sentinel. At the 1 mV drive the IM5 amplitude is ~5e-11 V and does *not*
    scale as the 5th power, i.e. those bins are at the transient solver's
