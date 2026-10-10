@@ -81,6 +81,12 @@ class Base(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.snap = mc.generate("t", self.tmp / "snap")
+        # Stand-in for `validate` output: digest of the fixture's 1000+i seed sequence.
+        (self.snap / "request-validation.json").write_text(json.dumps({
+            "problems": [], "requests": {
+                stem: {"rndseed_sha256": mc.sha256_bytes(
+                    ",".join(str(1000 + i) for i in range(r["n"])).encode())}
+                for stem, r in mc.load_manifest(self.snap)["requests"].items()}}))
         self.corners = self.tmp / "corners"
         self.corners.mkdir()
         self.out = self.tmp / "out"
@@ -284,6 +290,68 @@ class TestReduce(Base):
         main = s["runs"]["mc_mismatch"]["summary"]
         self.assertEqual(main["samples_ok"], mc.N_MAIN)
         self.assertEqual(main["stats"]["ic1"]["n_finite"], mc.N_MAIN)
+
+    def _seed_case(self, mutate, needle):
+        self.write_all(replay=report(mc.N_MAIN, job="y", mutate=mutate),
+                       main=report(mc.N_MAIN, mutate=mutate))
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertFalse(s["complete"])
+        self.assertFalse(s["controls_pass"])
+        self.assertTrue(any(needle in p for p in s["problems"]), s["problems"])
+
+    def test_missing_seeds_rejected_even_if_replay_agrees(self):
+        def drop(rep):
+            for c in rep["corners"]:
+                del c["monte_carlo"]["seed"]
+        self._seed_case(drop, "missing or non-integer monte_carlo.seed")
+
+    def test_repeated_seeds_rejected(self):
+        def rep(r):
+            for c in r["corners"]:
+                c["monte_carlo"]["seed"] = 1000
+        self._seed_case(rep, "repeated monte_carlo.seed")
+
+    def test_wrong_seed_sequence_rejected_even_if_replay_agrees(self):
+        def shift(rep):
+            for c in rep["corners"]:
+                c["monte_carlo"]["seed"] += 7
+        self._seed_case(shift, "seed sequence sha256")
+
+    def test_permuted_seed_sequence_rejected(self):
+        def swap(rep):
+            a, b = rep["corners"][0]["monte_carlo"], rep["corners"][1]["monte_carlo"]
+            a["seed"], b["seed"] = b["seed"], a["seed"]
+        self._seed_case(swap, "seed sequence sha256")
+
+    def test_missing_validation_record_rejected(self):
+        self.write_all()
+        (self.snap / "request-validation.json").unlink()
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("request-validation.json unusable" in p for p in s["problems"]))
+
+    def test_null_corners_fails_cleanly(self):
+        self.write_all()
+        self.write("mc_mismatch", {"schema_version": 3, "corners": None})
+        rc, s = self.reduce()
+        self.assertEqual(rc, 2)
+        self.assertFalse(s["complete"])
+        self.assertTrue(any("no corners[]" in p for p in s["problems"]))
+        self.assertTrue((self.out / "t-mc-summary.md").is_file())
+
+    def test_non_object_corner_and_fields_fail_cleanly(self):
+        for bad, needle in (
+                (lambda r: r["corners"].__setitem__(3, "x"), "corners[3] is not an object"),
+                (lambda r: r["corners"][2].__setitem__("monte_carlo", "s"), "monte_carlo is not an object"),
+                (lambda r: r.__setitem__("environment", []), "environment is not an object"),
+                (lambda r: r["environment"].__setitem__("remote", "r"), "environment.remote")):
+            with self.subTest(needle=needle):
+                self.write_all(main=report(mc.N_MAIN, mutate=bad))
+                rc, s = self.reduce()
+                self.assertEqual(rc, 2)
+                self.assertFalse(s["complete"])
+                self.assertTrue(any(needle in p for p in s["problems"]), s["problems"])
 
     def test_wrong_dut_hash_is_rejected(self):
         def bad(rep):

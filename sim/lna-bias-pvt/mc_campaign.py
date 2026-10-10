@@ -394,6 +394,17 @@ def load_report(path: Path) -> tuple[dict | None, str | None]:
         return d, f"error_envelope: {d['error'].get('message') if isinstance(d['error'], dict) else d['error']}"
     if not isinstance(d.get("corners"), list):
         return d, "malformed_report: no corners[]"
+    for i, c in enumerate(d["corners"]):
+        if not isinstance(c, dict):
+            return d, f"malformed_report: corners[{i}] is not an object"
+        if c.get("monte_carlo") is not None and not isinstance(c["monte_carlo"], dict):
+            return d, f"malformed_report: corners[{i}].monte_carlo is not an object"
+    env = d.get("environment")
+    if env is not None and not isinstance(env, dict):
+        return d, "malformed_report: environment is not an object"
+    for key in ("remote", "monte_carlo"):
+        if isinstance(env, dict) and env.get(key) is not None and not isinstance(env[key], dict):
+            return d, f"malformed_report: environment.{key} is not an object"
     return d, None
 
 
@@ -433,6 +444,43 @@ def check_corner_identity(c: dict, idx: int, ident: dict) -> list[str]:
             out.append(f"sample {idx}: missing {key} (request has {want!r})")
         elif got != want:
             out.append(f"sample {idx}: {key} {got!r} != request {want!r}")
+    return out
+
+
+def expected_seed_digest(snapshot_dir: Path, req_stem: str) -> tuple[str | None, str | None]:
+    """sha256 of the ordered per-unit rndseeds that the installed klt expanded for this
+    request, as recorded by `validate` in request-validation.json."""
+    path = Path(snapshot_dir) / "request-validation.json"
+    try:
+        v = json.loads(path.read_text())
+        if v.get("problems"):
+            return None, f"request-validation.json records problems {v['problems']}"
+        digest = v["requests"][req_stem]["rndseed_sha256"]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        return None, f"request-validation.json unusable for {req_stem}: {exc!r}"
+    return digest, None
+
+
+def check_seed_sequence(rows: list[dict], expected_digest: str | None) -> list[str]:
+    """Per-sample ngspice seeds must be present, distinct and equal, in sample order, to the
+    klt expansion recorded at validation (so a passing replay proves the requested seed)."""
+    out = []
+    present = [r for r in rows if r["present"] and not r["duplicate"]]
+    bad = [r["sample_index"] for r in present
+           if isinstance(r["rndseed"], bool) or not isinstance(r["rndseed"], int)]
+    if bad:
+        out.append(f"missing or non-integer monte_carlo.seed for samples {bad[:10]}"
+                   f"{' ...' if len(bad) > 10 else ''}")
+    good = [r["rndseed"] for r in present if r["sample_index"] not in bad]
+    if len(set(good)) != len(good):
+        out.append(f"repeated monte_carlo.seed values ({len(good) - len(set(good))} duplicates)")
+    if expected_digest is None:
+        out.append("no expected seed sequence to compare against")
+    elif len(present) == len(rows) and not bad:
+        got = sha256_bytes(",".join(str(r["rndseed"]) for r in rows).encode())
+        if got != expected_digest:
+            out.append(f"per-sample seed sequence sha256 {got} != klt expansion recorded at "
+                       f"validation {expected_digest}")
     return out
 
 
@@ -676,7 +724,7 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
         if err:
             problems.append(f"{run}: {err}")
             entry["error"] = err
-        if rep is not None and "corners" in rep:
+        if rep is not None and err is None:
             fid = fleet_identity(rep)
             env = rep.get("environment") or {}
             emc = env.get("monte_carlo") or {}
@@ -704,6 +752,10 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
                 problems.append(f"{run}: environment.corner_section_libs {libs} != request "
                                 f"{ident['libs']}")
             rows, issues = extract_samples(rep, n, ident)
+            digest, derr = expected_seed_digest(snapshot_dir, req_stem)
+            if derr:
+                issues.append(derr)
+            issues.extend(check_seed_sequence(rows, digest))
             problems.extend(f"{run}: {i}" for i in issues)
             rows_of[run] = rows
             entry["summary"] = summarize_run(rows)
