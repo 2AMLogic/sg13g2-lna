@@ -498,7 +498,7 @@ written into every generated IIP3 deck's header as well as here.
 - **Not covered**: passive corners (`cornerCAP.lib` and any inductor corner
   data) — the DUT's passives are ideal primitives with no corner models to
   sweep; mismatch/Monte-Carlo (`*_mismatch`/`*_stat` sections) — a separate
-  campaign; and self-heating beyond what `npn13G2`'s own VBIC thermal
+  campaign, not yet run for any row (see Model limitations item 6); and self-heating beyond what `npn13G2`'s own VBIC thermal
   network does at the stated ambient.
 
 ## Model limitations (what these numbers are NOT verified against)
@@ -549,6 +549,40 @@ written into every generated IIP3 deck's header as well as here.
 5. **Noise**: only the devices' own VBIC noise sources plus the analytic
    source term. No 1/f corner validation (irrelevant at 2.4 GHz), no
    substrate/supply-coupled noise, ideal noiseless `VDD`.
+6. **No statistical (mismatch / Monte Carlo) evidence for any RF row.**
+   Gain, NF, IIP3, S11/S22 and stability (μ, k, |Δ|) are **statistically
+   unmeasured**. Every record here is the deterministic 45-cell corner
+   grid, and its corner spread is not a mismatch distribution. These rows
+   are **not inherently non-statistical**. As "The DUT, and how it gets
+   into the deck" states, bias comes from the DUT's own on-chip network,
+   and the measured operating point (`I_C1`, `V_CE1`, …) is recorded
+   beside every S-parameter/NF/IIP3 number. Device mismatch in the
+   DR-0003 core and the HBTs moves that operating point and the HBT's own
+   parameters, so it can move every RF quantity, including the S-parameters
+   and therefore μ. Nothing in this tree rules out mismatch-induced RF
+   spread, and the broadband μ deficit is ppm-scale (minimum 0.99999592),
+   so small shifts cannot be assumed negligible. There are two separate
+   gaps:
+   - **Device mismatch, supported by the PDK models.** The pinned PDK's
+     `hbt_*_mismatch`/`hbt_typ_stat` and `mos_*_mismatch`/`mos_tt_stat`
+     sections exist for the DUT's real devices, but this bench loads only
+     the nominal sections ("PVT grid and corner scope", "Not covered"). It
+     has not been verified that loading them perturbs the instantiated
+     devices.
+   - **Passive tolerance, not covered by any existing bench.** The
+     passives are ideal primitives (item 1), so `Le`, `Lc`, the 100 pF
+     blocks and the bias resistors carry no tolerance. A device-mismatch run
+     on this netlist would still hold them exact.
+
+   The first statistical campaign,
+   [#90](https://github.com/2AMLogic/sg13g2-lna/issues/90), is **open and
+   has not been run**. As scoped, it measures only the *DC* observables
+   (`I_C1`, `I_DD`, `P_dc`) at one nominal cell through
+   [`../lna-bias-pvt/`](../lna-bias-pvt/README.md). It will not run this
+   bench. Its result will therefore establish no RF statistical compliance
+   and no full-PVT yield. The spec-level statement is
+   [`spec/target-spec.md`](../../spec/target-spec.md) §"Statistical
+   coverage (T1 item 6)".
 
 ## Results
 
@@ -901,6 +935,7 @@ passives, §Model limitations); declare the matching network final (there
 isn't one, and stability has not been shown unconditional); quote k
 without μ beside it (§Why k is ill-conditioned); mix numbers **across**
 records (§Which DUT each record describes — the three records are three
-different circuits); or read a `|S22| > 1` / μ count off the summary CSV
+different circuits); treat the corner spread as a statistical (mismatch)
+spread, or call any RF row non-statistical (§Model limitations item 6); or read a `|S22| > 1` / μ count off the summary CSV
 without checking the raw `*.stability.dat` tables, whose ppm-scale residues
 the CSV's six-decimal columns round away.
