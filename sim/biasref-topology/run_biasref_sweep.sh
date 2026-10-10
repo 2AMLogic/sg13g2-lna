@@ -47,7 +47,8 @@
 #     the skeleton AND the now-closing servo loop; settled-window and
 #     op-agreement verdicts per Phase C's rules.
 #
-# Writes append-only evidence under corners/<record-id>/,
+# The log-to-CSV reduction is reduce_biasref.py (validated, replayable; issue
+# #149). Writes append-only evidence under corners/<record-id>/,
 # netlist-snapshots/<record-id>/ and records/<record-id>-*.csv +
 # <record-id>.md -- see sim/README.md for the convention this follows.
 #
@@ -218,105 +219,26 @@ if [[ -s "${FAILED_LIST}" ]]; then
   exit 4
 fi
 
-# --- Parse (sequential, deterministic) -------------------------------------
+# --- Validate + reduce (reduce_biasref.py) ----------------------------------
+# All MPADIODE/BIASREF/STARTUP/SERVO parsing, the exactly-one-line /
+# required-key / unique-key / finite-value / inventory / startup-op pairing
+# validation and the five phase CSVs live in the stdlib-only
+# reduce_biasref.py (unit-tested and replayable against retained logs, see
+# tests/). It writes NOTHING unless every input validates, so malformed
+# evidence aborts the run here with exit 4 and no CSV. A genuine startup
+# failure is a legitimate result and still gets a verdict row.
+REDUCE_ARGS=(--corners-dir "${CORNERS_OUT}" --out-dir "${RECORDS_DIR}"
+             --prefix "${RECORD_ID}" --phases all)
+[[ -n "${BIASREF_SMOKE:-}" ]] && REDUCE_ARGS+=(--smoke)
+if ! python3 -I "${SCRIPT_DIR}/reduce_biasref.py" "${REDUCE_ARGS[@]}"; then
+  echo "run_biasref_sweep.sh: reduction rejected the logs; no CSV or record written (append-only records must be complete and well-formed)." >&2
+  exit 4
+fi
 MPA_CSV="${RECORDS_DIR}/${RECORD_ID}-mpa-diode.csv"
-echo "point_id,corner_label,temp_c,feed_i,v_eb_v" > "${MPA_CSV}"
-for label in "${CORNER_LABELS[@]}"; do
-  for temp in "${TEMPS[@]}"; do
-    for ifeed in "${MPA_FEEDS[@]}"; do
-      pid="mpa_${label}_${temp}c_i${ifeed}"
-      awk -v pid="${pid}" -v lbl="${label}" -v t="${temp}" -v i="${ifeed}" '
-        /^MPADIODE / {
-          for (k = 2; k < NF; k += 2) { key = $k; val = $(k+1); kv[key] = val }
-          printf "%s,%s,%s,%s,%s\n", pid, lbl, t, i, kv["veb"]
-        }' "${CORNERS_OUT}/${pid}.log" >> "${MPA_CSV}"
-    done
-  done
-done
-
 CORE_CSV="${RECORDS_DIR}/${RECORD_ID}-core-minigrid.csv"
-echo "point_id,corner_label,mos_section,temp_c,vdd_v,iq3_a,iqa_a,vbref_v,vna_v,vsdb_v" > "${CORE_CSV}"
-for label in "${CORNER_LABELS[@]}"; do
-  for temp in "${TEMPS[@]}"; do
-    for vdd in "${VDDS[@]}"; do
-      pid="core_${label}_${temp}c_vdd${vdd}v"
-      awk -v pid="${pid}" -v lbl="${label}" -v mos="${MOS_SECTION_OF[${label}]}" -v t="${temp}" -v v="${vdd}" '
-        /^BIASREF / {
-          for (k = 2; k < NF; k += 2) { key = $k; val = $(k+1); kv[key] = val }
-          printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\n", pid, lbl, mos, t, v, \
-            kv["iq3"], kv["iqa"], kv["vbref"], kv["vna"], kv["vsdb"]
-        }' "${CORNERS_OUT}/${pid}.log" >> "${CORE_CSV}"
-    done
-  done
-done
-
 STARTUP_CSV="${RECORDS_DIR}/${RECORD_ID}-core-startup.csv"
-echo "point_id,corner_label,temp_c,vdd_v,iq3_end_a,iq3_op_a,end_vs_op_pct,settled_spread_pct,verdict" > "${STARTUP_CSV}"
-for cell in "${STARTUP_CELLS[@]}"; do
-  set -- ${cell}
-  label="$1"; temp="$2"; vdd="$3"
-  pid="startup_${label}_${temp}c_vdd${vdd}v"
-  op_id="core_${label}_${temp}c_vdd${vdd}v"
-  op_iq3="$(awk -F, -v p="${op_id}" '$1==p {print $6}' "${CORE_CSV}")"
-  awk -v pid="${pid}" -v lbl="${label}" -v t="${temp}" -v v="${vdd}" -v opic="${op_iq3:-0}" '
-    /^STARTUP / {
-      for (k = 2; k < NF; k += 2) { key = $k; val = $(k+1); kv[key] = val }
-      end = kv["iq3_end"]; s2 = kv["iq3_s2"]; s3 = kv["iq3_s3"]
-      mx = end; mn = end
-      if (s2+0 > mx) mx = s2; if (s3+0 > mx) mx = s3
-      if (s2+0 < mn) mn = s2; if (s3+0 < mn) mn = s3
-      mean = (end + s2 + s3) / 3.0
-      spread = (mean > 0) ? 100.0 * (mx - mn) / mean : 999
-      dvsop  = (opic+0 > 0) ? 100.0 * (end - opic) / opic : 999
-      verdict = "PASS"
-      if (spread > 2.0) verdict = "NO-RINGING-FAIL"
-      if (dvsop > 5.0 || dvsop < -5.0) verdict = "OP-MISMATCH-FAIL"
-      if (end <= 0) verdict = "LATCHED-ZERO"
-      printf "%s,%s,%s,%s,%.6g,%.6g,%.3f,%.3f,%s\n", pid, lbl, t, v, end, opic, dvsop, spread, verdict
-    }' "${CORNERS_OUT}/${pid}.log" >> "${STARTUP_CSV}"
-done
-
 SERVO_CSV="${RECORDS_DIR}/${RECORD_ID}-servo-minigrid.csv"
-echo "point_id,corner_label,mos_section,temp_c,vdd_v,iq3_a,iref_a,iqc_a,vbg_v,vl_v,gsvo_v,vbref_v,cb3_v,idd_a" > "${SERVO_CSV}"
-for label in "${CORNER_LABELS[@]}"; do
-  for temp in "${TEMPS[@]}"; do
-    for vdd in "${VDDS[@]}"; do
-      pid="servo_${label}_${temp}c_vdd${vdd}v"
-      awk -v pid="${pid}" -v lbl="${label}" -v mos="${MOS_SECTION_OF[${label}]}" -v t="${temp}" -v v="${vdd}" '
-        /^SERVO / {
-          for (k = 2; k < NF; k += 2) { key = $k; val = $(k+1); kv[key] = val }
-          printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", pid, lbl, mos, t, v, \
-            kv["iq3"], kv["iref"], kv["iv"], kv["vbg"], kv["vl"], kv["gsvo"], kv["vbref"], kv["cb3"], kv["idd"]
-        }' "${CORNERS_OUT}/${pid}.log" >> "${SERVO_CSV}"
-    done
-  done
-done
-
 SERVO_STARTUP_CSV="${RECORDS_DIR}/${RECORD_ID}-servo-startup.csv"
-echo "point_id,corner_label,temp_c,vdd_v,iq3_end_a,iq3_op_a,end_vs_op_pct,settled_spread_pct,verdict" > "${SERVO_STARTUP_CSV}"
-for cell in "${STARTUP_CELLS[@]}"; do
-  set -- ${cell}
-  label="$1"; temp="$2"; vdd="$3"
-  pid="servo_startup_${label}_${temp}c_vdd${vdd}v"
-  op_id="servo_${label}_${temp}c_vdd${vdd}v"
-  op_iq3="$(awk -F, -v p="${op_id}" '$1==p {print $6}' "${SERVO_CSV}")"
-  awk -v pid="${pid}" -v lbl="${label}" -v t="${temp}" -v v="${vdd}" -v opic="${op_iq3:-0}" '
-    /^STARTUP / {
-      for (k = 2; k < NF; k += 2) { key = $k; val = $(k+1); kv[key] = val }
-      end = kv["iq3_end"]; s2 = kv["iq3_s2"]; s3 = kv["iq3_s3"]
-      mx = end; mn = end
-      if (s2+0 > mx) mx = s2; if (s3+0 > mx) mx = s3
-      if (s2+0 < mn) mn = s2; if (s3+0 < mn) mn = s3
-      mean = (end + s2 + s3) / 3.0
-      spread = (mean > 0) ? 100.0 * (mx - mn) / mean : 999
-      dvsop  = (opic+0 > 0) ? 100.0 * (end - opic) / opic : 999
-      verdict = "PASS"
-      if (spread > 2.0) verdict = "NO-RINGING-FAIL"
-      if (dvsop > 5.0 || dvsop < -5.0) verdict = "OP-MISMATCH-FAIL"
-      if (end <= 0) verdict = "LATCHED-ZERO"
-      printf "%s,%s,%s,%s,%.6g,%.6g,%.3f,%.3f,%s\n", pid, lbl, t, v, end, opic, dvsop, spread, verdict
-    }' "${CORNERS_OUT}/${pid}.log" >> "${SERVO_STARTUP_CSV}"
-done
 
 # --- Headline numbers --------------------------------------------------------
 MPA_STATS="$(awk -F, 'NR>1 { if (!minset || $5+0 < min) {min=$5; minid=$1}; minset=1

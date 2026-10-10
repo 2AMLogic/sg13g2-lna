@@ -143,6 +143,34 @@ under `netlist-snapshots/<record-id>/` and raw ngspice logs under
 `corners/<record-id>/`; nothing under an existing record is ever edited
 (see [`../README.md`](../README.md)).
 
+## Reduction and replay
+
+The five phase CSVs are produced from the retained `corners/<id>/*.log`
+files by [`reduce_biasref.py`](reduce_biasref.py) (stdlib-only, issue
+#149), not by embedded awk. It requires the exact expected log inventory,
+exactly one `MPADIODE`/`BIASREF`/`SERVO`/`STARTUP` line per log, every
+required key once, and strict finite decimal values; startup cells need
+their matching op point. Malformed input exits 2 naming the file and key
+and writes nothing. A measured startup failure is still a result row.
+Replay a committed record into scratch paths (no PDK, no ngspice):
+
+```bash
+python3 -I sim/biasref-topology/reduce_biasref.py \
+  --corners-dir sim/biasref-topology/corners/20260921-160018-a46ed37 \
+  --phases stage1 --out-dir /tmp/replay --prefix 20260921-160018-a46ed37
+```
+
+`--phases stage1` covers Stage-1 records (phases A-C only); the default
+`all` adds the servo phases D-E. Unit tests and the replay of both
+committed records run in CI (`biasref-reduction-tests`) and in
+`.github/scripts/run-local-checks.sh`.
+
+Known historical defect: the committed `*-core-minigrid.csv` files of both
+records lack the `vsdb_v` value (header has 10 columns, rows 9; the old awk
+`printf` had one conversion too few). The logs retain it; it is restored by
+the correction record
+[`records/20261010-100000-424d385`](records/20261010-100000-424d385.md).
+
 ## Records in this experiment
 
 - `20260921-160018-a46ed37` — the Stage-1 record (PR #38's committed
