@@ -482,11 +482,51 @@ def _finite(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
+GATE_SCHEMA = "core-envelope-gate/2"
+
+
+def _problem_corner(stem, corners, want_cell, problems):
+    """Validate the single returned corner; return its measurement dict or None."""
+    if not isinstance(corners, list) or len(corners) != 1:
+        problems.append(f"{stem}: expected exactly 1 corner, got "
+                        f"{len(corners) if isinstance(corners, list) else 'none'}")
+        return None
+    c = corners[0]
+    if not isinstance(c, dict):
+        problems.append(f"{stem}: malformed corner object ({type(c).__name__})")
+        return None
+    try:
+        got = LVC.norm_key(*LVC.corner_key(c))
+    except Exception as e:  # noqa: BLE001
+        problems.append(f"{stem}: corner identity missing or malformed ({e!r})")
+    else:
+        if got != want_cell:
+            problems.append(f"{stem}: corner identity mismatch: returned {got}, expected {want_cell}")
+    if c.get("error") or str(c.get("status", "ok")).lower() not in LVC.OK_STATUSES:
+        problems.append(f"{stem}: corner status={c.get('status')!r} error={c.get('error')!r}")
+    ms = c.get("measurements", [])
+    if not isinstance(ms, list):
+        problems.append(f"{stem}: malformed measurements (not a list)")
+        return None
+    vals, dups = {}, set()
+    for x in ms:
+        if not isinstance(x, dict) or not isinstance(x.get("name"), str):
+            problems.append(f"{stem}: malformed measurement object {x!r}")
+            continue
+        if x["name"] in vals:
+            dups.add(x["name"])
+        vals[x["name"]] = x.get("value")
+    for n in sorted(dups):
+        problems.append(f"{stem}: duplicate measurement name {n!r}")
+    return vals
+
+
 def verify_gate(snapshot_dir: Path, corners_dir: Path, client_version: str) -> dict:
-    """Judge the one-cell gate. Returns a verdict dict with `pass` and `problems`.
-    A pass establishes plumbing only."""
+    """Judge the one-cell gate. Returns a verdict dict with `pass`, `problems` and
+    `provenance` ('live' | 'synthetic' | 'mixed' | 'unknown'). A pass establishes
+    plumbing only; only provenance 'live' may authorize a campaign."""
     m = load_manifest(snapshot_dir)
-    problems, jobs = [], {}
+    problems, jobs, prov = [], {}, set()
     if m["set"] != "gate":
         problems.append(f"manifest set is {m['set']!r}, not 'gate'")
     for r in m["requests"]:
@@ -499,7 +539,15 @@ def verify_gate(snapshot_dir: Path, corners_dir: Path, client_version: str) -> d
         except Exception as e:  # noqa: BLE001
             problems.append(f"{r['stem']}: unreadable report ({e})")
             continue
-        remote = (d.get("environment") or {}).get("remote") or {}
+        if not isinstance(d, dict):
+            problems.append(f"{r['stem']}: malformed report (top level is {type(d).__name__})")
+            continue
+        # Anything other than an absent/false flag is treated as synthetic.
+        prov.add("live" if d.get("synthetic_fixture") in (None, False) else "synthetic")
+        env = d.get("environment")
+        remote = env.get("remote") if isinstance(env, dict) else None
+        if not isinstance(remote, dict):
+            remote = {}
         if not remote.get("job_id"):
             problems.append(f"{r['stem']}: no environment.remote.job_id (not a batch run)")
         rv = remote.get("runner_klt_version")
@@ -509,28 +557,45 @@ def verify_gate(snapshot_dir: Path, corners_dir: Path, client_version: str) -> d
             problems.append(f"{r['stem']}: runner klt {rv} != client klt {client_version}")
         if remote.get("state") not in (None, "done"):
             problems.append(f"{r['stem']}: remote state {remote.get('state')!r}")
-        corners = d.get("corners")
-        if not isinstance(corners, list) or len(corners) != 1:
-            problems.append(f"{r['stem']}: expected exactly 1 corner, got "
-                            f"{len(corners) if isinstance(corners, list) else 'none'}")
+        want = sorted(LVC.norm_key(*c) for c in r["expected_cells"])
+        if len(want) != 1:
+            problems.append(f"{r['stem']}: manifest expects {len(want)} cells, gate needs exactly 1")
             continue
-        c = corners[0]
-        if c.get("error") or str(c.get("status", "ok")).lower() not in LVC.OK_STATUSES:
-            problems.append(f"{r['stem']}: corner status={c.get('status')!r} error={c.get('error')!r}")
-        vals = {x["name"]: x.get("value") for x in c.get("measurements", [])}
+        vals = _problem_corner(r["stem"], d.get("corners"), want[0], problems)
+        if vals is None:
+            continue
         for n in r["expected_measurements"]:
             if not _finite(vals.get(n)):
                 problems.append(f"{r['stem']}: measurement {n} missing or non-finite ({vals.get(n)!r})")
         jobs[r["stem"]] = {k: remote.get(k) for k in
                            ("job_id", "instance_type", "runner_klt_version", "state")}
         jobs[r["stem"]].update({k: v for k, v in remote.items() if "image" in k.lower()})
+    provenance = (next(iter(prov)) if len(prov) == 1 else "mixed" if prov else "unknown")
     return {
-        "schema": "core-envelope-gate/1", "gate_record_id": m["record_id"],
+        "schema": GATE_SCHEMA, "gate_record_id": m["record_id"],
         "client_klt_version": client_version, "pdk_pin": m["pdk_pin"],
+        "provenance": provenance,
         "pass": not problems, "problems": problems, "jobs": jobs,
         "scope": "plumbing only: one nominal cell per analysis; says nothing about the 45-cell "
                  "specification or NF performance",
     }
+
+
+def authorizes_campaign(verdict, client_version: str) -> str:
+    """Production campaign-authorization predicate. Returns '' if the verdict
+    authorizes a campaign, else a reason. Legacy (/1) verdicts, synthetic or
+    mixed provenance, and client-version drift all refuse."""
+    if not isinstance(verdict, dict) or verdict.get("schema") != GATE_SCHEMA:
+        got = verdict.get("schema") if isinstance(verdict, dict) else None
+        return f"gate verdict schema is {got!r}, need {GATE_SCHEMA}; rerun the gate"
+    if verdict.get("pass") is not True:
+        return f"gate verdict is not a passing {GATE_SCHEMA} document"
+    if verdict.get("provenance") != "live":
+        return f"gate verdict provenance is {verdict.get('provenance')!r}, not 'live'"
+    if verdict.get("client_klt_version") != client_version:
+        return (f"gate verdict was produced by client {verdict.get('client_klt_version')!r}, "
+                f"current client is {client_version!r}; rerun the gate")
+    return ""
 
 
 def _semver(s: str):
@@ -564,6 +629,9 @@ def main(argv=None):
     gv.add_argument("--corners-dir", required=True)
     gv.add_argument("--client-version", required=True, help="output of `klt --version`")
     gv.add_argument("--out", required=True)
+    ag = sub.add_parser("check-gate-verdict", help="exit nonzero unless the verdict authorizes a campaign")
+    ag.add_argument("verdict")
+    ag.add_argument("client_version")
     cf = sub.add_parser("check-client", help="exit nonzero if `klt --version` text is below the floor")
     cf.add_argument("version_text")
     a = p.parse_args(argv)
@@ -577,6 +645,16 @@ def main(argv=None):
         for x in probs:
             print("verify-snapshot: " + x, file=sys.stderr)
         return 1 if probs else 0
+    if a.cmd == "check-gate-verdict":
+        try:
+            v = json.loads(Path(a.verdict).read_text())
+        except Exception as e:  # noqa: BLE001
+            print(f"check-gate-verdict: unreadable verdict ({e})", file=sys.stderr)
+            return 1
+        why = authorizes_campaign(v, a.client_version)
+        if why:
+            print("check-gate-verdict: " + why, file=sys.stderr)
+        return 1 if why else 0
     if a.cmd == "check-client":
         check_client_floor(a.version_text)
         return 0
@@ -584,7 +662,9 @@ def main(argv=None):
     Path(a.out).write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n")
     for x in verdict["problems"]:
         print("verify-gate: " + x, file=sys.stderr)
-    print(f"verify-gate: {'PASS (plumbing only)' if verdict['pass'] else 'FAIL'}")
+    print(f"verify-gate: {'PASS (plumbing only)' if verdict['pass'] else 'FAIL'}; "
+          f"provenance {verdict['provenance']}"
+          + ("" if verdict["provenance"] == "live" else " (will NOT authorize a campaign)"))
     return 0 if verdict["pass"] else 2
 
 

@@ -568,10 +568,17 @@ CORE_ENV_GATE_VERDICT=sim/lna-core-envelope/corners/<gate-id>/gate-verdict.json 
   so the batch runner's staging of the EM-inductor model's relative `.include`
   is proven before the campaign depends on it. `verify-gate` requires, per request: a batch job id,
   runner `klt` equal to the client's, exactly one corner, ok status and every
-  expected measurement finite. It records client/runner versions, PDK pin, job
+  expected measurement finite; the returned corner's process/temperature/supply
+  must equal the manifest's nominal cell, and duplicate or malformed
+  corner/measurement objects fail with a named diagnostic. The verdict
+  (`core-envelope-gate/2`) carries `provenance`: `live`, `synthetic`
+  (any report with `synthetic_fixture`), or `mixed`. It records client/runner versions, PDK pin, job
   ids, instance types and any image identifier the report exposes. A pass
   validates **plumbing only**.
-- `campaign` refuses without a passing verdict from the **same** client version.
+- `campaign` refuses without a passing, `live`-provenance `core-envelope-gate/2`
+  verdict from the **same** client version (`check-gate-verdict`). Synthetic and
+  mixed verdicts, and legacy `/1` verdicts (no provenance), are refused: rerun
+  the gate to regenerate.
 - **Stop on error.** The runner refuses any backend other than `batch` (exit 3)
   and never retries or falls back locally; any non-zero `klt sim` exit stops
   the run at once, whether or not a report was written (exit 4,
