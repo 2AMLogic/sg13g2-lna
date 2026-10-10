@@ -354,8 +354,15 @@ The derivation half needs no PDK and no ngspice at all:
 sim/lna-core-envelope/derive_committed_record_envelope.py
 ```
 
-Running it with no arguments writes into `records/` (its default output),
-which is committed, append-only evidence — do not do that. To verify the
+Its default output is the committed, append-only
+`records/<record-id>-derived-envelope.csv`, so running it with no arguments
+now **refuses** (exit 4, file untouched): output is created exclusively and
+an existing destination is never overwritten.
+
+- **Replay** (verify reproducibility): `--out <fresh scratch path>`, e.g.
+  under `/tmp`, then `diff` against the committed CSV.
+- **Publish a new append-only correction**: pass a new `--out` path inside
+  `records/` named for the new record; never edit a landed record. To verify the
 committed derived CSV is reproducible, use the replay checker, which derives
 into a temporary directory, diffs against the committed record, and cleans up:
 

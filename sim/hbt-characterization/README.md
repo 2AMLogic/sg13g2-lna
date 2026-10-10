@@ -655,6 +655,13 @@ as records**, since every table in this README is a whole-grid statement.
 
 ### Tests for the fixed-T0 NF re-derivation
 
+`rederive_nf_fixed_t0.py` creates both outputs exclusively and refuses
+(exit 4) if either exists, rolling back anything it created, so a landed
+correction can never be overwritten. **Replay** an existing correction by
+passing fresh scratch `--record-id-csv`/`--summary-csv` paths (e.g. under
+`/tmp`) and diffing; **publish** a new append-only correction with a new
+`--record-id` (or omit it to mint one). Never reuse a landed record id.
+
 `rederive_nf_fixed_t0.py` (no PDK, no ngspice) is pinned by stdlib unit
 tests under `tests/` (issue #101), run in CI by the `hbt-reduction-tests`
 job of `.github/workflows/signoff.yml`:
