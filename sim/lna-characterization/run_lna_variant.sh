@@ -23,6 +23,8 @@
 #
 # Environment knobs (all optional):
 #   LNA_VARIANTS=a,b,c    subset of variants (default: all)
+#   LNA_NF_NPTS=<n>       points of the 290 K NF sweep (odd, >= 11; default 11 =
+#                         the S-parameter grid); identical for every variant.
 #   LNA_VARIANT_SMOKE=1   single nominal cell per request (plumbing check only;
 #                         NOT a PVT campaign -- do not commit as evidence)
 #   LNA_VARIANT_BACKEND=  override the klt backend (default: whatever klt picks,
@@ -79,7 +81,8 @@ if have < floor:
              + floor_s + "\" klt`); do not run the grid locally.")
 PYEOF
 
-GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}")
+NF_NPTS="${LNA_NF_NPTS:-11}"
+GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
 [[ -n "${LNA_VARIANTS:-}" ]] && GEN_ARGS+=(--variants "${LNA_VARIANTS}")
 [[ -n "${LNA_VARIANT_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_variant.sh: LNA_VARIANT_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }
 python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen "${GEN_ARGS[@]}"
@@ -112,7 +115,7 @@ for req in "${SNAPSHOTS_OUT}"/*.request.json; do
   fi
 done
 
-SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}"
+SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}" --nf-npts "${NF_NPTS}"
   --summary-csv "${RECORDS_DIR}/${RECORD_ID}-summary.csv"
   --compare-csv "${RECORDS_DIR}/${RECORD_ID}-compare.csv"
   --headlines-md "${CORNERS_OUT}/headlines.md"
