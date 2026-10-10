@@ -1,0 +1,67 @@
+{
+  "bench": "bench_mc.spice",
+  "bench_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+  "design_netlist": "design/netlist/lna.spice",
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "generator_sha256": "6fea83e39656eaf1c586d1ba763ada1243214b9e0507cc7362d20966d1a2038d",
+  "git_sha": "b05a674",
+  "issue": 90,
+  "note": "Generated requests only; no measured result. Fleet reports land under corners/<record-id>/ and are reduced by `mc_campaign.py reduce`.",
+  "observables": [
+    "ic1",
+    "ic2",
+    "ic3",
+    "ib1",
+    "vb1",
+    "vbref",
+    "vdd_node",
+    "idd",
+    "pdc"
+  ],
+  "pdk_pin": "v0.3.0",
+  "record_id": "20261010-221158-b05a674",
+  "requests": {
+    "mc_mismatch": {
+      "hbt_section": "hbt_typ_mismatch",
+      "mos_section": "mos_tt_mismatch",
+      "n": 200,
+      "process": "typ_mismatch",
+      "request": "mc_mismatch.request.json",
+      "request_sha256": "3ee5558fc8479f6307cc8fbca1f9d78daf5f572d54e97286d88cc5677b026e15"
+    },
+    "negctl_nominal": {
+      "hbt_section": "hbt_typ",
+      "mos_section": "mos_tt",
+      "n": 20,
+      "process": "typ",
+      "request": "negctl_nominal.request.json",
+      "request_sha256": "90275e7c1f2730702ade96fff48d011b4e703defe281badac43d9399b5c086b3"
+    }
+  },
+  "runs": {
+    "mc_mismatch": "mc_mismatch",
+    "mc_mismatch_replay": "mc_mismatch",
+    "negctl_nominal": "negctl_nominal"
+  },
+  "sampled_params": [
+    "q1_area",
+    "q2_area",
+    "q3_area",
+    "qa_area",
+    "qb_area",
+    "qc_area",
+    "mnp1_delvto",
+    "mnp2_delvto",
+    "mis_delvto",
+    "mref_delvto"
+  ],
+  "schema": "lna-bias-mc-campaign/1",
+  "seed": 68001,
+  "status": "request-set-not-run",
+  "temperature_c": 27,
+  "thresholds": {
+    "ic1_exceeds_if_gt_A": 0.0045,
+    "pdc_exceeds_if_ge_W": 0.01
+  },
+  "vdd_v": 1.8
+}

@@ -1,0 +1,164 @@
+{
+  "netlist": "bench_mc.spice",
+  "backend": "batch",
+  "models": {
+    "pdk": "ihp-sg13g2"
+  },
+  "corners": {
+    "process": [
+      {
+        "name": "typ_mismatch",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ_mismatch"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_tt_mismatch"
+          }
+        ]
+      }
+    ],
+    "supply_v": {
+      "vdd": [
+        1.8
+      ]
+    },
+    "temperature_c": [
+      27
+    ]
+  },
+  "monte_carlo": {
+    "n": 200,
+    "seed": 68001,
+    "vary": "mismatch",
+    "quantiles": [
+      0,
+      5,
+      50,
+      95,
+      100
+    ]
+  },
+  "analysis": {
+    "kind": "op",
+    "args": ""
+  },
+  "measurements": [
+    {
+      "name": "ic1",
+      "expr": "@q.xdut.xq1.qnpn13g2[ic]",
+      "unit": "A",
+      "limits": {
+        "max": 0.0045
+      }
+    },
+    {
+      "name": "ic2",
+      "expr": "@q.xdut.xq2.qnpn13g2[ic]",
+      "unit": "A"
+    },
+    {
+      "name": "ic3",
+      "expr": "@q.xdut.xq3.qnpn13g2[ic]",
+      "unit": "A"
+    },
+    {
+      "name": "ib1",
+      "expr": "@q.xdut.xq1.qnpn13g2[ib]",
+      "unit": "A"
+    },
+    {
+      "name": "vb1",
+      "expr": "v(xdut.b1)",
+      "unit": "V"
+    },
+    {
+      "name": "vbref",
+      "expr": "v(xdut.bref)",
+      "unit": "V"
+    },
+    {
+      "name": "vdd_node",
+      "expr": "v(vdd)",
+      "unit": "V"
+    },
+    {
+      "name": "idd",
+      "expr": "-i(vdd)",
+      "unit": "A"
+    },
+    {
+      "name": "pdc",
+      "expr": "v(vdd)*(-i(vdd))",
+      "unit": "W",
+      "limits": {
+        "max": 0.01
+      }
+    },
+    {
+      "name": "q1_area",
+      "expr": "@q.xdut.xq1.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "q2_area",
+      "expr": "@q.xdut.xq2.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "q3_area",
+      "expr": "@q.xdut.xq3.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "qa_area",
+      "expr": "@q.xdut.xqa.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "qb_area",
+      "expr": "@q.xdut.xqb.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "qc_area",
+      "expr": "@q.xdut.xqc.qnpn13g2[area]",
+      "unit": "1"
+    },
+    {
+      "name": "mnp1_delvto",
+      "expr": "@n.xdut.xmnp1.nsg13_hv_nmos[delvto]",
+      "unit": "V"
+    },
+    {
+      "name": "mnp2_delvto",
+      "expr": "@n.xdut.xmnp2.nsg13_hv_nmos[delvto]",
+      "unit": "V"
+    },
+    {
+      "name": "mis_delvto",
+      "expr": "@n.xdut.xmis.nsg13_hv_pmos[delvto]",
+      "unit": "V"
+    },
+    {
+      "name": "mref_delvto",
+      "expr": "@n.xdut.xmref.nsg13_hv_pmos[delvto]",
+      "unit": "V"
+    }
+  ],
+  "options": {
+    "timeout_s": 120,
+    "keep_artifacts": true,
+    "osdi_preload": [
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi"
+    ],
+    "stage_model_inputs": true,
+    "ngspice_init": [
+      "set numdgt=8"
+    ]
+  }
+}

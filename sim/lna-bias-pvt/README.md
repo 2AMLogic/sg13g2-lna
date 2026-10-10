@@ -216,6 +216,16 @@ OSDI. So `runner_version_check: "warn"` is not a workaround. A 0.5.0 client
 cannot be used either, because it has no `batch` backend. The tool-side
 gap is tracked as 2AMLogic/klayout-tools#2948 (comment of 2026-10-10).
 
+**Re-attempt, same day (record `20261010-221158-b05a674`, client klt
+`0.7.0+g8eec069c7576`, fleet run from `main` b05a674):** unchanged. All three
+jobs failed again with `batch_runner_version_mismatch`, runner klt `0.5.0`,
+AMI `ami-0e40e3245f1923ac8`, each in about 1 min wall time at the client:
+`klt-sim-555e89ef6931` (main), `klt-sim-e748f3d56520` (replay),
+`klt-sim-2cb6df74cce8` (negative control). No local fallback was used. The
+failure record sits beside the first one under `corners/` and
+`netlist-snapshots/` (reports gzipped, `environment.remote.bucket`
+redacted). Still no distribution, replay or control result exists.
+
 Failure record (no results):
 
 - `corners/20261010-161633-0914d9a/` holds the redacted fleet reports, the
