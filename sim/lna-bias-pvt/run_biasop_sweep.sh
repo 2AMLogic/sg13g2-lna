@@ -10,7 +10,8 @@
 # OSDI device models (since the DR-0003 Stage-2 core swap the DUT
 # instantiates sg13_hv_pmos / sg13_hv_nmos, PSP103.6 via OSDI -- build or
 # check them with sim/tools/build-osdi.sh, see sim/README.md "OSDI device
-# models"). Requires neither xschem nor python3 (npn13G2 itself stays a
+# models"). Requires python3 (stdlib only, for reduce_biasop.py) but not
+# xschem (npn13G2 itself stays a
 # native ngspice VBIC model -- see sim/pdk.json). Full methodology, bench
 # definitions and stated method limits are in sim/lna-bias-pvt/README.md --
 # read that first if a result here looks surprising.
@@ -119,6 +120,9 @@ else
   done
 fi
 STARTUP_CELLS=("bcs 125 1.98" "wcs -40 1.62" "typ 27 1.80")
+# Smoke: nominal startup only -- the extreme startup cells have no op
+# counterpart in a nominal-only run (reduce_biasop.py rejects that pairing).
+[[ -n "${BIASOP_SMOKE:-}" ]] && STARTUP_CELLS=("typ 27 1.80")
 
 # Deck rendering (sim_render), the ngspice job pool (sim_jobs /
 # sim_pool_init / sim_pool_spawn) and the per-point pass/fail gate
@@ -186,82 +190,44 @@ if [[ -s "${FAILED_LIST}" ]]; then
   exit 4
 fi
 
-# --- Parse (sequential, deterministic) -----------------------------------
+# --- Validate + reduce (reduce_biasop.py) ----------------------------------
+# All BIASOP/STARTUP parsing, required-key / finite-value / single-result /
+# inventory / op-startup-pair validation and the two CSVs live in the
+# stdlib-only reduce_biasop.py (unit-tested and replayable against retained
+# logs, see tests/). It writes NOTHING unless every input validates, so
+# malformed evidence aborts the run here with exit 4 and no summary. A
+# measured bar violation is a legitimate result and still gets a row.
 SUMMARY_CSV="${RECORDS_DIR}/${RECORD_ID}-summary.csv"
-echo "point_id,corner_label,temp_c,vdd_v,ic1_a,ic2_a,ic3_a,ib1_a,vb1_v,vbref_v,vce1_v,vce2_v,vbe1_v,idd_a,pdc_w,ic1_within_4p5ma,pdc_within_10mw" \
-  > "${SUMMARY_CSV}"
-for cell in "${OP_CELLS[@]}"; do
-  set -- ${cell}
-  label="$1"; temp="$2"; vdd="$3"
-  point_id="op_${label}_${temp}c_vdd${vdd}v"
-  awk -v pid="${point_id}" -v lbl="${label}" -v t="${temp}" -v v="${vdd}" \
-      -v iclim="4.5e-3" -v pdclim="10e-3" '
-    /^BIASOP / {
-      for (i = 2; i < NF; i += 2) { k = $i; kv = $(i+1); val[k] = kv }
-      ic1ok = (val["ic1"] <= iclim) ? "yes" : "NO"
-      pdcok = (val["pdc"] < pdclim) ? "yes" : "NO"
-      printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", \
-        pid, lbl, t, v, val["ic1"], val["ic2"], val["ic3"], val["ib1"], \
-        val["vb1"], val["vbref"], val["vce1"], val["vce2"], val["vbe1"], \
-        val["idd"], val["pdc"], ic1ok, pdcok
-    }' "${CORNERS_OUT}/${point_id}.log" >> "${SUMMARY_CSV}"
-done
-
-# Startup verdicts.
 STARTUP_CSV="${RECORDS_DIR}/${RECORD_ID}-startup.csv"
-echo "point_id,corner_label,temp_c,vdd_v,ic1_end_a,ic1_op_a,end_vs_op_pct,settled_spread_pct,verdict" \
-  > "${STARTUP_CSV}"
-for cell in "${STARTUP_CELLS[@]}"; do
-  set -- ${cell}
-  label="$1"; temp="$2"; vdd="$3"
-  point_id="startup_${label}_${temp}c_vdd${vdd}v"
-  op_id="op_${label}_${temp}c_vdd${vdd}v"
-  op_ic1="$(awk -F, -v p="${op_id}" '$1==p {print $5}' "${SUMMARY_CSV}")"
-  awk -v pid="${point_id}" -v lbl="${label}" -v t="${temp}" -v v="${vdd}" -v opic="${op_ic1:-0}" '
-    /^STARTUP / {
-      for (i = 2; i < NF; i += 2) { k = $i; val[k] = $(i+1) }
-      end = val["ic1_end"]; s2 = val["ic1_s2"]; s3 = val["ic1_s3"]
-      mx = end; mn = end
-      if (s2 > mx) mx = s2; if (s3 > mx) mx = s3
-      if (s2 < mn) mn = s2; if (s3 < mn) mn = s3
-      mean = (end + s2 + s3) / 3.0
-      spread = (mean > 0) ? 100.0 * (mx - mn) / mean : 999
-      dvsop  = (opic > 0) ? 100.0 * (end - opic) / opic : 999
-      verdict = "PASS"
-      if (spread > 2.0) verdict = "NO-RINGING-FAIL"
-      if (dvsop > 5.0 || dvsop < -5.0) verdict = "OP-MISMATCH-FAIL"
-      if (end <= 0) verdict = "LATCHED-ZERO"
-      printf "%s,%s,%s,%s,%.6g,%.6g,%.3f,%.3f,%s\n", pid, lbl, t, v, end, opic, dvsop, spread, verdict
-    }' "${CORNERS_OUT}/${point_id}.log" >> "${STARTUP_CSV}"
-done
+FACTS_DIR="$(mktemp -d)"
+trap 'rm -rf "${SIM_DUT_SUBCKT}" "${FAILED_LIST}" "${FACTS_DIR}"' EXIT
+REDUCE_ARGS=(--corners-dir "${CORNERS_OUT}" --summary-csv "${SUMMARY_CSV}"
+             --startup-csv "${STARTUP_CSV}" --facts "${FACTS_DIR}/facts"
+             --require-audit)
+[[ -n "${BIASOP_SMOKE:-}" ]] && REDUCE_ARGS+=(--smoke)
+if ! python3 -I "${SCRIPT_DIR}/reduce_biasop.py" "${REDUCE_ARGS[@]}"; then
+  echo "run_biasop_sweep.sh: reduction rejected the logs; no summary or record written (append-only records must be complete and well-formed)." >&2
+  exit 4
+fi
 
-# --- Headline numbers -----------------------------------------------------
-read -r IC1_MIN_CELL IC1_MIN IC1_MAX_CELL IC1_MAX PDC_MIN_CELL PDC_MIN PDC_MAX_CELL PDC_MAX \
-  N_IC1_OK N_IC1_BAD N_PDC_OK N_PDC_BAD <<<"$(awk -F, '
-    BEGIN { icok = 0; icbad = 0; pdok = 0; pdbad = 0; minset = 0; pminset = 0; max = 0; pmax = 0 }
-    NR>1 {
-      if (!minset || $5 < min) { min = $5; minc = $1 } ; minset = 1
-      if ($5 > max) { max = $5; maxc = $1 }
-      if (!pminset || $15 < pmin) { pmin = $15; pminc = $1 } ; pminset = 1
-      if ($15 > pmax) { pmax = $15; pmaxc = $1 }
-      if ($16 == "yes") icok++; else icbad++
-      if ($17 == "yes") pdok++; else pdbad++
-    }
-    END { print minc, min, maxc, max, pminc, pmin, pmaxc, pmax, icok+0, icbad+0, pdok+0, pdbad+0 }' \
-    "${SUMMARY_CSV}")"
-SU_VERDICTS="$(awk -F, 'NR>1 && $9 != "" {print $9}' "${STARTUP_CSV}" | sort -u | tr '\n' ' ')"
+# --- Headline numbers (validated; produced by the reducer) ----------------
+# shellcheck disable=SC2034  # consumed by the record heredoc below
+while IFS='=' read -r _k _v; do
+  [[ "${_k}" =~ ^[A-Z0-9_]+$ ]] || { echo "run_biasop_sweep.sh: bad reducer fact '${_k}'" >&2; exit 4; }
+  printf -v "${_k}" '%s' "${_v}"
+done < "${FACTS_DIR}/facts"
 
-# --- DR-0003 Stage-2 audit stats (from the extra BIASOP keys in the logs) --
-# Nominal cell's I_C1 vs DR-0001's 4.0 mA plan-table entry (the DR-0003
-# Stage-2 sizing amendment states the tolerance this landing is judged
-# against), the worst-case servo-transparency error |vl - vbg| over the
-# 45 cells, and the new Qc diode's V_BE span (its validity-box ride).
-NOMINAL_CELL="op_typ_27c_vdd1.80v"
-NOMINAL_IC1_A="$(awk '/^BIASOP / { for (i=2;i<NF;i+=2) if ($i=="ic1") print $(i+1) }' "${CORNERS_OUT}/${NOMINAL_CELL}.log" | head -1)"
-SERVO_MAX_ERR_V="$(for f in "${CORNERS_OUT}"/op_*.log; do awk '/^BIASOP / { for (i=2;i<NF;i+=2) { if ($i=="vl") vl=$(i+1); if ($i=="vbg") vbg=$(i+1) } e=(vl>vbg)?(vl-vbg):(vbg-vl); if (e>m) m=e } END { printf "%.6g\n", m }' "$f"; done | sort -g | tail -1)"
-QC_VBE_MIN="$(for f in "${CORNERS_OUT}"/op_*.log; do awk '/^BIASOP / { for (i=2;i<NF;i+=2) if ($i=="cb3") print $(i+1) }' "$f"; done | sort -g | head -1)"
-QC_VBE_MAX="$(for f in "${CORNERS_OUT}"/op_*.log; do awk '/^BIASOP / { for (i=2;i<NF;i+=2) if ($i=="cb3") print $(i+1) }' "$f"; done | sort -g | tail -1)"
-NOMINAL_PCT_VS_4MA="$(awk -v ic1="${NOMINAL_IC1_A:-0}" 'BEGIN { printf "%.2f", 100.0*(ic1-4.0e-3)/4.0e-3 }')"
+# DR-0003 Stage-2 audit: nominal-cell I_C1 vs DR-0001's 4.0 mA plan-table
+# entry, worst-cell servo-transparency error |vl - vbg| and the Qc diode's
+# V_BE span all come from the reducer's validated facts.
+NOMINAL_PCT_VS_4MA="$(awk -v ic1="${NOMINAL_IC1_A}" 'BEGIN { printf "%.2f", 100.0*(ic1-4.0e-3)/4.0e-3 }')"
+
+# Prose that must follow the measurement, not assume it.
+if [[ "${STARTUP_ALL_PASS}" == "yes" ]]; then
+  STARTUP_PROSE="all ${N_STARTUP} supply-ramp transient(s) settled to the op point with no ringing or latch"
+else
+  STARTUP_PROSE="NOT all supply-ramp transients passed (${N_STARTUP_PASS} of ${N_STARTUP} PASS) -- see the startup CSV for the failing verdict(s)"
+fi
 
 RECORD_MD="${RECORDS_DIR}/${RECORD_ID}.md"
 cat > "${RECORD_MD}" <<EOF
@@ -302,7 +268,7 @@ relaxes any row.
 
 ## Grid
 
-- {typ,bcs,wcs,sf,fs} x {-40,27,125} C x {1.62,1.80,1.98} V = 45 cells
+- {typ,bcs,wcs,sf,fs} x {-40,27,125} C x {1.62,1.80,1.98} V = full grid; this record validated ${N_OP} op cell(s) and ${N_STARTUP} startup cell(s)
   (\`cornerHBT.lib\` sections \`hbt_typ\`/\`hbt_bcs\`/\`hbt_wcs\`;
   \`sf\`/\`fs\` duplicate \`hbt_typ\` -- no skewed HBT section ships, per
   \`sim/README.md\`'s "Corner-label convention"), and -- since the
@@ -312,20 +278,20 @@ relaxes any row.
   models preloaded (\`pre_osdi\`).
 - Analysis: ngspice \`op\` per cell; probes named in
   \`testbench/tb_lna_biasop.spice.tmpl\`.
-- Failed cells: none.
+- Failed cells: none (simulator gate); reduction validated every log (required keys, finite values, one result per point, full inventory, op/startup pairs).
 
 ## Bars evaluated
 
 | Bar | Source | Status |
 |---|---|---|
-| I_C1 <= 4.5 mA at every cell | DR-1 bias-network requirement (proposed DR, cited by #26) | ${N_IC1_BAD} violation(s) of ${N_IC1_OK} cells |
-| P_dc < 10 mW at every cell | spec/target-spec.md Power row (DR-0002 issue #32, ratified; verification gate named this issue) | ${N_PDC_BAD} violation(s) of ${N_PDC_OK} cells |
+| I_C1 <= 4.5 mA at every cell | DR-1 bias-network requirement (proposed DR, cited by #26) | ${N_IC1_BAD} violation(s) of ${N_OP} cells |
+| P_dc < 10 mW at every cell | spec/target-spec.md Power row (DR-0002 issue #32, ratified; verification gate named this issue) | ${N_PDC_BAD} violation(s) of ${N_OP} cells |
 
 ## Results
 
 - **I_C1** spans $(awk "BEGIN{printf \"%.4f\", ${IC1_MIN}*1000}") mA (cell ${IC1_MIN_CELL})
   .. $(awk "BEGIN{printf \"%.4f\", ${IC1_MAX}*1000}") mA (cell ${IC1_MAX_CELL})
-  over the ${N_IC1_OK} cells. Old divider evidence
+  over the ${N_OP} cells. Old divider evidence
   (\`../lna-characterization/records/\`): 0.0249 .. 14.697 mA.
 - **P_dc** spans $(awk "BEGIN{printf \"%.4f\", ${PDC_MIN}*1000}") mW (cell ${PDC_MIN_CELL})
   .. $(awk "BEGIN{printf \"%.4f\", ${PDC_MAX}*1000}") mW (cell ${PDC_MAX_CELL}).
@@ -333,8 +299,7 @@ relaxes any row.
 - **Margins at the binding cells**: I_C1 max is $(awk "BEGIN{printf \"%.2f\", 100*(4.5-${IC1_MAX}*1000)/4.5}")% under the 4.5 mA bar; P_dc max is $(awk "BEGIN{printf \"%.2f\", 100*(10.0-${PDC_MAX}*1000)/10.0}")% under the 10 mW bar.
 - **Mirror transfer check**: I_C1 vs 8*I_C3 per cell (same-file columns);
   Q1's I_B1 span confirms the beta-independence of the transfer.
-- **Startup/latch check**: supply-ramp transients at the nominal and both
-  extreme cells settled to the op point (verdicts: ${SU_VERDICTS:-none}).
+- **Startup/latch check**: ${STARTUP_PROSE} (verdicts: ${STARTUP_VERDICTS}).
   See \`${RECORD_ID}-startup.csv\` and the wrdata artifacts.
 - **DR-0003 Stage-2 core audit** (extra BIASOP keys; the CSV's bar columns
   are unchanged): the nominal cell (typ/27C/1.80V) lands \`I_C1\` at
@@ -406,4 +371,4 @@ echo "  summary : ${SUMMARY_CSV}"
 echo "  record  : ${RECORD_MD}"
 echo "  I_C1 span: $(awk "BEGIN{printf \"%.4f\", ${IC1_MIN}*1000}") .. $(awk "BEGIN{printf \"%.4f\", ${IC1_MAX}*1000}") mA   | bar: <= 4.5 mA  (${N_IC1_BAD} violation(s))"
 echo "  P_dc span: $(awk "BEGIN{printf \"%.4f\", ${PDC_MIN}*1000}") .. $(awk "BEGIN{printf \"%.4f\", ${PDC_MAX}*1000}") mW     | bar: < 10 mW    (${N_PDC_BAD} violation(s))"
-echo "  startup verdicts: ${SU_VERDICTS:-none}"
+echo "  startup verdicts: ${STARTUP_VERDICTS}"

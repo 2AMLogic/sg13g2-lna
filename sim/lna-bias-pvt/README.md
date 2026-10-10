@@ -98,11 +98,24 @@ Requires `ngspice`, the PDK resolution `../env.sh` performs, and —
 since the DR-0003 Stage-2 core swap — the OSDI device models (the DUT
 instantiates `sg13_hv_pmos`/`sg13_hv_nmos`, PSP103.6 via OSDI: run
 [`../tools/build-osdi.sh`](../tools/build-osdi.sh) `--check` first; see
-[`../README.md`](../README.md) "OSDI device models"); it needs neither
-xschem nor python3 (`npn13G2` itself stays a native ngspice VBIC model —
+[`../README.md`](../README.md) "OSDI device models"); it needs python3 (stdlib only, for the reducer below) but not
+xschem (`npn13G2` itself stays a native ngspice VBIC model —
 see [`../pdk.json`](../pdk.json)). `BIASOP_JOBS=<n>` bounds concurrency
 (concurrency changes wall-clock only); `BIASOP_SMOKE=1` runs the
 nominal cell only as a plumbing check.
+
+The BIASOP/STARTUP reduction is [`reduce_biasop.py`](reduce_biasop.py)
+(issue #117): it validates required keys, finite values, one result per
+point, the exact log inventory and every startup/op pair, and writes the two
+CSVs only if all of that holds (exit 2 otherwise). Measured bar violations
+and non-PASS startup verdicts are results, not malformed input. The record
+prose takes its coverage counts and startup wording from the validated
+reduction. Replay a retained record into scratch paths with
+`reduce_biasop.py --corners-dir corners/<id> --summary-csv /tmp/s.csv --startup-csv /tmp/u.csv`
+(add `--require-audit` for DR-0003-era logs); the unit tests in `tests/`
+do this for both committed records and compare bytes. Smoke runs
+(`BIASOP_SMOKE=1`) now also run only the nominal startup cell, since the
+extreme startup cells have no op counterpart in a nominal-only run.
 
 Every run mints a new timestamped record under `records/`, with generated
 decks under `netlist-snapshots/<record-id>/` and raw ngspice logs under

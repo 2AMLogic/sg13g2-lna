@@ -90,6 +90,10 @@ step "reduction-tests: lna-characterization unit tests" \
 step "hbt-reduction-tests: hbt-characterization unit tests" \
   python3 -I -m unittest discover -s sim/hbt-characterization/tests -v
 
+# --- job: biasop-reduction-tests
+step "biasop-reduction-tests: lna-bias-pvt unit tests and committed-record replay" \
+  python3 -I -m unittest discover -s sim/lna-bias-pvt/tests -v
+
 # --- job: layout-reduction-tests
 step "layout-reduction-tests: lvs_reference unit tests" \
   python3 -I -m unittest discover -s layout/tests -v
