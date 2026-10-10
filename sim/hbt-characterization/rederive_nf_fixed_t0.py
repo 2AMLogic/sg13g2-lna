@@ -28,7 +28,11 @@ and T_amb = temp_c + 273.15. The committed 27 C cells need no correction
 own nf_delta_db = NF_corrected - NF_committed so the size of the
 correction is auditable per point.
 
-Regeneration (no PDK, no ngspice, deterministic):
+Regeneration (no PDK, no ngspice, deterministic). Outputs are created
+exclusively and the tool refuses (exit 4) if either already exists, so a
+landed record can never be overwritten. To PUBLISH a new append-only
+correction use a NEW <id>; to REPLAY an existing one, write to fresh
+scratch paths (e.g. under /tmp) and diff:
 
     sim/hbt-characterization/rederive_nf_fixed_t0.py \
         --record-id <id> \
@@ -118,6 +122,37 @@ def corrected_nf_db(nf_committed_db: float, temp_c: float):
     noise_back = noise_fixed - 4.0 * KB * RS * (T0 - t_amb)
     roundtrip = 10.0 * math.log10(noise_back / floor)
     return nf_fixed, abs(nf_committed_db - roundtrip)
+
+
+def reserve_outputs(paths):
+    """Exclusively create every output path; all-or-nothing.
+
+    Uses O_CREAT|O_EXCL so an existing destination is never truncated and
+    two concurrent writers cannot both win. If any reservation fails, the
+    files THIS call created are removed and the pre-existing one is left
+    untouched. Returns open text-mode handles in the order given.
+    """
+    if len(set(os.path.abspath(p) for p in paths)) != len(paths):
+        raise FileExistsError("output paths must be distinct: "
+                              + ", ".join(paths))
+    created = []
+    handles = []
+    try:
+        for p in paths:
+            os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
+            fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            created.append(p)
+            handles.append(os.fdopen(fd, "w", newline=""))
+    except BaseException:
+        for h in handles:
+            h.close()
+        for p in created:
+            try:
+                os.unlink(p)
+            except FileNotFoundError:
+                pass
+        raise
+    return handles
 
 
 def mint_record_id() -> str:
@@ -281,19 +316,41 @@ def main() -> int:
                     "" if best is None else best["validity_flags"],
             })
 
-    os.makedirs(os.path.dirname(out_points), exist_ok=True)
+    # Append-only evidence: reserve BOTH destinations exclusively before
+    # writing either, so an existing record (or a concurrent writer) is
+    # never overwritten and no half-published pair is left behind.
+    try:
+        fh_points, fh_summary = reserve_outputs([out_points, out_summary])
+    except FileExistsError as e:
+        print(f"rederive_nf_fixed_t0.py: refusing to overwrite existing "
+              f"evidence ({e}).\n"
+              "  Replay: pass fresh scratch --record-id-csv/--summary-csv "
+              "paths (e.g. under /tmp).\n"
+              "  Publish a new append-only correction: pass a NEW "
+              "--record-id (or omit it to mint one); never reuse a landed "
+              "record id.", file=sys.stderr)
+        return 4
     # LF line endings, matching the committed source record CSVs so a
     # reviewer's re-derivation is byte-identical (same pin as
     # sim/lna-characterization's parser).
-    with open(out_points, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=point_header, lineterminator="\n")
-        w.writeheader()
-        w.writerows(rows_out)
-    with open(out_summary, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()),
-                           lineterminator="\n")
-        w.writeheader()
-        w.writerows(summary_rows)
+    try:
+        with fh_points as f:
+            w = csv.DictWriter(f, fieldnames=point_header,
+                               lineterminator="\n")
+            w.writeheader()
+            w.writerows(rows_out)
+        with fh_summary as f:
+            w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()),
+                               lineterminator="\n")
+            w.writeheader()
+            w.writerows(summary_rows)
+    except BaseException:
+        for p in (out_points, out_summary):
+            try:
+                os.unlink(p)  # both were created by this run
+            except FileNotFoundError:
+                pass
+        raise
 
     affected_temps_seen = sorted(set(int(r["temp_c"]) for r in rows_out))
     print(f"corrected points: {len(rows_out)} rows "

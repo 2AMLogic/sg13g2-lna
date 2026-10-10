@@ -49,6 +49,7 @@ import argparse
 import csv
 import importlib.util
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -75,7 +76,9 @@ def main() -> int:
     ap.add_argument("--out", default=None,
                     help="write the derived per-cell CSV here (default: "
                          "records/<record-id>-derived-envelope.csv under this "
-                         "experiment)")
+                         "experiment). Refuses an existing file: that is "
+                         "committed append-only evidence. Replay into a "
+                         "fresh scratch path.")
     args = ap.parse_args()
 
     src = Path(args.source_experiment)
@@ -143,10 +146,28 @@ def main() -> int:
     out = Path(args.out) if args.out else (
         here / "records" / f"{args.record_id}-derived-envelope.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(out_rows[0].keys()))
-        w.writeheader()
-        w.writerows(out_rows)
+    # Exclusive creation: never truncate existing evidence, and two
+    # concurrent writers cannot both publish.
+    try:
+        fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+    except FileExistsError:
+        print(f"derive_committed_record_envelope.py: refusing to overwrite "
+              f"existing {out}.\n"
+              "  Replay: pass --out <fresh scratch path> (e.g. under /tmp).\n"
+              "  Publish a new append-only correction: pass a NEW --out "
+              "path; never edit a landed record.", file=sys.stderr)
+        return 4
+    try:
+        with os.fdopen(fd, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(out_rows[0].keys()))
+            w.writeheader()
+            w.writerows(out_rows)
+    except BaseException:
+        try:
+            os.unlink(out)  # created by this run
+        except FileNotFoundError:
+            pass
+        raise
 
     def col(name, f=float):
         return [f(r[name]) for r in out_rows]

@@ -347,6 +347,100 @@ class FixtureEndToEnd(unittest.TestCase):
                 run_main(fixture_repo(d, bad_flag), d / "out")
 
 
+class AppendOnlyOutputs(unittest.TestCase):
+    """Existing evidence is never overwritten (issue #123)."""
+
+    def _run(self, repo, pts, summ):
+        argv = ["rederive_nf_fixed_t0.py", "--record-id", "test",
+                "--record-id-csv", str(pts), "--summary-csv", str(summ),
+                "--repo-root", str(repo)]
+        err = io.StringIO()
+        with mock.patch("sys.argv", argv), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(err):
+            return R.main(), err.getvalue()
+
+    def test_fresh_success(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            rc, _, pts, summ = run_main(fixture_repo(d), d / "out")
+            self.assertEqual(rc, 0)
+            self.assertTrue(pts.stat().st_size > 0)
+            self.assertTrue(summ.stat().st_size > 0)
+
+    def test_existing_first_output_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            pts, summ = d / "p.csv", d / "s.csv"
+            pts.write_bytes(b"landed-points")
+            rc, err = self._run(fixture_repo(d), pts, summ)
+            self.assertEqual(rc, 4)
+            self.assertIn("refusing to overwrite", err)
+            self.assertEqual(pts.read_bytes(), b"landed-points")
+            self.assertFalse(summ.exists())
+
+    def test_collision_at_second_output_leaves_nothing_behind(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            pts, summ = d / "p.csv", d / "s.csv"
+            summ.write_bytes(b"landed-summary")
+            rc, err = self._run(fixture_repo(d), pts, summ)
+            self.assertEqual(rc, 4)
+            self.assertEqual(summ.read_bytes(), b"landed-summary")
+            self.assertFalse(pts.exists())  # first reservation rolled back
+
+    def test_existing_record_id_in_default_location_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            repo = fixture_repo(d)
+            rec = repo / "sim/hbt-characterization/records"
+            old = rec / "test-corrected.csv"
+            old.write_bytes(b"landed")
+            argv = ["rederive_nf_fixed_t0.py", "--record-id", "test",
+                    "--repo-root", str(repo)]
+            with mock.patch("sys.argv", argv), \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(R.main(), 4)
+            self.assertEqual(old.read_bytes(), b"landed")
+            self.assertFalse((rec / "test-summary.csv").exists())
+
+    def test_concurrent_reservation_has_single_winner(self):
+        import threading
+        with tempfile.TemporaryDirectory() as d:
+            target = os.path.join(d, "x.csv")
+            barrier = threading.Barrier(8)
+            wins, losses = [], []
+
+            def worker(i):
+                barrier.wait()
+                try:
+                    (h,) = R.reserve_outputs([target])
+                except FileExistsError:
+                    losses.append(i)
+                    return
+                with h:
+                    h.write(f"winner-{i}")
+                wins.append(i)
+
+            ts = [threading.Thread(target=worker, args=(i,))
+                  for i in range(8)]
+            for t in ts:
+                t.start()
+            for t in ts:
+                t.join()
+            self.assertEqual(len(wins), 1)
+            self.assertEqual(len(losses), 7)
+            self.assertEqual(Path(target).read_text(), f"winner-{wins[0]}")
+
+    def test_duplicate_destinations_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            t = os.path.join(d, "same.csv")
+            with self.assertRaises(FileExistsError):
+                R.reserve_outputs([t, t])
+            self.assertFalse(os.path.exists(t))
+
+
 class CommittedRecordReplay(unittest.TestCase):
     def test_replays_committed_correction_record(self):
         # Re-derive correction record 20260921-124900-d6da30a from the
