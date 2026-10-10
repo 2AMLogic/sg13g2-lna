@@ -116,6 +116,25 @@ step "record-citations: check" .github/scripts/check-record-citations
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness
 
+# --- job: netlist-regen (issue #138; needs xschem 3.4.4 + the pinned PDK,
+# never installed here -- CI provisions them via block-scalar steps)
+regen_pdk=0
+if command -v xschem >/dev/null 2>&1 \
+  && xschem --version 2>&1 | grep -q 'XSCHEM V3\.4\.4'; then
+  for c in "${PDK_ROOT:-}" /usr/share/pdk /usr/local/share/pdk "$HOME/share/pdk" "$HOME/.ciel" "$HOME/.volare"; do
+    if [ -n "$c" ] && [ -f "$c/ihp-sg13g2/libs.tech/xschem/xschemrc" ]; then
+      export PDK_ROOT="$c" PDK=ihp-sg13g2; regen_pdk=1; break
+    fi
+  done
+fi
+if [ "$regen_pdk" -eq 1 ]; then
+  step "netlist-regen: self-test" .github/scripts/test-check-netlist-regen.sh --require-tools
+  step "netlist-regen: check" .github/scripts/check-netlist-regen
+else
+  skip "netlist-regen: self-test (need xschem 3.4.4 and the SG13G2 PDK; CI provisions both)"
+  skip "netlist-regen: check (need xschem 3.4.4 and the SG13G2 PDK)"
+fi
+
 # --- job: sim-append-only (CI: pull_request only)
 step "sim-append-only: self-test" .github/scripts/test-check-sim-append-only.sh
 if [ -n "$base" ]; then
