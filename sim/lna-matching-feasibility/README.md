@@ -22,6 +22,7 @@ designed network instead of a guess.
 | Record | What it holds |
 |---|---|
 | [`20261010-201010-6aca84c`](records/20261010-201010-6aca84c.md) | First study: characterization, the base-feed what-if probe, 3 candidate topologies × 4 inductor-Q cases, each verified by a single-cell ngspice run |
+| [`20261010-213251-3ccb391`](records/20261010-213251-3ccb391.md) | Issue [#190](https://github.com/2AMLogic/sg13g2-lna/issues/190): DC-reference sensitivity. 4 candidate / Q points re-run with an explicit `Rxoutdc` bench resistor (1e9 and 1e11 Ω) on the floating `xout` node and compared with the first record. Decks, logs, [sensitivity table](records/20261010-213251-3ccb391-sensitivity.csv) |
 
 ## Findings (record `20261010-201010-6aca84c`, nominal cell)
 
@@ -168,6 +169,8 @@ described under "DC operating point" below:
   - Future records should give `xout` a DC-defining element, for example a
     very large `noisy=0` resistor to ground, with its effect on μ bounded
     against the ppm margin. This record has not been re-run with one.
+    **Update (#190)**: record `20261010-213251-3ccb391` did this; see "DC reference on
+    xout" below. The text above describes the historical record only.
 - **DUT**: `design/netlist/lna.spice` is inlined verbatim except for the
   lines marked `BENCH EDIT`:
   - **Le loss** is a resistor in parallel with `Le`, with R = Q·ω_mid·Le
@@ -203,6 +206,81 @@ described under "DC operating point" below:
 
 The extracted spirals measure Q = 8.5 (5-turn) and Q = 10.3 (4-turn) at
 2.44 GHz in this bench, so `q10` is the realistic basis for on-chip spirals.
+
+## DC reference on xout (issue #190)
+
+`tb_match_verify.spice.tmpl` now has an `@@XOUT_DC@@` slot in `lnam`.
+`matching_solver.py solve --xout-rdc R[,R...]` fills it with one labelled
+bench element, `Rxoutdc xout vss <R> noisy=0`: noiseless, from the DUT's
+`rfout` node to the subcircuit ground, outside the DUT and outside any
+matching network. Without `--xout-rdc` the slot is a comment and the deck is
+the #186 deck (a unit test checks this line for line against the committed
+snapshot). `run_dc_reference_study.sh` runs the bounded comparison
+(`DCREF_STAGE=gen|run|finish|all`; it re-uses the characterization data of
+record `20261010-201010-6aca84c`, which has no floating node and is
+unchanged). It does not touch the historical record.
+
+Record [`20261010-213251-3ccb391`](records/20261010-213251-3ccb391.md): nominal cell only, 4 candidate / Q
+points (`lp_noise` and `hp_power` at Q = 10; `lp_noise` and `hp_power` ideal)
+× R = 1e9 and 1e11 Ω = 8 decks, each compared with the retained #186 result of
+the same point. Convergence is classified from the ngspice log
+(`classify_convergence`), not from `BENCH_COMPLETE`: a log is "normal" only if
+it has no singular-matrix warning, no failed gmin / source stepping and no
+transient-op fallback.
+
+Results (all nominal cell, full table in the record):
+
+- **Convergence.** All 8 new logs: zero singular-matrix warnings, zero
+  stepping failures, zero transient-op fallbacks. All 12 historical
+  verification logs are flagged by the same classifier. The first-run OP now
+  matches the characterization decks (I_C1 3.9402 mA).
+- **Operating point.** At finite Q, I_C1 moves from 3.9384–3.9387 mA
+  (historical fallback) to 3.9402 mA, +1.5 to +1.8 µA (0.04 %). The shift is
+  identical at 1e9 and 1e11 Ω, so it comes from replacing the fallback OP by
+  the converged one, not from the resistor's conductance.
+- **What the resistor itself does.** Between 1e9 and 1e11 Ω the finite-Q
+  decks differ by ≤ 8e-4 dB in S22 mid, ≤ 4e-6 dB in S11 / S21 mid, 0 in
+  NF290, and ≤ 5.4e-11 in the broadband μ minimum; the ideal-Le decks (near
+  lossless resonances) by ≤ 4.5e-3 dB in S22 and ≤ 6e-4 dB in S21. These are
+  upper bounds on the resistor-attributable part, from two values only; they
+  are not a proof for other values (see the limits below).
+- **Historical vs. new, finite Q.** S21 mid +0.004 dB, NF290 −3e-4 dB, S22
+  mid up to 0.27 dB, S11 mid unchanged at −12 dB for `lp_noise` but
+  −68.4 → −66.3 dB for `hp_power`, which is a sub-0.001 change of |Γ| on a
+  deep null and is not a meaningful dB comparison. These differences are
+  attributed to the OP change above. That attribution is by elimination
+  (they do not depend on R over two decades), not by a separate experiment.
+- **μ margin.** Finite-Q broadband μ minimum is 1.0000003575 at 10 MHz
+  before and after, for both R values (|Δμ| ≤ 4.2e-11, ≤ 1.2e-4 of the 3.6e-7
+  margin, below the 1e-9 table-resolution floor used here; the
+  frequency of the minimum is unchanged). By the pre-set criterion (a change
+  of more than 10 % of the baseline margin, a margin driven to the table
+  floor, or a moved minimum frequency) the resistor is **not material** at
+  these two values. The ideal-Le points are separate: `hp_power` ideal has a
+  resolved μ = 0.99999923 at 10 MHz, unchanged to 10 digits; `lp_noise` ideal
+  is μ = 1 to table resolution before and after, so the frequency of its
+  minimum (133 MHz vs 668 MHz) carries no information.
+- **No stability claim.** This is two R values at 4 nominal-cell points on a
+  ppm-scale margin at the sweep edge. It does not make any candidate stable.
+  The PVT μ gate remains with #27.
+
+Limits of this record:
+
+- Two R values, four points, one cell. 1e9 Ω is the smaller, and its
+  conductance (1e-9 S) is still tiny against Cout's admittance at 10 MHz
+  (≈ 6e-3 S), ratio ≈ 2e-7, comparable in order to the 3.6e-7 margin; the
+  measured effect is nevertheless below resolution. A much smaller R (e.g.
+  1e6 Ω) was not tested and would very likely matter. `parse_rdc_list` refuses
+  R < 1e6 Ω.
+- The mu resolution floor (1e-9) is conservative against the ~1e-10 implied
+  by `numdgt=10`; changes below it are reported as "below table resolution",
+  not as zero.
+- The 8 decks were run as separate single `ngspice -b` invocations on a
+  shared host (no loop, no background jobs, no grid); each takes ~0.2 s.
+  They are nominal-cell probes, not a PVT campaign, so the fleet / `klt sim`
+  route was not used. A multi-corner confirmation with the DC reference is
+  not in scope here.
+- Historical evidence (record `20261010-201010-6aca84c`) is unchanged.
 
 ## Method
 
@@ -280,7 +358,9 @@ geometries' L at 2.44175 GHz, in four classes:
     Its ideal-case counts therefore include those μ = 1 points.
 - **Floating DC node in the verification decks** (see "Bench definitions").
   The OP comes from ngspice's transient-op fallback. The small-signal
-  numbers do not depend on it.
+  numbers do not depend on it. Record `20261010-213251-3ccb391` (#190)
+  measured this: the fallback OP differs from the converged one by 0.04 %
+  in I_C1, and S22 mid moves by up to 0.27 dB (see "DC reference on xout").
 - **Simulator identity is a version banner only.** This record ran on an
   ngspice-46 binary borrowed from another sweep's build, because provisioned
   workers ship ngspice 42, which cannot load the PSP103 OSDI v0.4 builds.
@@ -302,6 +382,12 @@ is 14 sequential single-process ngspice invocations, about 30 s, with no
 parallelism and no grid. The runner refuses an older ngspice, a missing
 PDK or OSDI model, or a modified EM model copy, with exit code 3.
 
+The DC-reference sensitivity comparison (#190) is regenerated with
+`sim/lna-matching-feasibility/run_dc_reference_study.sh` (it needs the
+characterization data of record `20261010-201010-6aca84c`). On a shared host
+use `DCREF_STAGE=gen`, run the printed `ngspice -b` commands one at a time,
+then `DCREF_STAGE=finish DCREF_RECORD_ID=<id>`.
+
 Unit tests are stdlib-only, PDK-free and need no ngspice. They include a
 byte-for-byte replay of every committed record:
 
@@ -312,8 +398,10 @@ python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v
 ## Files
 
 - `run_matching_study.sh`: the cold-start entry point.
-- `matching_solver.py`: deck generation (`gen-char`), synthesis (`solve`)
-  and reduction (`reduce`); stdlib only.
+- `run_dc_reference_study.sh`: the DC-reference sensitivity runner (#190).
+- `matching_solver.py`: deck generation (`gen-char`), synthesis (`solve`,
+  optionally with `--xout-rdc`), reduction (`reduce`) and the DC-reference
+  comparison (`sensitivity`); stdlib only.
 - `testbench/tb_match_char.spice.tmpl`, `tb_match_feedprobe.spice.tmpl`,
   `tb_match_verify.spice.tmpl`: the deck templates.
 - `tests/test_matching_solver.py`: unit tests and the committed-record

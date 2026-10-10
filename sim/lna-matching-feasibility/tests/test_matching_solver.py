@@ -337,5 +337,110 @@ class CommittedRecordReplay(unittest.TestCase):
                         self.assertTrue(math.isclose(g[k], e[k], rel_tol=1e-12), (rid, k))
 
 
+class DcReference(unittest.TestCase):
+    """Issue #190: explicit DC reference on xout, convergence classification,
+    sensitivity verdicts, and replay of the committed sensitivity records."""
+
+    HIST = "20261010-201010-6aca84c"
+
+    def test_xout_dc_text_and_tags(self):
+        self.assertIn("historical floating-xout", ms.xout_dc_text(None))
+        txt = ms.xout_dc_text(1e9)
+        self.assertIn("Rxoutdc xout vss 1e+09 noisy=0", txt)
+        self.assertIn("BENCH ELEMENT", txt)
+        self.assertEqual(ms.rdc_tag(None), "")
+        self.assertEqual(ms.rdc_tag(1e9), "_rdc1e09")
+        self.assertEqual(ms.parse_rdc_list(""), [None])
+        self.assertEqual(ms.parse_rdc_list("1e9,1e11"), [1e9, 1e11])
+        for bad in ("1e3", "1e9,1e9", "inf", "abc"):
+            with self.assertRaises(ValueError):
+                ms.parse_rdc_list(bad)
+
+    def _entry(self, rdc):
+        doc = json.loads((EXP / "netlist-snapshots" / self.HIST / "candidates.json").read_text())
+        e = dict(next(x for x in doc["candidates"] if x["candidate"] == "hp_power" and x["qcase"] == "q10"))
+        e["xout_rdc_ohm"] = rdc
+        return e
+
+    def _deck(self, rdc):
+        a = SimpleNamespace(models_lib="/m/cornerHBT.lib", mos_lib="/m/cornerMOShv.lib", osdi_dir="/o",
+                            outdir="/c", nf_npts=21)
+        e = self._entry(rdc)
+        return ms.verify_deck(a, e, ms.stem_of(e))
+
+    @staticmethod
+    def _functional(text):
+        keep = []
+        for ln in text.splitlines():
+            if ln.startswith("*") or ln.startswith("wrdata") or ln.startswith((".lib", "pre_osdi")):
+                continue
+            keep.append(ln)
+        return keep
+
+    def test_deck_has_explicit_dc_path_only_when_asked(self):
+        with_r = self._deck(1e9)
+        self.assertNotIn("@@", with_r)
+        self.assertEqual(with_r.count("Rxoutdc xout vss 1e+09 noisy=0"), 1)
+        # inside the lnam subcircuit, before .ends
+        self.assertLess(with_r.index("Rxoutdc"), with_r.index(".ends lnam"))
+        self.assertGreater(with_r.index("Rxoutdc"), with_r.index(".subckt lnam"))
+        self.assertIn("verify_hp_power_q10_rdc1e09.", with_r)
+        without = self._deck(None)
+        self.assertNotIn("Rxoutdc", self._functional(without) and "\n".join(self._functional(without)))
+        # no-R decks reproduce the committed historical deck, line for line,
+        # apart from comments / PDK and output paths
+        hist = (EXP / "netlist-snapshots" / self.HIST / "verify_hp_power_q10.spice").read_text()
+        self.assertEqual(self._functional(without), self._functional(hist))
+        # with R, the only functional difference is the one resistor line
+        norm = [ln.replace("_rdc1e09", "") for ln in self._functional(with_r)]
+        diff = [ln for ln in norm if ln not in self._functional(without)]
+        self.assertEqual(diff, ["Rxoutdc xout vss 1e+09 noisy=0"])
+
+    def test_convergence_classification(self):
+        corners = EXP / "corners" / self.HIST
+        old = ms.classify_convergence(corners / "verify_hp_power_q10.log")
+        self.assertTrue(old["bench_complete"])           # BENCH_COMPLETE alone ...
+        self.assertFalse(old["normal"])                  # ... is not convergence evidence
+        self.assertGreater(old["singular_matrix"], 0)
+        self.assertGreater(old["transient_op_fallback"], 0)
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td, "x.log")
+            p.write_text("OP ic1 1 ic2 1 idd 1 pdc 1\nBENCH_COMPLETE\n")
+            self.assertTrue(ms.classify_convergence(p)["normal"])
+            for line in ("Warning: singular matrix:  check node xa.xout", "Warning: True gmin stepping failed",
+                         "Warning: source stepping failed", "Note: Transient op started"):
+                p.write_text(line + "\nBENCH_COMPLETE\n")
+                self.assertFalse(ms.classify_convergence(p)["normal"], line)
+            p.write_text("OP ic1 1\n")                    # no marker
+            self.assertFalse(ms.classify_convergence(p)["normal"])
+
+    def test_mu_verdict(self):
+        v = ms.mu_verdict
+        base = 1.0 + 3.6e-7
+        self.assertTrue(v(base, base + 1e-12, 1e7, 1e7, True).startswith("within"))
+        self.assertTrue(v(base, base + 1e-7, 1e7, 1e7, True).startswith("MATERIAL: mu minimum moved"))
+        self.assertTrue(v(base, 1.0 + 1e-10, 1e7, 1e7, True).startswith("MATERIAL: margin driven"))
+        self.assertTrue(v(base, base + 1e-12, 1e7, 2e7, True).startswith("MATERIAL: frequency"))
+        self.assertIn("table resolution", v(1.0, 1.0 - 1e-12, 1e8, 7e8, False))
+        self.assertIn("resolved deficit", v(1.0 - 7.7e-7, 1.0 - 7.7e-7, 1e7, 1e7, False))
+
+    def test_sensitivity_replays(self):
+        recs = sorted(p.name[: -len("-sensitivity.csv")] for p in (EXP / "records").glob("*-sensitivity.csv"))
+        self.assertTrue(recs, "no committed DC-reference sensitivity record")
+        for rid in recs:
+            with self.subTest(record=rid), tempfile.TemporaryDirectory() as td:
+                doc = json.loads((EXP / "netlist-snapshots" / rid / "candidates.json").read_text())
+                rows, problems = ms.sensitivity_rows(doc, EXP / "corners" / rid, EXP / "corners" / self.HIST)
+                self.assertEqual(problems, [])
+                self.assertTrue(all(r["convergence_new"] == "normal" and r["singular_new"] == 0
+                                    and r["transient_op_new"] == 0 for r in rows))
+                self.assertTrue(all(r["convergence_base"] != "normal" for r in rows))
+                ms.write_sensitivity(f"{td}/s.csv", f"{td}/s.md", rows, problems)
+                self.assertEqual(Path(td, "s.csv").read_bytes(),
+                                 (EXP / "records" / f"{rid}-sensitivity.csv").read_bytes())
+                self.assertEqual(Path(td, "s.md").read_bytes(),
+                                 (EXP / "corners" / rid / "sensitivity.md").read_bytes())
+
+
 if __name__ == "__main__":
     unittest.main()
