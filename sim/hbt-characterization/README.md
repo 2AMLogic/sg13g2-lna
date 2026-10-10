@@ -653,6 +653,30 @@ full grid documented under "Sweep grid" above. A cut-down grid is useful
 for iterating on the testbench; **only full-grid runs should be committed
 as records**, since every table in this README is a whole-grid statement.
 
+### Measurement parser and its tests
+
+`run_hbt_sweep.sh` reduces each cell's log with `parse_hbt_log.awk`,
+invoked through `hbt_parse.sh` (`hbt_parse_log`, plus `hbt_classify_cell`
+for the ok / PARTIAL / FAILED cell verdict) -- the same functions
+`tests/test_parse_hbt_log.py` drives (issue #144). Every `PT`/`IC`/`FT`/
+`GAIN`/`NF` token must match a strict numeric grammar and be finite and in
+range (`|x| <= 1e300`, no underflow of a nonzero mantissa to zero) before
+any arithmetic or CSV publication, so arbitrary text such as `broken` can no
+longer coerce to a plausible zero. The documented missing-fT sentinels
+still publish a blank `ft_hz` with gain/NF kept: the literal `FT NA` (and
+`NaN`), and an empty `FT` echoed after ngspice's benign `ftmeas ... out of
+interval` measure failure in the same block. Each unpublished block gets a
+named reason: `diverged` is the convergence-gate drop above (PARTIAL cell,
+unchanged); anything else (`malformed_`/`missing_`/`nonfinite_`/
+`out_of_range_<key>`, `extra_tokens_<key>`, `unexpected_<key>`,
+`orphan_<key>`, `incomplete_block`) is a malformed block, is never counted
+as converged, FAILS its cell, and is listed under **Rejected blocks** in the
+record. The tests replay every retained log under `corners/` for both
+records above and reproduce their committed CSV rows byte for byte (record
+`20260910-200059-7da7038` on its original 12 columns) with the same
+partial/failed cell census, under every awk implementation present (`awk`,
+`gawk`, `mawk`, `busybox awk`).
+
 ### Tests for the fixed-T0 NF re-derivation
 
 `rederive_nf_fixed_t0.py` creates both outputs exclusively and refuses

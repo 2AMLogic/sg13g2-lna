@@ -50,6 +50,9 @@ SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=hbt_parse.sh
+source "${SCRIPT_DIR}/hbt_parse.sh"
 
 # PDK/ngspice preflight (exit 3 on any miss, prefixed with this runner's
 # own name) and this run's record id + append-only output dirs. No --osdi:
@@ -98,10 +101,16 @@ AE_UNIT_UM2="0.1152"
 # required by issue #21: DR-0001's device-sizing argument turns on exactly
 # this boundary, so a reader must be able to tell in-box rows from
 # out-of-box rows without re-deriving the limits.
+# These (and AE_UNIT_UM2) are read by hbt_parse.sh's hbt_parse_log.
+# shellcheck disable=SC2034  # consumed by hbt_parse_log (hbt_parse.sh)
 IC_LIMIT_PER_NX="0.003"
+# shellcheck disable=SC2034
 VBE_MIN="0.65"
+# shellcheck disable=SC2034
 VBE_MAX="0.96"
+# shellcheck disable=SC2034
 VCE_MIN="0.4"
+# shellcheck disable=SC2034
 VCE_MAX="2.0"
 
 echo "point_id,corner_label,hbt_section,temp_c,nx,vce_v,vbe_v,ic_a,jc_ma_um2,ft_hz,gain_db,nf_db,validity_flags" > "${CSV_RAW}"
@@ -109,6 +118,7 @@ echo "point_id,corner_label,hbt_section,temp_c,nx,vce_v,vbe_v,ic_a,jc_ma_um2,ft_
 total=0
 failed_points=()
 partial_points=()
+rejected_blocks=()
 
 run_one() {
   local corner_label="$1" hbt_section="$2" temp="$3" nx="$4" vce="$5"
@@ -171,54 +181,48 @@ run_one() {
   # a blanket /Error:/ match: `Error: measure ftmeas when(WHEN) : out of
   # interval` is the benign "h21 never crosses 0 dB" case, which already
   # has its own handling (blank fT) and whose gain/NF are valid.
-  local rows_before rows_after emitted
+  # The parse itself lives in parse_hbt_log.awk (driven via hbt_parse.sh,
+  # shared with tests/test_parse_hbt_log.py -- issue #144): every IC,
+  # GAIN, NF, PT and FT token must pass a strict numeric grammar and be
+  # finite before it is used in arithmetic or published, so arbitrary text
+  # can never coerce to a plausible zero. Every unpublished block gets a
+  # named reason in a per-cell rejects list: "diverged" is the established
+  # drop above (PARTIAL cell); any other reason is a malformed block and
+  # FAILS the cell.
+  local rows_before rows_after emitted rejects n_diverged n_malformed end_marker verdict
+  rejects="$(mktemp)"
   rows_before=$(wc -l < "${CSV_RAW}")
-  awk -v corner="${corner_label}" -v section="${hbt_section}" -v temp="${temp}" \
-      -v nx="${nx}" -v vce="${vce}" -v point_id="${point_id}" -v ae="${AE_UNIT_UM2}" \
-      -v iclim="${IC_LIMIT_PER_NX}" -v vbemin="${VBE_MIN}" -v vbemax="${VBE_MAX}" \
-      -v vcemin="${VCE_MIN}" -v vcemax="${VCE_MAX}" '
-    function bad_number(s) {
-      return (s == "" || s ~ /[nN][aA][nN]/ || s ~ /[iI][nN][fF]/)
-    }
-    /operating point failed|The operating point could not be simulated successfully|Timestep too small/ {
-      diverged = 1; next
-    }
-    /^PT / { vbe=$2; ic=""; ft=""; gain=""; nf=""; diverged=0; next }
-    /^IC / { ic=$2; next }
-    /^FT / { ft=$2; next }
-    /^GAIN / { gain=$2; next }
-    /^NF / {
-      nf=$2
-      if (!diverged && !bad_number(ic) && !bad_number(gain) && !bad_number(nf)) {
-        jc = (ic+0) * 1000.0 / (nx * ae)
-        ftout = (ft == "NA" || ft ~ /[nN][aA][nN]/) ? "" : ft
-        flags = ""
-        if ((ic+0) >= (iclim+0) * nx)          flags = flags (flags ? ";" : "") "ic_high"
-        if ((vbe+0) <  (vbemin+0) - 1e-9)      flags = flags (flags ? ";" : "") "vbe_low"
-        if ((vbe+0) >  (vbemax+0) + 1e-9)      flags = flags (flags ? ";" : "") "vbe_high"
-        if ((vce+0) <  (vcemin+0) - 1e-9)      flags = flags (flags ? ";" : "") "vce_low"
-        if ((vce+0) >  (vcemax+0) + 1e-9)      flags = flags (flags ? ";" : "") "vce_high"
-        printf "%s,%s,%s,%s,%s,%s,%s,%.6e,%.6f,%s,%.6f,%.6f,%s\n", point_id, corner, section, temp, nx, vce, vbe, ic+0, jc, ftout, gain+0, nf+0, flags
-      }
-      next
-    }
-  ' "${log}" >> "${CSV_RAW}"
+  hbt_parse_log "${log}" "${point_id}" "${corner_label}" "${hbt_section}" \
+    "${temp}" "${nx}" "${vce}" "${rejects}" >> "${CSV_RAW}"
   rows_after=$(wc -l < "${CSV_RAW}")
   emitted=$((rows_after - rows_before))
-
-  if [[ "${emitted}" -eq 0 ]]; then
-    echo "run_hbt_sweep.sh: FAILED ${point_id} (rc=${rc}, every bias point diverged) -- see ${log}" >&2
-    failed_points+=("${point_id}")
-  elif [[ "${emitted}" -lt "${N_POINTS}" ]]; then
-    echo "run_hbt_sweep.sh: PARTIAL ${point_id} (${emitted}/${N_POINTS} bias points converged) -- see ${log}" >&2
-    partial_points+=("${point_id}:${emitted}/${N_POINTS}")
-  elif [[ ${rc} -ne 0 ]] || ! grep -q "Simulation executed from .control section" "${log}"; then
-    # All N_POINTS points parsed clean, yet ngspice still exited non-zero
-    # or never printed its end-of-control marker: unexplained, so it is
-    # NOT quietly accepted.
-    echo "run_hbt_sweep.sh: FAILED ${point_id} (rc=${rc}, ${emitted}/${N_POINTS} points parsed but no end-of-control marker) -- see ${log}" >&2
-    failed_points+=("${point_id}")
+  n_diverged=$(awk -F, '$3 == "diverged"' "${rejects}" | wc -l)
+  n_malformed=$(awk -F, '$3 != "diverged"' "${rejects}" | wc -l)
+  if [[ "${n_malformed}" -gt 0 ]]; then
+    while IFS=, read -r _pid r_vbe r_reason; do
+      [[ "${r_reason}" == "diverged" ]] && continue
+      echo "run_hbt_sweep.sh: REJECTED ${point_id} block PT=${r_vbe}: ${r_reason} -- see ${log}" >&2
+      rejected_blocks+=("${point_id}@PT=${r_vbe}:${r_reason}")
+    done < "${rejects}"
   fi
+  rm -f -- "${rejects}"
+
+  end_marker=0
+  if grep -q "Simulation executed from .control section" "${log}"; then
+    end_marker=1
+  fi
+  verdict="$(hbt_classify_cell "${emitted}" "${N_POINTS}" "${n_diverged}" "${n_malformed}" "${rc}" "${end_marker}")"
+  case "${verdict}" in
+    ok) ;;
+    partial)
+      echo "run_hbt_sweep.sh: PARTIAL ${point_id} (${emitted}/${N_POINTS} bias points converged, ${n_diverged} diverged) -- see ${log}" >&2
+      partial_points+=("${point_id}:${emitted}/${N_POINTS}")
+      ;;
+    *)
+      echo "run_hbt_sweep.sh: FAILED ${point_id} (rc=${rc}, ${verdict#failed:}) -- see ${log}" >&2
+      failed_points+=("${point_id}")
+      ;;
+  esac
 }
 
 # --- Main grid: every Nx across the full corner x temp x Vce grid ---
@@ -468,6 +472,11 @@ n_cells=$((${#NX_LIST[@]} * ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VCES[@]}))
     echo "  per-point convergence gate): ${partial_points[*]}"
   else
     echo "- **Partial cells**: none -- every bias point in every cell converged."
+  fi
+  if [[ ${#rejected_blocks[@]} -gt 0 ]]; then
+    echo "- **Rejected blocks** (malformed measurement tokens -- never"
+    echo "  published, never counted as converged; their cells are listed as"
+    echo "  failed above): ${rejected_blocks[*]}"
   fi
   echo "- **Model-card validity box** (\`sg13g2_hbt_mod.lib\`: \`ic <"
   echo "  0.003*Nx A\`, \`vbe 0.65-0.96 V\`, \`vce 0.4-2.0 V\`): flagged"
