@@ -324,6 +324,28 @@ class TestReduce(Base):
             a["seed"], b["seed"] = b["seed"], a["seed"]
         self._seed_case(swap, "seed sequence sha256")
 
+    def _gap_case(self, mutate):
+        self.write_all(replay=report(mc.N_MAIN, job="y", mutate=mutate),
+                       main=report(mc.N_MAIN, mutate=mutate))
+        rc, s = self.reduce()
+        self.assertFalse(s["seed_sequences_verified"])
+        self.assertFalse(s["runs"]["mc_mismatch"]["seed_sequence_verified"])
+        self.assertFalse(s["controls_pass"])
+        return rc, s
+
+    def test_matching_gap_with_wrong_seeds_cannot_pass_controls(self):
+        def gap_wrong(rep):
+            del rep["corners"][3]
+            for c in rep["corners"]:
+                c["monte_carlo"]["seed"] += 7
+        self._gap_case(gap_wrong)
+
+    def test_matching_gap_with_correct_seeds_cannot_pass_controls(self):
+        def gap(rep):
+            del rep["corners"][3]
+        rc, s = self._gap_case(gap)
+        self.assertEqual(rc, 0)  # gap stays a counted failure; only the controls verdict fails
+
     def test_missing_validation_record_rejected(self):
         self.write_all()
         (self.snap / "request-validation.json").unlink()

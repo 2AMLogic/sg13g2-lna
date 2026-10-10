@@ -461,10 +461,15 @@ def expected_seed_digest(snapshot_dir: Path, req_stem: str) -> tuple[str | None,
     return digest, None
 
 
-def check_seed_sequence(rows: list[dict], expected_digest: str | None) -> list[str]:
+def check_seed_sequence(rows: list[dict], expected_digest: str | None) -> tuple[list[str], bool]:
     """Per-sample ngspice seeds must be present, distinct and equal, in sample order, to the
-    klt expansion recorded at validation (so a passing replay proves the requested seed)."""
+    klt expansion recorded at validation (so a passing replay proves the requested seed).
+
+    Returns (problems, verified). `verified` is True only when the full ordered digest was
+    compared and matched; a gap (absent/duplicate sample) or unusable seed leaves it False,
+    which keeps the sample gap a counted failure but forbids a passing controls verdict."""
     out = []
+    verified = False
     present = [r for r in rows if r["present"] and not r["duplicate"]]
     bad = [r["sample_index"] for r in present
            if isinstance(r["rndseed"], bool) or not isinstance(r["rndseed"], int)]
@@ -481,7 +486,9 @@ def check_seed_sequence(rows: list[dict], expected_digest: str | None) -> list[s
         if got != expected_digest:
             out.append(f"per-sample seed sequence sha256 {got} != klt expansion recorded at "
                        f"validation {expected_digest}")
-    return out
+        else:
+            verified = True
+    return out, verified
 
 
 def extract_samples(report: dict, n_expected: int,
@@ -755,7 +762,9 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
             digest, derr = expected_seed_digest(snapshot_dir, req_stem)
             if derr:
                 issues.append(derr)
-            issues.extend(check_seed_sequence(rows, digest))
+            seed_issues, seed_ok = check_seed_sequence(rows, digest)
+            issues.extend(seed_issues)
+            entry["seed_sequence_verified"] = seed_ok
             problems.extend(f"{run}: {i}" for i in issues)
             rows_of[run] = rows
             entry["summary"] = summarize_run(rows)
@@ -774,7 +783,9 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
         result["replay"] = compare_replay(rows_of["mc_mismatch"], rows_of["mc_mismatch_replay"])
     if "negctl_nominal" in rows_of:
         result["negative_control"] = negative_control(rows_of["negctl_nominal"])
-    result["controls_pass"] = bool(complete and result.get("variation", {}).get("pass")
+    seeds_verified = all(e.get("seed_sequence_verified") is True for e in runs.values())
+    result["seed_sequences_verified"] = seeds_verified
+    result["controls_pass"] = bool(complete and seeds_verified and result.get("variation", {}).get("pass")
                                    and result.get("replay", {}).get("pass")
                                    and result.get("negative_control", {}).get("pass"))
     out_dir.mkdir(parents=True, exist_ok=True)
