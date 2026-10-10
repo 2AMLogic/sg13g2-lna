@@ -151,6 +151,11 @@ step "layout-freshness: check" .github/scripts/check-layout-freshness
 step "model-provenance: self-test" .github/scripts/test-check-model-sources.sh
 step "model-provenance: check" sim/models/check_sources.sh
 
+# --- job: results-table-drift
+step "results-table-drift: renderer self-test" \
+  python3 -I -m unittest discover -s sim/lna-characterization/tests -p test_render_results.py -v
+step "results-table-drift: check" python3 -I sim/lna-characterization/render_results.py --check
+
 # --- job: local-checks-drift
 step "local-checks-drift: self-test" .github/scripts/test-run-local-checks.sh
 
