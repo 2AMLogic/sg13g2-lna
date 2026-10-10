@@ -82,6 +82,10 @@ let vlx = v(xdut.vl)
 let gsvox = v(xdut.gsvo)
 let cb3x = v(xdut.cb3)
 echo "BIASOP ic1 $&ic1 ic2 $&ic2 ic3 $&ic3 ib1 $&ib1 vb1 $&vb1 vbref $&vbref vce1 $&vce1 vce2 $&vce2 vbe1 $&vbe1 idd $&idd pdc $&pdc vbg $&vbgx vl $&vlx gsvo $&gsvox cb3 $&cb3x"
+* Per-HBT model-validity probes (issue #155). Generated from the netlist
+* being simulated by hbt_audit.py probes, one ic/vbe/vce triple per
+* npn13G2 instance, so an added or resized HBT is probed automatically.
+@@HBT_AUDIT_PROBES@@
 echo "BENCH_COMPLETE"
 quit
 .endc

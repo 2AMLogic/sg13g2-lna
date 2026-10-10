@@ -91,6 +91,16 @@ grep -q '^\.subckt lna ' "${SIM_DUT_SUBCKT}" || {
   exit 3
 }
 
+# --- HBT audit probes (issue #155) --------------------------------------
+# Derived from the netlist being simulated, never hand-listed: every
+# npn13G2 instance gets ic/vbe/vce probes in every op deck.
+HBT_PROBES="$(mktemp)"
+trap 'rm -f "${SIM_DUT_SUBCKT}" "${HBT_PROBES}"' EXIT
+python3 -I "${SCRIPT_DIR}/hbt_audit.py" probes "${DESIGN_NETLIST}" > "${HBT_PROBES}" || {
+  echo "run_biasop_sweep.sh: could not derive HBT probes from ${DESIGN_NETLIST}" >&2
+  exit 3
+}
+
 # --- PVT grid (identical to sim/lna-characterization) -------------------
 CORNER_LABELS=(typ bcs wcs sf fs)
 declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
@@ -132,7 +142,7 @@ sim_jobs BIASOP_JOBS
 sim_pool_init "${BIASOP_JOBS}"
 
 FAILED_LIST="$(mktemp)"
-trap 'rm -f "${SIM_DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
+trap 'rm -f "${SIM_DUT_SUBCKT}" "${HBT_PROBES}" "${FAILED_LIST}"' EXIT
 
 run_op_cell() {
   local corner_label="$1" temp="$2" vdd="$3"
@@ -142,6 +152,7 @@ run_op_cell() {
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
   sim_render "${EXPERIMENT_DIR}/testbench/tb_lna_biasop.spice.tmpl" "${netlist}" \
+    -e "/@@HBT_AUDIT_PROBES@@/r ${HBT_PROBES}" -e "/@@HBT_AUDIT_PROBES@@/d" \
     -e "s|@@MODELS_LIB@@|${MODELS_LIB}|g" \
     -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
     -e "s|@@MOS_SECTION@@|${mos_section}|g" \
@@ -200,7 +211,7 @@ fi
 SUMMARY_CSV="${RECORDS_DIR}/${RECORD_ID}-summary.csv"
 STARTUP_CSV="${RECORDS_DIR}/${RECORD_ID}-startup.csv"
 FACTS_DIR="$(mktemp -d)"
-trap 'rm -rf "${SIM_DUT_SUBCKT}" "${FAILED_LIST}" "${FACTS_DIR}"' EXIT
+trap 'rm -rf "${SIM_DUT_SUBCKT}" "${HBT_PROBES}" "${FAILED_LIST}" "${FACTS_DIR}"' EXIT
 REDUCE_ARGS=(--corners-dir "${CORNERS_OUT}" --summary-csv "${SUMMARY_CSV}"
              --startup-csv "${STARTUP_CSV}" --facts "${FACTS_DIR}/facts"
              --require-audit)
@@ -209,6 +220,20 @@ if ! python3 -I "${SCRIPT_DIR}/reduce_biasop.py" "${REDUCE_ARGS[@]}"; then
   echo "run_biasop_sweep.sh: reduction rejected the logs; no summary or record written (append-only records must be complete and well-formed)." >&2
   exit 4
 fi
+
+# --- Per-HBT model-validity table (issue #155) ----------------------------
+# Separate from the bar CSV: refuses (exit 2 -> no record) if any expected
+# instance/probe is missing; genuine out-of-range values are rows, not errors.
+HBT_CSV="${RECORDS_DIR}/${RECORD_ID}-hbt-validity.csv"
+HBT_ARGS=(reduce --netlist "${DESIGN_NETLIST}" --corners-dir "${CORNERS_OUT}"
+          --out-csv "${HBT_CSV}")
+[[ -n "${BIASOP_SMOKE:-}" ]] && HBT_ARGS+=(--smoke)
+if ! python3 -I "${SCRIPT_DIR}/hbt_audit.py" "${HBT_ARGS[@]}"; then
+  echo "run_biasop_sweep.sh: HBT audit rejected the logs; no complete record (the bar CSVs above are partial)." >&2
+  exit 4
+fi
+N_HBT_OOR="$(awk -F, 'NR>1 && $14=="OUT-OF-RANGE"{n++} END{print n+0}' "${HBT_CSV}")"
+N_HBT_ROWS="$(awk -F, 'NR>1{n++} END{print n+0}' "${HBT_CSV}")"
 
 # --- Headline numbers (validated; produced by the reducer) ----------------
 # shellcheck disable=SC2034  # consumed by the record heredoc below
@@ -301,6 +326,13 @@ relaxes any row.
   Q1's I_B1 span confirms the beta-independence of the transfer.
 - **Startup/latch check**: ${STARTUP_PROSE} (verdicts: ${STARTUP_VERDICTS}).
   See \`${RECORD_ID}-startup.csv\` and the wrdata artifacts.
+- **Per-HBT model-validity audit** (issue #155): \`${RECORD_ID}-hbt-validity.csv\`
+  has one row per npn13G2 instance per cell (${N_HBT_ROWS} rows; instances
+  are read from the simulated netlist). ${N_HBT_OOR} row(s) are outside the
+  model validity box (ic < 0.003*Nx A, vbe 0.65-0.96 V, vce 0.4-2.0 V,
+  source: sg13g2_hbt_mod.lib header). Junction temperature is UNASSESSED:
+  npn13G2 exposes no self-heating node, and ambient-temperature coverage is
+  a separate column. Model validity is not a breakdown/stress rating.
 - **DR-0003 Stage-2 core audit** (extra BIASOP keys; the CSV's bar columns
   are unchanged): the nominal cell (typ/27C/1.80V) lands \`I_C1\` at
   $(awk -v x="${NOMINAL_IC1_A:-0}" 'BEGIN{printf "%.4f", x*1000}') mA

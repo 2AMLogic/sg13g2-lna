@@ -99,10 +99,47 @@ the bench is committed beside the results.
   schematic (see `design/README.md`'s idealization notes). Resistor-ratio
   tolerance therefore does not appear in these numbers and must be
   budgeted before any ratified claim.
-- **Model validity box**: `sg13g2_hbt_mod.lib` states its own validity
-  range (`vbe` 0.65–0.96 V, `vce` 0.4–2.0 V, T −40…+125 °C, `ic` < 3 mA·Nx).
-  The committed records show every instance riding inside that box; the
-  closest calls are Q3's cold-`wcs` `V_BREF` and Q2's hot `V_CE1` margins.
+- **Model validity box** (`sg13g2_hbt_mod.lib` header, "Valid range for
+  model"): `ic` < 0.003·Nx A (strict), `vbe` 0.65–0.96 V, `vce` 0.4–2.0 V
+  (inclusive), T −40…+125 °C, Nx 1–10. **What the committed records can
+  and cannot say** (records `20260921-132025-d6da30a` and
+  `20260921-173552-2aeafef`, both pre-#155): their op logs carry current
+  and terminal-voltage observables only for Q1 (`ic`, `vbe`, `vce`), Q3
+  (`ic`, and `vbref` = `vbe` = `vce` since it is diode-tied to `vss`) and
+  Q2 (`ic`, `vce`; no `vbe`). **XQa, XQb and XQc have no `ic`, `vbe` or
+  `vce` probe at all** (XQb's `nc_e` node is never read), so those records
+  do **not** substantiate that every HBT is inside the box; the earlier
+  statement that every instance rides inside it is withdrawn for them.
+  The only supported statements are the partial ones for the probed
+  observables, and the old prose's "closest calls" (Q3 cold-`wcs` `V_BREF`,
+  Q2 hot `V_CE1`) were never a full-inventory result. Nothing under
+  `records/`, `corners/` or `netlist-snapshots/` was edited; run
+  `hbt_audit.py legacy ../../design/netlist/lna.spice` to print the
+  per-instance gap table.
+- **HBT audit for new records (issue #155)**: [`hbt_audit.py`](hbt_audit.py)
+  reads the npn13G2 instances (and their Nx) from the netlist being
+  simulated and generates the `ic`/`vbe`/`vce` probes the deck splices in
+  at `@@HBT_AUDIT_PROBES@@`; a new or resized HBT is audited with no
+  edit to the template. The reducer writes
+  `records/<id>-hbt-validity.csv` (one row per instance per cell) and
+  rejects the run (exit 2) if any expected instance or probe is missing,
+  duplicated, non-finite or disagrees with the netlist's Nx. A finite value
+  outside the box is a **result** (`OUT-OF-RANGE`, with the quantities
+  named), not an error. Kept as separate statements, never merged:
+  (1) model validity (this table); (2) `vce_above_model_header_max`, an
+  informational flag against the header's "maximum collector-to-emitter
+  voltage 1.6 V" datum -- not a breakdown/stress rating, and the 2.0 V box
+  edge is not a safe-voltage rating either; (3) the 4.5 mA / 10 mW bars and
+  spec rows, which stay in the summary CSV.
+  **Junction temperature is UNASSESSED**: `npn13G2` is a four-terminal VBIC
+  instance with no thermal node, so no self-heating observable exists. The
+  `ambient_in_model_t_range` column is ambient only; DR-0001 estimates
+  T_j ≈ 134 °C at 125 °C ambient, past the model's +125 °C ceiling, and this
+  audit neither confirms nor refutes that. **No campaign with these probes
+  has been run yet**: a complete 45-cell record is a follow-up to be
+  submitted through the Spot fleet (`klt sim` request), not a local grid.
+  Method limit: the table is a DC operating-point statement at the 45
+  cells; it says nothing about large-signal swing excursions at `outn`.
 
 ## Statistical observables (T1 item 6): none measured yet
 
@@ -180,7 +217,7 @@ and non-PASS startup verdicts are results, not malformed input. The record
 prose takes its coverage counts and startup wording from the validated
 reduction. Replay a retained record into scratch paths with
 `reduce_biasop.py --corners-dir corners/<id> --summary-csv /tmp/s.csv --startup-csv /tmp/u.csv`
-(add `--require-audit` for DR-0003-era logs); the unit tests in `tests/`
+(add `--require-audit` for DR-0003-era logs); `hbt_audit.py reduce` does the same for the per-HBT table once logs carry `HBTAUDIT`; the unit tests in `tests/`
 do this for both committed records and compare bytes. Smoke runs
 (`BIASOP_SMOKE=1`) now also run only the nominal startup cell, since the
 extreme startup cells have no op counterpart in a nominal-only run.
