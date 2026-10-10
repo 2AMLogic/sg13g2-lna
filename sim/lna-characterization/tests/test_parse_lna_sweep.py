@@ -363,6 +363,209 @@ class Coverage(unittest.TestCase):
         )
 
 
+GRID_LINES = (
+    "grid inband lin 11 2.4e9 2.4835e9\n"
+    "grid stability dec 40 1e7 3e10\n"
+)
+
+
+def grid_freqs(kind):
+    # Hand-derived: lin 11 pts 2.4e9..2.4835e9; dec 40/decade from 1e7 gives
+    # floor(40*log10(3000))+1 = 140 points ending at 1e7*10^(139/40) = 2.985e10.
+    if kind == "inband":
+        return [2.4e9 + i * 8.35e6 for i in range(11)]
+    return [1e7 * 10 ** (i / 40) for i in range(140)]
+
+
+def write_grid_table(path, kind, freqs=None, edit=None):
+    ncols, scale_cols = (24, [0, 3, 6, 9, 12, 14, 16, 18, 21]) if kind == "inband" else (12, [0, 2, 4, 6, 8, 10])
+    freqs = grid_freqs(kind) if freqs is None else freqs
+    with open(path, "w") as fh:
+        for i, f in enumerate(freqs):
+            row = [0.5 + 0.001 * i] * ncols
+            for c in scale_cols:
+                row[c] = f
+            if edit:
+                edit(i, row)
+            fh.write(" ".join(f"{v:.8e}" for v in row) + "\n")
+
+
+class FrequencyGrid(unittest.TestCase):
+    """Raw-table frequency contract: a complete log with a bad table is not
+    a completed point."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.addCleanup(self._td.cleanup)
+        self.td = Path(self._td.name)
+        self.cd = self.td / "corners"
+        self.cd.mkdir()
+        make_cell(self.cd, SP, [A1, A2])
+        self.write(SP)
+        self.manifest = self.td / "expected.txt"
+        self.manifest.write_text(
+            f"kind smoke\n{GRID_LINES}sp {SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+        )
+
+    def write(self, pid, inband=None, stab=None):
+        write_grid_table(self.cd / f"{pid}.inband.dat", "inband", **(inband or {}))
+        write_grid_table(self.cd / f"{pid}.stability.dat", "stability", **(stab or {}))
+
+    def run_main(self, *extra):
+        argv = ["parse_lna_sweep.py", "--corners-dir", str(self.cd),
+                "--sparam-csv", str(self.td / "sp.csv"),
+                "--iip3-csv", str(self.td / "ip.csv"),
+                "--summary-csv", str(self.td / "sum.csv"),
+                "--coverage-json", str(self.td / "cov.json"),
+                "--manifest", str(self.manifest), *extra]
+        old = sys.argv
+        sys.argv = argv
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                return P.main()
+        finally:
+            sys.argv = old
+
+    def cov(self):
+        import json
+        return json.loads((self.td / "cov.json").read_text())
+
+    def assert_invalid(self, artifact, needle):
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+        c = self.cov()
+        self.assertEqual(c["status"], "partial")
+        self.assertEqual(c["completed"], [A1, A2])
+        hits = [g for g in c["invalid_grids"] if g["artifact"] == f"{SP}.{artifact}.dat"]
+        self.assertTrue(hits, c["invalid_grids"])
+        self.assertTrue(any(needle in g["reason"] for g in hits), hits)
+        self.assertEqual(hits[0]["point"], SP)
+        self.assertIn("Invalid frequency grid", "\n".join(P.coverage_prose(c)))
+
+    def test_expected_grid_shapes(self):
+        g = P.expected_grid({"mode": "dec", "n": 40, "lo": 1e7, "hi": 3e10})
+        self.assertEqual(len(g), 140)
+        self.assertAlmostEqual(g[-1] / 2.98538262e10, 1.0, places=8)
+        self.assertEqual(len(P.expected_grid({"mode": "lin", "n": 11, "lo": 2.4e9, "hi": 2.4835e9})), 11)
+
+    def test_valid_grids_are_complete_and_smoke_keeps_contract(self):
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertEqual(c["status"], "complete")
+        self.assertEqual(c["inventory_kind"], "smoke")
+        self.assertEqual(c["invalid_grids"], [])
+        self.assertEqual(set(c["frequency_grid_contract"]), {"inband", "stability"})
+        self.assertIn("validated", "\n".join(P.coverage_prose(c)))
+        self.assertNotIn("NOT validated", "\n".join(P.coverage_prose(c)))
+
+    def test_legacy_manifest_without_contract_is_marked_unvalidated(self):
+        self.manifest.write_text(f"sp {SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n")
+        write_grid_table(self.cd / f"{SP}.inband.dat", "inband", freqs=grid_freqs("inband")[:3])
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertIn("legacy", c["frequency_grid_contract"])
+        self.assertIn("NOT validated", "\n".join(P.coverage_prose(c)))
+
+    def test_deleted_interior_row(self):
+        f = grid_freqs("stability")
+        del f[70]
+        self.write(SP, stab={"freqs": f})
+        self.assert_invalid("stability", "139 frequency points, expected 140")
+        self.assertIn("first grid mismatch at row 71",
+                      "\n".join(g["reason"] for g in self.cov()["invalid_grids"]))
+
+    def test_deleted_interior_row_inband_same_count_shape(self):
+        f = grid_freqs("inband")
+        del f[5]
+        self.write(SP, inband={"freqs": f})
+        self.assert_invalid("inband", "10 frequency points, expected 11")
+
+    def test_shortened_upper_endpoint(self):
+        f = grid_freqs("inband")[:-1] + [2.45e9]
+        self.write(SP, inband={"freqs": f})
+        self.assert_invalid("inband", "upper endpoint")
+
+    def test_truncated_table_valid_width_rows(self):
+        self.write(SP, stab={"freqs": grid_freqs("stability")[:100]})
+        self.assert_invalid("stability", "100 frequency points, expected 140")
+
+    def test_duplicate_frequency(self):
+        f = grid_freqs("inband")
+        f[4] = f[3]
+        self.write(SP, inband={"freqs": f})
+        self.assert_invalid("inband", "duplicate frequency")
+
+    def test_unordered_frequency(self):
+        f = grid_freqs("inband")
+        f[4], f[5] = f[5], f[4]
+        self.write(SP, inband={"freqs": f})
+        self.assert_invalid("inband", "not increasing")
+
+    def test_inconsistent_repeated_scale_column(self):
+        def edit(i, row):
+            if i == 3:
+                row[9] *= 1.01
+        self.write(SP, inband={"edit": edit})
+        self.assert_invalid("inband", "repeated frequency column 9")
+
+    def test_nan_and_inf(self):
+        for bad in ("nan", "inf"):
+            def edit(i, row, bad=bad):
+                if i == 2:
+                    row[13] = float(bad)
+            self.write(SP, stab=None, inband={"edit": edit})
+            self.assert_invalid("inband", "non-finite")
+
+    def test_wrong_width_row_reported(self):
+        (self.cd / f"{SP}.stability.dat").write_text("1.0 2.0\n")
+        self.assert_invalid("stability", "expected 12 columns")
+
+    def test_invalid_point_excluded_from_extrema_and_nonstrict_still_reduces(self):
+        make_cell(self.cd, BCS_SP, [BCS_A1, BCS_A2])
+        self.write(BCS_SP)
+        self.manifest.write_text(
+            f"kind campaign\n{GRID_LINES}sp {SP}\nsp {BCS_SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+            f"iip3 {BCS_A1}\niip3 {BCS_A2}\npair {BCS_A1} {BCS_A2}\n"
+        )
+        self.write(SP, inband={"freqs": grid_freqs("inband")[:-1]})
+        self.assertEqual(self.run_main(), 0)
+        import csv
+        ids = {r["point_id"] for r in csv.DictReader(open(self.td / "sum.csv"))}
+        self.assertEqual(ids, {BCS_SP})
+        self.assertEqual(self.cov()["status"], "partial")
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+
+    def test_failed_run_keeps_its_own_exit_bit_alongside_grid_bit(self):
+        make_cell(self.cd, BCS_SP, [BCS_A1, BCS_A2])
+        self.write(BCS_SP)
+        self.manifest.write_text(
+            f"{GRID_LINES}sp {SP}\nsp {BCS_SP}\niip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+        )
+        (self.cd / f"{BCS_SP}.stability.dat").unlink()
+        self.write(SP, inband={"freqs": grid_freqs("inband")[:-1]})
+        self.assertEqual(self.run_main("--strict"),
+                         P.STRICT_EXIT_BASE + P.EXIT_FAILED + P.EXIT_GRID)
+
+    def test_manifest_grid_parsing_rejects_garbage(self):
+        for bad in ("grid inband lin x 1 2", "grid inband lin 11 5 1",
+                    "grid foo lin 11 1 2", "grid inband lin 11 1 2"):
+            self.manifest.write_text(f"sp {SP}\n{bad}\n")
+            with self.assertRaises(SystemExit):
+                P.read_manifest(str(self.manifest))
+
+    def test_committed_record_tables_satisfy_the_contract(self):
+        # Read-only: the real 088c734 tables must satisfy the grid derived
+        # from the deck, proving the tolerances fit real ngspice output.
+        d = LNA / "corners" / RECORD
+        specs = {"inband": {"mode": "lin", "n": 11, "lo": 2.4e9, "hi": 2.4835e9},
+                 "stability": {"mode": "dec", "n": 40, "lo": 1e7, "hi": 3e10}}
+        files = sorted(d.glob("sp_*.inband.dat"))[:6] + sorted(d.glob("sp_*.stability.dat"))[:6]
+        self.assertTrue(files)
+        for f in files:
+            kind = "inband" if f.name.endswith(".inband.dat") else "stability"
+            self.assertEqual(P.validate_table(str(f), kind, specs[kind]), [], f.name)
+
+
 class RecordRegression(unittest.TestCase):
     """Re-parse a committed record's retained raw artefacts; the output must
     match the committed CSVs byte-for-byte and the record's headline text."""
