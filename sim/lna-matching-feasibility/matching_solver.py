@@ -7,6 +7,8 @@ Companion to run_matching_study.sh. Subcommands:
   solve      read the characterization data, synthesize every candidate
              matching network for every Q case, write candidates.json and
              one verification deck per (candidate, Q case)
+  sensitivity  compare DC-reference decks (--xout-rdc) with the historical
+             floating-xout baseline (issue #190)
   reduce     read the verification decks' wrdata/logs, compute the per-
              candidate metrics, rank the topologies, write the record CSVs
              and a markdown fragment for the record
@@ -887,6 +889,37 @@ def output_net_text(entry) -> str:
     return "\n".join(lines)
 
 
+def xout_dc_text(rdc) -> str:
+    """The explicit DC reference on the DUT's rfout node, or a comment for the
+    historical (floating-xout) bench. `rdc` is ohms or None."""
+    if rdc is None:
+        return "* (no DC reference on xout: historical floating-xout bench)"
+    return ("* BENCH ELEMENT (not part of the DUT or the matching network): DC reference\n"
+            f"* for the otherwise capacitor-only rfout node, {rdc:g} Ohm, noiseless.\n"
+            f"Rxoutdc xout vss {rdc:g} noisy=0")
+
+
+def rdc_tag(rdc) -> str:
+    """Filename-safe tag of a DC-reference value: 1e9 -> 'rdc1e9'."""
+    return "" if rdc is None else "_rdc" + f"{rdc:g}".replace("+", "")
+
+
+def parse_rdc_list(text) -> list:
+    """'1e9,1e12' -> [1e9, 1e12]; '' / None -> [None] (historical bench)."""
+    if not text:
+        return [None]
+    out = []
+    for tok in str(text).split(","):
+        v = float(tok)
+        if not (math.isfinite(v) and v >= 1e6):
+            raise ValueError(f"--xout-rdc {tok}: a DC reference must be a finite, very large resistance "
+                             f"(>= 1e6 Ohm)")
+        out.append(v)
+    if len(set(out)) != len(out):
+        raise ValueError("--xout-rdc: duplicate values")
+    return out
+
+
 def verify_deck(a, entry, stem: str) -> str:
     q = entry["q"]
     le_rp = None if q is None else q_parallel_r(LE_NH * 1e-9, q)
@@ -907,6 +940,7 @@ def verify_deck(a, entry, stem: str) -> str:
         "DUT": dut_text(le_rp, lc),
         "INPUT_NET": input_net_text(entry),
         "OUTPUT_NET": output_net_text(entry),
+        "XOUT_DC": xout_dc_text(entry.get("xout_rdc_ohm")),
         "N_BAND": N_BAND, "F_LO": f"{F_LO:g}", "F_HI": f"{F_HI:g}", "F_MID": f"{F_MID:g}",
         "N_STAB_DEC": N_STAB_DEC, "F_STAB_LO": f"{F_STAB_LO:g}", "F_STAB_HI": f"{F_STAB_HI:g}",
         "N_NF": a.nf_npts, "OUTDIR": a.outdir, "STEM": stem,
@@ -914,7 +948,7 @@ def verify_deck(a, entry, stem: str) -> str:
 
 
 def stem_of(entry) -> str:
-    return f"verify_{entry['candidate']}_{entry['qcase']}"
+    return f"verify_{entry['candidate']}_{entry['qcase']}{rdc_tag(entry.get('xout_rdc_ohm'))}"
 
 
 # ===========================================================================
@@ -938,6 +972,29 @@ def parse_log(path: Path) -> dict:
         if not math.isfinite(v):
             raise ValueError(f"{path}: non-finite {k}")
     return out
+
+
+def classify_convergence(path: Path) -> dict:
+    """Classify the operating-point convergence of one ngspice log.
+
+    BENCH_COMPLETE alone is NOT convergence evidence: the historical floating-
+    xout decks print it after a transient-op fallback. A log is 'normal' only
+    if it shows no singular-matrix warning, no failed gmin/source stepping and
+    no transient-op fallback.
+    """
+    text = Path(path).read_text()
+    n_singular = len(re.findall(r"singular matrix", text, re.I))
+    flags = {
+        "singular_matrix": n_singular,
+        "gmin_stepping_failed": len(re.findall(r"(?:dynamic|true) gmin stepping failed", text, re.I)),
+        "source_stepping_failed": len(re.findall(r"source stepping failed", text, re.I)),
+        "transient_op_fallback": len(re.findall(r"transient op started", text, re.I)),
+    }
+    flags["bench_complete"] = bool(re.search(r"^BENCH_COMPLETE", text, re.M))
+    flags["normal"] = flags["bench_complete"] and not any(
+        flags[k] for k in ("singular_matrix", "gmin_stepping_failed", "source_stepping_failed",
+                           "transient_op_fallback"))
+    return flags
 
 
 def stab_freqs() -> list[float]:
@@ -1033,6 +1090,201 @@ def rank_topologies(results: dict, basis: str = "q10"):
 # CLI
 # ===========================================================================
 
+# ===========================================================================
+# DC-reference sensitivity (issue #190)
+# ===========================================================================
+
+# Table resolution of mu: S-parameters are written with `option numdgt=10`.
+MU_RESOLUTION = 1e-9
+# A DC reference "materially" changes the stability margin if it moves the
+# broadband mu minimum by more than this fraction of the baseline margin
+# (mu - 1), drives a resolved margin to the resolution floor, or moves the
+# frequency of the minimum. Chosen before the data; stated in the README.
+MU_MATERIAL_FRACTION = 0.10
+
+SENS_COLS = ["candidate", "qcase", "xout_rdc_ohm", "case_class",
+             "ic1_base_A", "ic1_new_A", "d_ic1_A", "ic2_base_A", "ic2_new_A", "d_ic2_A",
+             "s11_mid_base_db", "s11_mid_new_db", "d_s11_mid_db", "s22_mid_base_db", "s22_mid_new_db",
+             "d_s22_mid_db", "s21_mid_base_db", "s21_mid_new_db", "d_s21_mid_db", "d_s11_worst_db", "d_s22_worst_db",
+             "nf290_mid_base_db", "nf290_mid_new_db", "d_nf290_mid_db",
+             "nf290_worst_base_db", "nf290_worst_new_db", "d_nf290_worst_db",
+             "mu_bb_min_base", "mu_bb_min_new", "d_mu_bb_min", "mu_bb_f_base_hz", "mu_bb_f_new_hz",
+             "margin_base", "margin_new", "d_margin_over_margin", "mu_band_min_base", "mu_band_min_new",
+             "mu_verdict", "convergence_new", "convergence_base", "singular_new", "transient_op_new"]
+
+
+def mu_verdict(base: float, new: float, f_base: float, f_new: float, finite_q: bool) -> str:
+    """Classify the RF effect of the DC reference on the mu minimum."""
+    mb, mn = base - 1.0, new - 1.0
+    below = " (|dmu| below table resolution)" if abs(new - base) < MU_RESOLUTION else ""
+    if abs(mb) < MU_RESOLUTION and abs(mn) < MU_RESOLUTION:
+        return "mu = 1 to table resolution (lossless limit); no resolved margin to protect"
+    if mb <= -MU_RESOLUTION:
+        return "baseline mu < 1 (resolved deficit at the sweep edge); change reported, no margin claimed"
+    if mb <= MU_RESOLUTION:
+        return "baseline margin not resolved; sensitivity not assessable"
+    if mn <= MU_RESOLUTION:
+        return "MATERIAL: margin driven to table resolution"
+    if abs(new - base) > MU_MATERIAL_FRACTION * mb:
+        return "MATERIAL: mu minimum moved by more than %d%% of the baseline margin" % round(100 * MU_MATERIAL_FRACTION)
+    if abs(math.log10(f_new / f_base)) > 1e-9:
+        return "MATERIAL: frequency of the mu minimum moved"
+    return "within %d%% of the baseline margin%s" % (round(100 * MU_MATERIAL_FRACTION), below)
+
+
+def sensitivity_rows(doc: dict, cdir: Path, base_dir: Path) -> tuple[list, list]:
+    rows, problems = [], []
+    nf_npts = doc["nf_npts"]
+    for e in doc["candidates"]:
+        rdc = e.get("xout_rdc_ohm")
+        if rdc is None or e.get("infeasible"):
+            continue
+        key = f"{e['candidate']}/{e['qcase']}/rdc{rdc:g}"
+        try:
+            new = reduce_one(cdir, e["stem"], nf_npts)["metrics"]
+            base = reduce_one(base_dir, e["base_stem"], nf_npts)["metrics"]
+            cn = classify_convergence(cdir / f"{e['stem']}.log")
+            cb = classify_convergence(base_dir / f"{e['base_stem']}.log")
+        except (OSError, ValueError, KeyError) as ex:
+            problems.append(f"{key}: {ex}")
+            continue
+        finite_q = e["q"] is not None or bool(e["lc_em"])
+        r = {
+            "candidate": e["candidate"], "qcase": e["qcase"], "xout_rdc_ohm": rdc,
+            "case_class": "finite-Q" if finite_q else "ideal",
+            "ic1_base_A": base["ic1"], "ic1_new_A": new["ic1"], "d_ic1_A": new["ic1"] - base["ic1"],
+            "ic2_base_A": base["ic2"], "ic2_new_A": new["ic2"], "d_ic2_A": new["ic2"] - base["ic2"],
+            "s11_mid_base_db": base["s11_db_mid"], "s11_mid_new_db": new["s11_db_mid"],
+            "s22_mid_base_db": base["s22_db_mid"], "s22_mid_new_db": new["s22_db_mid"],
+            "s21_mid_base_db": base["s21_db_mid"], "s21_mid_new_db": new["s21_db_mid"],
+            "d_s11_mid_db": new["s11_db_mid"] - base["s11_db_mid"],
+            "d_s22_mid_db": new["s22_db_mid"] - base["s22_db_mid"],
+            "d_s21_mid_db": new["s21_db_mid"] - base["s21_db_mid"],
+            "d_s11_worst_db": new["s11_db_worst"] - base["s11_db_worst"],
+            "d_s22_worst_db": new["s22_db_worst"] - base["s22_db_worst"],
+            "nf290_mid_base_db": base["nf290_db_mid"], "nf290_mid_new_db": new["nf290_db_mid"],
+            "d_nf290_mid_db": new["nf290_db_mid"] - base["nf290_db_mid"],
+            "nf290_worst_base_db": base["nf290_db_worst"], "nf290_worst_new_db": new["nf290_db_worst"],
+            "d_nf290_worst_db": new["nf290_db_worst"] - base["nf290_db_worst"],
+            "mu_bb_min_base": base["mu_bb_min"], "mu_bb_min_new": new["mu_bb_min"],
+            "d_mu_bb_min": new["mu_bb_min"] - base["mu_bb_min"],
+            "mu_bb_f_base_hz": base["mu_bb_f_min_hz"], "mu_bb_f_new_hz": new["mu_bb_f_min_hz"],
+            "margin_base": base["mu_bb_min"] - 1.0, "margin_new": new["mu_bb_min"] - 1.0,
+            "d_margin_over_margin": ((new["mu_bb_min"] - base["mu_bb_min"]) / (base["mu_bb_min"] - 1.0)
+                                     if abs(base["mu_bb_min"] - 1.0) >= MU_RESOLUTION else float("nan")),
+            "mu_band_min_base": base["mu_band_min"], "mu_band_min_new": new["mu_band_min"],
+            "mu_verdict": mu_verdict(base["mu_bb_min"], new["mu_bb_min"], base["mu_bb_f_min_hz"],
+                                     new["mu_bb_f_min_hz"], finite_q),
+            "convergence_new": "normal" if cn["normal"] else "FLAGGED",
+            "convergence_base": "normal" if cb["normal"] else "fallback/flagged",
+            "singular_new": cn["singular_matrix"], "transient_op_new": cn["transient_op_fallback"],
+        }
+        rows.append(r)
+        if not cn["normal"]:
+            problems.append(f"{key}: operating-point convergence not normal ({cn})")
+    return rows, problems
+
+
+def _sens_cell(k, v):
+    if isinstance(v, str):
+        return v
+    if isinstance(v, int):
+        return str(v)
+    if k.endswith("_hz") or k == "xout_rdc_ohm":
+        return f"{v:.6g}"
+    if k.endswith("_A") or k.startswith("margin") or k == "d_mu_bb_min":
+        return f"{v:.6e}"
+    if k.startswith("mu_"):
+        return f"{v:.10f}"
+    return f"{v:.6g}"
+
+
+def r_dependence(rows) -> list:
+    """Per candidate/Q case: metric differences between the largest and the
+    smallest DC-reference value (separates the resistor's own effect from the
+    change that comes from leaving the transient-op fallback)."""
+    groups = {}
+    for r in rows:
+        groups.setdefault((r["candidate"], r["qcase"]), []).append(r)
+    out = []
+    for (c, q), g in groups.items():
+        if len(g) < 2:
+            continue
+        lo = min(g, key=lambda r: r["xout_rdc_ohm"])
+        hi = max(g, key=lambda r: r["xout_rdc_ohm"])
+        out.append({
+            "candidate": c, "qcase": q, "r_lo": lo["xout_rdc_ohm"], "r_hi": hi["xout_rdc_ohm"],
+            "d_ic1": hi["ic1_new_A"] - lo["ic1_new_A"],
+            "d_s11": hi["s11_mid_new_db"] - lo["s11_mid_new_db"],
+            "d_s22": hi["s22_mid_new_db"] - lo["s22_mid_new_db"],
+            "d_s21": hi["s21_mid_new_db"] - lo["s21_mid_new_db"],
+            "d_nf": hi["nf290_worst_new_db"] - lo["nf290_worst_new_db"],
+            "d_mu": hi["mu_bb_min_new"] - lo["mu_bb_min_new"],
+            "f_same": "yes" if hi["mu_bb_f_new_hz"] == lo["mu_bb_f_new_hz"] else "no",
+        })
+    return out
+
+
+def write_sensitivity(csv_path, md_path, rows, problems):
+    with open(csv_path, "w", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(SENS_COLS)
+        for r in rows:
+            w.writerow([_sens_cell(k, r[k]) for k in SENS_COLS])
+    L = ["#### DC-reference sensitivity (nominal cell; baseline = historical floating-xout bench, record "
+         "`20261010-201010-6aca84c`)", "",
+         f"mu resolution floor {MU_RESOLUTION:g} (wrdata `numdgt=10`); a change is MATERIAL if it moves the "
+         f"broadband mu minimum by more than {MU_MATERIAL_FRACTION:.0%} of the baseline margin (mu - 1), "
+         "drives the margin to the resolution floor, or moves the frequency of the minimum.", ""]
+    for cls in ("finite-Q", "ideal"):
+        sel = [r for r in rows if r["case_class"] == cls]
+        if not sel:
+            continue
+        L += [f"**{cls} cases**", "",
+              "| Candidate | Q case | R_xout (Ohm) | I_C1 base / new (mA) | S11 mid base / new (dB) | S22 mid base / new (dB) | S21 mid base / new (dB) | "
+              "dNF290 mid (dB) | dNF290 worst (dB) | mu min base | mu min new | f(mu min) base / new (Hz) | "
+              "dmu / margin | verdict | OP convergence (new / base) |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        for r in sel:
+            L.append("| {c} | {q} | {rdc:g} | {i1b:.5f} / {i1n:.5f} | {a1:.2f} / {b1:.2f} | {a2:.2f} / {b2:.2f} "
+                     "| {a3:.4f} / {b3:.4f} | {dn:.3e} | {dnw:.3e} "
+                     "| {mb:.10f} | {mn:.10f} | {fb:.6g} / {fn:.6g} | {rel} | {v} | {cn} / {cb} |".format(
+                         c=r["candidate"], q=r["qcase"], rdc=r["xout_rdc_ohm"],
+                         i1b=r["ic1_base_A"] * 1e3, i1n=r["ic1_new_A"] * 1e3,
+                         a1=r["s11_mid_base_db"], b1=r["s11_mid_new_db"],
+                         a2=r["s22_mid_base_db"], b2=r["s22_mid_new_db"],
+                         a3=r["s21_mid_base_db"], b3=r["s21_mid_new_db"],
+                         dn=r["d_nf290_mid_db"], dnw=r["d_nf290_worst_db"], mb=r["mu_bb_min_base"],
+                         mn=r["mu_bb_min_new"], fb=r["mu_bb_f_base_hz"], fn=r["mu_bb_f_new_hz"],
+                         rel=("n/a" if math.isnan(r["d_margin_over_margin"]) else f"{r['d_margin_over_margin']:.3e}"),
+                         v=r["mu_verdict"], cn=r["convergence_new"], cb=r["convergence_base"]))
+        L.append("")
+    dep = r_dependence(rows)
+    if dep:
+        L += ["**Dependence on the resistor value** (largest minus smallest R of the same candidate / Q case; "
+              "this is the part of the change that the resistor itself can be responsible for)", "",
+              "| Candidate | Q case | R pair (Ohm) | dI_C1 (A) | dS11 mid (dB) | dS22 mid (dB) | dS21 mid (dB) | "
+              "dNF290 worst (dB) | dmu min | mu-min frequency same |",
+              "|---|---|---|---|---|---|---|---|---|---|"]
+        for d in dep:
+            L.append("| {candidate} | {qcase} | {r_lo:g} / {r_hi:g} | {d_ic1:.2e} | {d_s11:.2e} | {d_s22:.2e} "
+                     "| {d_s21:.2e} | {d_nf:.2e} | {d_mu:.2e} | {f_same} |".format(**d))
+        L.append("")
+    if problems:
+        L += ["**Problems**", ""] + [f"- {p}" for p in problems] + [""]
+    Path(md_path).write_text("\n".join(L) + "\n")
+
+
+def cmd_sensitivity(a):
+    doc = json.loads(Path(a.candidates).read_text())
+    rows, problems = sensitivity_rows(doc, Path(a.corners), Path(a.baseline_corners))
+    write_sensitivity(a.csv, a.markdown, rows, problems)
+    print(f"sensitivity: {len(rows)} rows")
+    for p in problems:
+        print(f"sensitivity: PROBLEM {p}", file=sys.stderr)
+    return 1 if problems or not rows else 0
+
+
 def add_pdk_args(p):
     p.add_argument("--models-lib", required=True)
     p.add_argument("--mos-lib", required=True)
@@ -1053,8 +1305,25 @@ def _fmtc(z: complex) -> str:
 
 def cmd_solve(a):
     check_nf_npts(a.nf_npts)
-    data = load_char(Path(a.outdir))
-    entries, em_lq = synthesize(data)
+    rdcs = parse_rdc_list(getattr(a, "xout_rdc", None))
+    only = None
+    if getattr(a, "only", None):
+        only = {tuple(tok.split(":")) for tok in a.only.split(",")}
+        for tok in only:
+            if len(tok) != 2 or tok[0] not in CANDIDATES or tok[1] not in QCASES:
+                raise SystemExit(f"solve: --only entry {':'.join(tok)!r} is not <candidate>:<qcase>")
+    # The characterization is unchanged by the DC reference (it has no floating
+    # node), so a DC-reference run may re-use a retained characterization dir.
+    data = load_char(Path(getattr(a, "char_dir", None) or a.outdir))
+    base_entries, em_lq = synthesize(data)
+    entries = []
+    for e in base_entries:
+        if only is not None and (e["candidate"], e["qcase"]) not in only:
+            continue
+        for rdc in rdcs:
+            e2 = dict(e)
+            e2["xout_rdc_ohm"] = rdc
+            entries.append(e2)
     snap = Path(a.snapdir)
     n = 0
     for e in entries:
@@ -1062,6 +1331,7 @@ def cmd_solve(a):
             continue
         stem = stem_of(e)
         e["stem"] = stem
+        e["base_stem"] = f"verify_{e['candidate']}_{e['qcase']}"
         (snap / f"{stem}.spice").write_text(verify_deck(a, e, stem))
         n += 1
     char_summary = {
@@ -1083,7 +1353,7 @@ def cmd_solve(a):
     }
     doc = {"generator": "sim/lna-matching-feasibility/matching_solver.py solve",
            "design_netlist_sha256": sha256(DESIGN_NETLIST), "em_model_sha256": sha256(EM_MODEL),
-           "nf_npts": a.nf_npts, "f_mid_hz": F_MID, "mismatch_target_db": MISMATCH_TARGET_DB,
+           "nf_npts": a.nf_npts, "xout_rdc_ohm_list": rdcs, "f_mid_hz": F_MID, "mismatch_target_db": MISMATCH_TARGET_DB,
            "characterization": char_summary,
            "candidates": [{**e, "zs_target": e["zs_target"]} for e in entries]}
     (snap / "candidates.json").write_text(json.dumps(doc, indent=2, default=str) + "\n")
@@ -1287,6 +1557,18 @@ def main(argv=None):
     s.add_argument("--snapdir", required=True)
     s.add_argument("--outdir", required=True)
     s.add_argument("--nf-npts", type=int, default=N_NF_DEFAULT)
+    s.add_argument("--xout-rdc", default="",
+                   help="comma list of DC-reference resistances (Ohm) from xout to ground; "
+                        "one deck per value (empty: historical floating-xout deck)")
+    s.add_argument("--only", default="", help="comma list of <candidate>:<qcase> to render (default: all)")
+    s.add_argument("--char-dir", default="",
+                   help="read the characterization data from this dir instead of --outdir")
+    n = sub.add_parser("sensitivity")
+    n.add_argument("--candidates", required=True)
+    n.add_argument("--corners", required=True)
+    n.add_argument("--baseline-corners", required=True)
+    n.add_argument("--csv", required=True)
+    n.add_argument("--markdown", required=True)
     r = sub.add_parser("reduce")
     r.add_argument("--candidates", required=True)
     r.add_argument("--corners", required=True)
@@ -1300,6 +1582,8 @@ def main(argv=None):
     if a.cmd == "solve":
         cmd_solve(a)
         return 0
+    if a.cmd == "sensitivity":
+        return cmd_sensitivity(a)
     return cmd_reduce(a)
 
 
