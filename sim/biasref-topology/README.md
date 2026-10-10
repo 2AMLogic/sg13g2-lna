@@ -145,7 +145,7 @@ under `netlist-snapshots/<record-id>/` and raw ngspice logs under
 
 ## Records in this experiment
 
-- `20260921-154716-f718094` — the Stage-1 record (PR #38's committed
+- `20260921-160018-a46ed37` — the Stage-1 record (PR #38's committed
   evidence): the Option-B disproof table (hot/nominal feed-family ratio
   1.392/1.335/1.326 at 0.52 mA/100 µA/20 µA — all worse than the
   committed npn family's own 1.277), the Option-A skeleton mini-grid
@@ -154,7 +154,7 @@ under `netlist-snapshots/<record-id>/` and raw ngspice logs under
   cells), and the seed-leg startup PASS at all three ramp cells. Backs
   DR-0003.
 - `20260921-173323-2aeafef` — the five-phase record (issue #33's Stage-2
-  increment; Phases A-C reproduce `20260921-154716-f718094`'s numbers
+  increment; Phases A-C reproduce `20260921-160018-a46ed37`'s numbers
   byte-identically): Phases D/E add the complete Stage-2 core
   (skeleton + Kuijk sum branch + amp-servo loop + `V_BG/Rl`
   transduction + 12.8:1 island bank) — island current spread

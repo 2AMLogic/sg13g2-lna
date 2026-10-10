@@ -299,3 +299,16 @@ band for a corner-and-temperature flat current over this grid; it is
 not a relaxation of any row (both bars held with 0 violations at every
 cell), and no `spec/target-spec.md` numeric row changed — the bars
 remain inputs to this record.
+
+## Erratum (2026-10-10, issue #70): Stage-1 record id
+
+The ratified passages above (Context and Evidence) cite the Stage-1
+bench as record `20260921-154716-f718094`. No record with that id exists
+in the tree. The Stage-1 evidence committed by PR #38 is the
+`20260921-160018-a46ed37` set under `sim/biasref-topology/` (`records/`,
+`corners/`, `netlist-snapshots/`). Current readers should follow
+`20260921-160018-a46ed37` wherever this record cites the old id. Phases
+A-C of `20260921-173323-2aeafef` reproduce it byte-identically
+(`core-minigrid.csv`, `core-startup.csv`, `mpa-diode.csv`, verified with
+`cmp` on 2026-10-10). The ratified text is left unedited as history; no
+number, decision, or spec row changes.
