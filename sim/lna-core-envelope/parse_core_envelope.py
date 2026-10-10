@@ -55,6 +55,7 @@ records can be read side by side.
 from __future__ import annotations
 
 import argparse
+import os
 import csv
 import importlib.util
 import math
@@ -103,6 +104,10 @@ def main() -> int:
     ap.add_argument("--design-netlist-sha", default="unknown")
     ap.add_argument("--ngspice-version", default="unknown")
     ap.add_argument("--pdk-root", default="unknown")
+    ap.add_argument("--pdk-release", default=None,
+                    help="verified installed PDK release (from sim_require_pdk)")
+    ap.add_argument("--pdk-provenance", default=None,
+                    help="records/<id>.pdk-provenance.json path to cite")
     ap.add_argument("--reference-summary", default=None,
                     help="lna-characterization summary CSV the s_ctrl_a8 control "
                          "variant must reproduce (the runner's regression check)")
@@ -110,6 +115,44 @@ def main() -> int:
 
     corners = Path(args.corners_dir)
     records = Path(args.records_dir)
+
+    # Exclusive publication (issue #126): the three published files are
+    # append-only evidence. Refuse BEFORE reducing anything if any already
+    # exists; otherwise stage every output under a temp name and publish by
+    # hard link (atomic, never replaces an existing name) only once all three
+    # were produced.
+    final_names = [f"{args.record_id}.csv",
+                   f"{args.record_id}-variant-summary.csv",
+                   f"{args.record_id}.md"]
+    for n in final_names:
+        if os.path.lexists(records / n):
+            print(f"parse_core_envelope.py: CORE_ENV_PUBLICATION_EXISTS: "
+                  f"{records / n} already exists; published summaries are "
+                  "never overwritten. Mint a new CORE_ENV_RECORD_ID.",
+                  file=sys.stderr)
+            return 4
+    stage = {n: records / f".{n}.tmp{os.getpid()}" for n in final_names}
+
+    def publish():
+        done = []
+        try:
+            for n in final_names:
+                os.link(stage[n], records / n)
+                done.append(n)
+        except OSError as e:
+            print(f"parse_core_envelope.py: CORE_ENV_PUBLICATION_FAILED: {e}; "
+                  f"partially published: {done or 'nothing'}. The record is "
+                  "NOT finalized; mint a new CORE_ENV_RECORD_ID.",
+                  file=sys.stderr)
+            return False
+        finally:
+            for t in stage.values():
+                try:
+                    os.unlink(t)
+                except OSError:
+                    pass
+        return True
+
     rows = []
     failed = []
 
@@ -260,7 +303,7 @@ def main() -> int:
 
     fieldnames = list(rows[0].keys())
     csv_path = records / f"{args.record_id}.csv"
-    with open(csv_path, "w", newline="") as fh:
+    with open(stage[csv_path.name], "x", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=fieldnames)
         w.writeheader()
         w.writerows(rows)
@@ -313,7 +356,7 @@ def main() -> int:
             "gin_lo", "gq10_lo", "gq10_viol", "nfmin290_lo", "nfmin290_hi",
             "nfmin290_viol", "nf290_hi", "mu_ib_lo", "mu_bb_lo", "mu_ib_viol",
             "mu_bb_viol", "mu_bb_pts_lt_1", "mu_bb_pts", "oob"]
-    with open(summary_path, "w", newline="") as fh:
+    with open(stage[summary_path.name], "x", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=keys)
         w.writeheader()
         for vid, vrows in variants.items():
@@ -341,7 +384,11 @@ def main() -> int:
         "  ngspice's own two-port `sp` NF/NFmin reported raw AND re-referenced",
         "  to T0 = 290 K (`nfmin290_db_*`), because the raw `sp` figure is",
         "  referenced to the ANALYSIS temperature.",
-        f"- **PDK**: `{args.pdk_root}` -- pinned release: see `sim/pdk.json`.",
+        (f"- **PDK**: `{args.pdk_root}` -- verified installed release "
+         f"`{args.pdk_release}`; model hashes in `{args.pdk_provenance}`."
+         if args.pdk_release else
+         f"- **PDK**: `{args.pdk_root}` -- identity not verified by this "
+         "invocation (no --pdk-release given)."),
         f"- **ngspice**: `{args.ngspice_version}`, `.options gmin=1e-10` in",
         "  every deck (identical to the lna-characterization bench).",
         "- **Ideal-passive assumption**: `Le`/`Lc`/`Cc` are ideal infinite-Q",
@@ -403,7 +450,10 @@ def main() -> int:
     if failed:
         md += ["", "## Failed points", ""]
         md += [f"- `{p}`: {why}" for p, why in failed]
-    (records / f"{args.record_id}.md").write_text("\n".join(md) + "\n")
+    with open(stage[f"{args.record_id}.md"], "x") as fh:
+        fh.write("\n".join(md) + "\n")
+    if not publish():
+        return 4
 
     print(f"parse_core_envelope.py: {len(rows)} points -> {csv_path.name}")
     print(f"parse_core_envelope.py: control check -- {control_note}")

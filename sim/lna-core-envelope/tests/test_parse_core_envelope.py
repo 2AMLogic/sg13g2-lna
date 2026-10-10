@@ -114,6 +114,41 @@ class EndToEnd(ParserCase):
                          "vbe1=0.5000_outside_0.65-0.96")
 
 
+class ExclusivePublication(ParserCase):
+    """Issue #126: published summaries are never overwritten."""
+
+    def test_existing_output_refused_and_untouched(self):
+        for name in ("rec.csv", "rec-variant-summary.csv", "rec.md"):
+            with self.subTest(existing=name):
+                for f in self.records.iterdir():
+                    f.unlink()
+                (self.records / name).write_text("evidence\n")
+                r = self.run_parser()
+                self.assertEqual(r.returncode, 4)
+                self.assertIn("CORE_ENV_PUBLICATION_EXISTS", r.stderr)
+                self.assertEqual([p.name for p in self.records.iterdir()], [name])
+                self.assertEqual((self.records / name).read_text(), "evidence\n")
+
+    def test_second_run_does_not_rewrite(self):
+        self.assertEqual(self.run_parser().returncode, 0)
+        before = {p.name: p.read_bytes() for p in self.records.iterdir()}
+        self.assertEqual(set(before), {"rec.csv", "rec-variant-summary.csv", "rec.md"})
+        self.assertEqual(self.run_parser().returncode, 4)
+        self.assertEqual({p.name: p.read_bytes() for p in self.records.iterdir()}, before)
+
+    def test_provenance_cited(self):
+        r = subprocess.run(
+            [sys.executable, "-I", str(PARSER), "--record-id", "rec",
+             "--corners-dir", str(self.corners), "--records-dir", str(self.records),
+             "--manifest", str(self.manifest), "--pdk-release", "0.3.0",
+             "--pdk-provenance", "records/rec.pdk-provenance.json"],
+            capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        md = (self.records / "rec.md").read_text()
+        self.assertIn("verified installed release `0.3.0`", md)
+        self.assertIn("records/rec.pdk-provenance.json", md)
+
+
 class Malformed(ParserCase):
     def assert_fails(self, reason):
         p = self.run_parser()
