@@ -27,7 +27,7 @@ C=layout/lna_core
 mk() { # mk <name>: repo-shaped copy of the inputs
   d="$TMP/$1"; mkdir -p "$d/$C" "$d/design/netlist"
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
-  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json} "$d/$C/"
+  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
   cp "$SRC/$C"/{lvs_request.json,lvs_full_request.json} "$d/$C/"
   cp "$SRC/layout/lvs_identity.py" "$d/layout/"
@@ -151,6 +151,39 @@ p = sys.argv[1]; d = json.load(open(p)); d["reference"]["netlist"] = "lna_core.l
 json.dump(d, open(p, "w"), indent=2)
 PY
 run id-repath 1 "request repointed at another reference"
+
+# --- issue #176: extraction output vs netlist_sha256 ---
+exmut() { # exmut <case> <python statement on d>
+  python3 -I - "$TMP/$1/$C/extract_report.json" "$2" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); exec(sys.argv[2])
+json.dump(d, open(p, "w"))
+PY
+}
+mk ex-ok; run ex-ok 0 "pristine extraction output"
+mk ex-bytes; echo "* tampered" >> "$TMP/ex-bytes/$C/lna_core.extracted.spice"
+run ex-bytes 1 "changed extraction output bytes"; named ex-bytes "extraction output .* != netlist_sha256"
+mk ex-ws; sed -i '1s/$/ /' "$TMP/ex-ws/$C/lna_core.extracted.spice"
+run ex-ws 1 "whitespace-only change to extraction output"
+mk ex-del; rm "$TMP/ex-del/$C/lna_core.extracted.spice"
+run ex-del 1 "deleted extraction output"; named ex-del "extraction output .* missing"
+mk ex-nopath; exmut ex-nopath 'del d["netlist_path"]'
+run ex-nopath 1 "missing netlist_path"; named ex-nopath "netlist_path missing or malformed"
+mk ex-badpath; exmut ex-badpath 'd["netlist_path"] = 5'
+run ex-badpath 1 "non-string netlist_path"
+mk ex-nohash; exmut ex-nohash 'del d["netlist_sha256"]'
+run ex-nohash 1 "missing netlist_sha256"; named ex-nohash "netlist_sha256 missing or malformed"
+mk ex-badhash; exmut ex-badhash 'd["netlist_sha256"] = "sha256:" + d["netlist_sha256"]'
+run ex-badhash 1 "malformed netlist_sha256"; named ex-badhash "netlist_sha256 missing or malformed"
+mk ex-esc; cp "$TMP/ex-esc/$C/lna_core.extracted.spice" "$TMP/outside.spice"
+exmut ex-esc 'd["netlist_path"] = "../../../outside.spice"'
+run ex-esc 1 "netlist_path escaping the repository"; named ex-esc "escapes the repository"
+mk ex-abs; exmut ex-abs 'd["netlist_path"] = "'"$TMP"'/outside.spice"'
+run ex-abs 1 "absolute netlist_path"; named ex-abs "absolute"
+# a repo-local output in a subdirectory of the report dir resolves relative to it
+mk ex-sub; mkdir "$TMP/ex-sub/$C/sub"; mv "$TMP/ex-sub/$C/lna_core.extracted.spice" "$TMP/ex-sub/$C/sub/"
+exmut ex-sub 'd["netlist_path"] = "sub/lna_core.extracted.spice"'
+run ex-sub 0 "output resolved relative to report directory"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -309,8 +309,16 @@ python3 stdlib: no klayout, klt or PDK. It fails, naming the relationship, if:
    report file itself is missing/unreadable), has a `role` other than `layout`, or has a `content_hash` that is
    not `sha256:` plus the committed GDS hash. This only pins the extraction and
 scoped-LVS reports to the same GDS; it does not make them block signoff
-evidence (the partial-scope guard above still applies), and no
-extracted-netlist digest is inferred from filenames;
+evidence (the partial-scope guard above still applies);
+5. the extraction output named by `extract_report.json` does not match the
+   report. `netlist_path` is resolved relative to the report's directory (it
+   must be a relative, repository-local path; absolute or escaping paths are
+   rejected) and the file's raw bytes (not normalized SPICE) must hash to
+   `netlist_sha256` (64 lowercase hex). A missing or malformed
+   `netlist_path`/`netlist_sha256`, a missing output file, or a digest
+   mismatch fails with a diagnostic naming the report and file. No klt or PDK
+   is needed; this checks the committed pair, not that extraction would
+   reproduce it;
 4. `lna_core/lvs_inputs.json` (written by `layout/lvs_identity.py`, called from
    `run_flow.sh` only after a successful `klt lvs` invocation, exit 0 or the
    recorded mismatch exit 3) is missing/malformed, or the current bytes of an
