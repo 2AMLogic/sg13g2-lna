@@ -26,24 +26,148 @@ INBAND_COLS = [
 ]
 
 
-def parse_table(path: Path, spec=INBAND_COLS):
+class TableError(ValueError):
+    """The wrdata table violates its numeric contract (invalid evidence).
+
+    Distinct from a valid measurement that fails a target: callers treat this
+    as "the point is not complete evidence", never as a spec failure.
+    """
+
+
+def parse_table(path: Path, spec=INBAND_COLS, expected_points=None):
+    """Decode a wrdata table, validating it before any arithmetic.
+
+    Requires: the exact schema width per row, finite values (NaN/inf/overflow
+    rejected), identical repeated frequency scales within a row, and positive
+    strictly increasing frequencies down the table. `expected_points`, when a
+    caller knows the declared grid size, must equal the received row count;
+    None (historical replay, reduced fixtures) imposes no count.
+    """
+    width_total = sum(w for _, w in spec)
     rows = []
-    for line in path.read_text().splitlines():
+    prev_f = None
+    for lineno, line in enumerate(Path(path).read_text().splitlines(), 1):
         line = line.strip()
         if not line:
             continue
-        vals = [float(x) for x in line.split()]
-        rec, i = {}, 0
+        where = f"{Path(path).name}:{lineno}"
+        toks = line.split()
+        try:
+            vals = [float(x) for x in toks]
+        except ValueError as exc:
+            raise TableError(f"{where}: non-numeric field ({exc})") from None
+        if len(vals) != width_total:
+            raise TableError(
+                f"{where}: {len(vals)} columns, schema requires {width_total}")
+        bad = [i for i, v in enumerate(vals) if not math.isfinite(v)]
+        if bad:
+            raise TableError(
+                f"{where}: non-finite value ({toks[bad[0]]}) in column {bad[0]}")
+        rec, i, f_row = {}, 0, None
         for name, width in spec:
             chunk = vals[i:i + width]
             i += width
             if name == "f":
+                if f_row is not None and chunk[0] != f_row:
+                    raise TableError(
+                        f"{where}: inconsistent repeated frequency scale "
+                        f"({chunk[0]!r} != {f_row!r})")
+                f_row = chunk[0]
                 rec["freq_hz"] = chunk[0]
             elif width == 2:
                 rec[name] = complex(chunk[0], chunk[1])
             else:
                 rec[name] = chunk[0]
+        if f_row is not None:
+            if f_row <= 0:
+                raise TableError(f"{where}: non-positive frequency {f_row!r}")
+            if prev_f is not None and f_row <= prev_f:
+                raise TableError(
+                    f"{where}: frequency {f_row!r} not strictly increasing "
+                    f"(previous {prev_f!r})")
+            prev_f = f_row
         rows.append(rec)
+    if expected_points is not None and len(rows) != expected_points:
+        raise TableError(
+            f"{Path(path).name}: {len(rows)} points, declared grid has "
+            f"{expected_points}")
+    return rows
+
+
+GRID_RTOL = 1e-6  # wrdata prints 9 significant digits
+
+
+def parse_grid_arg(text: str):
+    """Parse a declared-grid CLI value "LO,HI,N" into (lo, hi, n)."""
+    parts = text.split(",")
+    if len(parts) != 3:
+        raise ValueError(f"declared grid {text!r} must be LO,HI,N")
+    lo, hi, n = float(parts[0]), float(parts[1]), int(parts[2])
+    if not (math.isfinite(lo) and math.isfinite(hi) and 0 < lo < hi and n >= 1):
+        raise ValueError(f"declared grid {text!r} needs 0 < LO < HI and N >= 1")
+    return lo, hi, n
+
+
+def _close(a: float, b: float, rtol: float) -> bool:
+    return abs(a - b) <= rtol * max(abs(a), abs(b))
+
+
+def check_declared_grid(rows, name: str, sweep: str, lo: float, hi: float,
+                        n: int, rtol: float = GRID_RTOL):
+    """Check received rows against the campaign's declared sweep grid.
+
+    sweep="lin" (`sp lin N LO HI`): exactly N points, first == LO, last == HI,
+    and every point i on LO + i*(HI-LO)/(N-1).
+    sweep="dec" (`sp dec N LO HI`): first == LO, at least
+    floor(N*log10(HI/LO)) + 1 points (one spare allowed for ngspice's endpoint
+    rounding), every point i on LO * 10**(i/N), and the last point within one
+    decade-step below HI, never above it. ngspice's `dec` sweep does not land
+    exactly on HI (it stops at the last grid point not above HI), so the end
+    is checked by bracket, not equality with HI.
+
+    Every received frequency is compared with its expected grid position
+    within `rtol` (wrdata's printed precision), so an off-grid sample standing
+    in for a missing grid sample is rejected even when count and endpoints
+    agree.
+
+    Raises TableError; the caller treats the point as invalid evidence.
+    """
+    if not rows:
+        raise TableError(f"{name}: no points, declared grid {lo!r}..{hi!r}")
+    f0, f1, cnt = rows[0]["freq_hz"], rows[-1]["freq_hz"], len(rows)
+    if not _close(f0, lo, rtol):
+        raise TableError(
+            f"{name}: first frequency {f0!r} != declared start {lo!r}")
+    if sweep == "lin":
+        if cnt != n:
+            raise TableError(
+                f"{name}: {cnt} points, declared grid has {n} (lin)")
+        if not _close(f1, hi, rtol):
+            raise TableError(
+                f"{name}: last frequency {f1!r} != declared stop {hi!r}")
+    elif sweep == "dec":
+        n_min = math.floor(n * math.log10(hi / lo) + 1e-9) + 1
+        if not (n_min <= cnt <= n_min + 1):
+            raise TableError(
+                f"{name}: {cnt} points, declared grid dec {n} over "
+                f"{lo!r}..{hi!r} requires {n_min}")
+        floor_f = hi / 10 ** (1.0 / n)
+        if not (floor_f * (1 - rtol) <= f1 <= hi * (1 + rtol)):
+            raise TableError(
+                f"{name}: last frequency {f1!r} outside the declared stop "
+                f"step [{floor_f!r}, {hi!r}]")
+    else:
+        raise ValueError(f"unknown sweep type {sweep!r}")
+    for i, row in enumerate(rows):
+        if sweep == "lin":
+            want = lo + i * (hi - lo) / (n - 1) if n > 1 else lo
+        else:
+            want = lo * 10 ** (i / n)
+        got = row["freq_hz"]
+        if not _close(got, want, rtol):
+            raise TableError(
+                f"{name}: point {i} frequency {got!r} off the declared {sweep} "
+                f"{n} grid over {lo!r}..{hi!r} (expected {want!r})")
     return rows
 
 

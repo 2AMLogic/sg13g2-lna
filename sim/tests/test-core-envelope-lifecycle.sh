@@ -56,7 +56,7 @@ mktree() {
 import argparse, os, sys
 ap = argparse.ArgumentParser()
 for a in ("record-id", "corners-dir", "records-dir", "manifest", "design-netlist-sha",
-          "ngspice-version", "pdk-root", "pdk-release", "pdk-provenance", "reference-summary"):
+          "ngspice-version", "pdk-root", "pdk-release", "pdk-provenance", "reference-summary", "inband-grid", "stab-grid"):
     ap.add_argument("--" + a)
 a = ap.parse_args()
 if os.environ.get("STUB_PARSE_FAIL"):

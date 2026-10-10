@@ -97,5 +97,156 @@ class EnvelopeRfTests(unittest.TestCase):
         self.assertEqual(r["nfmin"], 1.25 + 0j)
 
 
+class TableIntegrity(unittest.TestCase):
+    G = 1.0e9
+
+    def row(self, f=None, **over):
+        g = self.G if f is None else f
+        v = [g, 0.1, 0.2, g, 3.0, 4.0, g, 0.01, 0.02, g, 0.5, 0.6,
+             g, 1.5, g, 2.5, g, 0.9, g, 3.5, 0.0, g, 1.25, 0.0]
+        for k, x in over.items():
+            v[int(k[1:])] = x
+        return " ".join(repr(x) for x in v)
+
+    def parse(self, lines, **kw):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.dat"
+            p.write_text("\n".join(lines) + "\n")
+            return rf.parse_table(p, **kw)
+
+    def rejects(self, lines, frag, **kw):
+        with self.assertRaises(rf.TableError) as cm:
+            self.parse(lines, **kw)
+        self.assertIn(frag, str(cm.exception))
+        self.assertIn("x.dat", str(cm.exception))
+
+    def test_valid_multirow(self):
+        self.assertEqual(len(self.parse([self.row(1e9), self.row(2e9)],
+                                        expected_points=2)), 2)
+
+    def test_nan_inf_overflow(self):
+        self.rejects([self.row().replace("2.5", "nan")], "non-finite")
+        self.rejects([self.row().replace("2.5", "inf")], "non-finite")
+        self.rejects([self.row().replace("2.5", "1e999")], "non-finite")
+
+    def test_column_count(self):
+        self.rejects([self.row() + " 7.0"], "columns")
+        self.rejects([" ".join(self.row().split()[:-1])], "columns")
+
+    def test_inconsistent_scale(self):
+        self.rejects([self.row().replace("1.5", "1.5", 1).replace(
+            f"{self.G!r} 2.5", "2e9 2.5")], "inconsistent repeated frequency")
+
+    def test_duplicate_and_reversed(self):
+        self.rejects([self.row(1e9), self.row(1e9)], "strictly increasing")
+        self.rejects([self.row(2e9), self.row(1e9)], "strictly increasing")
+
+    def test_nonpositive_frequency(self):
+        self.rejects([self.row(0.0)], "non-positive")
+
+    def test_missing_declared_grid_points(self):
+        self.rejects([self.row(1e9)], "declared grid", expected_points=2)
+
+
+class DeclaredGridCheck(unittest.TestCase):
+    """check_declared_grid against the live campaign grid (run_core_envelope.sh)."""
+
+    @staticmethod
+    def rows(freqs):
+        return [{"freq_hz": float(f"{f:.8e}")} for f in freqs]  # wrdata precision
+
+    def stab(self):
+        # ngspice `sp dec 40 1e7 3e10`: 140 points, last 2.98538262e10 (the
+        # committed record 20260926-180931-90b07a0 has exactly this).
+        return self.rows(1e7 * 10 ** (i / 40) for i in range(140))
+
+    def inband(self):
+        return self.rows(2.4e9 + i * (2.4835e9 - 2.4e9) / 10 for i in range(11))
+
+    def ok(self, rows, sweep, lo, hi, n):
+        rf.check_declared_grid(rows, "x.dat", sweep, lo, hi, n)
+
+    def bad(self, rows, sweep, lo, hi, n, frag):
+        with self.assertRaises(rf.TableError) as cm:
+            rf.check_declared_grid(rows, "x.dat", sweep, lo, hi, n)
+        self.assertIn(frag, str(cm.exception))
+        self.assertIn("x.dat", str(cm.exception))
+
+    def test_campaign_grids_pass(self):
+        self.assertAlmostEqual(self.stab()[-1]["freq_hz"], 2.98538262e10, delta=1e2)
+        self.ok(self.stab(), "dec", 1e7, 3e10, 40)
+        self.ok(self.inband(), "lin", 2.4e9, 2.4835e9, 11)
+
+    def test_stab_missing_middle_row(self):
+        r = self.stab()
+        del r[70]
+        self.bad(r, "dec", 1e7, 3e10, 40, "requires 140")
+
+    def test_stab_truncated_tail(self):
+        self.bad(self.stab()[:-1], "dec", 1e7, 3e10, 40, "requires 140")
+        self.bad(self.stab()[:100], "dec", 1e7, 3e10, 40, "requires 140")
+
+    def test_stab_missing_head(self):
+        self.bad(self.stab()[1:], "dec", 1e7, 3e10, 40, "declared start")
+
+    def test_stab_overshoot(self):
+        r = self.stab()
+        r[-1] = {"freq_hz": 3.1e10}
+        self.bad(r, "dec", 1e7, 3e10, 40, "declared stop")
+
+    def test_inband_count_and_endpoints(self):
+        self.bad(self.inband()[:-1], "lin", 2.4e9, 2.4835e9, 11, "declared grid has 11")
+        r = self.inband()
+        r[-1] = {"freq_hz": 2.5e9}
+        self.bad(r, "lin", 2.4e9, 2.4835e9, 11, "declared stop")
+
+    def test_dec_offgrid_interior_substitution(self):
+        # Judge example: `sp dec 1 1e7 1e10` expects [1e7, 1e8, 1e9, 1e10];
+        # 2e8 standing in for the missing 1e8 keeps count and endpoints.
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1)
+        self.bad(self.rows([1e7, 2e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1,
+                 "point 1 frequency")
+        r = self.stab()
+        r[70] = {"freq_hz": (r[69]["freq_hz"] + r[71]["freq_hz"]) / 2}
+        self.bad(r, "dec", 1e7, 3e10, 40, "point 70 frequency")
+
+    def test_dec_offgrid_last_inside_bracket(self):
+        # Last point inside the stop bracket but not on the grid.
+        r = self.stab()
+        r[-1] = {"freq_hz": 2.99e10}
+        self.bad(r, "dec", 1e7, 3e10, 40, "point 139 frequency")
+
+    def test_dec_endpoint_rounding_preserved(self):
+        # Exact-decade stop (grid lands on HI) and the spare point allowed for
+        # ngspice's endpoint rounding (spare lands within rtol of HI).
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 1e10, 1)
+        # HI just below 1e10: floor() gives 3 points, ngspice may emit the
+        # 1e10 grid point as a 4th (within rtol of HI).
+        self.ok(self.rows([1e7, 1e8, 1e9]), "dec", 1e7, 9.999995e9, 1)
+        self.ok(self.rows([1e7, 1e8, 1e9, 1e10]), "dec", 1e7, 9.999995e9, 1)
+
+    def test_lin_offgrid_interior_substitution(self):
+        self.ok(self.rows([1e9, 2e9, 3e9, 4e9]), "lin", 1e9, 4e9, 4)
+        self.bad(self.rows([1e9, 2.5e9, 3e9, 4e9]), "lin", 1e9, 4e9, 4,
+                 "point 1 frequency")
+        r = self.inband()
+        r[5] = {"freq_hz": r[5]["freq_hz"] * 1.0001}
+        self.bad(r, "lin", 2.4e9, 2.4835e9, 11, "point 5 frequency")
+
+    def test_wrdata_precision_within_tolerance(self):
+        r = self.inband()
+        r[5] = {"freq_hz": r[5]["freq_hz"] * (1 + 5e-9)}
+        self.ok(r, "lin", 2.4e9, 2.4835e9, 11)
+
+    def test_empty(self):
+        self.bad([], "lin", 2.4e9, 2.4835e9, 11, "no points")
+
+    def test_parse_grid_arg(self):
+        self.assertEqual(rf.parse_grid_arg("1e7,3e10,40"), (1e7, 3e10, 40))
+        for bad in ("1e7,3e10", "3e10,1e7,40", "1e7,3e10,0", "0,1e9,5", "1e7,inf,4"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                rf.parse_grid_arg(bad)
+
+
 if __name__ == "__main__":
     unittest.main()

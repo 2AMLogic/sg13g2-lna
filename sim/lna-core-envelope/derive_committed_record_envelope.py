@@ -99,7 +99,12 @@ def main() -> int:
         if not dat.exists():
             print(f"derive_committed_record_envelope.py: {dat} missing", file=sys.stderr)
             return 3
-        ib = parse_table(dat)
+        try:
+            ib = parse_table(dat)
+        except _rf.TableError as exc:
+            print(f"derive_committed_record_envelope.py: {pid}: invalid table: "
+                  f"{exc}", file=sys.stderr)
+            return 3
         t_a = float(r["temp_c"]) + 273.15
 
         # --- (1) prove the sp-NF reference convention -------------------
