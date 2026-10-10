@@ -68,6 +68,10 @@ SIM_LOG_FAIL_PATTERNS=""  # extra egrep alternation for sim_check_log
 SIM_DUT_SUBCKT=""         # file spliced in at a deck's @@LNA_SUBCKT@@
 SIM_POOL_JOBS=1           # set by sim_pool_init
 SIM_POOL_SPAWNED=0        # how many points sim_pool_spawn has scheduled
+SIM_PDK_PROVENANCE_JSON="" # set by sim_require_pdk: verified PDK identity + model hashes
+SIM_PDK_RELEASE=""        # set by sim_require_pdk: verified installed release (raw)
+SIM_PDK_PROVENANCE_FILE="" # set by sim_record_paths: records/<id>.pdk-provenance.json
+SIM_PDK_ID_ROUTE=""       # set by sim_require_pdk: tarball-marker | source-checkout
 
 sim_require_pdk() {
   # sim_require_pdk <script-name> [--osdi]
@@ -126,6 +130,33 @@ sim_require_pdk() {
       fi
     done
   fi
+
+  # Installed-PDK identity (issue #118): compare the install's verified
+  # release with the sim/pdk.json pin, and hash the model inputs. Offline;
+  # runs BEFORE any runner calls sim_record_paths, so a mismatch or an
+  # unverifiable install exits 3 with a named error and no record is
+  # reserved. A path / ngspice version alone does not identify the models.
+  local -a __srp_extra=()
+  if (( want_osdi )); then
+    __srp_extra=("${MOS_LIB}" "${OSDI_DIR}/psp103.osdi" \
+                 "${OSDI_DIR}/psp103_nqs.osdi" "${OSDI_DIR}/mosvar.osdi")
+  fi
+  command -v python3 >/dev/null 2>&1 || {
+    echo "${SIM_SCRIPT_NAME}: PDK_IDENTITY_UNVERIFIABLE: python3 not on PATH." >&2
+    exit 3
+  }
+  local __srp_json
+  if ! __srp_json="$(python3 -I "${SIM_DIR}/tools/pdk_identity.py" \
+        "${SIM_DIR}/pdk.json" "${PDK_ROOT}/${PDK}" "${MODELS_LIB}" \
+        "${__srp_extra[@]}")"; then
+    echo "${SIM_SCRIPT_NAME}: PDK identity preflight failed (see above); no record reserved." >&2
+    exit 3
+  fi
+  SIM_PDK_PROVENANCE_JSON="${__srp_json}"
+  # shellcheck disable=SC2034  # consumed by the sourcing runner's record prose
+  SIM_PDK_RELEASE="$(printf '%s' "${__srp_json}" | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["installed_release_raw"])')"
+  # shellcheck disable=SC2034  # consumed by the sourcing runner's record prose
+  SIM_PDK_ID_ROUTE="$(printf '%s' "${__srp_json}" | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["identity_route"])')"
 }
 
 sim_record_paths() {
@@ -188,6 +219,17 @@ sim_record_paths() {
   CORNERS_OUT="${__srp_corn}"
   # shellcheck disable=SC2034
   RECORDS_DIR="${__srp_rec}"
+
+  # Per-record provenance sidecar (issue #118): verified PDK identity and
+  # model-input hashes, from sim_require_pdk. Skipped when no preflight ran.
+  if [[ -n "${SIM_PDK_PROVENANCE_JSON}" ]]; then
+    SIM_PDK_PROVENANCE_FILE="${__srp_rec}/${__srp_id}.pdk-provenance.json"
+    if ! ( set -o noclobber; printf '%s\n' "${SIM_PDK_PROVENANCE_JSON}" > "${SIM_PDK_PROVENANCE_FILE}" ) 2>/dev/null; then
+      rmdir "${__srp_snap}" "${__srp_corn}" 2>/dev/null
+      echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot write ${SIM_PDK_PROVENANCE_FILE}; reservation released." >&2
+      exit 4
+    fi
+  fi
 }
 
 sim_jobs() {

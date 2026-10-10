@@ -445,6 +445,7 @@ n_cells=$((${#NX_LIST[@]} * ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VCES[@]}))
   echo "  Nx in {${NX_LIST_STR}}, emitter area \`AE_UNIT_UM2\`=${AE_UNIT_UM2} um^2 per finger."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\` (IHP-Open-PDK v0.3.0)."
+  echo "- **PDK identity (verified)**: \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`"
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **Sweep grid**: Nx {${NX_LIST_STR}} x corner_label"
   echo "  {${CORNER_LABELS_STR}} x temp {${TEMPS_STR}} x Vce {${VCES_STR}}"

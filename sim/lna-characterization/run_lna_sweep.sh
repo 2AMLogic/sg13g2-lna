@@ -380,6 +380,7 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  transient + rectangular-window FFT, no zero padding."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\` (IHP-Open-PDK v0.3.0)."
+  echo "- **PDK identity (verified)**: \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`"
   echo "- **Device model sections**: HBT from \`cornerHBT.lib\`"
   echo "  (\`hbt_typ\`/\`hbt_bcs\`/\`hbt_wcs\`; \`sf\`/\`fs\` fall back to"
   echo "  \`hbt_typ\` -- no skewed HBT section exists in this PDK), MOS from"

@@ -160,6 +160,7 @@ PYEOF
   echo "  generated netlist snapshot header and request JSON carries the exact analysis."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\`; HBT sections from \`cornerHBT.lib\`, MOS from"
   echo "  \`cornerMOShv.lib\` with the same label->section map as \`run_lna_sweep.sh\`."
+  echo "- **PDK identity (verified)**: \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`"
   echo "- **Runner**: client \`${KLT_VERSION}\`; backend \`${LNA_VARIANT_BACKEND:-${KLT_SIM_BACKEND:-local}}\`."
   echo "  Jobs (klt \`environment.remote\`):"
   echo "${JOBS}"

@@ -25,6 +25,35 @@ prefixes) — every testbench's `run_*.sh` sources it, and an interactive
 different install than what a script used. It also carries the shared
 runner surface documented below.
 
+### Installed-PDK identity check
+
+`sim_require_pdk` compares the installed PDK with the pin in `pdk.json`
+(`release_tag`, `variant`) via `sim/tools/pdk_identity.py` -- offline, no
+network, no simulator. The leading `v` of the tag is normalized on both
+sides (`v0.3.0` == `0.3.0`). Two identity routes are supported:
+
+- **tarball marker**: `<PDK_ROOT>/ihp-sg13g2/.fetched-version`
+  (`fetch-ihp-sg13g2.sh` install);
+- **source checkout**: `<PDK_ROOT>/ihp-sg13g2` is itself a git work-tree
+  root checked out at exactly the release tag
+  (`git describe --tags --exact-match HEAD`).
+
+A path alone is never trusted. A mismatch exits 3 with
+`PDK_IDENTITY_MISMATCH`; no marker and no exact-tag checkout exits 3 with
+`PDK_IDENTITY_UNVERIFIABLE`; an unresolvable include exits 3 with
+`PDK_MODEL_INPUT_MISSING`. All happen before `sim_record_paths`, so no
+record id is reserved. The pin itself is unchanged (changing it needs a
+separate evidence decision).
+
+On success `sim_record_paths` writes `records/<id>.pdk-provenance.json`:
+verified release and route, and SHA-256 of the model inputs -- the textual
+`.lib`/`.include` closure from `cornerHBT.lib`, plus (with `--osdi`)
+`cornerMOShv.lib` and the `psp103`/`psp103_nqs`/`mosvar` `.osdi` binaries.
+The closure is a text scan: it does not prove completeness for content
+loaded by other means. This is input identity tracking, not a signoff
+verdict. Records generated before this check are not edited and carry no
+sidecar. Tests: `sim/tests/test-pdk-identity.sh` (PDK-free, stub ngspice).
+
 ## Shared runner surface (`sim/env.sh`)
 
 Every `run_*_sweep.sh` opens the same way: resolve the PDK, refuse to run
