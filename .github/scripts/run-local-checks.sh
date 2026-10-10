@@ -99,6 +99,8 @@ step "sim-record-paths-tests: sim_record_paths reservation tests" \
   sim/tests/test-sim-record-paths.sh
 step "sim-pdk-identity-tests: installed-PDK identity preflight tests" \
   sim/tests/test-pdk-identity.sh
+step "sim-core-envelope-lifecycle-tests: core-envelope record lifecycle tests" \
+  sim/tests/test-core-envelope-lifecycle.sh
 
 # --- job: envelope-replay
 step "envelope-replay: self-test" \

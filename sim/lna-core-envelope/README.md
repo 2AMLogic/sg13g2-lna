@@ -344,9 +344,52 @@ sim/lna-core-envelope/run_core_envelope.sh    # ~675 decks, serial, ~11 min
 
 The runner is deliberately **serial** — one `ngspice` at a time, no job
 pool. `CORE_ENV_SMOKE=1` runs one nominal cell; `CORE_ENV_VARIANTS="a b"`
-restricts the variant list; `CORE_ENV_RECORD_ID=<id>` pins the record id and
-(with the runner's resume behaviour, which skips any deck whose log already
-reached `BENCH_COMPLETE`) lets an interrupted campaign finish as one record.
+restricts the variant list; `CORE_ENV_RECORD_ID=<id>` pins the record id so an
+interrupted campaign can finish as one record (see the lifecycle below).
+
+### Record lifecycle (issue #126)
+
+The runner first calls the shared `sim_require_pdk` preflight (#118): a wrong
+or unverifiable installed PDK exits 3 before any output is allocated or
+`ngspice` is invoked. A fresh record stores `records/<id>.pdk-provenance.json`
+(verified release + model hashes, cited by `records/<id>.md`) and
+`corners/<id>/run-fingerprint.json`. Under an exclusive per-record lock
+(`corners/.<id>.lock`, atomic `mkdir`) the record is then in one state:
+
+| State | Meaning | Outcome |
+|---|---|---|
+| fresh | nothing under the id | run, publish, finalize |
+| interrupted | fingerprint present, nothing published | resume **iff** the fingerprint matches and every completed cell's deck is byte-identical to today's render; only missing cells run |
+| partial | some `records/<id>{.csv,-variant-summary.csv,.md}` exist, no `finalized.json` | rejected `CORE_ENV_RECORD_PARTIAL_PUBLICATION` |
+| finalized | `corners/<id>/finalized.json` exists | rejected `CORE_ENV_RECORD_FINALIZED` |
+| legacy | directory without a fingerprint (every record before #126) | rejected `CORE_ENV_RECORD_LEGACY` |
+
+The fingerprint covers the committed DUT netlist, both bench templates, the
+(filtered) variant recipes, the PVT/frequency grid (including `CORE_ENV_SMOKE`),
+the verified release and SHA-256 of every model input, and the simulator
+(version line and binary hash). A mismatch exits 4 with
+`CORE_ENV_FINGERPRINT_MISMATCH` naming the differing components; a completed
+cell whose committed deck differs from the deck rendered now exits 4 with
+`CORE_ENV_DECK_MISMATCH`. All decks are rendered in scratch and compared
+**before** the first byte of the record changes. Decks embed absolute PDK
+paths, so resume must use the same install location.
+
+Every rejection exits 4 and modifies nothing. **To start over, mint a new
+`CORE_ENV_RECORD_ID` (or unset it so a timestamped id is minted).** Absence of
+provenance is never a match, so legacy directories cannot be resumed or
+re-published; they remain as committed evidence. Summaries are published
+exclusively (`parse_core_envelope.py` refuses with `CORE_ENV_PUBLICATION_EXISTS`
+and never overwrites) and `finalized.json` is written only after the reduction
+succeeded. If a writer dies between publishing and finalizing, the record is
+*partial* and stays rejected; nothing is repaired automatically.
+
+A second invocation on a held record exits 4 with `CORE_ENV_RECORD_BUSY` and
+touches nothing. SIGINT/SIGTERM release the lock; after SIGKILL or power loss
+the lock directory stays and names its holder (`owner` file). It is never
+broken automatically: verify the process is dead, remove
+`corners/.<id>.lock`, and rerun. Tests (PDK-free, stub simulator and parser):
+`sim/tests/test-core-envelope-lifecycle.sh` and
+`tests/test_parse_core_envelope.py`.
 
 The derivation half needs no PDK and no ngspice at all:
 
