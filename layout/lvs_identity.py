@@ -49,10 +49,17 @@ def main(argv):
     if side.is_file():
         try:
             old = json.loads(side.read_text())
-            if old.get("schema") == SCHEMA and isinstance(old.get("reports"), dict):
-                doc = old
         except ValueError:
-            pass
+            old = None
+        if (isinstance(old, dict) and old.get("schema") == SCHEMA
+                and isinstance(old.get("reports"), dict)):
+            doc = old
+        else:
+            # Not silently: the other report's entry is dropped, so the
+            # freshness gate will flag it until that report is regenerated.
+            print(f"lvs_identity: warning: existing {NAME} is malformed or "
+                  f"not schema {SCHEMA}; starting a fresh sidecar (other "
+                  f"reports' entries are dropped)", file=sys.stderr)
     doc["reports"][rep_name] = entry
     tmp = cd / (NAME + ".tmp")
     tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")

@@ -1,0 +1,23 @@
+{
+  "reports": {
+    "lvs_full_report.json": {
+      "gds": "layout/lna_core/lna_core.gds",
+      "gds_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "reference": "design/netlist/lna.spice",
+      "reference_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+      "report_sha256": "76206794fc1ded6c6fc152ff333cf18a027ffb4e62dd3f02ab881b5b0e2f2c67",
+      "request": "lvs_full_request.json",
+      "request_sha256": "c747cdeff0a6fcf26c7203674e55d5b80057799631616dd0ede4b136f6e9bb42"
+    },
+    "lvs_report.json": {
+      "gds": "layout/lna_core/lna_core.gds",
+      "gds_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "reference": "layout/lna_core/lna_core.lvs_reference.spice",
+      "reference_sha256": "ec622d719d175872bd1971aa4d4483e4e2e0632dab3a0a1f46eaca5ad6341d47",
+      "report_sha256": "22137186feca43941c410ba39920557edae4a395006cf82deee424af3161ef0f",
+      "request": "lvs_request.json",
+      "request_sha256": "d14b2a9f6cd3a73f7fbc9dc86552904a11ba34e9d79168ecbd0ef634ea2be76f"
+    }
+  },
+  "schema": "sg13g2-lna.lvs-inputs/1"
+}

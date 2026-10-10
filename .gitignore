@@ -99,3 +99,6 @@ flow/build/
 
 # layout/: PyCell submodule shims fetched by layout/tools/fetch-pcell-deps.sh
 layout/build/
+# layout/run_flow.sh scratch: unpublished klt output / lvs_inputs.json left
+# behind by a failed or interrupted run (never evidence)
+layout/*/*.tmp
