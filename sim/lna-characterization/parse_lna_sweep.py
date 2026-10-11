@@ -466,13 +466,18 @@ def read_nf_grid(path: str) -> list[tuple[float, float, float]]:
 
 
 def build_sparam_rows(
-    corners_dir: str, exclude=(), nf_spec=None, nfmin290: bool = False
+    corners_dir: str, exclude=(), nf_spec=None, nfmin290: bool = False,
+    include=None,
 ) -> tuple[list[dict], dict, list[str], list[dict]]:
     """`exclude`: points whose tables failed grid validation; they are skipped
     (reported as skipped) so their extrema never enter an aggregate.
     `nf_spec`: manifest grid contract for nf290.dat (None = derive).
     `nfmin290`: also emit the 290 K-referenced NFmin columns (issue #181).
-    Off by default so a historical replay keeps its exact column set."""
+    Off by default so a historical replay keeps its exact column set.
+    `include`: the manifest's declared sp point IDs (issue #180). When given,
+    an undeclared sp_* log is not reduced at all -- it is neither a row nor a
+    skipped point (coverage lists it as `unexpected`). None = every sp_* log
+    on disk (manifest-free historical replay)."""
     rows: list[dict] = []
     nf_rows: list[dict] = []
     per_cell: dict[str, dict] = {}
@@ -483,6 +488,8 @@ def build_sparam_rows(
         point_id = fname[:-4]
         m = SP_NAME_RE.match(point_id)
         if not m:
+            continue
+        if include is not None and point_id not in include:
             continue
         if point_id in exclude or not is_complete(os.path.join(corners_dir, fname)) or any(
             not os.path.isfile(os.path.join(corners_dir, point_id + d))
@@ -648,7 +655,12 @@ def finalize_nf_columns(per_cell: dict) -> None:
                                    " them are NOT checked")
 
 
-def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
+def build_iip3_rows(corners_dir: str, include=None) -> tuple[list[dict], list[str]]:
+    """`include`: the manifest's declared iip3 point IDs (issue #180). When
+    given, an undeclared drive level never becomes an IIP3 row, so it cannot
+    enter the accepted intercepts or the per-cell slope check; declared
+    nominal-only extra levels are members and stay included. None = every
+    iip3_* log on disk (manifest-free historical replay)."""
     rows: list[dict] = []
     skipped: list[str] = []
     for fname in sorted(os.listdir(corners_dir)):
@@ -657,6 +669,8 @@ def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
         point_id = fname[:-4]
         m = IIP3_NAME_RE.match(point_id)
         if not m:
+            continue
+        if include is not None and point_id not in include:
             continue
         if not is_complete(os.path.join(corners_dir, fname)):
             skipped.append(point_id)
@@ -1034,7 +1048,12 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
         "invalid_logs": invalid_logs,
         "frequency_grid_contract": man.get("grids") or "absent (legacy manifest)",
         "missing_drive_pairs": broken_pairs,
+        # Diagnostic only (issue #180): undeclared logs never make required
+        # coverage incomplete, and never enter the campaign CSVs/headlines.
         "unexpected": sorted(on_disk - set(expected)),
+        "aggregate_membership": ("manifest-declared sp/iip3 points only; points"
+                                 " listed under `unexpected` are excluded from"
+                                 " every CSV and headline"),
     }
     cov["status"] = (
         "complete"
@@ -1078,6 +1097,8 @@ def coverage_prose(cov: dict | None) -> list[str]:
     else:
         grid_note = ("; sp frequency grids NOT validated (legacy manifest without"
                      " a grid contract)")
+    extra = ([f"  - Unexpected (undeclared; excluded from every aggregate):"
+              f" {', '.join(cov['unexpected'])}"] if cov.get("unexpected") else [])
     if cov["status"] == "complete":
         what = (
             "smoke inventory complete -- a plumbing check, NOT a PVT campaign"
@@ -1085,7 +1106,7 @@ def coverage_prose(cov: dict | None) -> list[str]:
             else "campaign inventory complete"
         )
         return [f"- **Coverage**: {what}; {n_done}/{n_exp} expected points completed,"
-                " every mandatory IIP3 drive pair intact" + grid_note + "."]
+                " every mandatory IIP3 drive pair intact" + grid_note + "."] + extra
     lines = [
         f"- **Coverage**: PARTIAL INVENTORY -- {n_done}/{n_exp} expected points"
         " completed. This record is NOT a full campaign; every aggregate"
@@ -1108,7 +1129,7 @@ def coverage_prose(cov: dict | None) -> list[str]:
             + " + ".join(bp["points"])
             + f" (unavailable: {', '.join(bp['unavailable'])})"
         )
-    return lines
+    return lines + extra
 
 
 def write_csv(path: str, rows: list[dict], fieldnames: list[str]) -> None:
@@ -1402,12 +1423,21 @@ def main() -> int:
     elif args.strict:
         raise SystemExit("--strict requires --manifest")
 
-    man_grids = read_manifest(args.manifest)["grids"] if args.manifest else {}
+    man = read_manifest(args.manifest) if args.manifest else None
+    man_grids = man["grids"] if man else {}
+    # Issue #180: with a manifest, campaign CSVs and headlines are built only
+    # from the declared (and therefore validated) inventory. Undeclared logs
+    # stay listed as `unexpected` in the coverage sidecar; they do not change
+    # the coverage status or the --strict exit code.
+    if cov is not None and cov["unexpected"]:
+        print("parse_lna_sweep.py: excluded from every aggregate (undeclared in"
+              " the manifest): " + ", ".join(cov["unexpected"]), file=sys.stderr)
     sparam_rows, per_cell, sp_skipped, nf_rows = build_sparam_rows(
         args.corners_dir,
         exclude={g["point"] for g in cov["invalid_grids"]} if cov else (),
         nf_spec=man_grids.get("nf290"),
         nfmin290=args.nfmin290,
+        include=set(man["sp"]) if man else None,
     )
     if not sparam_rows and cov is not None and args.strict:
         print(f"parse_lna_sweep.py: {args.corners_dir}: no complete sp_* artefacts",
@@ -1418,7 +1448,8 @@ def main() -> int:
             f"{args.corners_dir}: no complete sp_* artefacts found"
             + (f" ({len(sp_skipped)} incomplete: {', '.join(sp_skipped)})" if sp_skipped else "")
         )
-    iip3_rows, iip3_skipped = build_iip3_rows(args.corners_dir)
+    iip3_rows, iip3_skipped = build_iip3_rows(
+        args.corners_dir, include=set(man["iip3"]) if man else None)
     join_iip3_into_summary(per_cell, iip3_rows)
 
     write_csv(args.sparam_csv, sparam_rows, list(sparam_rows[0].keys()))
