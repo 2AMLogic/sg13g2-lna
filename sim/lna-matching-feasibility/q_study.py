@@ -1045,15 +1045,15 @@ def cmd_reduce(a):
     probe = parse_probe(corners / "tank_y.dat")
     derived = derived_ytank(ms.band_freqs())
 
-    ctl_audit = fs.parse_dc_audit(corners / f"char_ctl_{point_id('em5_cmim')}.log")
+    ctl_audit = fs.parse_dc_audit(corners / "charset" / point_id("em5_cmim") / "char.log")
     ctl_data = load_char_dir(corners / "charset" / point_id("em5_cmim"))
     iso_rows, iso_tables = [], {}
     for feed in ARMS:
         pid = point_id(feed)
         data = load_char_dir(corners / "charset" / pid)
-        audit = fs.parse_dc_audit(corners / f"char_ctl_{pid}.log")
+        audit = fs.parse_dc_audit(corners / "charset" / pid / "char.log")
         flags = fs.dc_flags(audit, ctl_audit)
-        conv = ms.classify_convergence(corners / f"char_ctl_{pid}.log")
+        conv = ms.classify_convergence(corners / "charset" / pid / "char.log")
         cs = ls.char_summary(data)
         y = probe["ctl"]
         iso_rows.append({"arm": feed, "role": ARMS[feed], "rpar_ohm": None, "status": "verified",
@@ -1068,8 +1068,8 @@ def cmd_reduce(a):
         try:
             data = load_char_dir(cdir)
             cs = ls.char_summary(data)
-            audit = fs.parse_dc_audit(corners / f"char_bracket_{tag}.log")
-            conv = ms.classify_convergence(corners / f"char_bracket_{tag}.log")
+            audit = fs.parse_dc_audit(cdir / "char.log")
+            conv = ms.classify_convergence(cdir / "char.log")
             flags = fs.dc_flags(audit, ctl_audit)
             y = probe[tag]
             iso_rows.append({"arm": f"bracket_{tag}", "role": "hypothetical requirement proxy",
