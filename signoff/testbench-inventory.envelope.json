@@ -1,0 +1,14 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:c0b2e056fdf02896fda5acc08c71d88b9ce02658dbc6de59e9bd1407f3b98a7b",
+      "path": "signoff/testbench-inventory.json"
+    }
+  },
+  "schema_version": 1,
+  "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py",
+  "status": "pass",
+  "summary": "Audited testbench inventory for the published measurement scope: benches, runners, reducers, pins and documented cold-start invocations are committed, hashed and cross-referenced. Establishes shipped benches only: not that any command succeeds, not RF compliance, not overall T1.",
+  "t1_item": 9
+}

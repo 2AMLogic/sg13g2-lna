@@ -136,6 +136,10 @@ step "matching-feasibility-tests: solver unit tests and committed-record replay"
 step "record-citations: self-test" .github/scripts/test-check-record-citations.sh
 step "record-citations: check" .github/scripts/check-record-citations
 
+# --- job: testbench-inventory (issue #195; read-only, no PDK/ngspice/klt)
+step "testbench-inventory: self-test" .github/scripts/test-check-testbench-inventory.sh
+step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inventory.py
+
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness

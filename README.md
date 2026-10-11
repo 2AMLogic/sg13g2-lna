@@ -11,7 +11,8 @@ under [`sim/`](sim/). Input/output matching remains open in issue #27. The
 block's layout is still pending: [`layout/`](layout/) holds only a partial
 bring-up of the cascode core and the DR-0003 bias island, whose DRC and LVS
 are not clean (issue #63). The committed [`T1 report`](signoff/t1-report.json)
-currently records zero T1 items met; these artifacts do not establish signoff.
+currently records one of 11 T1 items met (item 9, shipped testbenches, via the
+audited [`testbench inventory`](signoff/testbench-inventory.json)); these artifacts do not establish signoff.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified

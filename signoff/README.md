@@ -19,8 +19,12 @@
 | `t1-report.json` | The **verdict of record**: the committed `klt signoff --format json` output. CI re-renders the report on every push and PR and fails on any byte-drift (`.github/scripts/check-signoff.sh`), so a manifest citation whose artifact has since changed fails rather than rotting. |
 | `design-evidence-tiers.md` | Vendored copy of the T1-T4 evidence-tier checklist `klt signoff` parses (see provenance below). Vendored so the render is reproducible from this repo alone, independent of whichever doc a given installed `klt` build happens to bundle (see "Why the checklist doc is vendored"). |
 
-Today every item renders `unmet`. Items 3 and 4 render `check_failed`,
-and the rest render `no_evidence`. The block does have committed evidence:
+Today item 9 (testbenches shipped) renders `met`, bound to the audited
+testbench inventory (see "Item 9: the testbench inventory" below). That
+establishes shipped, pinned, documented benches only. It is not RF
+compliance and not overall T1. Every other item renders `unmet`: items 3
+and 4 render `check_failed`, and the rest render `no_evidence`. The block
+does have committed evidence:
 the schematic and its derived netlist in `design/`, six `sim/` experiments
 (indexed in the root `README.md` §"Campaign index and the record of
 record"), a characterization report in `measurements/`, a partially
@@ -110,9 +114,13 @@ down as follows:
   cannot check topical relevance for them, so citing them is this
   repo's responsibility, not the grader's. The honest default (per the
   grader contract's own guidance) is to leave them uncited until an
-  artifact genuinely backing each claim exists. The only `klt` envelopes
-  in this repo today are the partial-layout reports above, and they back
-  none of items 1, 2, 9 and 10.
+  artifact genuinely backing each claim exists. The only native `klt`
+  envelopes in this repo are the partial-layout reports above, and they
+  back none of items 1, 2, 9 and 10. **Item 9 is the exception, and it is
+  cited through the artifact-anchored generic form, not a native
+  envelope** (issue #195): the audited testbench inventory is the bound
+  artifact, and the row's `artifact_binding` names it. Items 1, 2 and 10
+  stay uncited.
 
 Per issue #30: an all-`unmet` manifest is the honest machine-readable
 statement of the gap — never hold the manifest back until the block is
@@ -130,7 +138,8 @@ the item just to make a row go green.
   no RTL, no partition boundary. A `mixed-signal` declaration would be
   wrong here.
 - **`evidence`** — the map from item id to evidence entry. It currently
-  holds items 3 and 4, both failing (see above). Cite honestly:
+  holds items 3 and 4, both failing (see above), and item 9, the audited
+  testbench inventory. Cite honestly:
   - **File-backed** — `{"file": "<repo-root-relative path>", "content_hash": "sha256:<hash>"}`.
     Every citation MUST pin `content_hash` to the committed artifact it
     was produced against (`provenance.input.content_hash` of the cited
@@ -175,6 +184,116 @@ the item just to make a row go green.
     (SiGe-HBT recognition permanently declined — klayout-tools#1242,
     documented for this PDK in `sg13g2-bandgap#4`; tap declaration by
     assertion or disclosure — klayout-tools#2240, shipped in 0.6.0).
+
+## Item 9: the testbench inventory
+
+T1 item 9 asks that every claimed measurement's testbench is committed,
+with a documented cold-start invocation a third party can run, and a
+pinned PDK revision. The pinned klt (`0.7.0`) accepts item 9 only as an
+artifact-anchored generic envelope: it declares `"t1_item": 9` and pins
+the audited artifact by path and content hash, and the manifest pins the
+same hash. This repo's artifact is the testbench inventory.
+
+| Path | Role |
+|---|---|
+| `testbench-coverage.json` | The explicit **coverage index**, maintained by hand. It classifies every `sim/` family and maps each published measurement claim to its record ids, bench templates or generators, runner, reducer or derivation, replay checks, documents, documented cold-start commands and tool/PDK pins. |
+| `testbench-inventory.json` | The **audited artifact**, generated from the index and the tracked tree: every listed input hashed (sha256), record trees digested, pins read from `sim/pdk.json` and the workflow, and the audit verdict. It is the file the envelope and the manifest bind. |
+| `testbench-inventory.envelope.json` | The generic envelope the grader reads: `kind: generic`, `status: pass`, `t1_item: 9`, `provenance.input` = inventory path and hash. Emitted only when the audit is complete. |
+| `../.github/scripts/check-testbench-inventory.py` | Generator (`--write`) and read-only checker (default). Stdlib python plus `git ls-files`. |
+| `../.github/scripts/test-check-testbench-inventory.sh` | Temporary-fixture self-test; it must reject each defect class below. |
+
+**Audit scope.** All seven measurement families under `sim/`
+(`biasref-topology`, `breakdown-extraction`, `hbt-characterization`,
+`lna-bias-pvt`, `lna-characterization`, `lna-core-envelope`,
+`lna-matching-feasibility`) and the `measurements/` summary view. Each
+claim carries one of these labels, so a reader cannot mistake a probe for
+a result:
+
+- `present-dut`: measures the DUT committed today.
+- `historical-dut`: a superseded DUT. It is inventoried and labelled, but
+  it cannot be reproduced from the current tree and must not be cited for
+  the current design.
+- `device-characterization`: model-card level device study, no LNA DUT.
+- `variant-exploration`: PVT-grid study of non-committed DUT variants.
+- `nominal-exploration`: a single PVT cell, not a PVT result (the matching
+  feasibility studies).
+- `data-only-derivation`: derived from committed data with no new
+  simulation. This includes the `measurements/` results table, which is a
+  summary view and not a new simulated measurement.
+
+Blocked or unrun campaigns (the full-DUT mismatch campaign, the
+inductor-loss variant campaign, the emitter-array campaign) are listed
+with `result_status` `none-blocked` or `none-unrun`. The inventory then
+attests that their bench ships, not that it produced a result.
+
+**Checked mechanically** (`check-testbench-inventory.py`, no PDK,
+ngspice, klt or network, and no writes): the index parses; every listed
+path is tracked and present; every `sim/<dir>/` is an indexed family or a
+named support directory; every tracked non-evidence file of a family is
+listed by a claim or excluded with a reason; every tracked record, view,
+corners and snapshot id belongs to a claim; `sim/<slug>/` mentions and
+standard record ids in the declared claim sources resolve to the index;
+no bench-like file exists outside `sim/` without a reasoned exclusion;
+each bench template is referenced by name from a listed runner, reducer
+or generator; each cold-start command appears verbatim in its named
+document and names a listed file; every input is hashed and the
+committed inventory equals the recomputed one; and the envelope, the
+manifest citation and the rolling report bind the same inventory hash.
+The same list is stored in the inventory's `audit.mechanical_checks`.
+
+**Left to the audit reviewer** (`audit.reviewer_checks`): running each
+documented cold-start command on a machine with the stated tools and PDK
+(command text in a README does not prove it succeeds, and no CI job runs
+the sweeps); confirming each classification against the DUT of the
+record's date; confirming that no published measurement is missing from
+the claim sources, since the scan reads only the declared sources
+(`README.md`, `sim/README.md`, `measurements/README.md`,
+`measurements/results-verdicts.json`) and cannot understand arbitrary
+prose; and confirming blocked benches are not read as results.
+
+**Limitations.**
+
+- This establishes shipped, hashed, cross-referenced benches with
+  documented invocations and a pinned PDK. It says nothing about whether
+  the measured circuit meets a spec row.
+- Historical-DUT claims name a revision note instead of a reproduction
+  route in the current tree. CI has no git history to verify the commit
+  they name.
+- Record trees (`corners/`, `netlist-snapshots/`) are covered by a
+  git-blob digest per record id, not by re-reading every file. Their
+  append-only status is enforced by `sim-append-only`.
+- A new measurement family, a new record or a new bench file fails the
+  check until the index classifies it. That is deliberate: it makes the
+  index the place where scope is reviewed.
+
+**Cold-start requirements** for the benches the inventory lists: the
+pinned PDK (`sim/pdk.json`, IHP-Open-PDK `v0.3.0`, resolved by
+`sim/env.sh` and checked by `sim_require_pdk`), ngspice (46 or newer for
+OSDI-bearing benches), the OSDI models from `sim/tools/build-osdi.sh` for
+MOS-bearing benches, and python3. The fleet campaigns need a klt client
+and a runner image that support `measurements[].expr`,
+`options.osdi_preload` and `options.stage_model_inputs`
+(`sim/pdk.json`, `klt_variant_campaign`). The freshness check itself needs
+only python3 and git.
+
+**Regenerating** (in the same commit as whatever changed an input):
+
+```bash
+python3 -I .github/scripts/check-testbench-inventory.py --write
+python3 -m pip install klayout-tools==0.7.0   # or a venv / uvx --from "klayout-tools==0.7.0" klt
+klt signoff --manifest signoff/manifest.json \
+  --tiers-doc signoff/design-evidence-tiers.md --format json \
+  > signoff/t1-report.json
+```
+
+`--write` refuses to emit anything while the audit is incomplete: a
+finding, or a non-empty `open_gaps` list in the index. It writes the
+inventory, the envelope and the item 9 manifest citation together. If a
+bench is missing, repair that bounded gap (commit the bench, or document
+its invocation) or declare the gap in `open_gaps`; the row then stays
+uncited. Never wrap an incomplete audit in a pass. After editing any
+listed document, runner, bench, record or shared input, rerun `--write`:
+the check fails on any stale hash rather than letting an inventory age.
 
 ## Why the checklist doc is vendored
 

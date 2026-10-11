@@ -222,6 +222,18 @@ are committed beside every recorded number." Every experiment's own
 ngspice analysis (`.op`, `.ac`, `.noise`) used for each reported quantity
 — this file does not restate those per-experiment details.
 
+## Testbench inventory (T1 item 9)
+
+Every experiment, record and documented cold-start invocation in this tree
+is indexed in [`signoff/testbench-coverage.json`](../signoff/testbench-coverage.json)
+and hashed into the audited [`signoff/testbench-inventory.json`](../signoff/testbench-inventory.json).
+A new `sim/<experiment-slug>/` directory, record id, bench template or
+runner fails the read-only `testbench-inventory` CI check until the index
+classifies it. Scope, limits and regeneration are in
+[`signoff/README.md`](../signoff/README.md) "Item 9: the testbench
+inventory". The inventory is not a measurement and does not change this
+tree's append-only rule.
+
 ## Spec ratification: not claimed here
 
 Nothing in this tree ratifies a `spec/target-spec.md` row: ratification is
