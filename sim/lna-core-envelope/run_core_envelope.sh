@@ -456,6 +456,7 @@ python3 -I "${PARSER}" \
   --corners-dir "${CORNERS_OUT}" \
   --records-dir "${RECORDS_DIR}" \
   --manifest "${MANIFEST}" \
+  --require-all-points \
   --inband-grid "${F_BAND_LO},${F_BAND_HI},${N_INBAND}" \
   --stab-grid "${F_STAB_LO},${F_STAB_HI},${N_STAB_DEC}" \
   --design-netlist-sha "${DESIGN_NETLIST_SHA}" \
@@ -465,7 +466,10 @@ python3 -I "${PARSER}" \
   --pdk-provenance "records/${RECORD_ID}.pdk-provenance.json" \
   --reference-summary "${SIM_DIR}/lna-characterization/records/20260926-122301-088c734-summary.csv"
 
-# Finalize only after the reduction succeeded (set -e aborts above otherwise).
+# --require-all-points makes the parser exit nonzero BEFORE publishing if any
+# cell failed, so set -e aborts here with the fingerprint and completed cells
+# intact (the next matching run is `interrupted` and re-simulates only the
+# failed cells). Finalize only after a complete reduction (#128).
 python3 -I "${LIFECYCLE}" finalize "${FINAL_FILE}" "${FP_FILE}" "${PUBLISHED[@]}"
 
 echo "run_core_envelope.sh: wrote records/${RECORD_ID}.{csv,md}; record finalized"
