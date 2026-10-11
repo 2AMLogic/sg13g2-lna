@@ -121,7 +121,7 @@ fi
 
 # --- 3. bracket characterizations (hypothetical requirement proxies) ---------
 while read -r s; do
-  run_deck "${s}" "${CORNERS_OUT}/charset/${s#char_bracket_}/char.log"
+  run_deck "${s}" "${CORNERS_OUT}/charset/${s#char_}/char.log"
 done < <(stems bracket)
 
 # --- 4. the requirements map + declared boundary verifications ---------------

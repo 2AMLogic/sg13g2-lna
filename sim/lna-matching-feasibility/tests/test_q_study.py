@@ -350,7 +350,9 @@ class Decks(unittest.TestCase):
         for tag in qs.PROBE_ARMS:
             self.assertIn(f"Xtank_{tag} b1f_{tag} b1_{tag} 0 ", text)
             self.assertIn(f"Xcfeed_{tag} b1f_{tag} b1_{tag} cap_cmim ", text)
-            self.assertIn(f"I_{tag} b1f_{tag} 0 dc 0 ac 1", text)
+            self.assertIn(f"\nV_{tag} b1f_{tag} 0 dc 0 ac {qs.PROBE_V_AC:g}\n", text)
+            self.assertIn(f"\nV{tag}m b1_{tag} 0 dc 0 ac 0", text)
+            self.assertNotIn(f"I_{tag} ", text)
             self.assertIn(f"real(i(v{tag}m))", text)
             self.assertIn(f"imag(i(v{tag}m))", text)
         for r in qs.RPAR_OHM:
@@ -362,6 +364,63 @@ class Decks(unittest.TestCase):
         s = qs.retained_plan()["cmim_side_um"]["em5"]
         self.assertIn(f"w={s:.6g}u l={s:.6g}u", text)
         self.assertIn(ms.em_instance("em5"), text)
+
+    def test_probe_recovers_known_admittance_independent_of_drive_shunt(self):
+        """Mini nodal model of the RENDERED probe topology: tank Y between b1f
+        and b1 (b1 at 0 V through the sensing source), a separate shunt Ys at
+        b1f, driven exactly as each arm's rendered source line says. The
+        sensed current must give back the known tank admittance for every arm
+        and every shunt value; the old current drive must NOT (it divides)."""
+        text = qs.render_probe(ARGS)
+        ytank = complex(1.25e-3, -3.1e-4)
+        ybr = {t: 1.0 / r for r, t in qs.RPAR_TAG.items()}
+        for tag in qs.PROBE_ARMS:
+            m = re.search(rf"^V_{tag} b1f_{tag} 0 dc 0 ac (\S+)$", text, re.M)
+            self.assertIsNotNone(m, tag)          # voltage drive on every arm
+            vdrive = float(m.group(1))
+            self.assertEqual(vdrive, qs.PROBE_V_AC)
+            self.assertRegex(text, rf"(?m)^V{tag}m b1_{tag} 0 dc 0 ac 0$")
+            yt = ytank + ybr.get(tag, 0.0)        # bracket resistor in parallel
+            for ys in (0.0, 1e-5, 3e-3 + 2e-3j, 0.5):
+                # b1f is forced to vdrive: shunt current never reaches the sense
+                i_sense = vdrive * yt             # polarity: b1f -> b1 -> sense
+                got = qs.probe_admittance(i_sense)
+                self.assertAlmostEqual(got.real, yt.real, places=12)
+                self.assertAlmostEqual(got.imag, yt.imag, places=12)
+                # the discarded current drive: divider error that grows with Ys
+                i_div = 1.0 * yt / (yt + ys)
+                if ys:
+                    self.assertGreater(abs(qs.probe_admittance(i_div) - yt), 1e-6 * abs(yt))
+            # sensing polarity: the reversed sign is detected as non-passive
+            self.assertLess(qs.probe_admittance(-vdrive * yt).real, 0)
+        # explicit division by the drive voltage (not an implicit unit amplitude)
+        self.assertAlmostEqual(qs.probe_admittance(2e-3 + 1e-3j, 2.0), 1e-3 + 0.5e-3j)
+        for bad in (0.0, float("nan")):
+            with self.assertRaises(ValueError):
+                qs.probe_admittance(1e-3, bad)
+
+    def test_probe_bracket_resistor_stays_noisy_and_parallel(self):
+        text = qs.render_probe(ARGS)
+        for r, t in qs.RPAR_TAG.items():
+            m = re.search(rf"^Rqbr_{t} b1f_{t} b1_{t} (\S+)\s*$", text, re.M)
+            self.assertIsNotNone(m)
+            self.assertAlmostEqual(float(m.group(1)), r)
+        self.assertNotRegex(text, r"(?i)noisy\s*=\s*0")
+
+    def test_parse_probe_divides_by_drive_voltage(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td, "tank_y.dat")
+            Path(td, "probe_tank.log").write_text("BENCH_COMPLETE\n")
+            names = ["frequency"] + [c for t in qs.PROBE_ARMS for c in (f"real(i(v{t}m))", f"imag(i(v{t}m))")]
+            y0 = complex(2e-3, -1e-3)
+            with open(p, "w") as fh:
+                fh.write("  ".join(names) + "\n")
+                for f in ms.band_freqs():
+                    row = [f] + [v for _ in qs.PROBE_ARMS for v in (y0.real * qs.PROBE_V_AC, y0.imag * qs.PROBE_V_AC)]
+                    fh.write("  ".join(f"{v:.10e}" for v in row) + "\n")
+            out = qs.parse_probe(p)
+            for t in qs.PROBE_ARMS:
+                self.assertAlmostEqual(out[t][0], y0 / qs.PROBE_V_AC)
 
     def test_char_dc_audit_is_print_only(self):
         text = qs.render_ctl_char(ARGS, "em5_cmim")
@@ -488,15 +547,15 @@ class CommittedRecord(unittest.TestCase):
             self.assertEqual(s["crossings"], c, feed)
         # boundary decks exist and are the declared set
         declared = qs.select_boundary(qs.map_rows())
-        self.assertEqual([b["tag"] for b in mapdoc["boundary"]],
+        self.assertEqual([b["boundary_tag"] for b in mapdoc["boundary"]],
                          [b["tag"] for b in declared])
         for b in mapdoc["boundary"]:
             if b.get("status") == "not_renderable":
                 continue
             self.assertTrue((snap / f"{b['stem']}.spice").exists())
-            e = qs.entry_for(b["arm"], b["q_in"], b["stem"])
+            e = qs.entry_for(b["feed_variant"], b["q_in"], b["stem"])
             qs.check_bound_deck((snap / f"{b['stem']}.spice").read_text(), b["q_in"],
-                                e["input_values"], b["arm"])
+                                e["input_values"], b["feed_variant"])
         # the campaign verdict can only come from the physical control
         self.assertEqual(rj["campaign"]["physical_candidate_pool"],
                          ["verify_ctl_" + qs.point_id("em5_cmim")])

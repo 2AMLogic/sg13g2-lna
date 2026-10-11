@@ -1729,6 +1729,143 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/q_study.py",
+        "sim/lna-matching-feasibility/le_study.py",
+        "sim/lna-matching-feasibility/matching_solver.py",
+        "sim/lna-matching-feasibility/feed_study.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_q_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-matching-feasibility/q_study.py declare",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md",
+        "sim/lna-matching-feasibility/q-study-declaration.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261011-164702-455c67d",
+      "limitations": "NOMINAL-CELL EXPLORATION, NOT A RESULT: one PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V); map cells are predictions, bracket points are hypothetical requirement proxies and the ideal-choke numbers are unrealizable diagnostics; not a target-spec claim. The three ABORTED runs (20261011-164511-6750fa0, 20261011-164543-dc0038d, 20261011-164618-8e55635) produced no requirements verdict and are indexed as evidence only. The ideal-choke lossless boundary point has broadband mu < 1 and is ineligible for any frontier or verdict. No extracted Le model, no MIM bottom-plate parasitic, no pad / ESD / bondwire. Stability gate stays with issue #27.",
+      "records": [
+        {
+          "corners": {
+            "files": 26,
+            "git_blob_digest": "sha256:6f45cc79172cf212b4fa5c6a73aac4734a2e3928ebea17ec210ff762396822eb"
+          },
+          "id": "20261011-164511-6750fa0",
+          "netlist_snapshots": {
+            "files": 10,
+            "git_blob_digest": "sha256:b5ec92b32675387354365b17059a56fd319aaa21ae1373943fa0551edcc00987"
+          },
+          "published_files": [
+            "sim/lna-matching-feasibility/records/20261011-164511-6750fa0-control-char.csv",
+            "sim/lna-matching-feasibility/records/20261011-164511-6750fa0.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 26,
+            "git_blob_digest": "sha256:07590c8a78d2e2f27a63103f4b703a12a475f4e1164b85c69973bd74851ed53c"
+          },
+          "id": "20261011-164543-dc0038d",
+          "netlist_snapshots": {
+            "files": 10,
+            "git_blob_digest": "sha256:79b1b184228a87d478b99f64b1a50955da5589359e30bbd0e9240584a1bcce83"
+          },
+          "published_files": [
+            "sim/lna-matching-feasibility/records/20261011-164543-dc0038d-control-char.csv",
+            "sim/lna-matching-feasibility/records/20261011-164543-dc0038d-control-verify.csv",
+            "sim/lna-matching-feasibility/records/20261011-164543-dc0038d.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 62,
+            "git_blob_digest": "sha256:602701e5f8e42e807610e0fcc45af7dd49808c282dff84378a69631c5d408396"
+          },
+          "id": "20261011-164618-8e55635",
+          "netlist_snapshots": {
+            "files": 14,
+            "git_blob_digest": "sha256:fe3572d8c2bee2b904c1f3192cd527bcd9de98e9ff8501ee37614532ce5b375c"
+          },
+          "published_files": [
+            "sim/lna-matching-feasibility/records/20261011-164618-8e55635-control-char.csv",
+            "sim/lna-matching-feasibility/records/20261011-164618-8e55635-control-verify.csv",
+            "sim/lna-matching-feasibility/records/20261011-164618-8e55635.md",
+            "sim/lna-matching-feasibility/records/20261011-164618-8e55635.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 64,
+            "git_blob_digest": "sha256:9fc4d2af34061867f1bc63e619ccfafdcff9ff60282c7263b877fd7e1af20e85"
+          },
+          "id": "20261011-164702-455c67d",
+          "netlist_snapshots": {
+            "files": 14,
+            "git_blob_digest": "sha256:eeed175efba2ee1a746e7014413b58379345abce7a44b4f2b7462eb67df3abee"
+          },
+          "published_files": [
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d-control-char.csv",
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d-control-verify.csv",
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d-isolation.csv",
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d-qmap.csv",
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d.md",
+            "sim/lna-matching-feasibility/records/20261011-164702-455c67d.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/q_study.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_q_study.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_q_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -1927,14 +2064,14 @@
     "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:35878831fd4d2c949c855c3713a2bb461ffdbce8c4c2b0f2545aca470708634e",
     "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:545c75a63d7d2c71d31e21b1385605ead3387a4426cb9eb4150913b9c9f2e519",
     "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:888b435c47b2a35406b871dfcafdf9269f324fbdc58178b15f4c71171ecc46bf",
-    "sim/lna-matching-feasibility/README.md": "sha256:e8dcf69f88dc94f2faecb53bb2a04e62867a01a3e4516b55df83160a07e4c6fc",
+    "sim/lna-matching-feasibility/README.md": "sha256:1838f6e815ed198b5702d05198a4b09596917b931f9d31aeb60da52c2d02805a",
     "sim/lna-matching-feasibility/feed-study-declaration.md": "sha256:26291c8f01e966d0b837fc97999a72df18d1d7c74c91d2e56434312c151591e2",
     "sim/lna-matching-feasibility/feed_study.py": "sha256:edafee1d671fde06267f6cc39289e0f917eae92b503cb287986eff848bf0dc77",
     "sim/lna-matching-feasibility/le-study-declaration.md": "sha256:65582abe794ccc2ae1b953be77718655d539f7673f191f7776b09b130e22c2ea",
     "sim/lna-matching-feasibility/le_study.py": "sha256:6c821bb915d6bef06c401a466f8688c6fa4c75d1c8266e44af07631dd04e8ffb",
     "sim/lna-matching-feasibility/matching_solver.py": "sha256:a958d23c83ae97884c67b55fdb24fdc5eaa9580896375432213334b22bd37467",
-    "sim/lna-matching-feasibility/q-study-declaration.md": "sha256:04d811df5e5323831e3b796a6dc049a3ee3d42d4b3b6824388bee451758cd13f",
-    "sim/lna-matching-feasibility/q_study.py": "sha256:d501d5f8608e787f1257a24579196ed4fae72296e42efdf7070e094eb66c1317",
+    "sim/lna-matching-feasibility/q-study-declaration.md": "sha256:13d3cf0a1a9048f459b0315a22dd159995e4c5d1ec8d4787c723128a9dc583a7",
+    "sim/lna-matching-feasibility/q_study.py": "sha256:d6f9db787430a498d719186768f547c84e9af68276eaf96b433cad8346cc532c",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-band.csv": "sha256:d3d3607da866858e177bf7b9b252a23d0fc1628a3dd9ceac32e7364b631b4b67",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-candidates.csv": "sha256:4d2949ee325a4f977d2f01c452833a2be5a16392d46773b9c84c0146fd5fe2fe",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c.md": "sha256:c411f89190c992cadec8079b46aef8b56868eb6b2db8c913233fed625482206c",
@@ -1954,22 +2091,37 @@
     "sim/lna-matching-feasibility/records/20261011-120758-9abe609-control-char.csv": "sha256:99b008d4e5254eaa7e3d215fdb9dad36b7a2943c929be46f0cf3bcd8d8b9647d",
     "sim/lna-matching-feasibility/records/20261011-120758-9abe609.md": "sha256:30f6c975724dce8083dc314d2df629494f0b8ca0e19984aeea4a7499ff477379",
     "sim/lna-matching-feasibility/records/20261011-120758-9abe609.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-matching-feasibility/records/20261011-164511-6750fa0-control-char.csv": "sha256:fc61a2cb02dd91fd8898586488e62df47f54b0055070bfda30d48a42681c4a11",
+    "sim/lna-matching-feasibility/records/20261011-164511-6750fa0.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-matching-feasibility/records/20261011-164543-dc0038d-control-char.csv": "sha256:fc61a2cb02dd91fd8898586488e62df47f54b0055070bfda30d48a42681c4a11",
+    "sim/lna-matching-feasibility/records/20261011-164543-dc0038d-control-verify.csv": "sha256:92828ea178c63836a15a44bf4f10c8291e720e9644973db66d1d72971359812c",
+    "sim/lna-matching-feasibility/records/20261011-164543-dc0038d.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-matching-feasibility/records/20261011-164618-8e55635-control-char.csv": "sha256:fc61a2cb02dd91fd8898586488e62df47f54b0055070bfda30d48a42681c4a11",
+    "sim/lna-matching-feasibility/records/20261011-164618-8e55635-control-verify.csv": "sha256:92828ea178c63836a15a44bf4f10c8291e720e9644973db66d1d72971359812c",
+    "sim/lna-matching-feasibility/records/20261011-164618-8e55635.md": "sha256:8f04340d45bd8fb22a62226eeaf5ad8723f195cfdacf6646acd14cef7aafde90",
+    "sim/lna-matching-feasibility/records/20261011-164618-8e55635.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d-control-char.csv": "sha256:fc61a2cb02dd91fd8898586488e62df47f54b0055070bfda30d48a42681c4a11",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d-control-verify.csv": "sha256:92828ea178c63836a15a44bf4f10c8291e720e9644973db66d1d72971359812c",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d-isolation.csv": "sha256:1c27423f3ccaa613ab741c9c03189fe6858268688b812f92d3d3d8d5461dfbb6",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d-qmap.csv": "sha256:d589c8c60a17b3c71c15735d47c95bc1dffce5ffc59f079e0d3b91b79fbf0dc7",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d.md": "sha256:e36a16547c3fa73b89f829dddb1017111a600ffcd26e3407b898f2ca48e8beea",
+    "sim/lna-matching-feasibility/records/20261011-164702-455c67d.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-matching-feasibility/run_dc_reference_study.sh": "sha256:072a680a023c7ccd3a5bc9dec9bc4ca004db008ac753497b11b60d951e5b899b",
     "sim/lna-matching-feasibility/run_feed_study.sh": "sha256:eda945381cf0148dd87044a35e19fbe8d3195bdbf412e9a0f32b4cf1280568f9",
     "sim/lna-matching-feasibility/run_le_study.sh": "sha256:319e5f0e7146c1a0f016c154d80a08d1e78ea3daa3c46f1e74429e75cc762741",
     "sim/lna-matching-feasibility/run_matching_study.sh": "sha256:ea5ac95d88d191bd298bd96d601689235b12635d724f7306cf345ede460a4a6f",
-    "sim/lna-matching-feasibility/run_q_study.sh": "sha256:669a023f3a76a88761e0f7eefc19b0cdb6665808b96c12e14796673c73d8f17e",
+    "sim/lna-matching-feasibility/run_q_study.sh": "sha256:4795fde6cb2697805c030408ca05173b45936035c23a8dcc9cba9ebc174c8a10",
     "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl": "sha256:7a4f33f9045a5958b10bc8bd0eca596042c71b43abed5eee01bde35fd4a0ab91",
     "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl": "sha256:61044b3b06f5b232aa310b92e646f4c9c38a90c0ae82277f98af3f3fd4452c45",
     "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl": "sha256:2a187369aca6c70013fca69eedbf25453b093fec1fbe89920b8a1ffece87c30f",
     "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl": "sha256:6f694e5bdb75a12bcb0a86fdc43685a15315b55a003c0203a4b0425fb7a91cb6",
     "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl": "sha256:9247b5f71e3f7618d17da5f1c81880b0aed20afaa0e4f470ed12b7debd228373",
     "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl": "sha256:3233052b85bc364459f3346581e7644f2dd29a687fd28121589b5dc12d73fc3b",
-    "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl": "sha256:d3f4a3efcf86b540302380f53cb8466a2f6b47d717e0a576cc6136021b39d96f",
+    "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl": "sha256:04ba13c05d8c20004f80d37eb6b0a23d9403ed72612d26420c140266445bbce4",
     "sim/lna-matching-feasibility/tests/test_feed_study.py": "sha256:35148c12cd684af5415e0214bd5ad11efe959beae3e755cbc9cae96373bbec38",
     "sim/lna-matching-feasibility/tests/test_le_study.py": "sha256:6ed75e837dc83f9b93a5694645f24b7f9d32417acce1ad14a288fd957d5b5ff9",
     "sim/lna-matching-feasibility/tests/test_matching_solver.py": "sha256:a8839754e246f91f9c9bc3294df4db58c893e269fb6ccf2604ab45b974e34fae",
-    "sim/lna-matching-feasibility/tests/test_q_study.py": "sha256:2e40ed2e07aaca086be9a10f71b128c104c8384f496eb73b7c0a01fd389d964d",
+    "sim/lna-matching-feasibility/tests/test_q_study.py": "sha256:d461a15cae53a15401187a96c31715970d36141b8c22b9668a24ed30bd2a292b",
     "sim/models/SOURCE.md": "sha256:8f9877a436b43bb493c748817761043ff587d4ee3b11910c94f2c6ce85f9b39e",
     "sim/models/check_sources.sh": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729",
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",

@@ -1,0 +1,73 @@
+{
+  "schema": "sg13g2-lna/pdk-provenance/1",
+  "pin_file": "sim/pdk.json",
+  "pinned_release_tag": "v0.3.0",
+  "pinned_variant": "ihp-sg13g2",
+  "verified": true,
+  "identity_route": "tarball-marker",
+  "installed_release_raw": "0.3.0",
+  "pdk_dir": "/home/ubuntu/share/pdk/ihp-sg13g2",
+  "model_input_boundary": "textual .lib/.include closure from cornerHBT.lib plus the listed extra files; not a proof of completeness",
+  "model_inputs": [
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib",
+      "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib",
+      "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+      "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+      "sha256": "839b164483205601c09032951f6c41d3580f15e506dc40a7202950d3afbdfc7d"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi",
+      "sha256": "25e64a374ab523dbfeb7ffed75dcb8b086ee10f06120a9074bd68b92d7b0fb41"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_hbt_mod.lib",
+      "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_hbt_mod_mismatch.lib",
+      "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_hbt_stat.lib",
+      "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_moshv_mod.lib",
+      "sha256": "d4b348b494998d7057bdde6fb111c60153d8b86175fafcfc6de461737e7a644b"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_svaricaphv_mod.lib",
+      "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_moshv_mismatch.lib",
+      "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_moshv_mod_mismatch.lib",
+      "sha256": "be170c9619bed19215f7f7b55141e0869344874e3fcf7f30b2d2aa37659b1a0e"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_svaricaphv_mod_mismatch.lib",
+      "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_moshv_stat.lib",
+      "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+    },
+    {
+      "path": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/sg13g2_moshv_parm.lib",
+      "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+    }
+  ]
+}

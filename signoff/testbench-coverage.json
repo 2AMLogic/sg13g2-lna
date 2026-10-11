@@ -1344,6 +1344,80 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/q_study.py",
+        "sim/lna-matching-feasibility/le_study.py",
+        "sim/lna-matching-feasibility/matching_solver.py",
+        "sim/lna-matching-feasibility/feed_study.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_q_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-matching-feasibility/q_study.py declare",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md",
+        "sim/lna-matching-feasibility/q-study-declaration.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261011-164702-455c67d",
+      "limitations": "NOMINAL-CELL EXPLORATION, NOT A RESULT: one PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V); map cells are predictions, bracket points are hypothetical requirement proxies and the ideal-choke numbers are unrealizable diagnostics; not a target-spec claim. The three ABORTED runs (20261011-164511-6750fa0, 20261011-164543-dc0038d, 20261011-164618-8e55635) produced no requirements verdict and are indexed as evidence only. The ideal-choke lossless boundary point has broadband mu < 1 and is ineligible for any frontier or verdict. No extracted Le model, no MIM bottom-plate parasitic, no pad / ESD / bondwire. Stability gate stays with issue #27.",
+      "record_ids": [
+        "20261011-164511-6750fa0",
+        "20261011-164543-dc0038d",
+        "20261011-164618-8e55635",
+        "20261011-164702-455c67d"
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/q_study.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_q_study.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_q_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
