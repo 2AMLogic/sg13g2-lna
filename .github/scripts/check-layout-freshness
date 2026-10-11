@@ -15,6 +15,13 @@
 #      it; any changed relationship is reported by name
 #   5. the output named by extract_report.json (netlist_path, relative to the
 #      report dir, repo-local) hashes byte-for-byte to netlist_sha256 (#176)
+#   6. the native DRC pair (issue #185): native_drc_report.json +
+#      native_drc_inputs.json, written by layout/run_native_drc.py, may be
+#      entirely absent (no native verdict exists until issue #201 supplies
+#      one) but never one-sided; when both exist the sidecar must bind the
+#      report's exact bytes and the committed GDS, match the report's own
+#      status and provenance deck/pdk, and record a standalone executable
+#      version >= its recorded minimum
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -31,7 +38,7 @@ while [ $# -gt 0 ]; do
 done
 
 exec python3 -I - "$ROOT" "$CELL" <<'PY'
-import hashlib, json, shutil, subprocess, sys, tempfile
+import hashlib, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 root, cell = Path(sys.argv[1]).resolve(), sys.argv[2]
@@ -200,6 +207,114 @@ if side is not None:
                 fail(rel, f"{what} path {e[key]!r} != {want!r} named by {req_name}")
         cmp(f"reference netlist {e['reference']}", e["reference_sha256"], ref_p)
         cmp(f"GDS {e['gds']}", e["gds_sha256"], gds_p)
+
+# 6. native DRC pair (written by layout/run_native_drc.py, issue #185).
+#    Entirely absent: allowed — no native verdict exists in this tree until
+#    issue #201 supplies one. One-sided or inconsistent: fails, naming it.
+NATIVE_REPORT = "native_drc_report.json"
+NATIVE_SIDE = "native_drc_inputs.json"
+NATIVE_STATUSES = ("clean", "violations", "coverage_unknown")
+
+def vtuple(s):
+    m = re.search(r"\d+(?:\.\d+)+", s)
+    return tuple(int(x) for x in m.group(0).split(".")) if m else None
+
+def check_native_pair():
+    rep_p, side_p = cd / NATIVE_REPORT, cd / NATIVE_SIDE
+    if not rep_p.is_file() and not side_p.is_file():
+        return  # absent: allowed
+    nrep_rel, nside_rel = f"layout/{cell}/{NATIVE_REPORT}", f"layout/{cell}/{NATIVE_SIDE}"
+    if not rep_p.is_file():
+        fail(nside_rel, f"{NATIVE_REPORT} missing: native report/sidecar pair is one-sided")
+        return
+    if not side_p.is_file():
+        fail(nrep_rel, f"{NATIVE_SIDE} missing: native report/sidecar pair is one-sided")
+        return
+    side = load(side_p)
+    rep = load(rep_p)
+    rel = nside_rel
+    if side is None or rep is None:
+        return
+    if not isinstance(side, dict) or side.get("schema") != "sg13g2-lna.native-drc/1":
+        fail(rel, "malformed (bad schema)")
+        return
+    keys = ("report", "report_sha256", "status", "gds", "gds_sha256", "pdk",
+            "klayout_exe", "klayout_exe_resolved", "klayout_exe_version",
+            "min_klayout_version")
+    missing = [k for k in keys if not isinstance(side.get(k), str) or not side[k]]
+    if missing:
+        fail(rel, f"missing or malformed field(s): {', '.join(missing)}")
+        return
+    for k in ("deck_binding", "pdk_binding"):
+        if k not in side:
+            fail(rel, f"missing {k}")
+            return
+    if side["report"] != NATIVE_REPORT:
+        fail(rel, f"report is {side['report']!r}, want {NATIVE_REPORT!r}")
+        return
+    klt = side.get("klt")
+    if not isinstance(klt, dict) or not isinstance(klt.get("version"), str) \
+            or not klt["version"]:
+        fail(rel, "klt identity missing or malformed")
+        return
+    argv = side.get("argv")
+    if not isinstance(argv, list) or not argv \
+            or any(not isinstance(a, str) for a in argv):
+        fail(rel, "argv missing or malformed")
+        return
+    if sha(rep_p) != side["report_sha256"]:
+        fail(rel, f"report changed since this native run (recorded "
+             f"{side['report_sha256'][:12]}, now {sha(rep_p)[:12]}); "
+             f"rerun layout/run_native_drc.py")
+    try:
+        want_gds = str(gds.resolve().relative_to(root))
+    except ValueError:
+        want_gds = str(gds.resolve())
+    if side["gds"] != want_gds:
+        fail(rel, f"gds path {side['gds']!r} != {want_gds!r}")
+    elif gds_sha is not None and side["gds_sha256"] != gds_sha:
+        fail(rel, f"GDS changed since this native run (recorded "
+             f"{side['gds_sha256'][:12]}, now {gds_sha[:12]}); "
+             f"rerun layout/run_native_drc.py")
+    # the report itself must pin the committed GDS and carry the recorded verdict
+    prov = rep.get("provenance") if isinstance(rep, dict) else None
+    inp = (prov or {}).get("input")
+    if not isinstance(inp, dict):
+        fail(nrep_rel, "missing provenance.input")
+    else:
+        if inp.get("role") != "layout":
+            fail(nrep_rel, f"provenance.input.role is {inp.get('role')!r}, want 'layout'")
+        ch = inp.get("content_hash")
+        if not isinstance(ch, str) or not ch.startswith("sha256:"):
+            fail(nrep_rel, f"provenance.input.content_hash missing or malformed ({ch!r})")
+        elif gds_sha is not None and ch[len("sha256:"):] != gds_sha:
+            fail(nrep_rel, f"provenance.input.content_hash {ch} != sha256:{gds_sha} (committed GDS)")
+    if not isinstance(rep, dict) or rep.get("status") not in NATIVE_STATUSES:
+        got = rep.get("status") if isinstance(rep, dict) else type(rep).__name__
+        fail(nrep_rel, f"status is {got!r}, want one of {list(NATIVE_STATUSES)}")
+    elif side["status"] != rep["status"]:
+        fail(rel, f"status {side['status']!r} != report status {rep['status']!r}")
+    # deck / pdk bindings must equal what the report itself records
+    if isinstance(prov, dict):
+        for k, want in (("deck_binding", prov.get("deck")),
+                        ("pdk_binding", prov.get("pdk"))):
+            if side[k] != want:
+                fail(rel, f"{k} differs from the report's provenance; "
+                     f"rerun layout/run_native_drc.py")
+    # recorded executable must satisfy the recorded minimum
+    vt_min, vt_exe = vtuple(side["min_klayout_version"]), vtuple(side["klayout_exe_version"])
+    if vt_min is None:
+        fail(rel, f"min_klayout_version {side['min_klayout_version']!r} unparseable")
+    if vt_exe is None:
+        fail(rel, f"klayout_exe_version {side['klayout_exe_version']!r} unparseable")
+    if vt_min is not None and vt_exe is not None:
+        n = max(len(vt_min), len(vt_exe))
+        a, b = vt_exe + (0,) * (n - len(vt_exe)), vt_min + (0,) * (n - len(vt_min))
+        if a < b:
+            fail(rel, f"klayout_exe_version {side['klayout_exe_version']!r} "
+                 f"is below min_klayout_version {side['min_klayout_version']!r}")
+
+check_native_pair()
 
 if errs:
     print("\n".join(errs), file=sys.stderr)
