@@ -37,11 +37,11 @@ class ParserCase(unittest.TestCase):
         self.manifest = self.tmp / "manifest.txt"
         shutil.copy(FIX / "manifest.txt", self.manifest)
 
-    def run_parser(self):
+    def run_parser(self, *extra):
         return subprocess.run(
             [sys.executable, "-I", str(PARSER), "--record-id", "rec",
              "--corners-dir", str(self.corners), "--records-dir", str(self.records),
-             "--manifest", str(self.manifest)],
+             "--manifest", str(self.manifest), *extra],
             capture_output=True, text=True)
 
     def rows(self):
@@ -184,6 +184,20 @@ class Malformed(ParserCase):
         self.assertIn("1 failed points", p.stderr)
         self.assertEqual(len(self.rows()), 1)
         self.assertIn("p002", (self.records / "rec.md").read_text())
+
+    def test_require_all_points_fails_before_publishing(self):
+        # Strict mode (#128): the same partial campaign publishes nothing.
+        with open(self.manifest, "a") as fh:
+            fh.write("p002|s_ctrl_a8|ctrl|2stage|1|1|1|1|8|2|typ|26.85|1.8\n")
+        p = self.run_parser("--require-all-points")
+        self.assertEqual(p.returncode, 5, p.stderr)
+        self.assertIn("p002", p.stderr)
+        self.assertEqual(list(self.records.iterdir()), [])
+
+    def test_require_all_points_complete_campaign_publishes(self):
+        p = self.run_parser("--require-all-points")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(len(self.rows()), 1)
 
     def test_truncated_table_row_raises(self):
         # Row cut mid-line: parse_table slices short and the parser must not

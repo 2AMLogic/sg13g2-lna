@@ -27,6 +27,16 @@ if [ -n "${STUB_DIE_AT:-}" ] && [ "$n" -eq "$STUB_DIE_AT" ]; then
   kill -"${STUB_DIE_SIG:-TERM}" "$PPID"; exit 1
 fi
 [ -n "${STUB_SLEEP:-}" ] && sleep "$STUB_SLEEP"
+# STUB_FAIL_MATCH=substr: a deck whose name contains it fails (exit 1, no
+# outputs, no BENCH_COMPLETE). STUB_FIXTURE=dir: emit the committed parser
+# fixture (log + tables) so the REAL parser can reduce the cell.
+if [ -n "${STUB_FAIL_MATCH:-}" ]; then case "$(basename "$deck")" in *"$STUB_FAIL_MATCH"*) exit 1;; esac; fi
+if [ -n "${STUB_FIXTURE:-}" ]; then
+  for f in $(awk '/^wrdata/{print $2}' "$deck"); do
+    case "$f" in *inband*) cp "$STUB_FIXTURE/corners/p001.inband.dat" "$f";; *) cp "$STUB_FIXTURE/corners/p001.stability.dat" "$f";; esac
+  done
+  cat "$STUB_FIXTURE/corners/p001.log.txt"; exit 0
+fi
 for f in $(awk '/^wrdata/{print $2}' "$deck"); do echo "1 2 3" > "$f"; done
 echo BENCH_COMPLETE
 STUB
@@ -58,12 +68,32 @@ ap = argparse.ArgumentParser()
 for a in ("record-id", "corners-dir", "records-dir", "manifest", "design-netlist-sha",
           "ngspice-version", "pdk-root", "pdk-release", "pdk-provenance", "reference-summary", "inband-grid", "stab-grid"):
     ap.add_argument("--" + a)
+ap.add_argument("--require-all-points", action="store_true")
 a = ap.parse_args()
 if os.environ.get("STUB_PARSE_FAIL"):
     sys.exit(1)
 for n in (a.record_id + ".csv", a.record_id + "-variant-summary.csv", a.record_id + ".md"):
     with open(os.path.join(a.records_dir, n), "x") as fh:
         fh.write("stub %s\n" % open(a.manifest).read().count("\n"))
+PY
+}
+
+# realparser <name>: swap the stub parser for the REAL one. The committed
+# fixture tables are 2 in-band / 3 broadband rows, so a thin shim drops the
+# declared-grid and reference-summary args (covered by the parser unit tests)
+# and forwards everything else, including --require-all-points, unchanged.
+realparser() {
+  local d="$TMP/$1/sim/lna-core-envelope"
+  cp "$REPO/sim/lna-core-envelope/parse_core_envelope.py" "$d/parse_real.py"
+  cp "$REPO/sim/lna-core-envelope/envelope_rf.py" "$d/"
+  cat > "$d/parse_core_envelope.py" <<'PY'
+import os, subprocess, sys
+a, out, i = sys.argv[1:], [], 0
+while i < len(a):
+    if a[i] in ("--inband-grid", "--stab-grid", "--reference-summary"): i += 2; continue
+    out.append(a[i]); i += 1
+here = os.path.dirname(os.path.abspath(__file__))
+sys.exit(subprocess.call([sys.executable, "-I", os.path.join(here, "parse_real.py")] + out))
 PY
 }
 
@@ -200,6 +230,29 @@ if [[ $RC -ne 0 && ! -e "$L10/corners/rec10/finalized.json" && ! -e "$L10/corner
 run t10 rec10
 if [[ $RC -eq 0 && -f "$L10/corners/rec10/finalized.json" && "$(nsim t10)" == 2 ]]; then
   ok "retry after failed reduction (nothing published): completed cells reused, then finalized"; else bad "retry rc=$RC"; fi
+
+# 9b. REAL parser, one good + one failed cell (#128): nothing published, not
+# finalized, evidence kept, lock released; retry simulates only the failed cell.
+mktree t12; realparser t12
+FIX="$REPO/sim/lna-core-envelope/tests/fixtures"
+L12="$TMP/t12/sim/lna-core-envelope"
+run t12 rec12 STUB_FIXTURE="$FIX" STUB_FAIL_MATCH=s_fixj_a2
+if [[ $RC -ne 0 && "$(nsim t12)" == 2 && -f "$L12/corners/rec12/run-fingerprint.json" \
+      && ! -e "$L12/corners/rec12/finalized.json" && ! -e "$L12/corners/.rec12.lock" \
+      && ! -e "$L12/records/rec12.csv" && ! -e "$L12/records/rec12-variant-summary.csv" && ! -e "$L12/records/rec12.md" \
+      && "$(grep -l BENCH_COMPLETE "$L12"/corners/rec12/*.log | wc -l)" == 1 ]] && errhas "nothing published"; then
+  ok "real parser, 1 good + 1 failed cell: nonzero, no summaries, no finalized marker, evidence kept, lock released"
+else bad "partial-failure rc=$RC: $(cat "$TMP/err")"; fi
+good="$(basename "$(grep -l BENCH_COMPLETE "$L12"/corners/rec12/*.log)" .log)"
+n0="$(nsim t12)"
+run t12 rec12 STUB_FIXTURE="$FIX"
+if [[ $RC -eq 0 && "$(( $(nsim t12) - n0 ))" == 1 && -f "$L12/corners/rec12/finalized.json" \
+      && -f "$L12/records/rec12.csv" && -f "$L12/records/rec12-variant-summary.csv" && -f "$L12/records/rec12.md" \
+      && ! -e "$L12/corners/.rec12.lock" ]] \
+   && ! tail -1 "$TMP/t12.stublog" | grep -q "^$good" \
+   && [[ "$(grep -c . "$L12/records/rec12.csv")" == 3 ]]; then
+  ok "retry after partial failure: only the failed cell simulated, then published and finalized (2 data rows)"
+else bad "retry rc=$RC n=$(( $(nsim t12) - n0 )): $(cat "$TMP/err")"; fi
 
 # 10. SIGKILL leaves a lock; it is never broken automatically
 mktree t11
