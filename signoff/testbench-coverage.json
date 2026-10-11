@@ -1421,7 +1421,8 @@
     }
   ],
   "excluded_bench_like_paths": {
-    "layout/run_flow.sh": "layout DRC/LVS/extraction flow (T1 items 3/4), not a measurement testbench"
+    "layout/run_flow.sh": "layout DRC/LVS/extraction flow (T1 items 3/4), not a measurement testbench",
+    "layout/run_native_drc.py": "native SG13G2 KLayout DRC runner over the committed partial GDS (issue #185; T1 item 3 layout check, independent of the curated run_flow.sh deck), not a measurement testbench; it produces no circuit/RF evidence"
   },
   "families": {
     "biasref-topology": {

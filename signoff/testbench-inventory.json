@@ -1869,7 +1869,8 @@
     }
   ],
   "excluded_bench_like_paths": {
-    "layout/run_flow.sh": "layout DRC/LVS/extraction flow (T1 items 3/4), not a measurement testbench"
+    "layout/run_flow.sh": "layout DRC/LVS/extraction flow (T1 items 3/4), not a measurement testbench",
+    "layout/run_native_drc.py": "native SG13G2 KLayout DRC runner over the committed partial GDS (issue #185; T1 item 3 layout check, independent of the curated run_flow.sh deck), not a measurement testbench; it produces no circuit/RF evidence"
   },
   "families": {
     "biasref-topology": {
@@ -2041,19 +2042,19 @@
     "sim/lna-characterization/tests/test_parse_lna_sweep.py": "sha256:1f502b52304b3dd5d89eb15335bb76ee98bb5030649f7836197ff7ad001f1c3f",
     "sim/lna-characterization/tests/test_render_results.py": "sha256:dade5ce6c7e80f1b4335f02bc9fe4c3d33c00b6d6c0fe3c16ea618e188291c8c",
     "sim/lna-characterization/views/20260926-122301-088c734-nfmin290.csv": "sha256:f419185943f2d86a25f14b93954d2daca8d3c6358227ad6b14b814d3497eaaf7",
-    "sim/lna-core-envelope/README.md": "sha256:477025dc872146fdc63295111d335afae67867b371d2749138e1be6ef3420ffc",
+    "sim/lna-core-envelope/README.md": "sha256:052a87cd29d27b3764262e6717bdb6f540cb8585ffb56e30b76d30d387de8578",
     "sim/lna-core-envelope/core_envelope_campaign.py": "sha256:64953ed380d9412f1374fe91c0e869f0f91a581ac0d7f5cdd39338fb8ff6427e",
     "sim/lna-core-envelope/core_envelope_lifecycle.py": "sha256:1f1e1776cf77e258b5c92ca1f129e08ecb55f3e6e5797438e04a6d7edc7bcab5",
     "sim/lna-core-envelope/derive_committed_record_envelope.py": "sha256:6888979f7121a808161b8b63d30c4a35176c1afa4e823af46e06dc69dba9a646",
     "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl": "sha256:8e7f6abe62cb725bf2308461a5481e75e7e6c53c4892aff068d0f4c61696f59e",
     "sim/lna-core-envelope/envelope_rf.py": "sha256:0f024753777662c74267322d5719ab8a0a6b1f2c8c644804e32c20d81d878f6a",
-    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:4638bbf3caa128e3f1d6a6fdcc7ed0b6f1ca43f5eae3144cfae65a6dcd64427a",
+    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:1373ed8527e273d2a16abe4398552591309cbef5b6a1d16cc14b3820d797fb96",
     "sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv": "sha256:dead1d4b3415c5909de6e25602698bd6d390aa0b18380a3d77e745dc02d2ddd1",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv": "sha256:9c9280605a7f7e89a7fd8c4a53d376a1ba2e3e88883cb9783660d0faf3d523f4",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv": "sha256:c3fbeac7243324b42a7bd1c03fe434e7de8c2b480e6ea58ef04bc430c2238d62",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.md": "sha256:7dba629237229d55e65f75c6d0aa4498105bb35f44842e21d83660b745e67984",
     "sim/lna-core-envelope/reduce_core_envelope_campaign.py": "sha256:06f81970f09d5fe6e90a25ae2f4186b4fc6ff54a1efcbf236def6ef52d7e2b10",
-    "sim/lna-core-envelope/run_core_envelope.sh": "sha256:61b22be4332dcd4f8fad6c2b496abd55c5fe309e339d425669db80f1ff5d5d39",
+    "sim/lna-core-envelope/run_core_envelope.sh": "sha256:3eb1f42fa2b1b4b88110b3e680a8821d6fddb27c1b383c6263cb0514e2fba9af",
     "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:aa26d36ee3fb0e490055379b1bf4dfce47de7d3e5dd4ca662e4fa02914b6f484",
     "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl": "sha256:f789ab2988ff9c305a9a2d7e4d1aefd2c28061ad13e3b821b720b65f007579f7",
     "sim/lna-core-envelope/tests/check_envelope_replay.py": "sha256:58e1bb2a2ec5881d40bce9866c68ff5f7bd7152f15012f5561dfff53ffe652e9",
@@ -2062,7 +2063,7 @@
     "sim/lna-core-envelope/tests/test_core_envelope_campaign.py": "sha256:323b1d492b95081f6a3adcaf43546cbdb6b0910935941aa7cd2af0db116cc507",
     "sim/lna-core-envelope/tests/test_derive_append_only.py": "sha256:99f76a679add5991327c707fa60f01570e15a5a8defa8156d4b56580986049a1",
     "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:35878831fd4d2c949c855c3713a2bb461ffdbce8c4c2b0f2545aca470708634e",
-    "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:545c75a63d7d2c71d31e21b1385605ead3387a4426cb9eb4150913b9c9f2e519",
+    "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:6193ce27443fcee943111507874aab26bf5a2ceaa521ac2790cb6f810d818b8b",
     "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:888b435c47b2a35406b871dfcafdf9269f324fbdc58178b15f4c71171ecc46bf",
     "sim/lna-matching-feasibility/README.md": "sha256:1838f6e815ed198b5702d05198a4b09596917b931f9d31aeb60da52c2d02805a",
     "sim/lna-matching-feasibility/feed-study-declaration.md": "sha256:26291c8f01e966d0b837fc97999a72df18d1d7c74c91d2e56434312c151591e2",
@@ -2126,7 +2127,7 @@
     "sim/models/check_sources.sh": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729",
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
     "sim/pdk.json": "sha256:52e6ad7405957b30ea4749fe66895bd12a689f9c356bf128c5308e18662b1cc7",
-    "sim/tests/test-core-envelope-lifecycle.sh": "sha256:f38935c1aad40420d7e053af18bf9230ed6a3fca94c4819272a57f698b19578c",
+    "sim/tests/test-core-envelope-lifecycle.sh": "sha256:45f705bde6b98f669e559d83ebea0b515ba5e24bb23084b344c371d5773f4f00",
     "sim/tools/build-osdi.sh": "sha256:0afd6b491ca988739591a1cf93928e9c9c1a17d23df0dc26c3434c87edb49949",
     "sim/tools/pdk_identity.py": "sha256:27f023fabb81dbd2934d7c3bc37001310d467f43246cbf368cbbdac1ca7f63d7",
     "sim/tools/reducer_common.py": "sha256:706853d02c589fb9a4b83472925c8fcdac74cf66c8995b0907b20ebb015494b2",
