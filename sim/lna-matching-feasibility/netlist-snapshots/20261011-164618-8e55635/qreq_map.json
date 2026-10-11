@@ -1,0 +1,478 @@
+{
+  "generator": "sim/lna-matching-feasibility/q_study.py qmap",
+  "retained_record": "20261011-101454-3ec590d",
+  "le_study_nh": 0.6,
+  "q_in_cases": {
+    "q5": 5.0,
+    "q10": 10.0,
+    "q20": 20.0,
+    "q40": 40.0,
+    "lossless": null
+  },
+  "summary": {
+    "em5_cmim": {
+      "arm_role": "finite candidate",
+      "le_nh": 0.6,
+      "crossings": {
+        "nf290_worst_le_1p5": {
+          "threshold_db": 1.5,
+          "min_tested_q": null,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": true,
+          "lossless_crosses": false
+        },
+        "nf290_worst_le_1p2": {
+          "threshold_db": 1.2,
+          "min_tested_q": null,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": true,
+          "lossless_crosses": false
+        }
+      }
+    },
+    "ideal_choke": {
+      "arm_role": "diagnostic bound",
+      "le_nh": 0.6,
+      "crossings": {
+        "nf290_worst_le_1p5": {
+          "threshold_db": 1.5,
+          "min_tested_q": 20.0,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": false,
+          "lossless_crosses": true
+        },
+        "nf290_worst_le_1p2": {
+          "threshold_db": 1.2,
+          "min_tested_q": 40.0,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": false,
+          "lossless_crosses": true
+        }
+      }
+    }
+  },
+  "boundary": [
+    {
+      "candidate": "lp_noise",
+      "qcase": "q10",
+      "q": 10.0,
+      "input_topology": "lowpass",
+      "target": "noise",
+      "input_values": [
+        8.62877685994122e-09,
+        3.723071422315954e-13
+      ],
+      "input_r": 0.0,
+      "input_l": 8.62877685994122e-09,
+      "zs_target": [
+        354.5496843686449,
+        127.64171726908506
+      ],
+      "output": "O2",
+      "lc": 5e-09,
+      "r_lc": 7.670983861902878,
+      "cp_out": 5.042867446540873e-13,
+      "cs_out": 3.4645607406716254e-13,
+      "lc_em": null,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "le_loss": "parallel",
+      "feed_variant": "em5_cmim",
+      "point": "em5_cmim_le0p60",
+      "xout_rdc_ohm": 100000000000.0,
+      "stem": "verify_bound_cmim_lossless",
+      "q_in": null,
+      "q_in_tag": "lossless",
+      "boundary": true,
+      "boundary_tag": "cmim_lossless",
+      "pred_nf290_worst_db": 2.1090060469333025,
+      "pred_nf290_mid_db": 2.0661170418270407
+    },
+    {
+      "candidate": "lp_noise",
+      "qcase": "q10",
+      "q": 10.0,
+      "input_topology": "lowpass",
+      "target": "noise",
+      "input_values": [
+        1.4499837645283297e-08,
+        2.4277315321761473e-13
+      ],
+      "input_r": 5.561401028859,
+      "input_l": 1.4499837645283297e-08,
+      "zs_target": [
+        769.3714259942443,
+        368.8746125789949
+      ],
+      "output": "O2",
+      "lc": 5e-09,
+      "r_lc": 7.670983861902878,
+      "cp_out": 5.042882591048823e-13,
+      "cs_out": 3.464520447281049e-13,
+      "lc_em": null,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "le_loss": "parallel",
+      "feed_variant": "ideal_choke",
+      "point": "ideal_choke_le0p60",
+      "xout_rdc_ohm": 100000000000.0,
+      "stem": "verify_bound_choke_q40",
+      "q_in": 40.0,
+      "q_in_tag": "q40",
+      "boundary": true,
+      "boundary_tag": "choke_q40",
+      "pred_nf290_worst_db": 1.0600981258487492,
+      "pred_nf290_mid_db": 1.054278978970474
+    },
+    {
+      "candidate": "lp_noise",
+      "qcase": "q10",
+      "q": 10.0,
+      "input_topology": "lowpass",
+      "target": "noise",
+      "input_values": [
+        1.6063602721855887e-08,
+        2.1531150720817982e-13
+      ],
+      "input_r": 0.0,
+      "input_l": 1.6063602721855887e-08,
+      "zs_target": [
+        808.5106084993469,
+        607.3337817533162
+      ],
+      "output": "O2",
+      "lc": 5e-09,
+      "r_lc": 7.670983861902878,
+      "cp_out": 5.042882591048823e-13,
+      "cs_out": 3.464520447281049e-13,
+      "lc_em": null,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "le_loss": "parallel",
+      "feed_variant": "ideal_choke",
+      "point": "ideal_choke_le0p60",
+      "xout_rdc_ohm": 100000000000.0,
+      "stem": "verify_bound_choke_lossless",
+      "q_in": null,
+      "q_in_tag": "lossless",
+      "boundary": true,
+      "boundary_tag": "choke_lossless",
+      "pred_nf290_worst_db": 0.7093462000055144,
+      "pred_nf290_mid_db": 0.701826518597119
+    }
+  ],
+  "rows": [
+    {
+      "arm": "em5_cmim",
+      "arm_role": "finite candidate",
+      "q_in_tag": "q5",
+      "q_in": 5.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        5.739714440948869e-09,
+        5.704863656698747e-13
+      ],
+      "input_r": 17.611702739379872,
+      "zs_target": [
+        167.8740515059948,
+        -49.211978479046856
+      ],
+      "pred_nf290_mid_db": 2.943996280213999,
+      "pred_nf290_worst_db": 2.9754703162446616,
+      "pred_s11_mid_db": -12.0000002962255,
+      "pred_s11_worst_db": -11.341223016457075,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042867446540873e-13,
+        "cs_out": 3.4645607406716254e-13
+      }
+    },
+    {
+      "arm": "em5_cmim",
+      "arm_role": "finite candidate",
+      "q_in_tag": "q10",
+      "q_in": 10.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        6.985785108183692e-09,
+        4.729078636570411e-13
+      ],
+      "input_r": 10.71756896551971,
+      "zs_target": [
+        249.32563183166135,
+        -11.954998332383342
+      ],
+      "pred_nf290_mid_db": 2.5363075400098687,
+      "pred_nf290_worst_db": 2.562526386847075,
+      "pred_s11_mid_db": -12.00000009339444,
+      "pred_s11_worst_db": -11.45262352577185,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042867446540873e-13,
+        "cs_out": 3.4645607406716254e-13
+      },
+      "replay": "ok"
+    },
+    {
+      "arm": "em5_cmim",
+      "arm_role": "finite candidate",
+      "q_in_tag": "q20",
+      "q_in": 20.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        7.762525155596618e-09,
+        4.2022104677076807e-13
+      ],
+      "input_r": 5.954620519619678,
+      "zs_target": [
+        304.0107669176051,
+        40.58167660646269
+      ],
+      "pred_nf290_mid_db": 2.3122134213681482,
+      "pred_nf290_worst_db": 2.3449300882165303,
+      "pred_s11_mid_db": -12.000000324225415,
+      "pred_s11_worst_db": -11.440860072982183,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042867446540873e-13,
+        "cs_out": 3.4645607406716254e-13
+      }
+    },
+    {
+      "arm": "em5_cmim",
+      "arm_role": "finite candidate",
+      "q_in_tag": "q40",
+      "q_in": 40.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        8.18441228031529e-09,
+        3.9670408759310523e-13
+      ],
+      "input_r": 3.139124726072916,
+      "zs_target": [
+        331.72112678896684,
+        77.53255654635603
+      ],
+      "pred_nf290_mid_db": 2.1924085998468974,
+      "pred_nf290_worst_db": 2.229824775705452,
+      "pred_s11_mid_db": -12.000000019639746,
+      "pred_s11_worst_db": -11.48756569627273,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042867446540873e-13,
+        "cs_out": 3.4645607406716254e-13
+      }
+    },
+    {
+      "arm": "em5_cmim",
+      "arm_role": "finite candidate",
+      "q_in_tag": "lossless",
+      "q_in": null,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        8.62877685994122e-09,
+        3.723071422315954e-13
+      ],
+      "input_r": 0.0,
+      "zs_target": [
+        354.5496843686449,
+        127.64171726908506
+      ],
+      "pred_nf290_mid_db": 2.0661170418270407,
+      "pred_nf290_worst_db": 2.1090060469333025,
+      "pred_s11_mid_db": -12.000000031185715,
+      "pred_s11_worst_db": -11.478240310679018,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042867446540873e-13,
+        "cs_out": 3.4645607406716254e-13
+      }
+    },
+    {
+      "arm": "ideal_choke",
+      "arm_role": "diagnostic bound",
+      "q_in_tag": "q5",
+      "q_in": 5.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        7.69554475859877e-09,
+        4.733287683358506e-13
+      ],
+      "input_r": 23.61295986070498,
+      "zs_target": [
+        240.4848696067206,
+        -73.53823161091864
+      ],
+      "pred_nf290_mid_db": 2.330200098862975,
+      "pred_nf290_worst_db": 2.339899930129394,
+      "pred_s11_mid_db": -12.000000370673103,
+      "pred_s11_worst_db": -11.317751351467319,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042882591048823e-13,
+        "cs_out": 3.464520447281049e-13
+      }
+    },
+    {
+      "arm": "ideal_choke",
+      "arm_role": "diagnostic bound",
+      "q_in_tag": "q10",
+      "q_in": 10.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        1.0778466794272794e-08,
+        3.3827923745359106e-13
+      ],
+      "input_r": 16.53628896698453,
+      "zs_target": [
+        477.4894194909465,
+        3.376909277802498
+      ],
+      "pred_nf290_mid_db": 1.7531434469865443,
+      "pred_nf290_worst_db": 1.7588237971762422,
+      "pred_s11_mid_db": -12.000000409737224,
+      "pred_s11_worst_db": -11.297109105289122,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042882591048823e-13,
+        "cs_out": 3.464520447281049e-13
+      },
+      "replay": "ok"
+    },
+    {
+      "arm": "ideal_choke",
+      "arm_role": "diagnostic bound",
+      "q_in_tag": "q20",
+      "q_in": 20.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        1.3103521600447534e-08,
+        2.7278039879277736e-13
+      ],
+      "input_r": 10.051690273112879,
+      "zs_target": [
+        679.7977531568973,
+        190.26213778190868
+      ],
+      "pred_nf290_mid_db": 1.3337442091444232,
+      "pred_nf290_worst_db": 1.3389281349901991,
+      "pred_s11_mid_db": -12.000000124708816,
+      "pred_s11_worst_db": -11.203992957132488,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042882591048823e-13,
+        "cs_out": 3.464520447281049e-13
+      }
+    },
+    {
+      "arm": "ideal_choke",
+      "arm_role": "diagnostic bound",
+      "q_in_tag": "q40",
+      "q_in": 40.0,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        1.4499837645283297e-08,
+        2.4277315321761473e-13
+      ],
+      "input_r": 5.561401028859,
+      "zs_target": [
+        769.3714259942443,
+        368.8746125789949
+      ],
+      "pred_nf290_mid_db": 1.054278978970474,
+      "pred_nf290_worst_db": 1.0600981258487492,
+      "pred_s11_mid_db": -12.0000000360566,
+      "pred_s11_worst_db": -11.127936603420155,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042882591048823e-13,
+        "cs_out": 3.464520447281049e-13
+      }
+    },
+    {
+      "arm": "ideal_choke",
+      "arm_role": "diagnostic bound",
+      "q_in_tag": "lossless",
+      "q_in": null,
+      "le_nh": 0.6,
+      "le_q": 10.0,
+      "status": "solved",
+      "input_values": [
+        1.6063602721855887e-08,
+        2.1531150720817982e-13
+      ],
+      "input_r": 0.0,
+      "zs_target": [
+        808.5106084993469,
+        607.3337817533162
+      ],
+      "pred_nf290_mid_db": 0.701826518597119,
+      "pred_nf290_worst_db": 0.7093462000055144,
+      "pred_s11_mid_db": -12.00000006078179,
+      "pred_s11_worst_db": -11.065028436594684,
+      "pred_s22_mid_db": -300.0,
+      "output_reused": {
+        "lc": 5e-09,
+        "r_lc": 7.670983861902878,
+        "cp_out": 5.042882591048823e-13,
+        "cs_out": 3.464520447281049e-13
+      }
+    }
+  ]
+}

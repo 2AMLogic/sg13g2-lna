@@ -801,9 +801,9 @@ def cmd_control_gen(a):
     (Path(a.outdir) / "charset" / "bracket_r200").mkdir(parents=True, exist_ok=True)
     (Path(a.outdir) / "charset" / "bracket_r100").mkdir(parents=True, exist_ok=True)
     for feed in ARMS:
-        _wr(snap / f"char_ctl_{point_id(feed)}.spice", render_ctl_char(a, feed))
+        _wr(snap / f"char_ctl_{point_id(feed)}.spice", add_char_dc_audit(render_ctl_char(a, feed)))
     for r in RPAR_OHM:
-        _wr(snap / f"char_bracket_{rpar_tag(r)}.spice", render_bracket_char(a, r))
+        _wr(snap / f"char_bracket_{rpar_tag(r)}.spice", add_char_dc_audit(render_bracket_char(a, r)))
     _wr(snap / "probe_tank.spice", render_probe(a))
     doc = {"generator": "sim/lna-matching-feasibility/q_study.py control-gen",
            "declaration_sha256": sha256(HERE / "q-study-declaration.md"),
