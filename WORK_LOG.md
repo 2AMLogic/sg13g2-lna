@@ -2,6 +2,12 @@
 
 ### 2026-10-09
 
+- **Issue #109** (closed): test: unit-test layout/lvs_reference.py partition and card-rewrite invariants
+- **Issue #105** (closed): ci: add a shellcheck lint job for the sim runners and check scripts
+- **Issue #104** (closed): test: unit-test parse_core_envelope.py against a trimmed wrdata fixture
+- **PR #111**: test: unit-test layout/lvs_reference.py partition and card-rewrite invariants
+- **PR #110**: ci: add pinned ShellCheck shell-lint job (#105)
+- **PR #107**: test: unit-test parse_core_envelope.py against a trimmed wrdata fixture
 - **Issue #101** (closed): tests: unit-test hbt-characterization/rederive_nf_fixed_t0.py (fixed-T0 NF correction) and run it in CI
 - **Issue #100** (closed): signoff: bump the grader klt pin 0.6.0 → 0.7.0 to match the layout flow that mints the cited evidence
 - **Issue #87** (closed): sim: validate committed-DUT variant reports and summarize ratified-row coverage
