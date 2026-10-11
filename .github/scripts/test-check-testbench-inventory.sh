@@ -22,6 +22,8 @@
 #   9. incomplete audit (open gap, no cold start)    -> FAILS, --write refuses
 #  10. new claim-source family mention / bench-like
 #      file outside sim/                             -> FAILS
+#  11. native-DRC runner exclusion removed / empty
+#      reason / other unclassified layout/run_*.py   -> FAILS, --write refuses
 
 set -u
 
@@ -230,6 +232,27 @@ t="$(new_case)"; printf '\nSee also sim/phantom-family/README.md.\n' >> "$t/meas
 expect "claim source naming an unindexed family is rejected" 1 "$t" "sim/phantom-family/"
 t="$(new_case)"; mkdir -p "$t/rf"; echo "* x" > "$t/rf/tb_extra.spice.tmpl"; (cd "$t" && git add -A)
 expect "bench-like file outside sim/ is rejected" 1 "$t" "tb_extra.spice.tmpl"
+
+# 11. layout runners outside sim/ are classified one by one (issue #208):
+#     the native-DRC runner's explicit exclusion is load-bearing, its reason
+#     must be nonempty, and no blanket layout/ exclusion exists.
+t="$(new_case)"
+pyedit "$t" 'i = rd("signoff/testbench-coverage.json"); del i["excluded_bench_like_paths"]["layout/run_native_drc.py"]; wr("signoff/testbench-coverage.json", i)'
+expect "removing the native-DRC runner exclusion is rejected" 1 "$t" \
+  "tracked bench-like file layout/run_native_drc.py is outside sim/ and not excluded"
+t="$(new_case)"
+pyedit "$t" 'i = rd("signoff/testbench-coverage.json"); i["excluded_bench_like_paths"]["layout/run_native_drc.py"] = ""; wr("signoff/testbench-coverage.json", i)'
+expect "empty native-DRC runner exclusion reason is rejected" 1 "$t" \
+  "excluded bench-like path layout/run_native_drc.py: needs a reason"
+t="$(new_case)"; echo "#!/usr/bin/env python3" > "$t/layout/run_other_check.py"; (cd "$t" && git add -A)
+expect "unclassified tracked layout runner is rejected" 1 "$t" \
+  "tracked bench-like file layout/run_other_check.py is outside sim/ and not excluded"
+t="$(new_case)"; echo "#!/usr/bin/env python3" > "$t/layout/run_other_check.py"; (cd "$t" && git add -A)
+before="$(tree_digest "$t")"
+(cd "$t" && python3 -I .github/scripts/check-testbench-inventory.py --write >/dev/null 2>&1); rc=$?
+after="$(tree_digest "$t")"
+if [ "$rc" -ne 0 ] && [ "$before" = "$after" ]; then
+  ok "--write refuses to publish with an unclassified layout runner"; else bad "--write published despite an unclassified layout runner (rc=$rc)"; fi
 
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
