@@ -1,0 +1,1328 @@
+{
+  "audit_scope": "Every measurement family published under sim/ (records, correction records, nominal explorations, PVT-grid variant explorations, blocked/unrun campaign benches) and the measurements/ summary view derived from them. Device-level studies (HBT, breakdown) are included. Layout, DRC, LVS, design-source and netlist-regeneration checks are other T1 items and are not testbenches. Historical-DUT records are inventoried and labelled but are not reproducible from the current tree. The audit attests shipped, documented, pinned benches; it says nothing about whether the measured circuit meets any spec row.",
+  "claim_sources": [
+    "README.md",
+    "sim/README.md",
+    "measurements/README.md",
+    "measurements/results-verdicts.json"
+  ],
+  "claims": [
+    {
+      "bench_templates": [
+        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "HBT_VCES=\"0.8 1.0 1.2 1.4\" HBT_NX_LIST=\"1\" sim/hbt-characterization/run_hbt_sweep.sh",
+          "doc": "sim/hbt-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK per sim/env.sh",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260910-200059-7da7038",
+      "limitations": "Superseded record; off-27 C NF cells are ambient-referenced and corrected by 20260921-124900-d6da30a. Device-level model-card study, not an LNA result.",
+      "record_ids": [
+        "20260910-200059-7da7038"
+      ],
+      "reducers": [
+        "sim/hbt-characterization/hbt_parse.sh",
+        "sim/hbt-characterization/parse_hbt_log.awk"
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
+      ],
+      "result_status": "superseded",
+      "revision_note": "Superseded by 20260918-203652-4293920. Produced at commit 7da7038; the narrower grid is reproducible from the current runner through the documented HBT_VCES/HBT_NX_LIST overrides.",
+      "runners": [
+        "sim/hbt-characterization/run_hbt_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 fT/NF/gain device sweep, first (narrower) grid: Nx=1 with V_CE >= 0.8 V plus one Nx=8 spot check.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "sim/hbt-characterization/run_hbt_sweep.sh",
+          "doc": "sim/hbt-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK per sim/env.sh",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260918-203652-4293920",
+      "limitations": "Model-card study of one device; off-27 C NF cells are ambient-referenced (see the correction claim). Not a claim against any target-spec row.",
+      "record_ids": [
+        "20260918-203652-4293920"
+      ],
+      "reducers": [
+        "sim/hbt-characterization/hbt_parse.sh",
+        "sim/hbt-characterization/parse_hbt_log.awk"
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/hbt-characterization/run_hbt_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 fT, 50 ohm NF and transducer gain over the full {typ,bcs,wcs,sf,fs} x {-40,27,125 C} x V_CE x Nx in {1,8} grid.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice"
+      ],
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "sim/hbt-characterization/rederive_nf_fixed_t0.py",
+          "doc": "sim/hbt-characterization/records/20260921-124900-d6da30a.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/hbt-characterization/rederive_nf_fixed_t0.py"
+      ],
+      "derives_from": [
+        "hbt-char-20260910-200059-7da7038",
+        "hbt-char-20260918-203652-4293920"
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md",
+        "sim/hbt-characterization/records/20260921-124900-d6da30a.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260921-124900-d6da30a-correction",
+      "limitations": "The derivation is only as good as the committed source CSVs; the probe bench justifying the convention is a separate ngspice run documented in the record.",
+      "record_ids": [
+        "20260921-124900-d6da30a"
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_rederive_nf_fixed_t0.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "Fixed-T0 re-referencing of the -40/125 C NF cells of both HBT records. Algebra on committed CSVs plus the resistor noise-temperature probe bench; no new device simulation of the sweep.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib; the probe bench needs ngspice only if re-run",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl",
+        "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "sim/breakdown-extraction/run_breakdown_sweep.sh",
+          "doc": "sim/breakdown-extraction/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "python3",
+            "PDK_ROOT/PDK per sim/env.sh"
+          ]
+        },
+        {
+          "command": "python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py",
+          "doc": "sim/breakdown-extraction/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/breakdown-extraction/README.md"
+      ],
+      "dut": "none",
+      "family": "breakdown-extraction",
+      "id": "breakdown-20260918-212948-013274f",
+      "limitations": "DC-only model-card extraction; no RF port. Evidence for DR-0001's breakdown budget, not a target-spec claim.",
+      "record_ids": [
+        "20260918-212948-013274f"
+      ],
+      "reducers": [
+        "sim/breakdown-extraction/reduce_breakdown.py"
+      ],
+      "replay_checks": [
+        "sim/breakdown-extraction/tests/check_breakdown_replay.py",
+        "sim/breakdown-extraction/tests/test_reduce_breakdown.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/breakdown-extraction/run_breakdown_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 BVCEO/BVCER/BVCES extracted from the model card by current-driven continuation, plus the voltage-driven control bench.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl"
+      ],
+      "classification": "historical-dut",
+      "cold_start": [
+        {
+          "command": "sim/biasref-topology/run_biasref_sweep.sh",
+          "doc": "sim/biasref-topology/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh --check)"
+          ]
+        },
+        {
+          "command": "python3 -I sim/biasref-topology/reduce_biasref.py --corners-dir sim/biasref-topology/corners/20260921-160018-a46ed37 --phases stage1 --out-dir /tmp/replay --prefix 20260921-160018-a46ed37",
+          "doc": "sim/biasref-topology/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/biasref-topology/README.md"
+      ],
+      "dut": "none",
+      "family": "biasref-topology",
+      "id": "biasref-20260921-160018-a46ed37",
+      "limitations": "Design-space probe of a superseded core; the committed core-minigrid CSV lacks the vsdb_v column (restored by the 424d385 correction claim).",
+      "record_ids": [
+        "20260921-160018-a46ed37"
+      ],
+      "reducers": [
+        "sim/biasref-topology/reduce_biasref.py"
+      ],
+      "replay_checks": [
+        "sim/biasref-topology/tests/test_reduce_biasref.py"
+      ],
+      "result_status": "published",
+      "revision_note": "Stage-1 core, superseded by 20260921-173323-2aeafef (which repeats phases A-C). Produced at commit a46ed37; the runner at that commit ran phases A-C only.",
+      "runners": [
+        "sim/biasref-topology/run_biasref_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build"
+      ],
+      "summary": "DR-0003 Stage-1 flat-reference probes (phases A-C): pnpMPA diode trace, Option-A first-increment core mini-grid, supply-ramp startup.",
+      "tool_pins": {
+        "ngspice": "ngspice (OSDI-capable, see sim/pdk.json)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_servo_minigrid.spice.tmpl",
+        "sim/biasref-topology/testbench/tb_servo_startup.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/biasref-topology/run_biasref_sweep.sh",
+          "doc": "sim/biasref-topology/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh --check)"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/biasref-topology/README.md"
+      ],
+      "dut": "present",
+      "family": "biasref-topology",
+      "id": "biasref-20260921-173323-2aeafef",
+      "limitations": "Core-level design-space probes, no LNA instantiation and no target-spec claim; the DUT netlist is hashed here as the present-DUT input, but the probes build their own core decks.",
+      "record_ids": [
+        "20260921-173323-2aeafef"
+      ],
+      "reducers": [
+        "sim/biasref-topology/reduce_biasref.py"
+      ],
+      "replay_checks": [
+        "sim/biasref-topology/tests/test_reduce_biasref.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/biasref-topology/run_biasref_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "DR-0003 five-phase probes including the sized Stage-2 core (Kuijk sum branch, amp servo, island bank) that design/ now carries.",
+      "tool_pins": {
+        "ngspice": "ngspice (OSDI-capable, see sim/pdk.json)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "python3 -I sim/biasref-topology/reduce_biasref.py --corners-dir sim/biasref-topology/corners/20260921-160018-a46ed37 --phases stage1 --out-dir /tmp/replay --prefix 20260921-160018-a46ed37",
+          "doc": "sim/biasref-topology/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/biasref-topology/reduce_biasref.py"
+      ],
+      "derives_from": [
+        "biasref-20260921-160018-a46ed37",
+        "biasref-20260921-173323-2aeafef"
+      ],
+      "docs": [
+        "sim/biasref-topology/README.md",
+        "sim/biasref-topology/records/20261010-100000-424d385.md"
+      ],
+      "dut": "none",
+      "family": "biasref-topology",
+      "id": "biasref-20261010-100000-424d385-correction",
+      "limitations": "Re-reduction of retained logs only; a log that was not retained cannot be re-derived.",
+      "record_ids": [
+        "20261010-100000-424d385"
+      ],
+      "replay_checks": [
+        "sim/biasref-topology/tests/test_reduce_biasref.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "Core mini-grid CSVs regenerated from the retained logs with reduce_biasref.py to restore the dropped vsdb_v column.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl",
+        "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl"
+      ],
+      "classification": "historical-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_biasop_sweep.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh --check)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "historical",
+      "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-20260921-132025-d6da30a",
+      "limitations": "Describes a superseded circuit. Do not cite for the current design.",
+      "record_ids": [
+        "20260921-132025-d6da30a"
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/reduce_biasop.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_reduce_biasop.py"
+      ],
+      "result_status": "published",
+      "revision_note": "DUT no longer exists: run at commit d6da30a on the mirror-reference netlist. Not reproducible from the current tree; the current runner and benches are the same lineage but evaluate today's DUT.",
+      "runners": [
+        "sim/lna-bias-pvt/run_biasop_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "DC operating-point and startup PVT sweep of the earlier npn13G2 mirror-reference bias (PR #34).",
+      "tool_pins": {
+        "ngspice": "ngspice (OSDI-capable)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl",
+        "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_biasop_sweep.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh --check)",
+            "python3"
+          ]
+        },
+        {
+          "command": "reduce_biasop.py --corners-dir corners/<id> --summary-csv /tmp/s.csv --startup-csv /tmp/u.csv",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-20260921-173552-2aeafef",
+      "limitations": "DC only; no RF behaviour and no statistical (mismatch/Monte Carlo) observable. The settling audit is derived from retained waveforms.",
+      "record_ids": [
+        "20260921-173552-2aeafef"
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/reduce_biasop.py",
+        "sim/lna-bias-pvt/hbt_audit.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_reduce_biasop.py",
+        "sim/lna-bias-pvt/tests/test_hbt_audit.py",
+        "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-bias-pvt/run_biasop_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "DC operating-point and startup PVT sweep of the committed DR-0003 bias generator, with the startup waveform settling audit.",
+      "tool_pins": {
+        "ngspice": "ngspice (OSDI-capable)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-bias-pvt/mc_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_mc_campaign.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "KLT_SIM_BACKEND=batch (the runner refuses any other backend)",
+            "klt >= 0.7.0 client and a fleet runner image that supports it",
+            "PDK_ROOT/PDK"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-mc-campaign-blocked",
+      "limitations": "BLOCKED on the batch fleet runner image. No distribution has been measured; the committed failure records hold redacted reports only. Attests that the bench ships, not that it has produced a result.",
+      "record_ids": [
+        "20261010-161633-0914d9a",
+        "20261010-221158-b05a674",
+        "mc-activation-probe-20261010"
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/hbt_audit.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_mc_campaign.py"
+      ],
+      "result_status": "none-blocked",
+      "runners": [
+        "sim/lna-bias-pvt/run_mc_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Full-DUT DC mismatch campaign (issue #90): bench, request generation and reduction ship; both fleet submissions failed before producing a distribution.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet (never local)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "historical-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "historical",
+      "family": "lna-characterization",
+      "id": "lna-char-20260918-210908-4293920",
+      "limitations": "Describes a superseded circuit (README section 'Which DUT each record describes'). Ideal passives; do not cite for the current design.",
+      "record_ids": [
+        "20260918-210908-4293920"
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "superseded",
+      "revision_note": "DUT no longer exists: produced at commit 4293920 on the placeholder resistive-divider bias. Not reproducible from the current tree.",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build"
+      ],
+      "summary": "Circuit-level S-parameters, NF, stability and IIP3 of the placeholder-divider-bias netlist.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "historical-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "historical",
+      "family": "lna-characterization",
+      "id": "lna-char-20260921-131646-d6da30a",
+      "limitations": "Describes a superseded circuit. Ideal passives; do not cite for the current design.",
+      "record_ids": [
+        "20260921-131646-d6da30a"
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "superseded",
+      "revision_note": "DUT no longer exists: produced at commit d6da30a on the mirror-reference bias. Not reproducible from the current tree.",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build"
+      ],
+      "summary": "Same bench on the mirror-reference-bias netlist (PR #34).",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-20260926-122301-088c734",
+      "limitations": "All passives are ideal (no matching network, no PDK inductor model), so RF figures are optimistic; record coverage is incomplete against the full spec. Descriptive shortfalls, not a conformance verdict.",
+      "record_ids": [
+        "20260926-122301-088c734"
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "S-parameters, noise figure, k/mu/delta stability and two-tone IIP3 of the committed DR-0003 core over the 45-cell PVT grid.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "python3 -I sim/lna-characterization/parse_lna_sweep.py --nfmin290-view sim/lna-characterization/views/<record-id>-nfmin290.csv",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "derives_from": [
+        "lna-char-20260926-122301-088c734"
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "none",
+      "family": "lna-characterization",
+      "id": "lna-char-nfmin290-view",
+      "limitations": "Input is the 4-decimal summary column, so values are good to about 1e-4 dB.",
+      "record_ids": [
+        "20260926-122301-088c734-nfmin290"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "NFmin re-referenced to T0 = 290 K from the committed summary CSV.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "python3 -I sim/lna-characterization/render_results.py --update",
+          "doc": "measurements/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/lna-characterization/render_results.py",
+        "spec/ratified-rows.json"
+      ],
+      "derives_from": [
+        "lna-char-20260926-122301-088c734"
+      ],
+      "docs": [
+        "measurements/README.md"
+      ],
+      "dut": "none",
+      "family": "lna-characterization",
+      "id": "lna-char-results-view",
+      "limitations": "Pass/fail is for the historical record only, with coverage incomplete: not full-spec compliance and not T1 signoff.",
+      "published_views": [
+        "measurements/README.md",
+        "measurements/results-verdicts.json"
+      ],
+      "record_ids": [],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_render_results.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "measurements/ results table and verdict JSON rendered from the 088c734 record and the ratified rows. A summary view, not a new simulated measurement.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_variant.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "a fleet runner image that supports it, or a local ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-variant-campaign-unrun",
+      "limitations": "No committed record: the fleet runner image could not execute it. Attests that the campaign bench ships, not that it has produced a result.",
+      "record_ids": [],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "none-blocked",
+      "runners": [
+        "sim/lna-characterization/run_lna_variant.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Inductor-loss variant campaign (issue #56): 6 variants x 45 cells through klt sim.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl",
+        "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-core-envelope/run_core_envelope.sh",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-20260926-180931-90b07a0",
+      "limitations": "Every variant except the control is a probe: nothing under design/ changes because of it. Not a target-spec conformance claim.",
+      "record_ids": [
+        "20260926-180931-90b07a0"
+      ],
+      "reducers": [
+        "sim/lna-core-envelope/parse_core_envelope.py",
+        "sim/lna-core-envelope/envelope_rf.py",
+        "sim/lna-core-envelope/core_envelope_lifecycle.py"
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/test_parse_core_envelope.py",
+        "sim/tests/test-core-envelope-lifecycle.sh"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-core-envelope/run_core_envelope.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "15 DUT variants x 45 PVT cells re-running the lna-characterization bench; the committed netlist runs as the control variant and must reproduce 088c734.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/lna-core-envelope/derive_committed_record_envelope.py",
+        "sim/lna-core-envelope/envelope_rf.py"
+      ],
+      "derives_from": [
+        "lna-char-20260926-122301-088c734"
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "none",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-derived-envelope",
+      "limitations": "Replay consistency only, not correctness of the underlying assumptions.",
+      "record_ids": [
+        "20260926-122301-088c734-derived-envelope"
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/check_envelope_replay.py",
+        "sim/lna-core-envelope/tests/test_check_envelope_replay.py",
+        "sim/lna-core-envelope/tests/test_derive_append_only.py",
+        "sim/lna-core-envelope/tests/test_envelope_rf.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "NFmin at T0 = 290 K and the available-gain envelope vs inductor Q, derived from the committed raw tables of record 088c734.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-core-envelope/core_envelope_campaign.py"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-core-envelope/run_core_envelope_campaign.sh gate",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "run",
+          "needs": [
+            "klt with the batch backend",
+            "a fleet runner image that supports it"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-campaign-unrun",
+      "limitations": "No campaign has run and no record exists. Attests that the bench generator ships, not that it has produced a result.",
+      "record_ids": [],
+      "reducers": [
+        "sim/lna-core-envelope/reduce_core_envelope_campaign.py"
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/test_core_envelope_campaign.py",
+        "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py",
+        "sim/lna-core-envelope/tests/synthetic_reports.py"
+      ],
+      "result_status": "none-unrun",
+      "runners": [
+        "sim/lna-core-envelope/run_core_envelope_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Emitter-array and cascode-split campaign (issue #58): offline preparation of the fleet requests and reducer.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet",
+        "osdi_models": true,
+        "other": "klt (batch backend only)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/matching_solver.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_matching_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        },
+        {
+          "command": "python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261010-201010-6aca84c",
+      "limitations": "One PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V): exploration, not a result and not a target-spec claim. Stability gate stays with issue #27.",
+      "record_ids": [
+        "20261010-201010-6aca84c"
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/matching_solver.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_matching_solver.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_matching_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Nominal-cell characterization, base-feed what-if probe and 3 candidate L-section topologies x 4 inductor-Q cases, each verified by a single-cell run.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/matching_solver.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-matching-feasibility/run_dc_reference_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "characterization data of record 20261010-201010-6aca84c",
+            "PDK_ROOT/PDK",
+            "OSDI models"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261010-213251-3ccb391",
+      "limitations": "One PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V): exploration, not a result and not a target-spec claim. Stability gate stays with issue #27.",
+      "record_ids": [
+        "20261010-213251-3ccb391"
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/matching_solver.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_matching_solver.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_dc_reference_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "DC-reference sensitivity (issue #190): 4 candidate / Q points re-run with an explicit Rxoutdc bench element.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/feed_study.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_feed_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-matching-feasibility/feed_study.py declare",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md",
+        "sim/lna-matching-feasibility/feed-study-declaration.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261010-233800-d1312cc",
+      "limitations": "One PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V): exploration, not a result and not a target-spec claim. Stability gate stays with issue #27.",
+      "record_ids": [
+        "20261010-233800-d1312cc"
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/feed_study.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_feed_study.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_feed_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Finite resonant base-feed vs ideal-choke noise bound (issue #193), declared before the run in feed-study-declaration.md.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    }
+  ],
+  "excluded_bench_like_paths": {
+    "layout/run_flow.sh": "layout DRC/LVS/extraction flow (T1 items 3/4), not a measurement testbench"
+  },
+  "families": {
+    "biasref-topology": {
+      "readme": "sim/biasref-topology/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "breakdown-extraction": {
+      "readme": "sim/breakdown-extraction/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "hbt-characterization": {
+      "readme": "sim/hbt-characterization/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "lna-bias-pvt": {
+      "readme": "sim/lna-bias-pvt/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "lna-characterization": {
+      "readme": "sim/lna-characterization/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "lna-core-envelope": {
+      "readme": "sim/lna-core-envelope/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    },
+    "lna-matching-feasibility": {
+      "readme": "sim/lna-matching-feasibility/README.md",
+      "unaccounted_ok": [
+        {
+          "glob": "tests/*",
+          "reason": "unit tests and fixtures of the reducers; they are not benches (those that replay a committed record are listed per claim as replay_checks)"
+        }
+      ]
+    }
+  },
+  "open_gaps": [],
+  "reviewer_checks": [
+    "run each documented cold-start command on a machine with the stated tools and PDK pin; command text in a README does not prove it succeeds",
+    "confirm the classification of each claim (present DUT, historical DUT, nominal exploration, variant exploration, device characterization, data-only derivation) against the record and the DUT of that date",
+    "confirm no measurement published in prose, issues or records is missing from the claim sources scanned mechanically (the scan reads only the declared claim_sources, not arbitrary prose)",
+    "confirm blocked or unrun benches are described as such and not read as results",
+    "confirm historical-DUT claims are not cited for the current design"
+  ],
+  "schema_version": 1,
+  "shared_input_groups": {
+    "dut-netlist": {
+      "paths": [
+        "design/netlist/lna.spice"
+      ],
+      "why": "the committed DUT netlist that present-DUT benches inline"
+    },
+    "em-model": {
+      "paths": [
+        "sim/models/SOURCE.md",
+        "sim/models/sg13g2_inductor_em.spice",
+        "sim/models/check_sources.sh"
+      ],
+      "why": "vendored EM inductor model used by the inductor-loss and matching benches"
+    },
+    "osdi-build": {
+      "paths": [
+        "sim/tools/build-osdi.sh"
+      ],
+      "why": "builds/checks the PSP103 OSDI device models that MOS-bearing benches pre_osdi-load"
+    },
+    "pdk-pin": {
+      "paths": [
+        "sim/pdk.json"
+      ],
+      "why": "pinned IHP-Open-PDK release every record is generated against"
+    },
+    "runner-common": {
+      "paths": [
+        "sim/env.sh",
+        "sim/tools/pdk_identity.py",
+        "sim/tools/reducer_common.py"
+      ],
+      "why": "sourced or imported by every runner/reducer: PDK resolution, record-id reservation, installed-PDK identity check, shared reducer helpers"
+    }
+  },
+  "support_dirs": {
+    "models": "vendored EM inductor model and its provenance check; support code, no records (hashed as shared group em-model)",
+    "tests": "PDK-free shell tests of the shared runner surface; not benches (the core-envelope lifecycle test is listed as a replay check)",
+    "tools": "build-osdi.sh, pdk_identity.py, reducer_common.py and their tests; support code, no records (hashed in shared groups)"
+  },
+  "t1_item": 9
+}

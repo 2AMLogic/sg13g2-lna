@@ -9,6 +9,10 @@
     "4": {
       "file": "layout/lna_core/lvs_full_report.json",
       "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
+    },
+    "9": {
+      "file": "signoff/testbench-inventory.envelope.json",
+      "content_hash": "sha256:69a248cf381c0897f2c4d4244c6f374c60dfe2d997c034c84c95b7a1d7f8be12"
     }
   }
 }

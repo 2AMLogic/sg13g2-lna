@@ -5,7 +5,7 @@
   "tier": null,
   "t1_item_count": 11,
   "build_t1_item_count": 11,
-  "t1_met_count": 0,
+  "t1_met_count": 1,
   "source_doc": "signoff/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335",
   "build": {
@@ -134,10 +134,26 @@
       "partition": null,
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/testbench-inventory.envelope.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:69a248cf381c0897f2c4d4244c6f374c60dfe2d997c034c84c95b7a1d7f8be12",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": "signoff/testbench-inventory.json",
+          "content_hash": "sha256:69a248cf381c0897f2c4d4244c6f374c60dfe2d997c034c84c95b7a1d7f8be12",
+          "input_verified": true,
+          "summary": "Audited testbench inventory for the published measurement scope: benches, runners, reducers, pins and documented cold-start invocations are committed, hashed and cross-referenced. Establishes shipped benches only: not that any command succeeds, not RF compliance, not overall T1.",
+          "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py"
+        }
+      }
     },
     {
       "tier": "T1",

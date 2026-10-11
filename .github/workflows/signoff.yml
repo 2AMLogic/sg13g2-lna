@@ -38,6 +38,8 @@ name: signoff
 # `matching-feasibility-tests` (lna-matching-feasibility solver unit tests
 # and committed-record replay — issue #186),
 # `record-citations` (cited record ids resolve to committed evidence),
+# `testbench-inventory` (T1 item-9 testbench inventory is fresh against the
+# tracked benches, runners, records and documented invocations — issue #195),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
 # `netlist-regen` (authoritative complement: headless xschem regeneration of
@@ -243,6 +245,26 @@ jobs:
 
       - name: Cited record ids resolve to committed evidence
         run: .github/scripts/check-record-citations
+
+  # T1 item-9 testbench inventory (issue #195): the audited inventory
+  # signoff/testbench-inventory.json, the explicit coverage index
+  # signoff/testbench-coverage.json, and the envelope / manifest / rolling
+  # report bindings must be fresh against the tracked tree. A changed bench
+  # input, a removed documented invocation, an unindexed record or a new
+  # sim/ family fails here. Stdlib-only and read-only: no PDK, ngspice, klt
+  # or network, and nothing under sim/ is written. It does not prove any
+  # documented command succeeds (signoff/README.md, "Item 9").
+  testbench-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Testbench-inventory checker self-test
+        run: .github/scripts/test-check-testbench-inventory.sh
+
+      - name: Testbench inventory is fresh and bound to item 9
+        run: python3 -I .github/scripts/check-testbench-inventory.py
 
   # Netlist freshness (issue #88): the committed design/netlist/lna.spice
   # must list the same devices (names, symbol types, values/params) as
