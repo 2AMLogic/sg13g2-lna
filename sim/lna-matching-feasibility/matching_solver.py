@@ -568,16 +568,42 @@ def em_outer_diameter_um(geom: str) -> float:
     return g["d_um"] + 2 * (n - 1) * (g["s_um"] + g["w_um"] + 0.01) + 2 * g["w_um"]
 
 
-def dut_text(le_rp, lc) -> str:
+def le_line(le_nh: float = LE_NH) -> str:
+    """The DUT's Le line for a selected value (issue #198). The committed
+    1 nH returns LE_LINE unchanged, so every historical deck is byte-identical."""
+    if not (math.isfinite(le_nh) and le_nh > 0):
+        raise ValueError(f"Le must be positive and finite (got {le_nh!r} nH)")
+    if le_nh == LE_NH:
+        return LE_LINE
+    return f"Le e1 vss {le_nh:.6g}n m=1"
+
+
+def dut_text(le_rp, lc, le_nh: float = LE_NH, le_rs=None) -> str:
     """DUT with BENCH EDITs. le_rp: None (committed ideal Le) or a parallel
     loss resistor across Le (DC-transparent, see q_parallel_r).
+    le_nh: Le in nH (default the committed 1 nH). le_rs: None or a SERIES loss
+    resistor in Le's emitter path (issue #198 DC-effect bracket; carries the
+    emitter DC current, unlike le_rp). le_rp and le_rs are mutually exclusive.
     lc: ('ideal', L, R) or ('em', geom) or None (committed Lc)."""
     body = dut_base()
+    line = le_line(le_nh)
+    if le_rp is not None and le_rs is not None:
+        raise ValueError("Le loss is either parallel or series, not both")
+    if line != LE_LINE:
+        body = body.replace(
+            LE_LINE, f"* BENCH EDIT (issue #198): Le = {le_nh:.6g} nH (explicit study input)\n{line}")
+    if le_rs is not None:
+        if not (le_rs > 0 and math.isfinite(le_rs)):
+            raise ValueError("series Le loss must be positive and finite")
+        body = body.replace(
+            line,
+            f"* BENCH EDIT: Le loss as a SERIES resistor (R = {le_rs:.6g} Ohm, in the emitter DC path)\n"
+            f"Le e1 le_x {le_nh:.6g}n m=1\nRles le_x vss {le_rs:.6g}")
     if le_rp is not None:
         body = body.replace(
-            LE_LINE,
+            line,
             f"* BENCH EDIT: Le loss as a parallel resistor (R = {le_rp:.6g} Ohm, DC-transparent)\n"
-            f"{LE_LINE}\nRle e1 vss {le_rp:.6g}")
+            f"{line}\nRle e1 vss {le_rp:.6g}")
     if lc is not None:
         if lc[0] == "ideal":
             _, l_h, r = lc
@@ -665,10 +691,13 @@ def feed_deck(a) -> str:
     })
 
 
-def char_deck(a) -> str:
+def char_deck(a, le_nh: float = LE_NH, char_cases=None, le_sweep: bool = True) -> str:
+    """Characterization deck. Defaults reproduce the historical deck byte for
+    byte; issue #198 passes an explicit Le, a case subset and no Le sweep."""
+    cases = CHAR_CASES if char_cases is None else char_cases
     blocks = []
-    for case, q in CHAR_CASES.items():
-        r = R_IDEAL_PLACEHOLDER if q is None else q_parallel_r(LE_NH * 1e-9, q)
+    for case, q in cases.items():
+        r = R_IDEAL_PLACEHOLDER if q is None else q_parallel_r(le_nh * 1e-9, q)
         blocks.append(
             f"* --- A/B. Le-loss case '{case}' (Rle = {r:.6g} Ohm) ---\n"
             f"alter r.xa.rle = {r:.6g}\n"
@@ -682,16 +711,19 @@ def char_deck(a) -> str:
             f"wrdata {a.outdir}/char_{case}_choke.dat real(s_2_2) imag(s_2_2) real(s_1_1) imag(s_1_1)\n"
             f"echo \"DAT_WRITTEN char_{case}_choke.dat\"\n")
     blocks.append(f"alter r.xa.rle = {R_IDEAL_PLACEHOLDER:g}\nalter l.xa.lc = {LC_NH * 1e-9:g}\n")
-    sweep = le_sweep_text("LESWEEP", "* --- C. ideal-Le sweep at the band centre ---")
+    if le_sweep:
+        sweep = le_sweep_text("LESWEEP", "* --- C. ideal-Le sweep at the band centre ---")
+    else:
+        sweep = "* --- C. ideal-Le sweep omitted: Le is this study's explicit input ---"
     em_lines, em_vecs = [], []
     for g in EM_GEOMS:
         em_lines.append(f"X{g} 0 {g}_b 0 {em_instance(g)}\nI{g} 0 {g}_b dc 0 ac 1")
         em_vecs += [f"real(v({g}_b))", f"imag(v({g}_b))"]
     return render(TB_CHAR, {
         **pdk_subs(a),
-        "CASE_LIST": ", ".join(CHAR_CASES),
+        "CASE_LIST": ", ".join(cases),
         "EM_MODEL": os.path.relpath(EM_MODEL, a.deckdir) if a.relative_em else str(EM_MODEL),
-        "DUT": dut_text(R_IDEAL_PLACEHOLDER, None),
+        "DUT": dut_text(R_IDEAL_PLACEHOLDER, None, le_nh),
         "RIDEAL": f"{R_IDEAL_PLACEHOLDER:g}",
         "EM_ONEPORTS": "\n".join(em_lines),
         "CHAR_CASES": "\n".join(blocks),
@@ -706,13 +738,13 @@ def char_deck(a) -> str:
 # Characterization data -> solver inputs
 # ===========================================================================
 
-def load_char(cdir: Path, require_feed: bool = True):
+def load_char(cdir: Path, require_feed: bool = True, char_cases=None, require_sweep: bool = True):
     """Read a characterization directory. `require_feed=False` (issue #193)
     skips the R3b-choked what-if probe (char_feed.log), for characterization
     directories of a different feed variant that have no such probe."""
     freqs = band_freqs()
     data = {"cases": {}, "em": {}}
-    for case in CHAR_CASES:
+    for case in (CHAR_CASES if char_cases is None else char_cases):
         _, tp = columns(cdir / f"char_{case}_twoport.dat", N_BAND, freqs)
         _, ck = columns(cdir / f"char_{case}_choke.dat", N_BAND, freqs)
         s11, s21, s12, s22 = (cplx(tp, n) for n in ("s_1_1", "s_2_1", "s_1_2", "s_2_2"))
@@ -738,7 +770,8 @@ def load_char(cdir: Path, require_feed: bool = True):
     for log in logs:
         if not re.search(r"^BENCH_COMPLETE", (cdir / log).read_text(), re.M):
             raise ValueError(f"{log}: no BENCH_COMPLETE marker")
-    data["le_sweep"] = parse_le_sweep(cdir / "char.log", "LESWEEP")
+    if require_sweep:
+        data["le_sweep"] = parse_le_sweep(cdir / "char.log", "LESWEEP")
     data["op"] = parse_op(cdir / "char.log")
     if require_feed:
         data["feed_sweep"] = parse_le_sweep(cdir / "char_feed.log", "FEEDSWEEP")
@@ -751,10 +784,10 @@ def em_l_q(z: complex, f: float):
     return z.imag / w, (z.imag / z.real if z.real > 0 else math.inf)
 
 
-def char_case_for(qcase: str) -> str:
+def char_case_for(qcase: str, qcases=None, char_cases=None) -> str:
     """Which characterized Le-loss case a Q case's DUT corresponds to."""
-    q = QCASES[qcase]["q"]
-    for c, cq in CHAR_CASES.items():
+    q = (QCASES if qcases is None else qcases)[qcase]["q"]
+    for c, cq in (CHAR_CASES if char_cases is None else char_cases).items():
         if cq == q:
             return c
     raise KeyError(qcase)
@@ -777,18 +810,25 @@ def feasibility(l_h: float, em_lq: dict) -> str:
             "larger spiral (unextracted), bondwire or off-chip")
 
 
-def synthesize(data: dict):
-    """All (candidate, Q case) networks. Returns a list of dicts (JSON-able)."""
+def synthesize(data: dict, le_nh: float = LE_NH, candidates=None, qcases=None, char_cases=None):
+    """All (candidate, Q case) networks. Returns a list of dicts (JSON-able).
+    le_nh is the Le the characterization data was taken at (issue #198); it
+    only feeds the feasibility note and the entry's `le_nh` field, so a
+    stale 1 nH assumption cannot hide behind the default for a non-default
+    study. The remaining arguments restrict the sets; defaults are the
+    historical full sets."""
     freqs = band_freqs()
     em_lq = {g: em_l_q(data["em"][g][MID], F_MID) for g in EM_GEOMS}
     out = []
-    for cand, cdef in CANDIDATES.items():
-        for qcase, qdef in QCASES.items():
+    for cand, cdef in (CANDIDATES if candidates is None else candidates).items():
+        for qcase, qdef in (QCASES if qcases is None else qcases).items():
             q = qdef["q"]
-            rows = data["cases"][char_case_for(qcase)]
+            rows = data["cases"][char_case_for(qcase, qcases, char_cases)]
             mid = rows[MID]
             entry = {"candidate": cand, "qcase": qcase, "q": q, "input_topology": cdef["input"],
                      "target": cdef["target"], "notes": []}
+            if le_nh != LE_NH:
+                entry["le_nh"] = le_nh
             # ---- input ----
             if cdef["target"] == "power":
                 sol = solve_input_power(cdef["input"], mid["zin"], q)
@@ -854,7 +894,7 @@ def synthesize(data: dict):
             entry["predicted_twoport_nf290_mid_db"] = nf_reref(10 * math.log10(f_pred_lin), T_ANALYSIS)
             # ---- inductor feasibility ----
             entry["feasibility"] = {
-                "Le": feasibility(LE_NH * 1e-9, em_lq),
+                "Le": feasibility(le_nh * 1e-9, em_lq),
                 ("Lb" if cdef["input"] == "lowpass" else "Lp"): feasibility(l_in, em_lq),
                 "Lc": (f"EM geometry {entry['lc_em']} (extracted)" if entry["lc_em"]
                        else feasibility(entry["lc"], em_lq)),
@@ -926,8 +966,20 @@ def parse_rdc_list(text) -> list:
 
 
 def verify_deck(a, entry, stem: str) -> str:
+    """Verification deck for one synthesized entry. Optional entry keys
+    (issue #198; absent in every historical entry, so those decks are
+    unchanged): `le_nh` (Le in nH), `le_q` (Le's loss Q, overriding the Q
+    case's Q for Le only: the matching network and Lc keep their own losses)
+    and `le_loss` ('parallel', the DC-transparent default, or 'series')."""
     q = entry["q"]
-    le_rp = None if q is None else q_parallel_r(LE_NH * 1e-9, q)
+    le_nh = entry.get("le_nh", LE_NH)
+    le_q = entry.get("le_q", q)
+    le_loss = entry.get("le_loss", "parallel")
+    if le_loss not in ("parallel", "series"):
+        raise ValueError(f"le_loss must be 'parallel' or 'series' (got {le_loss!r})")
+    le_series = le_loss == "series"
+    le_rp = None if (le_q is None or le_series) else q_parallel_r(le_nh * 1e-9, le_q)
+    le_rs = q_series_r(le_nh * 1e-9, le_q) if (le_series and le_q is not None) else None
     if entry["lc_em"]:
         lc = ("em", entry["lc_em"])
     else:
@@ -936,13 +988,17 @@ def verify_deck(a, entry, stem: str) -> str:
              f"* Q case: {QCASES[entry['qcase']]['desc']}",
              f"* Target source impedance at 2.44175 GHz: {entry['zs_target'][0]:.4f} "
              f"{entry['zs_target'][1]:+.4f}j Ohm"]
+    if any(k in entry for k in ("le_nh", "le_q", "le_loss")):
+        notes.append(f"* Le = {le_nh:.6g} nH; Le loss: "
+                     + ("none (ideal)" if le_q is None else f"{le_loss} resistor at Q = {le_q:g} at 2.44175 GHz")
+                     + " (issue #198 explicit study input; overrides the Q case for Le only)")
     em_inc = f'.include "{EM_MODEL}"' if entry["lc_em"] else "* (no EM inductor in this candidate)"
     return render(TB_VERIFY, {
         **pdk_subs(a),
         "CANDIDATE": entry["candidate"], "QCASE": entry["qcase"],
         "CANDIDATE_NOTES": "\n".join(notes),
         "EM_INCLUDE": em_inc,
-        "DUT": dut_text(le_rp, lc),
+        "DUT": dut_text(le_rp, lc, le_nh, le_rs),
         "INPUT_NET": input_net_text(entry),
         "OUTPUT_NET": output_net_text(entry),
         "XOUT_DC": xout_dc_text(entry.get("xout_rdc_ohm")),

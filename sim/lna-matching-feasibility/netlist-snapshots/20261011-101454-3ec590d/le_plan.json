@@ -1,0 +1,161 @@
+{
+  "generator": "sim/lna-matching-feasibility/le_study.py char-gen",
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "em_model_sha256": "6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
+  "prior_record": "20261010-233800-d1312cc",
+  "prior_feed_plan_sha256": "a27287d1863706c4cdccd6b2f2c11f90f31ff1ec97598f731408d427829c430d",
+  "char_cases": {
+    "ideal": null,
+    "q10": 10.0,
+    "q5": 5.0
+  },
+  "points": [
+    {
+      "id": "committed_le1p00",
+      "feed": "committed",
+      "le_nh": 1.0,
+      "role": "baseline",
+      "control": true
+    },
+    {
+      "id": "ideal_choke_le1p00",
+      "feed": "ideal_choke",
+      "le_nh": 1.0,
+      "role": "diagnostic bound",
+      "control": true
+    },
+    {
+      "id": "em5_cideal_le1p00",
+      "feed": "em5_cideal",
+      "le_nh": 1.0,
+      "role": "reproduction control only",
+      "control": true
+    },
+    {
+      "id": "committed_le0p10",
+      "feed": "committed",
+      "le_nh": 0.1,
+      "role": "baseline",
+      "control": false
+    },
+    {
+      "id": "committed_le0p30",
+      "feed": "committed",
+      "le_nh": 0.3,
+      "role": "baseline",
+      "control": false
+    },
+    {
+      "id": "committed_le0p60",
+      "feed": "committed",
+      "le_nh": 0.6,
+      "role": "baseline",
+      "control": false
+    },
+    {
+      "id": "em5_cmim_le0p10",
+      "feed": "em5_cmim",
+      "le_nh": 0.1,
+      "role": "finite candidate",
+      "control": false
+    },
+    {
+      "id": "em5_cmim_le0p30",
+      "feed": "em5_cmim",
+      "le_nh": 0.3,
+      "role": "finite candidate",
+      "control": false
+    },
+    {
+      "id": "em5_cmim_le0p60",
+      "feed": "em5_cmim",
+      "le_nh": 0.6,
+      "role": "finite candidate",
+      "control": false
+    },
+    {
+      "id": "em5_cmim_le1p00",
+      "feed": "em5_cmim",
+      "le_nh": 1.0,
+      "role": "finite candidate",
+      "control": false
+    },
+    {
+      "id": "ideal_choke_le0p10",
+      "feed": "ideal_choke",
+      "le_nh": 0.1,
+      "role": "diagnostic bound",
+      "control": false
+    },
+    {
+      "id": "ideal_choke_le0p30",
+      "feed": "ideal_choke",
+      "le_nh": 0.3,
+      "role": "diagnostic bound",
+      "control": false
+    },
+    {
+      "id": "ideal_choke_le0p60",
+      "feed": "ideal_choke",
+      "le_nh": 0.6,
+      "role": "diagnostic bound",
+      "control": false
+    }
+  ],
+  "feed_plan": {
+    "f_tune_hz": 2441750000.0,
+    "c_tune_f": {
+      "em4": 9.538120889991043e-13,
+      "em5": 7.735594802865366e-13
+    },
+    "cmim_side_um": {
+      "em4": 25.16327965183673,
+      "em5": 22.655897491057637
+    },
+    "geoms": {
+      "em1": {
+        "l_nh": 0.0970515888416193,
+        "q": 4.078015314581531,
+        "srf_hz": null,
+        "rp_alone_ohm": 6.072011239841038,
+        "outer_d_um": 64.09,
+        "c_tune_pf": 41.292907869111936,
+        "tank_resonances": []
+      },
+      "em4": {
+        "l_nh": 4.421565641116343,
+        "q": 11.630188668296615,
+        "srf_hz": 10698168907.986486,
+        "rp_alone_ohm": 788.9398652466174,
+        "outer_d_um": 230.235,
+        "c_tune_pf": 0.9538120889991043,
+        "cmim_side_um": 25.16327965183673,
+        "tank_resonances": [
+          {
+            "f_hz": 2441749127.514226,
+            "kind": "parallel",
+            "z_mag_ohm": 794.7417235101581,
+            "re_y_s": 0.001258270417190722
+          }
+        ]
+      },
+      "em5": {
+        "l_nh": 5.432342571646712,
+        "q": 9.52872668354639,
+        "srf_hz": 8958919466.725271,
+        "rp_alone_ohm": 794.1509947315366,
+        "outer_d_um": 197.51,
+        "c_tune_pf": 0.7735594802865366,
+        "cmim_side_um": 22.655897491057637,
+        "tank_resonances": [
+          {
+            "f_hz": 2441748990.0224934,
+            "kind": "parallel",
+            "z_mag_ohm": 802.8629108312768,
+            "re_y_s": 0.0012455426530596726
+          }
+        ]
+      }
+    }
+  }
+}
