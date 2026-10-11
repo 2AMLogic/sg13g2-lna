@@ -334,6 +334,11 @@ class Coverage(unittest.TestCase):
         shutil.copy(FIX / f"{A1}.log", self.cd / "iip3_bcs_27c_vdd1.80v_a4mv.log")
         self.assertEqual(self.run_main("--strict"), 0)
         self.assertEqual(self.cov()["unexpected"], ["iip3_bcs_27c_vdd1.80v_a4mv"])
+        # Issue #180: diagnostic only -- never part of the campaign IIP3 CSV.
+        import csv
+        ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
+        self.assertNotIn("iip3_bcs_27c_vdd1.80v_a4mv", ids)
+        self.assertIn(A4, ids)
 
     def test_sp_log_without_wrdata_is_failed(self):
         (self.cd / f"{BCS_SP}.stability.dat").unlink()
@@ -1012,6 +1017,178 @@ class InvalidLogCoverage(Coverage):
         import csv
         ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
         self.assertNotIn(BCS_A1, ids)
+
+
+WCS_SP = "sp_wcs_27c_vdd1.80v"
+BCS_A4 = "iip3_bcs_27c_vdd1.80v_a4mv"
+
+
+def _csv_rows(path):
+    import csv
+    with open(path) as fh:
+        return list(csv.DictReader(fh))
+
+
+def _hot_s11(i, row):
+    # |S11| = |5.0 + j*0.5| ~ 14 dB: an extremum no declared cell can reach.
+    row[1] = 5.0
+
+
+class ManifestMembershipSp(GridHarness):
+    """Issue #180: with a manifest, the S-parameter CSVs, summary and headlines
+    are built from the declared sp inventory only; undeclared cells stay listed
+    as `unexpected` and do not change completeness or the strict exit."""
+
+    def setUp(self):
+        super().setUp()
+        make_cell(self.cd, BCS_SP, [BCS_A1, BCS_A2])
+        self.write(BCS_SP)
+        self.manifest.write_text(
+            f"kind campaign\n{GRID_LINES}sp {SP}\nsp {BCS_SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+            f"iip3 {BCS_A1}\niip3 {BCS_A2}\npair {BCS_A1} {BCS_A2}\n"
+        )
+        # Third, undeclared sp cell on disk with an extreme in-band |S11|.
+        make_cell(self.cd, WCS_SP, [])
+
+    def run_free(self):
+        """Manifest-free (historical replay) invocation of main()."""
+        argv = ["parse_lna_sweep.py", "--corners-dir", str(self.cd),
+                "--sparam-csv", str(self.td / "sp.csv"),
+                "--iip3-csv", str(self.td / "ip.csv"),
+                "--summary-csv", str(self.td / "sum.csv")]
+        old = sys.argv
+        sys.argv = argv
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                return P.main()
+        finally:
+            sys.argv = old
+
+    def assert_declared_only(self):
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertEqual(c["status"], "complete")
+        self.assertEqual(c["unexpected"], [WCS_SP])
+        self.assertIn("excluded", c["aggregate_membership"])
+        prose = "\n".join(P.coverage_prose(c))
+        self.assertIn(f"Unexpected (undeclared; excluded from every aggregate): {WCS_SP}",
+                      prose)
+        summ = _csv_rows(self.td / "sum.csv")
+        self.assertEqual(sorted(r["point_id"] for r in summ), sorted([BCS_SP, SP]))
+        self.assertNotIn(WCS_SP, {r["point_id"] for r in _csv_rows(self.td / "sp.csv")})
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("worst of 2 PVT cells", h)
+        self.assertNotIn("wcs/", h)
+
+    def test_valid_undeclared_cell_is_unexpected_not_summarised(self):
+        self.write(WCS_SP, inband={"edit": _hot_s11})
+        self.assert_declared_only()
+        # Manifest-free replay keeps reducing every sp_* log on disk.
+        self.assertEqual(self.run_free(), 0)
+        summ = _csv_rows(self.td / "sum.csv")
+        self.assertEqual(len(summ), 3)
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("In-band S11 (worst of 3 PVT cells)", h)
+        self.assertIn("at wcs/27 C/VDD=1.80 V", h)
+
+    def test_undeclared_cell_with_bad_grid_cannot_enter_extrema(self):
+        for freqs in (grid_freqs("inband")[:-1],                    # truncated
+                      [2.3e9 + i * 1e7 for i in range(11)]):        # different grid
+            self.write(WCS_SP, inband={"freqs": freqs, "edit": _hot_s11})
+            self.assert_declared_only()
+            # Never validated, so never an invalid-grid finding either.
+            self.assertEqual(self.cov()["invalid_grids"], [])
+
+
+def write_level_log(path: Path, scale: float, im3_pow: float = 3.0, im3_gain: float = 1.0):
+    """Synthesise a two-tone log at `scale` x the 1 mV fixture drive: tones
+    and source scale linearly, IM3 as scale**im3_pow (3 = ideal cubic, so the
+    intercept is drive-invariant), IM5 as scale**5. `im3_gain` multiplies IM3
+    (an IIP3 shift of -10*log10(im3_gain) dB)."""
+    fx = P.parse_iip3_log(str(FIX / f"{A1}.log"))
+    i3 = scale ** im3_pow * im3_gain
+
+    def kv(pref, keys, mul):
+        return " ".join(f"{k} {fx[f'{pref}_{k}'] * mul[k]:.9e}" for k in keys)
+
+    mul = {"tone1": scale, "tone2": scale, "im3l": i3, "im3h": i3,
+           "im5l": scale ** 5, "im5h": scale ** 5, "src1": scale, "src2": scale}
+    path.write_text(
+        "Circuit: synthetic (issue #180 membership test)\n"
+        f"OP ic1 {fx['ic1']} ic2 {fx['ic2']} vce1 {fx['vce1']} vce2 {fx['vce2']}"
+        f" idd {fx['idd']}\n"
+        f"NPTS {fx['npts']}\n"
+        "DFT " + kv("dft", ("tone1", "tone2", "im3l", "im3h", "src1"), mul) + "\n"
+        f"FFTDF {fx['fft_df']}\n"
+        "FFT " + kv("fft", ("tone1", "tone2", "im3l", "im3h", "im5l", "im5h",
+                            "src1", "src2"), mul) + "\n"
+        "BENCH_COMPLETE\n")
+
+
+class ManifestMembershipIip3(Coverage):
+    """Issue #180: undeclared IIP3 drive levels never enter the IIP3 CSV, the
+    accepted intercepts or the slope check; declared nominal-only extra levels
+    (here the typ cell's 4 mV level) remain included."""
+
+    def setUp(self):
+        super().setUp()
+        for pid, s in ((A1, 1), (A2, 2), (A4, 4), (BCS_A1, 1), (BCS_A2, 2)):
+            write_level_log(self.cd / f"{pid}.log", s)
+
+    def ip_ids(self):
+        return [r["point_id"] for r in _csv_rows(self.td / "ip.csv")]
+
+    def test_undeclared_level_cannot_enter_accepted_intercepts(self):
+        # Undeclared 4 mV level on a non-nominal cell, with IM3 1e-6 x lower
+        # (+60 dB IIP3): it would be the campaign maximum if it were reduced.
+        write_level_log(self.cd / f"{BCS_A4}.log", 4, im3_gain=1e-6)
+        self.assertEqual(self.run_main(manifest=False), 0)
+        leak = next(r for r in _csv_rows(self.td / "ip.csv") if r["point_id"] == BCS_A4)
+        h_free = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn(f"max {leak['iip3_dbm']} dBm", h_free)  # fixture really leaks
+
+        self.assertEqual(self.run_main("--strict"), 0)  # harmless extra: exit 0
+        self.assertEqual(self.cov()["unexpected"], [BCS_A4])
+        ids = self.ip_ids()
+        self.assertNotIn(BCS_A4, ids)
+        self.assertEqual(sorted(ids), sorted([A1, A2, A4, BCS_A1, BCS_A2]))
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("IIP3 (two-tone, 5 drive points)", h)  # declared A4 counted
+        self.assertNotIn(leak["iip3_dbm"], h)
+        self.assertIn("holds at every cell", h)
+
+    def test_declared_nominal_extra_level_stays_in_accepted_set(self):
+        # Membership, not drive amplitude: the declared typ 4 mV level is
+        # accepted; give it the campaign-maximum intercept to prove it.
+        write_level_log(self.cd / f"{A4}.log", 4, im3_gain=1e-2)
+        self.assertEqual(self.run_main("--strict"), 0)
+        a4 = next(r for r in _csv_rows(self.td / "ip.csv") if r["point_id"] == A4)
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn(f"max {a4['iip3_dbm']} dBm at typ/27 C/VDD=1.80 V", h)
+
+    def test_undeclared_pair_cannot_alter_slope_check(self):
+        # The manifest declares no IIP3 levels for the bcs cell; its on-disk
+        # 1/2 mV logs are off the 3:1 region (slope 1).
+        write_level_log(self.cd / f"{BCS_A2}.log", 2, im3_pow=1.0)
+        self.manifest.write_text(
+            f"kind campaign\nsp {SP}\nsp {BCS_SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\niip3 {A4}\n")
+        self.assertEqual(self.run_main(manifest=False), 0)
+        free = {r["point_id"]: r for r in _csv_rows(self.td / "sum.csv")}
+        self.assertEqual(free[BCS_SP]["im3_slope_2pt"], "1.000")  # would leak
+
+        self.assertEqual(self.run_main("--strict"), 0)
+        self.assertEqual(self.cov()["unexpected"], [BCS_A1, BCS_A2])
+        summ = {r["point_id"]: r for r in _csv_rows(self.td / "sum.csv")}
+        self.assertEqual(summ[BCS_SP]["im3_slope_2pt"], "")
+        self.assertEqual(summ[BCS_SP]["iip3_dbm_a1mv"], "")
+        self.assertEqual(summ[SP]["im3_slope_2pt"], "3.000")
+        self.assertEqual(sorted(self.ip_ids()), sorted([A1, A2, A4]))
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("1 valid / 0 invalid / 1 unknown of 2 cells", h)
+        self.assertIn("slope over valid cells in [3.000, 3.000]", h)
+        self.assertNotIn("slope 1.000", h)
 
 
 class Nfmin290(unittest.TestCase):
