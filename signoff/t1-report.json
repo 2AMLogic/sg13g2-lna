@@ -142,13 +142,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:69a248cf381c0897f2c4d4244c6f374c60dfe2d997c034c84c95b7a1d7f8be12",
+        "content_hash": "sha256:c0b2e056fdf02896fda5acc08c71d88b9ce02658dbc6de59e9bd1407f3b98a7b",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 9,
           "path": "signoff/testbench-inventory.json",
-          "content_hash": "sha256:69a248cf381c0897f2c4d4244c6f374c60dfe2d997c034c84c95b7a1d7f8be12",
+          "content_hash": "sha256:c0b2e056fdf02896fda5acc08c71d88b9ce02658dbc6de59e9bd1407f3b98a7b",
           "input_verified": true,
           "summary": "Audited testbench inventory for the published measurement scope: benches, runners, reducers, pins and documented cold-start invocations are committed, hashed and cross-referenced. Establishes shipped benches only: not that any command succeeds, not RF compliance, not overall T1.",
           "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py"
