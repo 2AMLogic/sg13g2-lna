@@ -949,6 +949,7 @@ def _reduced(a, stem) -> dict:
 
 def cmd_ctl_verify_check(a):
     doc = json.loads((Path(a.snapdir) / "qreq_ctl_verify.json").read_text())
+    a.nf_npts = ms.check_nf_npts(doc["nf_npts"])    # the subcommand has no --nf-npts flag
     rows, missing = [], []
     for e in doc["candidates"]:
         feed = e["feed_variant"]
