@@ -1,0 +1,175 @@
+{
+  "shortlisted": "em5_cmim_le0p60",
+  "rule": "all non-noise gates",
+  "recommendation": {
+    "verdict": "NO-GO",
+    "binding": "noise_floor",
+    "failing": [
+      "noise_floor",
+      "le_q_bracket"
+    ],
+    "limit_db": 1.2,
+    "nf290_worst_db": 2.569900206,
+    "nf_budget_left_db": -1.0699002059999998,
+    "nfmin290_worst_db": 1.544796495147075,
+    "bracket_nf290_worst_db": 2.5886508908
+  },
+  "ideal_bound_best_point": "ideal_choke_le0p60",
+  "ideal_bound_gates": {
+    "verdict": "NO-GO",
+    "binding": "noise_match_penalty",
+    "failing": [
+      "noise_match_penalty"
+    ],
+    "limit_db": 1.2,
+    "nf290_worst_db": 1.7629543227,
+    "nf_budget_left_db": -0.26295432269999996,
+    "nfmin290_worst_db": 0.476223829359945
+  },
+  "per_point_gates": {
+    "committed_le1p00": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 3.3352990668,
+      "nf_budget_left_db": -1.8352990668000002,
+      "nfmin290_worst_db": 2.5195059258420507
+    },
+    "ideal_choke_le1p00": {
+      "verdict": "NO-GO",
+      "binding": "noise_match_penalty",
+      "failing": [
+        "noise_match_penalty"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 1.8079666122,
+      "nf_budget_left_db": -0.3079666122,
+      "nfmin290_worst_db": 0.48161357579818465
+    },
+    "em5_cideal_le1p00": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 2.6104287338,
+      "nf_budget_left_db": -1.1104287338,
+      "nfmin290_worst_db": 1.557855391223788
+    },
+    "committed_le0p10": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 3.3166448316,
+      "nf_budget_left_db": -1.8166448316000001,
+      "nfmin290_worst_db": 2.461472665135679
+    },
+    "committed_le0p30": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 3.2889596647,
+      "nf_budget_left_db": -1.7889596647000001,
+      "nfmin290_worst_db": 2.4741923800877177
+    },
+    "committed_le0p60": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 3.293787887,
+      "nf_budget_left_db": -1.7937878870000001,
+      "nfmin290_worst_db": 2.4934645201427865
+    },
+    "em5_cmim_le0p10": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 2.6663010977,
+      "nf_budget_left_db": -1.1663010977,
+      "nfmin290_worst_db": 1.5258141909008403
+    },
+    "em5_cmim_le0p30": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 2.5953786616,
+      "nf_budget_left_db": -1.0953786615999999,
+      "nfmin290_worst_db": 1.5333614077745779
+    },
+    "em5_cmim_le0p60": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 2.569900206,
+      "nf_budget_left_db": -1.0699002059999998,
+      "nfmin290_worst_db": 1.544796495147075
+    },
+    "em5_cmim_le1p00": {
+      "verdict": "NO-GO",
+      "binding": "noise_floor",
+      "failing": [
+        "noise_floor"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 2.6124743676,
+      "nf_budget_left_db": -1.1124743676,
+      "nfmin290_worst_db": 1.560249096816309
+    },
+    "ideal_choke_le0p10": {
+      "verdict": "NO-GO",
+      "binding": "noise_match_penalty",
+      "failing": [
+        "noise_match_penalty"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 1.9832701606,
+      "nf_budget_left_db": -0.48327016060000005,
+      "nfmin290_worst_db": 0.46947468290849775
+    },
+    "ideal_choke_le0p30": {
+      "verdict": "NO-GO",
+      "binding": "noise_match_penalty",
+      "failing": [
+        "noise_match_penalty"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 1.810645437,
+      "nf_budget_left_db": -0.310645437,
+      "nfmin290_worst_db": 0.4721758715367036
+    },
+    "ideal_choke_le0p60": {
+      "verdict": "NO-GO",
+      "binding": "noise_match_penalty",
+      "failing": [
+        "noise_match_penalty"
+      ],
+      "limit_db": 1.2,
+      "nf290_worst_db": 1.7629543227,
+      "nf_budget_left_db": -0.26295432269999996,
+      "nfmin290_worst_db": 0.476223829359945
+    }
+  },
+  "problems": []
+}

@@ -1,0 +1,57 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- matching-network feasibility study, verification deck
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00363847 ic2 0.00363349 idd 0.00441263 pdc 0.00794274
+DC ic1 0.00363847 ic2 0.00363349 ib1 4.95698E-06 vb1 0.843656 ve1 0.00335384 vcasc 0.80608 voutn 1.77213 vb2 1.64543 vbref 0.845325 idd 0.00441263 pdc 0.00794274
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 11
+DAT_WRITTEN bracket_em5_cmim_le0p60_q10ser.inband.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 140
+DAT_WRITTEN bracket_em5_cmim_le0p60_q10ser.stab.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 21
+
+No. of Data Rows : 1
+DAT_WRITTEN bracket_em5_cmim_le0p60_q10ser.nf290.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+GAIN mid 25.0372
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

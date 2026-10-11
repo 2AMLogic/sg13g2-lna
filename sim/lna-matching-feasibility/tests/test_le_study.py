@@ -368,5 +368,129 @@ class Rules(unittest.TestCase):
         self.assertAlmostEqual(s["floor_ideal_le_db"] + parts, 2.55)
 
 
+def committed_le_record() -> str:
+    ids = sorted(p.name[: -len("-le-points.csv")] for p in (EXP / "records").glob("*-le-points.csv"))
+    assert ids, "no committed Le-study record"
+    return ids[-1]
+
+
+class CommittedRecord(unittest.TestCase):
+    """Deterministic replay of the committed #198 record from its retained
+    data, and the declared policy re-checked on that evidence."""
+
+    RID = committed_le_record()
+    SNAP = EXP / "netlist-snapshots" / RID
+    CORN = EXP / "corners" / RID
+
+    def _copy(self, td):
+        corn, snap = Path(td, "corners"), Path(td, "snap")
+        shutil.copytree(self.CORN, corn)
+        shutil.copytree(self.SNAP, snap)
+        return snap, corn
+
+    def test_reduce_and_control_replay_byte_for_byte(self):
+        rec = EXP / "records"
+        for _ in range(2):
+            with tempfile.TemporaryDirectory() as td:
+                snap, corn = self._copy(td)
+                self.assertEqual(ls.main(["control-check", "--snapdir", str(snap), "--corners", str(corn),
+                                          "--csv", f"{td}/c.csv"]), 0)
+                self.assertEqual(Path(td, "c.csv").read_bytes(), (rec / f"{self.RID}-le-control.csv").read_bytes())
+                self.assertEqual(ls.main(["reduce", "--snapdir", str(snap), "--corners", str(corn),
+                                          "--csv", f"{td}/p.csv", "--control-csv", f"{td}/c.csv",
+                                          "--markdown", f"{td}/h.md"]), 0)
+                self.assertEqual(Path(td, "p.csv").read_bytes(), (rec / f"{self.RID}-le-points.csv").read_bytes())
+                self.assertEqual(Path(td, "h.md").read_bytes(), (self.CORN / "le_headlines.md").read_bytes())
+                self.assertEqual((corn / "recommendation.json").read_bytes(),
+                                 (self.CORN / "recommendation.json").read_bytes())
+        self.assertIn((self.CORN / "le_headlines.md").read_text(), (rec / f"{self.RID}.md").read_text())
+
+    def test_synthesis_replays_from_retained_characterizations(self):
+        doc = json.loads((self.SNAP / "le_match_plan.json").read_text())
+        plan = json.loads((self.SNAP / "le_plan.json").read_text())
+        self.assertEqual(plan["points"], ls.study_points())
+        self.assertEqual(plan["prior_feed_plan_sha256"], ls.sha256(ls.PRIOR_SNAP / "feed_plan.json"))
+        self.assertEqual(doc["rejected"], [])
+        self.assertEqual(len(doc["candidates"]), len(plan["points"]))
+        for e in doc["candidates"]:
+            p = next(x for x in plan["points"] if x["id"] == e["point"])
+            got, _ = ls.solve_point(self.CORN / "charset" / p["id"], p)
+            for k in ("input_values", "zs_target"):
+                for x, y in zip(got[k], e[k]):
+                    self.assertTrue(math.isclose(x, y, rel_tol=1e-12), (p["id"], k))
+            for k in ("cp_out", "cs_out"):
+                self.assertTrue(math.isclose(got[k], e[k], rel_tol=1e-12), (p["id"], k))
+
+    def test_every_retained_deck_targets_its_declared_le(self):
+        plan = json.loads((self.SNAP / "le_plan.json").read_text())
+        for p in plan["points"]:
+            ls.check_le_deck((self.SNAP / f"char_{p['id']}.spice").read_text(), p["le_nh"], "char")
+            ls.check_le_deck((self.SNAP / f"verify_{p['id']}.spice").read_text(), p["le_nh"], "verify", ls.Q_LE)
+        sl = json.loads((self.SNAP / "le_shortlist.json").read_text())
+        self.assertEqual(len(sl["brackets"]), 2)
+        for b in sl["brackets"]:
+            ls.check_le_deck((self.SNAP / f"{b['stem']}.spice").read_text(), b["le_nh"], "verify",
+                             b["le_q"], b["le_loss"])
+        n = len(list(self.SNAP.glob("*.spice")))
+        self.assertEqual(n, ls.planned_decks())
+        self.assertLessEqual(n, ls.DECK_BUDGET)
+
+    def test_evidence_honors_the_declared_rules(self):
+        doc, pts, base = ls.collect(self.SNAP, self.CORN)
+        sl = json.loads((self.SNAP / "le_shortlist.json").read_text())
+        self.assertEqual(list(ls.shortlist(pts)), [sl["shortlisted"], sl["rule"]])
+        for k, p in pts.items():
+            self.assertTrue(p["scan"]["convergence"]["normal"], k)
+            self.assertTrue(p["match"]["convergence"]["normal"], k)
+        # the 1 nH finite-feed point reproduces the #193 em5_cmim scan floor (ideal Le) to the printed digits
+        prior = json.loads((ls.PRIOR_CORNERS / "scan_summary.json").read_text())["variants"]
+        for feed in ("committed", "ideal_choke", "em5_cmim"):
+            got = pts[ls.point_id(feed, 1.0)]["entry"]["char"]["ideal"]
+            self.assertAlmostEqual(got["nfmin290_mid_db"], prior[feed]["nfmin290_mid_db"], delta=5e-4)
+        rj = json.loads((self.CORN / "recommendation.json").read_text())
+        self.assertEqual(rj["shortlisted"], sl["shortlisted"])
+        self.assertIn(rj["recommendation"]["verdict"], ("GO", "NO-GO"))
+
+    def test_missing_or_malformed_outputs_rejected(self):
+        sl = json.loads((self.SNAP / "le_shortlist.json").read_text())
+        stem = f"verify_{sl['shortlisted']}"
+        for victim in (f"{stem}.inband.dat", f"{stem}.stab.dat", f"{stem}.nf290.dat", f"{stem}.log"):
+            with self.subTest(missing=victim), tempfile.TemporaryDirectory() as td:
+                snap, corn = self._copy(td)
+                (corn / victim).unlink()
+                with self.assertRaises(FileNotFoundError):
+                    ls.collect(snap, corn)
+        with self.subTest("no-dc-audit"), tempfile.TemporaryDirectory() as td:
+            snap, corn = self._copy(td)
+            p = corn / f"{stem}.log"
+            p.write_text(re.sub(r"^DC .*\n", "", p.read_text(), flags=re.M))
+            with self.assertRaises(ValueError):
+                ls.collect(snap, corn)
+        with self.subTest("nonfinite"), tempfile.TemporaryDirectory() as td:
+            snap, corn = self._copy(td)
+            p = corn / f"{stem}.inband.dat"
+            rows = p.read_text().splitlines()
+            rows[4] = rows[4].replace(rows[4].split()[1], "nan", 1)
+            p.write_text("\n".join(rows) + "\n")
+            with self.assertRaises(ValueError):
+                ls.collect(snap, corn)
+        with self.subTest("fallback-excluded"), tempfile.TemporaryDirectory() as td:
+            snap, corn = self._copy(td)
+            p = corn / f"{stem}.log"
+            p.write_text(p.read_text() + "\nNote: Transient op started\n")
+            _, pts, _ = ls.collect(snap, corn)
+            self.assertNotEqual(ls.shortlist(pts)[0], sl["shortlisted"])
+        with self.subTest("control-drift"), tempfile.TemporaryDirectory() as td:
+            snap, corn = self._copy(td)
+            p = corn / f"verify_{ls.point_id('committed', 1.0)}.nf290.dat"
+            rows = p.read_text().splitlines()
+            mid = 1 + (ms.N_NF_DEFAULT - 1) // 2                     # header + band-centre sample
+            f, v = (float(x) for x in rows[mid].split())
+            rows[mid] = f"{f:.10e} {v + 0.01:.10e}"                    # 10 x the declared tolerance
+            p.write_text("\n".join(rows) + "\n")
+            self.assertEqual(ls.main(["control-check", "--snapdir", str(snap), "--corners", str(corn),
+                                      "--csv", f"{td}/c.csv"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

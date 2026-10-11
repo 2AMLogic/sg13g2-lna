@@ -1204,6 +1204,75 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-matching-feasibility/le_study.py",
+        "sim/lna-matching-feasibility/matching_solver.py",
+        "sim/lna-matching-feasibility/feed_study.py"
+      ],
+      "bench_templates": [
+        "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl"
+      ],
+      "classification": "nominal-exploration",
+      "cold_start": [
+        {
+          "command": "MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_le_study.sh",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-matching-feasibility/le_study.py declare",
+          "doc": "sim/lna-matching-feasibility/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-matching-feasibility/README.md",
+        "sim/lna-matching-feasibility/le-study-declaration.md"
+      ],
+      "dut": "present",
+      "family": "lna-matching-feasibility",
+      "id": "matching-20261011-101454-3ec590d",
+      "limitations": "One PVT cell only (hbt_typ / mos_tt, 27 C, 1.80 V): exploration, not a result and not a target-spec claim. Le loss is an assumed Q (no extracted Le model). Stability gate stays with issue #27.",
+      "record_ids": [
+        "20261011-101454-3ec590d"
+      ],
+      "reducers": [
+        "sim/lna-matching-feasibility/le_study.py"
+      ],
+      "replay_checks": [
+        "sim/lna-matching-feasibility/tests/test_le_study.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-matching-feasibility/run_le_study.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Joint emitter degeneration (Le 0.1-1.0 nH) and re-synthesized lp_noise input match on the committed, finite em5_cmim and ideal-choke feeds (issue #198), declared before the run in le-study-declaration.md.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
