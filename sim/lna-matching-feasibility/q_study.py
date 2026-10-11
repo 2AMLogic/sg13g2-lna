@@ -1034,11 +1034,26 @@ ISO_COLS = ["arm", "role", "rpar_ohm", "status", "reason", "z_tank_mid_ohm", "z_
             "vbe1_v", "ve1_mv", "pdc_mw", "dc_flags", "char_convergence"]
 
 
+# Corrected (issue #207) isolation attribution. Only arms whose feed IS the
+# retained finite tank (or a parallel-loss proxy of it) have a measured |Ztank|.
+# The ideal 1 uH choke is a different feed circuit: it carries NO finite-tank
+# measurement and is never a member of the measured finite isolation curve.
+ISO_COLS_CORRECTED = ISO_COLS + ["source", "isolation_source", "isolation_available",
+                                 "finite_curve_member"]
+ISO_SRC_TANK = "measured_tank_probe(tank_y.dat)"
+ISO_SRC_NONE = "none(ideal_1uH_choke_diagnostic_bound)"
+SRC_FRESH_CTL = "fresh_char_ctl_ideal_choke_le0p60"
+SRC_RETAINED_ANCHOR = "retained_198_char(no_new_deck)"
+ARM_CHOKE_FRESH = "ideal_choke_ctl_fresh"
+ARM_CHOKE_RETAINED = "ideal_choke_retained_anchor"
+
+
 def _g(x, nd=6):
     return "" if x is None else f"{x:.{nd}g}"
 
 
 def cmd_reduce(a):
+    corrected = getattr(a, "attribution", "corrected") == "corrected"
     problems = []
     snap, corners = Path(a.snapdir), Path(a.corners)
     mapdoc = json.loads((snap / "qreq_map.json").read_text())
@@ -1055,13 +1070,24 @@ def cmd_reduce(a):
         flags = fs.dc_flags(audit, ctl_audit)
         conv = ms.classify_convergence(corners / "charset" / pid / "char.log")
         cs = ls.char_summary(data)
-        y = probe["ctl"]
-        iso_rows.append({"arm": feed, "role": ARMS[feed], "rpar_ohm": None, "status": "verified",
-                         "z_tank_mid_ohm": abs(1 / y[ms.MID]),
-                         "z_tank_bandmin_ohm": min(abs(1 / x) for x in y),
-                         "cs": cs, "audit": audit, "dc_flags": flags, "conv": conv,
-                         "dic1": audit["ic1"] / ctl_audit["ic1"] - 1.0,
-                         "control": True})
+        row = {"arm": feed, "role": ARMS[feed], "rpar_ohm": None, "status": "verified",
+               "z_tank_mid_ohm": None, "z_tank_bandmin_ohm": None,
+               "cs": cs, "audit": audit, "dc_flags": flags, "conv": conv,
+               "dic1": audit["ic1"] / ctl_audit["ic1"] - 1.0,
+               "control": True}
+        if corrected and feed != "em5_cmim":
+            # ideal-choke control: different feed circuit, no finite-tank measurement
+            row.update(arm=ARM_CHOKE_FRESH, role="diagnostic bound (fresh #200 control char)",
+                       source=SRC_FRESH_CTL, isolation_source=ISO_SRC_NONE,
+                       isolation_available=False, finite_curve_member=False)
+        else:
+            y = probe["ctl"]
+            row.update(z_tank_mid_ohm=abs(1 / y[ms.MID]),
+                       z_tank_bandmin_ohm=min(abs(1 / x) for x in y),
+                       source="fresh_char_ctl_" + feed + "_le0p60",
+                       isolation_source=ISO_SRC_TANK, isolation_available=True,
+                       finite_curve_member=True)
+        iso_rows.append(row)
     for r in RPAR_OHM:
         tag = rpar_tag(r)
         cdir = corners / "charset" / f"bracket_{tag}"
@@ -1078,23 +1104,33 @@ def cmd_reduce(a):
                              "z_tank_bandmin_ohm": min(abs(1 / x) for x in y),
                              "cs": cs, "audit": audit, "dc_flags": flags, "conv": conv,
                              "dic1": audit["ic1"] / ctl_audit["ic1"] - 1.0,
-                             "control": False})
+                             "control": False, "source": f"fresh_char_bracket_{tag}",
+                             "isolation_source": ISO_SRC_TANK, "isolation_available": True,
+                             "finite_curve_member": True})
         except (OSError, ValueError) as ex:
             iso_rows.append({"arm": f"bracket_{tag}", "role": "hypothetical requirement proxy",
                              "rpar_ohm": r, "status": "invalid", "reason": str(ex),
-                             "control": False})
+                             "control": False, "source": f"fresh_char_bracket_{tag}",
+                             "isolation_source": ISO_SRC_TANK, "isolation_available": False,
+                             "finite_curve_member": False})
             problems.append(f"bracket_{tag}: unusable ({ex})")
     # ideal-choke anchor from the RETAINED record (diagnostic, no new deck)
     ck = ls.char_summary(retained_char("ideal_choke"))
-    iso_rows.append({"arm": "ideal_choke", "role": "diagnostic bound (retained #198, no new deck)",
+    iso_rows.append({"arm": ARM_CHOKE_RETAINED if corrected else "ideal_choke",
+                     "role": "diagnostic bound (retained #198, no new deck)",
                      "rpar_ohm": None, "status": "retained", "cs": ck, "control": False,
-                     "z_tank_mid_ohm": None, "z_tank_bandmin_ohm": None})
+                     "z_tank_mid_ohm": None, "z_tank_bandmin_ohm": None,
+                     "source": SRC_RETAINED_ANCHOR, "isolation_source": ISO_SRC_NONE,
+                     "isolation_available": False, "finite_curve_member": False})
 
     with open(a.isolation_csv, "w", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
-        w.writerow(ISO_COLS)
+        w.writerow(ISO_COLS_CORRECTED if corrected else ISO_COLS)
         for r in iso_rows:
             cs = r.get("cs", {})
+            extra = ([r["source"], r["isolation_source"],
+                      "yes" if r["isolation_available"] else "no",
+                      "yes" if r["finite_curve_member"] else "no"] if corrected else [])
             w.writerow([r["arm"], r["role"], _g(r.get("rpar_ohm")), r["status"], r.get("reason", ""),
                         _g(r.get("z_tank_mid_ohm")), _g(r.get("z_tank_bandmin_ohm")),
                         _g(cs.get("ideal", {}).get("nfmin290_mid_db")),
@@ -1108,7 +1144,7 @@ def cmd_reduce(a):
                         _g(r["audit"]["ve1"] * 1e3) if "audit" in r else "",
                         _g(r["audit"]["pdc"] * 1e3) if "audit" in r else "",
                         ";".join(r.get("dc_flags", [])) or "none",
-                        "normal" if r.get("conv", {}).get("normal", True) else "FLAGGED"])
+                        "normal" if r.get("conv", {}).get("normal", True) else "FLAGGED"] + extra)
 
     # boundary verification vs prediction
     bnd = []
@@ -1173,13 +1209,34 @@ def cmd_reduce(a):
                            "nfmin290_q10_worst_db": r.get("cs", {}).get("q10", {}).get("nfmin290_worst_db")}
                           for r in iso_rows],
         "note": "sampled crossings only; no interpolation between sampled isolations"}
+    if corrected:
+        def _pt(r):
+            return {"arm": r["arm"], "role": r["role"], "source": r["source"],
+                    "isolation_source": r["isolation_source"],
+                    "isolation_available": r["isolation_available"],
+                    "rpar_ohm": r.get("rpar_ohm"),
+                    "z_tank_mid_ohm": r.get("z_tank_mid_ohm"),
+                    "z_tank_bandmin_ohm": r.get("z_tank_bandmin_ohm"),
+                    "nfmin290_q10_worst_db": r.get("cs", {}).get("q10", {}).get("nfmin290_worst_db")}
+        req["isolation"]["sampled_curve"] = [_pt(r) for r in iso_rows if r["finite_curve_member"]]
+        req["isolation"]["diagnostic_bound_points"] = [
+            _pt(r) for r in iso_rows if not r["finite_curve_member"] and r["status"] != "invalid"]
+        req["isolation"]["attribution"] = (
+            "corrected (issue #207): sampled_curve holds only finite-feed arms with a measured "
+            "tank isolation; the ideal 1 uH choke is a diagnostic bound with no finite-tank "
+            "measurement and is listed separately; the fresh control and the retained #198 anchor "
+            "are distinct sources")
+        req["isolation"]["note"] += "; ideal-choke points are diagnostic bounds, not curve points"
 
     rj = {"generator": "sim/lna-matching-feasibility/q_study.py reduce",
           "campaign": rec, "requirements": req, "boundary": bnd,
           "probe_control": {"z_mid_measured": abs(1 / probe["ctl"][ms.MID]),
                             "z_mid_derived": abs(1 / derived[ms.MID])},
           "problems": problems}
-    _wr(corners / "recommendation.json", json.dumps(rj, indent=2, default=str) + "\n")
+    if corrected:
+        rj["attribution"] = "corrected (issue #207)"
+    _wr(getattr(a, "recommendation_json", None) or corners / "recommendation.json",
+        json.dumps(rj, indent=2, default=str) + "\n")
 
     with open(a.map_csv, "w", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
@@ -1199,7 +1256,8 @@ def cmd_reduce(a):
                         _g(r.get("pred_s22_mid_db")),
                         ("yes" if r.get("pred_nf290_worst_db") <= THRESH_ROW_DB else "no") if solved else "",
                         ("yes" if r.get("pred_nf290_worst_db") <= THRESH_PLAN_DB else "no") if solved else ""])
-    _wr(a.markdown, markdown(mapdoc, iso_rows, bnd, req, rec, probe, derived, problems))
+    _wr(a.markdown, markdown(mapdoc, iso_rows, bnd, req, rec, probe, derived, problems,
+                             corrected=corrected))
     print(f"reduce: campaign {rec['verdict']} (binding: {rec['binding']}); {len(problems)} problem(s)")
     return 1 if problems else 0
 
@@ -1208,7 +1266,7 @@ def _fz(z):
     return f"{z[0]:.1f}{z[1]:+.1f}j"
 
 
-def markdown(mapdoc, iso_rows, bnd, req, rec, probe, derived, problems) -> str:
+def markdown(mapdoc, iso_rows, bnd, req, rec, probe, derived, problems, corrected=False) -> str:
     L = ["#### Input-Q requirements map (PREDICTIONS; retained #198 characterization, "
          "Le = 0.6 nH, Le/Lc/output loss fixed at the retained Q = 10 convention)", "",
          "| Arm | Input Q | Lb / Cp | pred NF290 mid / worst (dB) | pred S11 mid / worst (dB) | "
@@ -1237,19 +1295,27 @@ def markdown(mapdoc, iso_rows, bnd, req, rec, probe, derived, problems) -> str:
     L += ["", "#### Feed-isolation bracket (measured; brackets are HYPOTHETICAL REQUIREMENT "
           "PROXIES, the retained EM model is the control)", "",
           "| Arm | Rqbr (Ohm) | isolation \\|Ztank\\| mid / band-min (Ohm) | NFmin@290 Q10 mid / worst "
-          "(dB) | IC1 (mA) | dIC1 vs control | DC flags |", "|---|---|---|---|---|---|---|"]
+          "(dB) | IC1 (mA) | dIC1 vs control | DC flags |"
+          + (" Role | Source | Isolation source | In finite curve |" if corrected else ""),
+          "|---|---|---|---|---|---|---|" + ("---|---|---|---|" if corrected else "")]
     for r in iso_rows:
         if r["status"] == "invalid":
-            L.append(f"| `{r['arm']}` | {r.get('rpar_ohm') or ''} | INVALID: {r['reason']} | | | | |")
+            L.append(f"| `{r['arm']}` | {r.get('rpar_ohm') or ''} | INVALID: {r['reason']} | | | | |"
+                     + (f" {r['role']} | `{r['source']}` | {r['isolation_source']} | no |"
+                        if corrected else ""))
             continue
         cs = r["cs"]
         ic = f"{r['audit']['ic1'] * 1e3:.5f}" if "audit" in r else "(retained)"
         dic = f"{r['dic1'] * 100:+.3f} %" if "dic1" in r else ""
         iso = (f"{r['z_tank_mid_ohm']:.1f} / {r['z_tank_bandmin_ohm']:.1f}"
-               if r.get("z_tank_mid_ohm") is not None else "infinite (ideal 1 uH)")
+               if r.get("z_tank_mid_ohm") is not None
+               else ("not measured (ideal 1 uH choke, diagnostic bound)" if corrected
+                     else "infinite (ideal 1 uH)"))
         L.append(f"| `{r['arm']}` | {r.get('rpar_ohm') or ''} | {iso} | "
                  f"{cs['q10']['nfmin290_mid_db']:.3f} / **{cs['q10']['nfmin290_worst_db']:.3f}** | "
-                 f"{ic} | {dic} | {'; '.join(r.get('dc_flags', [])) or 'none'} |")
+                 f"{ic} | {dic} | {'; '.join(r.get('dc_flags', [])) or 'none'} |"
+                 + (f" {r['role']} | `{r['source']}` | {r['isolation_source']} | "
+                    f"{'yes' if r['finite_curve_member'] else 'no'} |" if corrected else ""))
     L += ["", f"Probe control arm vs retained-derived tank: |Z| mid "
           f"{abs(1 / probe['ctl'][ms.MID]):.1f} Ohm measured vs "
           f"{abs(1 / derived[ms.MID]):.1f} Ohm derived (declared tolerance "
@@ -1336,6 +1402,10 @@ def main(argv=None):
     r.add_argument("--map-csv", required=True)
     r.add_argument("--markdown", required=True)
     r.add_argument("--nf-npts", type=int, default=None)
+    r.add_argument("--attribution", choices=("corrected", "legacy"), default="corrected",
+                   help="legacy reproduces the pre-#207 shipped artifacts byte for byte")
+    r.add_argument("--recommendation-json", default=None,
+                   help="write recommendation.json here instead of <corners>/recommendation.json")
     a = ap.parse_args(argv)
     if a.cmd in ("ctl-verify-gen", "qmap", "reduce"):
         a.nf_npts = ms.check_nf_npts(a.nf_npts if a.nf_npts is not None else retained_nf_npts())

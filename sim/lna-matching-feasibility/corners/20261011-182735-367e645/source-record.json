@@ -1,0 +1,6 @@
+{
+  "corrects_record": "20261011-164702-455c67d",
+  "issue": 207,
+  "derivation": "q_study.py reduce --attribution corrected",
+  "simulation_rerun": false
+}

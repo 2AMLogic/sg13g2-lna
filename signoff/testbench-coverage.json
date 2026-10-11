@@ -1392,7 +1392,8 @@
         "20261011-164511-6750fa0",
         "20261011-164543-dc0038d",
         "20261011-164618-8e55635",
-        "20261011-164702-455c67d"
+        "20261011-164702-455c67d",
+        "20261011-182735-367e645"
       ],
       "reducers": [
         "sim/lna-matching-feasibility/q_study.py"
@@ -1402,7 +1403,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_q_study.sh"
+        "sim/lna-matching-feasibility/run_q_study.sh",
+        "sim/lna-matching-feasibility/run_q_study_correction.sh"
       ],
       "shared": [
         "runner-common",
@@ -1411,7 +1413,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198.",
+      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198. Record 20261011-182735-367e645 (issue #207) is a derivation-only correction of the ideal-choke isolation attribution in 20261011-164702-455c67d (no simulation; the affected record is preserved).",
       "tool_pins": {
         "ngspice": "ngspice >= 46 (OSDI v0.4)",
         "osdi_models": true,
