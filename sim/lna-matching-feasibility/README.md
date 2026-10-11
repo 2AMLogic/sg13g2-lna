@@ -542,6 +542,16 @@ is a divider output, not Ytank. No bracket, map, boundary or verification deck r
 requirements verdict; the recommendation stays the #198 NO-GO. A corrected probe needs a new declaration
 revision before any re-run (follow-up issue). The record is append-only evidence of the stopped run.
 
+**Reproduce the stopped run** (needs the pinned PDK and ngspice >= 46; with the current declaration the
+runner stops at `control-check` again, by design, and produces no requirements result):
+
+```bash
+export PDK_ROOT=/path/to/ihp-open-pdk PDK=ihp-sg13g2
+MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_q_study.sh
+python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v   # PDK-free
+python3 -I sim/lna-matching-feasibility/q_study.py declare | diff - sim/lna-matching-feasibility/q-study-declaration.md
+```
+
 ## Method
 
 1. **Characterization** (`char.spice`, one ngspice run). For each Le-loss
