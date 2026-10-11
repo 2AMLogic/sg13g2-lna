@@ -26,6 +26,7 @@ designed network instead of a guess.
 | [`20261010-233800-d1312cc`](records/20261010-233800-d1312cc.md) | Issue [#193](https://github.com/2AMLogic/sg13g2-lna/issues/193): finite resonant base-bias feed vs the ideal-choke bound. 8 feed variants (committed, ideal choke, EM spiral + tuning C tanks with ideal / PDK `cap_cmim` / bracketed parasitics), DC audit, NFmin and 50-ohm NF at 290 K, broadband mu/k/\|Delta\|, verified re-synthesized match for 3 feeds, go/no-go. Tables: [feeds](records/20261010-233800-d1312cc-feeds.csv), [band](records/20261010-233800-d1312cc-feeds-band.csv), [match](records/20261010-233800-d1312cc-match.csv) |
 | [`20261011-101454-3ec590d`](records/20261011-101454-3ec590d.md) | Issue [#198](https://github.com/2AMLogic/sg13g2-lna/issues/198): joint emitter degeneration (Le = 0.1 / 0.3 / 0.6 / 1.0 nH) and re-synthesized `lp_noise` input match on the committed feed, the finite `em5_cmim` feed and the ideal-choke bound; 1 nH controls reproduce #193 exactly; worse-Q and series-loss brackets; go/no-go. Tables: [points](records/20261011-101454-3ec590d-le-points.csv), [controls](records/20261011-101454-3ec590d-le-control.csv) |
 | [`20261011-164702-455c67d`](records/20261011-164702-455c67d.md) | Issue [#200](https://github.com/2AMLogic/sg13g2-lna/issues/200) / [#202](https://github.com/2AMLogic/sg13g2-lna/issues/202): input-Q / feed-isolation requirements map (voltage-driven tank probe, declaration revision 2); complete fresh run with all controls passing. Stopped run `20261011-120758-9abe609` and three aborted tooling runs retained as evidence. Tables: [qmap](records/20261011-164702-455c67d-qmap.csv), [isolation](records/20261011-164702-455c67d-isolation.csv) |
+| [`20261011-182735-367e645`](records/20261011-182735-367e645.md) | Issue [#207](https://github.com/2AMLogic/sg13g2-lna/issues/207): derivation-only CORRECTION of the ideal-choke isolation attribution in `20261011-164702-455c67d` (which is preserved unchanged). No simulation; re-reduced from the retained raw inputs by `run_q_study_correction.sh`. Table: [isolation (corrected)](records/20261011-182735-367e645-isolation.csv) |
 
 ## Findings (record `20261010-201010-6aca84c`, nominal cell)
 
@@ -571,6 +572,17 @@ no ratified-row claim, no interpolated feasibility claim.
   isolation reaches the 1.2 dB limit; only the ideal-choke bound (0.476 dB) does. A passive add-on can only
   lower isolation, so isolation above the retained model is sampled only by that bound.
 - Campaign verdict: NO-GO (binding: noise_floor), unchanged from #198.
+- **Correction (issue #207).** The isolation table of `20261011-164702-455c67d` (and its
+  `recommendation.json` `sampled_curve`) wrongly gave the fresh ideal-choke control the finite tank's
+  797.9 / 733.0 Ohm isolation, and listed the retained #198 ideal-choke anchor as a second, indistinguishable
+  `ideal_choke` row. The unsupported pairing "797.9 Ohm with NFmin@290 0.476 dB" must not be used: the
+  finite feed at that isolation is 1.545 dB. Those bytes are append-only and unchanged; the corrected view is
+  record `20261011-182735-367e645` (derived from the retained raw inputs, no ngspice rerun). Only `em5_cmim`
+  and the bracket proxies carry measured isolation and form the finite curve; the ideal 1 uH choke is a
+  diagnostic bound with isolation not measured (`ideal_choke_ctl_fresh` vs `ideal_choke_retained_anchor`,
+  distinct sources, `finite_curve_member = no`). `q_study.py reduce` defaults to the corrected attribution;
+  `--attribution legacy` reproduces the historical artifacts byte for byte (used by the replay test).
+  Finite-feed values, threshold maps and the NO-GO verdict are unchanged.
 - Diagnostic only: the lossless ideal-choke boundary point shows broadband mu min 0.99947 (< 1); it cannot
   enter any frontier or verdict.
 
@@ -580,6 +592,7 @@ no ratified-row claim, no interpolated feasibility claim.
 export PDK_ROOT=/path/to/ihp-open-pdk PDK=ihp-sg13g2
 MATCH_NGSPICE=/path/to/ngspice-46/bin/ngspice sim/lna-matching-feasibility/run_q_study.sh
 python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v   # PDK-free
+sim/lna-matching-feasibility/run_q_study_correction.sh   # #207: new correction record, no simulation
 python3 -I sim/lna-matching-feasibility/q_study.py declare | diff - sim/lna-matching-feasibility/q-study-declaration.md
 ```
 

@@ -521,7 +521,8 @@ class CommittedRecord(unittest.TestCase):
                 self.assertEqual(qs.main(["reduce", "--snapdir", str(s2), "--corners", str(c2),
                                           "--isolation-csv", f"{td}/iso.csv",
                                           "--map-csv", f"{td}/map.csv",
-                                          "--markdown", f"{td}/h.md"]), 0)
+                                          "--markdown", f"{td}/h.md",
+                                          "--attribution", "legacy"]), 0)
                 self.assertEqual(Path(td, "map.csv").read_bytes(), (rec / f"{rid}-qmap.csv").read_bytes())
                 self.assertEqual(Path(td, "iso.csv").read_bytes(), (rec / f"{rid}-isolation.csv").read_bytes())
                 self.assertEqual(Path(td, "h.md").read_bytes(), (corn / "qreq_headlines.md").read_bytes())
@@ -564,6 +565,127 @@ class CommittedRecord(unittest.TestCase):
         for r in qs.RPAR_OHM:
             text = (snap / f"char_bracket_{qs.rpar_tag(r)}.spice").read_text()
             qs.check_bracket_deck(text, r)
+
+
+SRC_RID = "20261011-164702-455c67d"
+
+
+def correction_records() -> list:
+    return sorted(p.parent.name for p in (EXP / "corners").glob("*/source-record.json"))
+
+
+class IsolationAttribution(unittest.TestCase):
+    """Issue #207: the ideal-choke diagnostic never carries the finite tank's
+    measured isolation. Runs the corrected reducer on the retained raw inputs."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.td = tempfile.TemporaryDirectory()
+        t = Path(cls.td.name)
+        cls.argv = ["reduce", "--snapdir", str(EXP / "netlist-snapshots" / SRC_RID),
+                    "--corners", str(EXP / "corners" / SRC_RID),
+                    "--isolation-csv", str(t / "iso.csv"), "--map-csv", str(t / "map.csv"),
+                    "--markdown", str(t / "h.md"), "--recommendation-json", str(t / "rec.json"),
+                    "--attribution", "corrected"]
+        assert qs.main(cls.argv) == 0
+        cls.csv = list(__import__("csv").DictReader(open(t / "iso.csv")))
+        cls.rj = json.loads((t / "rec.json").read_text())
+        cls.md = (t / "h.md").read_text()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    def test_ideal_choke_never_paired_with_finite_tank_measurement(self):
+        finite = next(r for r in self.csv if r["arm"] == "em5_cmim")
+        self.assertAlmostEqual(float(finite["z_tank_mid_ohm"]), 797.935, places=2)
+        chokes = [r for r in self.csv if r["arm"].startswith("ideal_choke")]
+        self.assertEqual(len(chokes), 2)
+        for r in chokes:
+            self.assertEqual(r["z_tank_mid_ohm"], "")
+            self.assertEqual(r["z_tank_bandmin_ohm"], "")
+            self.assertEqual(r["isolation_available"], "no")
+            self.assertEqual(r["finite_curve_member"], "no")
+            self.assertTrue(r["isolation_source"].startswith("none("))
+        for pt in self.rj["requirements"]["isolation"]["sampled_curve"]:
+            self.assertFalse(pt["arm"].startswith("ideal_choke"))
+            self.assertTrue(pt["isolation_available"])
+            self.assertIsNotNone(pt["z_tank_mid_ohm"])
+        for pt in self.rj["requirements"]["isolation"]["diagnostic_bound_points"]:
+            self.assertIsNone(pt["z_tank_mid_ohm"])
+            self.assertFalse(pt["isolation_available"])
+
+    def test_fresh_and_retained_diagnostics_are_distinguishable(self):
+        chokes = [r for r in self.csv if r["arm"].startswith("ideal_choke")]
+        self.assertEqual(len({r["arm"] for r in chokes}), 2)
+        self.assertEqual(len({r["source"] for r in chokes}), 2)
+        self.assertEqual(len({r["arm"] for r in self.csv}), len(self.csv))
+        self.assertEqual(len({r["source"] for r in self.csv}), len(self.csv))
+
+    def test_csv_markdown_json_agree(self):
+        curve = [p["arm"] for p in self.rj["requirements"]["isolation"]["sampled_curve"]]
+        self.assertEqual(curve, [r["arm"] for r in self.csv if r["finite_curve_member"] == "yes"])
+        self.assertEqual(curve, ["em5_cmim", "bracket_r400", "bracket_r200", "bracket_r100"])
+        diag = [p["arm"] for p in self.rj["requirements"]["isolation"]["diagnostic_bound_points"]]
+        self.assertEqual(diag, [r["arm"] for r in self.csv if r["finite_curve_member"] == "no"])
+        by_arm = {p["arm"]: p for k in ("sampled_curve", "diagnostic_bound_points")
+                  for p in self.rj["requirements"]["isolation"][k]}
+        for r in self.csv:
+            p = by_arm[r["arm"]]
+            self.assertEqual(p["role"], r["role"])
+            self.assertEqual(p["source"], r["source"])
+            self.assertEqual(p["isolation_source"], r["isolation_source"])
+            self.assertEqual(p["isolation_available"], r["isolation_available"] == "yes")
+            row = next(l for l in self.md.split("#### Feed-isolation bracket")[1].splitlines()
+                       if l.startswith(f"| `{r['arm']}` |"))
+            self.assertIn(f"`{r['source']}`", row)
+            self.assertIn(r["isolation_source"], row)
+            self.assertIn(f"| {'yes' if r['finite_curve_member'] == 'yes' else 'no'} |", row)
+            self.assertEqual("not measured" in row, r["isolation_available"] == "no")
+
+    def test_finite_values_and_verdict_unchanged(self):
+        old = list(__import__("csv").DictReader(
+            open(EXP / "records" / f"{SRC_RID}-isolation.csv")))
+        old_by = {}
+        for r in old:
+            old_by.setdefault(r["arm"], r)
+        for r in self.csv:
+            if r["finite_curve_member"] == "yes":
+                o = old_by[r["arm"]]
+                for k in o:
+                    self.assertEqual(r[k], o[k], (r["arm"], k))
+        old_rj = json.loads((EXP / "corners" / SRC_RID / "recommendation.json").read_text())
+        self.assertEqual(self.rj["campaign"], old_rj["campaign"])
+        self.assertEqual(self.rj["campaign"]["verdict"], "NO-GO")
+        self.assertEqual(self.rj["boundary"], old_rj["boundary"])
+        for feed in qs.ARMS:
+            self.assertEqual(self.rj["requirements"][feed], old_rj["requirements"][feed])
+
+    def test_committed_correction_records_replay(self):
+        recs = correction_records()
+        if not recs:
+            self.skipTest("the #207 correction record has not been generated yet")
+        for rid in recs:
+            corn = EXP / "corners" / rid
+            src = json.loads((corn / "source-record.json").read_text())["corrects_record"]
+            self.assertTrue((EXP / "records" / f"{src}.md").exists())
+            self.assertIn(src, (EXP / "records" / f"{rid}.md").read_text())
+            with tempfile.TemporaryDirectory() as td:
+                t = Path(td)
+                self.assertEqual(qs.main(
+                    ["reduce", "--snapdir", str(EXP / "netlist-snapshots" / src),
+                     "--corners", str(EXP / "corners" / src),
+                     "--isolation-csv", str(t / "iso.csv"), "--map-csv", str(t / "map.csv"),
+                     "--markdown", str(t / "h.md"), "--recommendation-json", str(t / "rec.json")]), 0)
+                self.assertEqual((t / "iso.csv").read_bytes(),
+                                 (EXP / "records" / f"{rid}-isolation.csv").read_bytes())
+                self.assertEqual((t / "h.md").read_bytes(), (corn / "qreq_headlines.md").read_bytes())
+                self.assertEqual((t / "rec.json").read_bytes(), (corn / "recommendation.json").read_bytes())
+                self.assertEqual((t / "map.csv").read_bytes(),
+                                 (EXP / "records" / f"{src}-qmap.csv").read_bytes())
+            self.assertIn((corn / "qreq_headlines.md").read_text().split("Probe control arm")[0]
+                          .split("#### Feed-isolation bracket")[1][:200],
+                          (EXP / "records" / f"{rid}.md").read_text())
 
 
 if __name__ == "__main__":

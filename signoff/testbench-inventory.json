@@ -1840,6 +1840,21 @@
             "sim/lna-matching-feasibility/records/20261011-164702-455c67d.md",
             "sim/lna-matching-feasibility/records/20261011-164702-455c67d.pdk-provenance.json"
           ]
+        },
+        {
+          "corners": {
+            "files": 3,
+            "git_blob_digest": "sha256:20dcca264e10daefb4f9907435cee47ae96f2f145afa09d25b8c70e08920b874"
+          },
+          "id": "20261011-182735-367e645",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-matching-feasibility/records/20261011-182735-367e645-isolation.csv",
+            "sim/lna-matching-feasibility/records/20261011-182735-367e645.md"
+          ]
         }
       ],
       "reducers": [
@@ -1850,7 +1865,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_q_study.sh"
+        "sim/lna-matching-feasibility/run_q_study.sh",
+        "sim/lna-matching-feasibility/run_q_study_correction.sh"
       ],
       "shared": [
         "runner-common",
@@ -1859,7 +1875,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198.",
+      "summary": "Feed-isolation / input-Q requirements map after the #198 NO-GO (issues #200, #202), declaration revision 2 (voltage-driven tank probe) committed before the runs in q-study-declaration.md. Record 20261011-164702-455c67d is the complete run (all level-1 and level-2 controls within tolerance); records 20261011-164511-6750fa0, 20261011-164543-dc0038d and 20261011-164618-8e55635 are ABORTED runs kept as evidence (each aborted on a pipeline bug after the controls it reached passed; no result). Campaign verdict NO-GO (binding: noise_floor), unchanged from #198. Record 20261011-182735-367e645 (issue #207) is a derivation-only correction of the ideal-choke isolation attribution in 20261011-164702-455c67d (no simulation; the affected record is preserved).",
       "tool_pins": {
         "ngspice": "ngspice >= 46 (OSDI v0.4)",
         "osdi_models": true,
@@ -2065,14 +2081,14 @@
     "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:35878831fd4d2c949c855c3713a2bb461ffdbce8c4c2b0f2545aca470708634e",
     "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:6193ce27443fcee943111507874aab26bf5a2ceaa521ac2790cb6f810d818b8b",
     "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:888b435c47b2a35406b871dfcafdf9269f324fbdc58178b15f4c71171ecc46bf",
-    "sim/lna-matching-feasibility/README.md": "sha256:1838f6e815ed198b5702d05198a4b09596917b931f9d31aeb60da52c2d02805a",
+    "sim/lna-matching-feasibility/README.md": "sha256:3352edeebd0cef05f0af68497b40514ae764f0a49e6b75360738dc85828afebb",
     "sim/lna-matching-feasibility/feed-study-declaration.md": "sha256:26291c8f01e966d0b837fc97999a72df18d1d7c74c91d2e56434312c151591e2",
     "sim/lna-matching-feasibility/feed_study.py": "sha256:edafee1d671fde06267f6cc39289e0f917eae92b503cb287986eff848bf0dc77",
     "sim/lna-matching-feasibility/le-study-declaration.md": "sha256:65582abe794ccc2ae1b953be77718655d539f7673f191f7776b09b130e22c2ea",
     "sim/lna-matching-feasibility/le_study.py": "sha256:6c821bb915d6bef06c401a466f8688c6fa4c75d1c8266e44af07631dd04e8ffb",
     "sim/lna-matching-feasibility/matching_solver.py": "sha256:a958d23c83ae97884c67b55fdb24fdc5eaa9580896375432213334b22bd37467",
     "sim/lna-matching-feasibility/q-study-declaration.md": "sha256:13d3cf0a1a9048f459b0315a22dd159995e4c5d1ec8d4787c723128a9dc583a7",
-    "sim/lna-matching-feasibility/q_study.py": "sha256:d6f9db787430a498d719186768f547c84e9af68276eaf96b433cad8346cc532c",
+    "sim/lna-matching-feasibility/q_study.py": "sha256:b57e94cf419619c6b6cc02f3f704661faa30bc7dda012669d6cad0f293c4e3fa",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-band.csv": "sha256:d3d3607da866858e177bf7b9b252a23d0fc1628a3dd9ceac32e7364b631b4b67",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-candidates.csv": "sha256:4d2949ee325a4f977d2f01c452833a2be5a16392d46773b9c84c0146fd5fe2fe",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c.md": "sha256:c411f89190c992cadec8079b46aef8b56868eb6b2db8c913233fed625482206c",
@@ -2107,11 +2123,14 @@
     "sim/lna-matching-feasibility/records/20261011-164702-455c67d-qmap.csv": "sha256:d589c8c60a17b3c71c15735d47c95bc1dffce5ffc59f079e0d3b91b79fbf0dc7",
     "sim/lna-matching-feasibility/records/20261011-164702-455c67d.md": "sha256:e36a16547c3fa73b89f829dddb1017111a600ffcd26e3407b898f2ca48e8beea",
     "sim/lna-matching-feasibility/records/20261011-164702-455c67d.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-matching-feasibility/records/20261011-182735-367e645-isolation.csv": "sha256:2ab7b9c470128774753db372ef1d1492cbe32745a009c5a8cf568e07db7e10a8",
+    "sim/lna-matching-feasibility/records/20261011-182735-367e645.md": "sha256:3bb2e6f6f0b6ea18d13c98680640cf9317d5950de477bbaa2bfbb8f5eb54cb70",
     "sim/lna-matching-feasibility/run_dc_reference_study.sh": "sha256:072a680a023c7ccd3a5bc9dec9bc4ca004db008ac753497b11b60d951e5b899b",
     "sim/lna-matching-feasibility/run_feed_study.sh": "sha256:eda945381cf0148dd87044a35e19fbe8d3195bdbf412e9a0f32b4cf1280568f9",
     "sim/lna-matching-feasibility/run_le_study.sh": "sha256:319e5f0e7146c1a0f016c154d80a08d1e78ea3daa3c46f1e74429e75cc762741",
     "sim/lna-matching-feasibility/run_matching_study.sh": "sha256:ea5ac95d88d191bd298bd96d601689235b12635d724f7306cf345ede460a4a6f",
     "sim/lna-matching-feasibility/run_q_study.sh": "sha256:4795fde6cb2697805c030408ca05173b45936035c23a8dcc9cba9ebc174c8a10",
+    "sim/lna-matching-feasibility/run_q_study_correction.sh": "sha256:d5d4145238a74fd810656c34a89b0a0a386f586afb0b6237e046fd7fddb1d3e8",
     "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl": "sha256:7a4f33f9045a5958b10bc8bd0eca596042c71b43abed5eee01bde35fd4a0ab91",
     "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl": "sha256:61044b3b06f5b232aa310b92e646f4c9c38a90c0ae82277f98af3f3fd4452c45",
     "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl": "sha256:2a187369aca6c70013fca69eedbf25453b093fec1fbe89920b8a1ffece87c30f",
@@ -2122,7 +2141,7 @@
     "sim/lna-matching-feasibility/tests/test_feed_study.py": "sha256:35148c12cd684af5415e0214bd5ad11efe959beae3e755cbc9cae96373bbec38",
     "sim/lna-matching-feasibility/tests/test_le_study.py": "sha256:6ed75e837dc83f9b93a5694645f24b7f9d32417acce1ad14a288fd957d5b5ff9",
     "sim/lna-matching-feasibility/tests/test_matching_solver.py": "sha256:a8839754e246f91f9c9bc3294df4db58c893e269fb6ccf2604ab45b974e34fae",
-    "sim/lna-matching-feasibility/tests/test_q_study.py": "sha256:d461a15cae53a15401187a96c31715970d36141b8c22b9668a24ed30bd2a292b",
+    "sim/lna-matching-feasibility/tests/test_q_study.py": "sha256:543909c14ce520924ebab7c4c4b31bd95dea3c06de27acc1d445646bab88d685",
     "sim/models/SOURCE.md": "sha256:8f9877a436b43bb493c748817761043ff587d4ee3b11910c94f2c6ce85f9b39e",
     "sim/models/check_sources.sh": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729",
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
