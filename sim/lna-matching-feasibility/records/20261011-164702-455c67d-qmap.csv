@@ -1,0 +1,11 @@
+arm,arm_role,q_in_tag,q_in,status,reason,replay,input_lb_nh,input_cp_pf,pred_nf290_mid_db,pred_nf290_worst_db,pred_s11_mid_db,pred_s11_worst_db,pred_s22_mid_db,crosses_1p5_worst,crosses_1p2_worst
+em5_cmim,finite candidate,q5,5,solved,,,5.73971,0.570486,2.944,2.97547,-12,-11.3412,-300,no,no
+em5_cmim,finite candidate,q10,10,solved,,ok,6.98579,0.472908,2.53631,2.56253,-12,-11.4526,-300,no,no
+em5_cmim,finite candidate,q20,20,solved,,,7.76253,0.420221,2.31221,2.34493,-12,-11.4409,-300,no,no
+em5_cmim,finite candidate,q40,40,solved,,,8.18441,0.396704,2.19241,2.22982,-12,-11.4876,-300,no,no
+em5_cmim,finite candidate,lossless,inf,solved,,,8.62878,0.372307,2.06612,2.10901,-12,-11.4782,-300,no,no
+ideal_choke,diagnostic bound,q5,5,solved,,,7.69554,0.473329,2.3302,2.3399,-12,-11.3178,-300,no,no
+ideal_choke,diagnostic bound,q10,10,solved,,ok,10.7785,0.338279,1.75314,1.75882,-12,-11.2971,-300,no,no
+ideal_choke,diagnostic bound,q20,20,solved,,,13.1035,0.27278,1.33374,1.33893,-12,-11.204,-300,yes,no
+ideal_choke,diagnostic bound,q40,40,solved,,,14.4998,0.242773,1.05428,1.0601,-12,-11.1279,-300,yes,yes
+ideal_choke,diagnostic bound,lossless,inf,solved,,,16.0636,0.215312,0.701827,0.709346,-12,-11.065,-300,yes,yes

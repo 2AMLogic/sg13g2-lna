@@ -547,15 +547,15 @@ class CommittedRecord(unittest.TestCase):
             self.assertEqual(s["crossings"], c, feed)
         # boundary decks exist and are the declared set
         declared = qs.select_boundary(qs.map_rows())
-        self.assertEqual([b["tag"] for b in mapdoc["boundary"]],
+        self.assertEqual([b["boundary_tag"] for b in mapdoc["boundary"]],
                          [b["tag"] for b in declared])
         for b in mapdoc["boundary"]:
             if b.get("status") == "not_renderable":
                 continue
             self.assertTrue((snap / f"{b['stem']}.spice").exists())
-            e = qs.entry_for(b["arm"], b["q_in"], b["stem"])
+            e = qs.entry_for(b["feed_variant"], b["q_in"], b["stem"])
             qs.check_bound_deck((snap / f"{b['stem']}.spice").read_text(), b["q_in"],
-                                e["input_values"], b["arm"])
+                                e["input_values"], b["feed_variant"])
         # the campaign verdict can only come from the physical control
         self.assertEqual(rj["campaign"]["physical_candidate_pool"],
                          ["verify_ctl_" + qs.point_id("em5_cmim")])
