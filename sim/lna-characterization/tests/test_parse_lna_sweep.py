@@ -334,6 +334,11 @@ class Coverage(unittest.TestCase):
         shutil.copy(FIX / f"{A1}.log", self.cd / "iip3_bcs_27c_vdd1.80v_a4mv.log")
         self.assertEqual(self.run_main("--strict"), 0)
         self.assertEqual(self.cov()["unexpected"], ["iip3_bcs_27c_vdd1.80v_a4mv"])
+        # Issue #180: diagnostic only -- never part of the campaign IIP3 CSV.
+        import csv
+        ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
+        self.assertNotIn("iip3_bcs_27c_vdd1.80v_a4mv", ids)
+        self.assertIn(A4, ids)
 
     def test_sp_log_without_wrdata_is_failed(self):
         (self.cd / f"{BCS_SP}.stability.dat").unlink()
@@ -1012,6 +1017,299 @@ class InvalidLogCoverage(Coverage):
         import csv
         ids = [r["point_id"] for r in csv.DictReader(open(self.td / "ip.csv"))]
         self.assertNotIn(BCS_A1, ids)
+
+
+WCS_SP = "sp_wcs_27c_vdd1.80v"
+BCS_A4 = "iip3_bcs_27c_vdd1.80v_a4mv"
+
+
+def _csv_rows(path):
+    import csv
+    with open(path) as fh:
+        return list(csv.DictReader(fh))
+
+
+def _hot_s11(i, row):
+    # |S11| = |5.0 + j*0.5| ~ 14 dB: an extremum no declared cell can reach.
+    row[1] = 5.0
+
+
+class ManifestMembershipSp(GridHarness):
+    """Issue #180: with a manifest, the S-parameter CSVs, summary and headlines
+    are built from the declared sp inventory only; undeclared cells stay listed
+    as `unexpected` and do not change completeness or the strict exit."""
+
+    def setUp(self):
+        super().setUp()
+        make_cell(self.cd, BCS_SP, [BCS_A1, BCS_A2])
+        self.write(BCS_SP)
+        self.manifest.write_text(
+            f"kind campaign\n{GRID_LINES}sp {SP}\nsp {BCS_SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\n"
+            f"iip3 {BCS_A1}\niip3 {BCS_A2}\npair {BCS_A1} {BCS_A2}\n"
+        )
+        # Third, undeclared sp cell on disk with an extreme in-band |S11|.
+        make_cell(self.cd, WCS_SP, [])
+
+    def run_free(self):
+        """Manifest-free (historical replay) invocation of main()."""
+        argv = ["parse_lna_sweep.py", "--corners-dir", str(self.cd),
+                "--sparam-csv", str(self.td / "sp.csv"),
+                "--iip3-csv", str(self.td / "ip.csv"),
+                "--summary-csv", str(self.td / "sum.csv")]
+        old = sys.argv
+        sys.argv = argv
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                return P.main()
+        finally:
+            sys.argv = old
+
+    def assert_declared_only(self):
+        self.assertEqual(self.run_main("--strict"), 0)
+        c = self.cov()
+        self.assertEqual(c["status"], "complete")
+        self.assertEqual(c["unexpected"], [WCS_SP])
+        self.assertIn("excluded", c["aggregate_membership"])
+        prose = "\n".join(P.coverage_prose(c))
+        self.assertIn(f"Unexpected (undeclared; excluded from every aggregate): {WCS_SP}",
+                      prose)
+        summ = _csv_rows(self.td / "sum.csv")
+        self.assertEqual(sorted(r["point_id"] for r in summ), sorted([BCS_SP, SP]))
+        self.assertNotIn(WCS_SP, {r["point_id"] for r in _csv_rows(self.td / "sp.csv")})
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("worst of 2 PVT cells", h)
+        self.assertNotIn("wcs/", h)
+
+    def test_valid_undeclared_cell_is_unexpected_not_summarised(self):
+        self.write(WCS_SP, inband={"edit": _hot_s11})
+        self.assert_declared_only()
+        # Manifest-free replay keeps reducing every sp_* log on disk.
+        self.assertEqual(self.run_free(), 0)
+        summ = _csv_rows(self.td / "sum.csv")
+        self.assertEqual(len(summ), 3)
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("In-band S11 (worst of 3 PVT cells)", h)
+        self.assertIn("at wcs/27 C/VDD=1.80 V", h)
+
+    def test_undeclared_cell_with_bad_grid_cannot_enter_extrema(self):
+        for freqs in (grid_freqs("inband")[:-1],                    # truncated
+                      [2.3e9 + i * 1e7 for i in range(11)]):        # different grid
+            self.write(WCS_SP, inband={"freqs": freqs, "edit": _hot_s11})
+            self.assert_declared_only()
+            # Never validated, so never an invalid-grid finding either.
+            self.assertEqual(self.cov()["invalid_grids"], [])
+
+
+def write_level_log(path: Path, scale: float, im3_pow: float = 3.0, im3_gain: float = 1.0):
+    """Synthesise a two-tone log at `scale` x the 1 mV fixture drive: tones
+    and source scale linearly, IM3 as scale**im3_pow (3 = ideal cubic, so the
+    intercept is drive-invariant), IM5 as scale**5. `im3_gain` multiplies IM3
+    (an IIP3 shift of -10*log10(im3_gain) dB)."""
+    fx = P.parse_iip3_log(str(FIX / f"{A1}.log"))
+    i3 = scale ** im3_pow * im3_gain
+
+    def kv(pref, keys, mul):
+        return " ".join(f"{k} {fx[f'{pref}_{k}'] * mul[k]:.9e}" for k in keys)
+
+    mul = {"tone1": scale, "tone2": scale, "im3l": i3, "im3h": i3,
+           "im5l": scale ** 5, "im5h": scale ** 5, "src1": scale, "src2": scale}
+    path.write_text(
+        "Circuit: synthetic (issue #180 membership test)\n"
+        f"OP ic1 {fx['ic1']} ic2 {fx['ic2']} vce1 {fx['vce1']} vce2 {fx['vce2']}"
+        f" idd {fx['idd']}\n"
+        f"NPTS {fx['npts']}\n"
+        "DFT " + kv("dft", ("tone1", "tone2", "im3l", "im3h", "src1"), mul) + "\n"
+        f"FFTDF {fx['fft_df']}\n"
+        "FFT " + kv("fft", ("tone1", "tone2", "im3l", "im3h", "im5l", "im5h",
+                            "src1", "src2"), mul) + "\n"
+        "BENCH_COMPLETE\n")
+
+
+class ManifestMembershipIip3(Coverage):
+    """Issue #180: undeclared IIP3 drive levels never enter the IIP3 CSV, the
+    accepted intercepts or the slope check; declared nominal-only extra levels
+    (here the typ cell's 4 mV level) remain included."""
+
+    def setUp(self):
+        super().setUp()
+        for pid, s in ((A1, 1), (A2, 2), (A4, 4), (BCS_A1, 1), (BCS_A2, 2)):
+            write_level_log(self.cd / f"{pid}.log", s)
+
+    def ip_ids(self):
+        return [r["point_id"] for r in _csv_rows(self.td / "ip.csv")]
+
+    def test_undeclared_level_cannot_enter_accepted_intercepts(self):
+        # Undeclared 4 mV level on a non-nominal cell, with IM3 1e-6 x lower
+        # (+60 dB IIP3): it would be the campaign maximum if it were reduced.
+        write_level_log(self.cd / f"{BCS_A4}.log", 4, im3_gain=1e-6)
+        self.assertEqual(self.run_main(manifest=False), 0)
+        leak = next(r for r in _csv_rows(self.td / "ip.csv") if r["point_id"] == BCS_A4)
+        h_free = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn(f"max {leak['iip3_dbm']} dBm", h_free)  # fixture really leaks
+
+        self.assertEqual(self.run_main("--strict"), 0)  # harmless extra: exit 0
+        self.assertEqual(self.cov()["unexpected"], [BCS_A4])
+        ids = self.ip_ids()
+        self.assertNotIn(BCS_A4, ids)
+        self.assertEqual(sorted(ids), sorted([A1, A2, A4, BCS_A1, BCS_A2]))
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("IIP3 (two-tone, 5 drive points)", h)  # declared A4 counted
+        self.assertNotIn(leak["iip3_dbm"], h)
+        self.assertIn("holds at every cell", h)
+
+    def test_declared_nominal_extra_level_stays_in_accepted_set(self):
+        # Membership, not drive amplitude: the declared typ 4 mV level is
+        # accepted; give it the campaign-maximum intercept to prove it.
+        write_level_log(self.cd / f"{A4}.log", 4, im3_gain=1e-2)
+        self.assertEqual(self.run_main("--strict"), 0)
+        a4 = next(r for r in _csv_rows(self.td / "ip.csv") if r["point_id"] == A4)
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn(f"max {a4['iip3_dbm']} dBm at typ/27 C/VDD=1.80 V", h)
+
+    def test_undeclared_pair_cannot_alter_slope_check(self):
+        # The manifest declares no IIP3 levels for the bcs cell; its on-disk
+        # 1/2 mV logs are off the 3:1 region (slope 1).
+        write_level_log(self.cd / f"{BCS_A2}.log", 2, im3_pow=1.0)
+        self.manifest.write_text(
+            f"kind campaign\nsp {SP}\nsp {BCS_SP}\n"
+            f"iip3 {A1}\niip3 {A2}\npair {A1} {A2}\niip3 {A4}\n")
+        self.assertEqual(self.run_main(manifest=False), 0)
+        free = {r["point_id"]: r for r in _csv_rows(self.td / "sum.csv")}
+        self.assertEqual(free[BCS_SP]["im3_slope_2pt"], "1.000")  # would leak
+
+        self.assertEqual(self.run_main("--strict"), 0)
+        self.assertEqual(self.cov()["unexpected"], [BCS_A1, BCS_A2])
+        summ = {r["point_id"]: r for r in _csv_rows(self.td / "sum.csv")}
+        self.assertEqual(summ[BCS_SP]["im3_slope_2pt"], "")
+        self.assertEqual(summ[BCS_SP]["iip3_dbm_a1mv"], "")
+        self.assertEqual(summ[SP]["im3_slope_2pt"], "3.000")
+        self.assertEqual(sorted(self.ip_ids()), sorted([A1, A2, A4]))
+        h = P.headlines(str(self.td / "sum.csv"), str(self.td / "ip.csv"))
+        self.assertIn("1 valid / 0 invalid / 1 unknown of 2 cells", h)
+        self.assertIn("slope over valid cells in [3.000, 3.000]", h)
+        self.assertNotIn("slope 1.000", h)
+
+
+class Nfmin290(unittest.TestCase):
+    """Issue #181: analysis-temperature NFmin re-referenced to T0 = 290 K."""
+
+    VIEW = LNA / "views" / f"{RECORD}-nfmin290.csv"
+
+    def test_hand_computed_cases(self):
+        # NFmin = 2.0 dB -> F_T = 10**0.2 = 1.5848931925, F_T - 1 = 0.5848931925.
+        #  -40 C: T = 233.15 K, (F-1)*T/290 = 0.4702339580 -> 10*log10(1.4702339580)
+        #   27 C: T = 300.15 K, (F-1)*T/290 = 0.6053644542 -> 10*log10(1.6053644542)
+        #  125 C: T = 398.15 K, (F-1)*T/290 = 0.8030180158 -> 10*log10(1.8030180158)
+        for temp_c, want in (("-40", 1.6738644943), ("27", 2.0557364265),
+                             ("125", 2.5600006622)):
+            self.assertAlmostEqual(P.nfmin290_db(2.0, temp_c), want, places=9, msg=temp_c)
+        self.assertAlmostEqual(P.analysis_temp_k("-40"), 233.15)
+        self.assertAlmostEqual(P.analysis_temp_k("125"), 398.15)
+
+    def test_identity_at_290k(self):
+        # temp_c = 16.85 C is exactly 290 K: the conversion is the identity.
+        for nf in (0.5, 2.0, 3.7759):
+            self.assertAlmostEqual(P.nfmin290_db(nf, 16.85), nf, places=12)
+        self.assertEqual(P.T0_REF_K, 290.0)
+
+    def test_reuses_core_envelope_nf_reref(self):
+        spec = importlib.util.spec_from_file_location(
+            "envelope_rf_check", LNA.parent / "lna-core-envelope" / "envelope_rf.py")
+        rf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rf)
+        for nf, t in ((2.0749, -40), (2.3817, 27), (2.7275, 125)):
+            self.assertEqual(P.nfmin290_db(nf, t), rf.nf_reref(nf, t + 273.15, 290.0))
+
+    def test_fields_use_band_lo_gap(self):
+        f = P.nfmin290_fields("27", 2.0, 2.5)
+        self.assertEqual(f["nfmin_analysis_temp_k"], "300.15")
+        self.assertEqual(f["nfmin290_t_ref_k"], "290.00")
+        self.assertEqual(f["nfmin290_db_at_band_lo"], "2.0557")
+        self.assertEqual(f["nf290_minus_nfmin290_db_at_band_lo"], "0.4443")
+
+    def derive(self):
+        return P.derive_nfmin290_view(str(LNA / "records" / f"{RECORD}-summary.csv"), RECORD)
+
+    def test_record_extrema_reproduced(self):
+        rows = self.derive()
+        self.assertEqual(len(rows), 45)
+        self.assertTrue(all(r["source_record_id"] == RECORD for r in rows))
+        self.assertTrue(all(r["nfmin290_t_ref_k"] == "290.00" for r in rows))
+        self.assertTrue(all(r["freq_hz"] == "2.400000e+09" for r in rows))
+        vals = {r["point_id"]: P.nfmin290_db(float(r["nfmin_sp_db_at_band_lo"]), r["temp_c"])
+                for r in rows}
+        # Independent arithmetic quoted in issue #181 / spec/target-spec.md;
+        # tolerance = half an LSB of the 4-decimal source column.
+        best, worst = min(vals, key=vals.get), max(vals, key=vals.get)
+        self.assertEqual(best, "sp_bcs_-40c_vdd1.98v")
+        self.assertEqual(worst, "sp_wcs_125c_vdd1.62v")
+        self.assertAlmostEqual(vals[best], 1.738852, delta=5e-5)
+        self.assertAlmostEqual(vals["sp_typ_27c_vdd1.80v"], 2.445396, delta=5e-5)
+        self.assertAlmostEqual(vals[worst], 3.423883, delta=5e-5)
+        nom = next(r for r in rows if r["point_id"] == "sp_typ_27c_vdd1.80v")
+        # Common reference and frequency: 2.6559 - 2.445396 = 0.2105 dB.
+        self.assertEqual(nom["nf290_minus_nfmin290_db_at_band_lo"], "0.2105")
+
+    def test_committed_view_rederives_byte_identical(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = os.path.join(td, "v.csv")
+            P.write_csv(out, self.derive(), list(P.NFMIN290_VIEW_COLS))
+            self.assertEqual(Path(out).read_bytes(), self.VIEW.read_bytes())
+
+    def test_headline_states_reference_and_scope(self):
+        with open(self.VIEW) as fh:
+            import csv
+            h = P.nfmin290_headline(list(csv.DictReader(fh)))
+        for needle in ("T0 = 290 K", "band-low sample only", "not an in-band extremum",
+                       "best 1.7389 dB at bcs/-40 C/VDD=1.98 V", "nominal 2.4454 dB",
+                       "worst 3.4239 dB at wcs/125 C/VDD=1.62 V", "0/45 cells below 1.5 dB",
+                       "both 290 K, same frequency", "nominal 0.2105 dB",
+                       "analysis-temperature NFmin (context only, not 290 K)"):
+            self.assertIn(needle, h)
+
+    def test_new_record_reduction_gets_new_headline(self):
+        # A reduction run with --nfmin290 adds the columns and switches the
+        # headline wording; without it the historical wording is kept.
+        h = GridHarness("run")
+        h.setUp()
+        try:
+            self.assertEqual(h.run_main("--nfmin290"), 0)
+            import csv
+            cells = list(csv.DictReader(io.StringIO((h.td / "sum.csv").read_text())))
+            for col in P.NFMIN290_FIELDS:
+                self.assertIn(col, cells[0])
+            text = P.headlines(str(h.td / "sum.csv"), str(h.td / "ip.csv"))
+            self.assertIn("NFmin re-referenced to T0 = 290 K", text)
+            self.assertNotIn("i.e. what an ideal noise match", text)
+            self.assertEqual(h.run_main(), 0)
+            cells = list(csv.DictReader(io.StringIO((h.td / "sum.csv").read_text())))
+            self.assertNotIn("nfmin290_db_at_band_lo", cells[0])
+            text = P.headlines(str(h.td / "sum.csv"), str(h.td / "ip.csv"))
+            self.assertIn("i.e. what an ideal noise match", text)
+        finally:
+            h.doCleanups()
+
+    def test_historical_record_headlines_unchanged(self):
+        # The committed record's own NFmin line is reproduced verbatim.
+        rec = LNA / "records"
+        text = P.headlines(str(rec / f"{RECORD}-summary.csv"), str(rec / f"{RECORD}-iip3.csv"))
+        md = (rec / f"{RECORD}.md").read_text().splitlines()
+        self.assertIn(
+            "- **NFmin (ngspice `sp`, at 2.4 GHz, i.e. what an ideal noise match would"
+            " give this circuit)**: best 2.0749 dB at bcs/-40 C/VDD=1.98 V.", text.split("\n"))
+        for line in text.split("\n"):
+            self.assertIn(line, md)
+
+    def test_readme_states_reference_and_scope(self):
+        readme = (LNA / "README.md").read_text()
+        for needle in ("re-referenced\n> to the ratified T0 = 290 K",
+                       "**band-low sample\n> only**",
+                       "**1.7389 dB at the best cell**", "**2.4454 dB\nnominal**",
+                       "**3.4239 dB at the worst cell**",
+                       "both at 290 K and both at the\n2.4 GHz band-low sample",
+                       "**0.2105 dB**", "F290 = 1 + (F_T − 1) · T / 290"):
+            self.assertIn(needle, readme)
 
 
 if __name__ == "__main__":

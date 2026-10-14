@@ -1,0 +1,134 @@
+* sg13g2-lna -- finite resonant base-feed study (issue #193), FEED SCAN deck
+* Variant: em5_cideal  (finite candidate)
+* Generated from sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl
+* by sim/lna-matching-feasibility/feed_study.py (plan) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+* EM 5-turn spiral (5.52 nH) in parallel with an ideal tuning C, in series with R3b
+* Tank C = 0.77356 pF (tuned at 2.44175e+09 Hz on the EM Yser, parasitic Cser included)
+*
+* ONE PVT cell only: HBT_SECTION=hbt_typ MOS_SECTION=mos_tt TEMP=27 C
+* VDD=1.80 V (the nominal cell). Single-corner exploration, NOT a PVT result
+* and not a conformance claim against any spec/target-spec.md row. The DUT is
+* design/netlist/lna.spice inlined verbatim (unresized, Le = 1 nH ideal, Lc
+* 5 nH ideal) except the single BENCH EDIT that replaces R3b's line with the
+* variant's feed (R3b = 330 Ohm and the bref reference are retained; bias is
+* NOT retuned).
+*
+* Bench (as sim/lna-matching-feasibility/README.md "Bench definitions"):
+*   - DC audit: `op`, then the `DC ...` echo line (collector currents, base
+*     current, node voltages, supply current/power) for the validity checks.
+*   - In-band `sp lin 11 2.4e+09 2.4835e+09 1` (50 Ohm ports, donoise):
+*     S-parameters, NF (50 Ohm source), NFmin, Rn, SOpt, referenced to the
+*     ANALYSIS temperature (300.15 K); re-referenced to 290 K in the reducer.
+*   - Broadband `sp dec 40 1e+07 3e+10`: S-parameters
+*     for mu, k, |Delta|, |S11|, |S22| (computed in the reducer).
+*   - 50 Ohm-source NF at T0 = 290 K: second isolated copy Xb, Rs/RL noisy=0,
+*     `noise v(nfout) vin lin 21 ...`, source term analytic
+*     (NF = 10*log10(1 + inoise^2/(4*k*290*50))).
+*   - `.options gmin=1e-10`.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+.include "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/models/sg13g2_inductor_em.spice"
+
+.options temp=27 tnom=27 gmin=1e-10
+
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/design/lna.sch
+.subckt lna vdd vss rfin rfout
+
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp nc_e vss 3.4k m=1
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg m=1
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k m=1
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k m=1
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k m=1
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
+* BENCH EDIT (issue #193, variant em5_cideal: finite candidate): EM 5-turn spiral (5.52 nH) in parallel with an ideal tuning C, in series with R3b
+R3b bref b1f 330 m=1
+XLfeed b1f b1 vss inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Cfeed b1f b1 7.7355948e-13
+XQ3 bref bref vss vss npn13G2 Nx=1
+Cbref bref vss 100p m=1
+.ends
+
+
+* --- Xa: S-parameter branch (50 Ohm ports at both ends) -----------------
+Vdda vdda 0 dc 1.8
+Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50
+Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50
+Xa vdda 0 pin pout lna
+
+* --- Xb: 50 Ohm Thevenin source / 50 Ohm load, .noise --------------------
+Vddb vddb 0 dc 1.8
+Vin vin 0 dc 0 ac 1
+Rs vin nfin 50 noisy=0
+RL nfout 0 50 noisy=0
+Xb vddb 0 nfin nfout lna
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let ib1 = @q.xa.xq1.qnpn13g2[ib]
+let vb1 = v(xa.b1)
+let ve1 = v(xa.e1)
+let vcasc = v(xa.casc)
+let voutn = v(xa.outn)
+let vb2 = v(xa.vb2)
+let vbref = v(xa.bref)
+let idd = -i(vdda)
+let pdc = 1.8 * (-i(vdda))
+echo "DC ic1 $&ic1 ic2 $&ic2 ib1 $&ib1 vb1 $&vb1 ve1 $&ve1 vcasc $&vcasc voutn $&voutn vb2 $&vb2 vbref $&vbref idd $&idd pdc $&pdc"
+
+sp lin 11 2.4e+09 2.4835e+09 1
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/scan_em5_cideal.inband.dat real(s_1_1) imag(s_1_1) real(s_2_1) imag(s_2_1) real(s_1_2) imag(s_1_2) real(s_2_2) imag(s_2_2) real(NF) real(NFmin) real(Rn) real(SOpt) imag(SOpt)
+echo "DAT_WRITTEN scan_em5_cideal.inband.dat"
+
+sp dec 40 1e+07 3e+10
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/scan_em5_cideal.stab.dat real(s_1_1) imag(s_1_1) real(s_2_1) imag(s_2_1) real(s_1_2) imag(s_1_2) real(s_2_2) imag(s_2_2)
+echo "DAT_WRITTEN scan_em5_cideal.stab.dat"
+
+noise v(nfout) vin lin 21 2.4e+09 2.4835e+09
+set lastplot = none
+set specplot = none
+foreach p $plots
+  set specplot = $lastplot
+  set lastplot = $p
+end
+setplot $specplot
+let nf290 = 10*log10(1 + (inoise_spectrum^2)/(4*1.380649e-23*290*50))
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/scan_em5_cideal.nf290.dat nf290
+echo "DAT_WRITTEN scan_em5_cideal.nf290.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end

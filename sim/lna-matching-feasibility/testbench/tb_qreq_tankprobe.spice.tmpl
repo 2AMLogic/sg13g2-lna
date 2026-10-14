@@ -1,0 +1,48 @@
+* sg13g2-lna -- feed-isolation / input-Q requirements study (issue #200),
+* TANK-PROBE deck (one-port admittance of the installed resonant feed tank).
+* Generated from sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl
+* by sim/lna-matching-feasibility/q_study.py (control-gen) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+*
+* Purpose: measure Ytank(f) of the #193 feed tank (EM 5-turn spiral in
+* parallel with the pinned PDK cap_cmim) between the b1f / b1 nodes, once per
+* arm. The @@CTL_TAG@@ arm is the UNMODIFIED retained tank: the control. The
+* bracket arms add ONE parallel resistor Rqbr across the tank -- a plain
+* ngspice resistor, therefore thermal-noisy, and DC-transparent (it carries
+* no bias current): an explicitly declared HYPOTHETICAL REQUIREMENT PROXY
+* that lowers the feed isolation. It is never an extracted geometry and the
+* EM model itself is not edited, so the substrate shunts, DC resistance and
+* capacitor parasitics stay exactly where the retained models put them.
+*
+* Measurement (declaration revision 2, issue #202): b1f driven by a 1 V AC
+* VOLTAGE source, b1 held at 0 V by a 0 V sensing source whose current is
+* the tank current (same polarity as the retained tune deck). The tank sees
+* the drive voltage exactly: the b1f-side substrate shunt loads the ideal
+* voltage source, not the tank, and the b1-side shunt has 0 V across it.
+* Ytank = i(sense) / v(drive), divided explicitly by q_study.py. (Revision 1
+* used a current-source drive, which divides through the b1f shunt; record
+* 20261011-120758-9abe609 is its stopped-run evidence.)
+* Isolation metric: |Ztank(f)| = 1/|Ytank(f)| over the 11 retained in-band
+* frequencies (2.4 .. 2.4835 GHz), reported at the band centre and band-min.
+*
+* One-port deck: no PDK transistor models. ONE process point / temperature
+* (27 C, typ.), as in sim/models/sg13g2_inductor_em.spice. Nominal cell only:
+* a single-corner exploration deck, not a PVT result.
+
+.include "@@EM_MODEL@@"
+.lib "@@CAP_LIB@@" cap_typ
+
+.options temp=27 tnom=27 gmin=1e-10
+
+@@ONEPORTS@@
+
+.control
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+ac lin @@N_BAND@@ @@F_LO@@ @@F_HI@@
+wrdata @@OUTDIR@@/tank_y.dat @@VECS@@
+echo "DAT_WRITTEN tank_y.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end

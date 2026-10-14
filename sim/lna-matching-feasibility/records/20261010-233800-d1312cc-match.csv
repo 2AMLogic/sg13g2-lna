@@ -1,0 +1,4 @@
+feed_variant,role,input_values_nh_pf,nf290_worst_db,nf290_mid_db,nfmin290_dut_mid_db,s11_worst_db,s22_worst_db,s21_min_db,s21_max_db,mu_bb_min,mu_bb_f_min_hz,k_bb_min,s11_mag_bb_max,s22_mag_bb_max,ic1_ma,op_convergence_normal,gt_minus_s21_db_mid,predicted_nf290_mid_db
+committed,baseline,4.56374e-09/6.25995e-13,3.3353,3.3130,2.5174,-11.547,-15.610,20.067,20.246,1.0000003575,1e+07,67.04,0.9990,1.0000,3.94021,yes,3.24e-05,3.2932
+ideal_choke,diagnostic bound,1.10683e-08/3.41763e-13,1.8080,1.7990,0.4810,-11.277,-15.613,26.436,26.598,1.0000003575,1e+07,43.37,0.9996,1.0000,3.94021,yes,-2.43e-05,1.7925
+em5_cideal,finite candidate,7.07809e-09/4.78715e-13,2.6104,2.5808,1.5260,-11.406,-15.628,22.956,23.143,1.0000003575,1e+07,69.42,0.9994,1.0000,3.93690,yes,-3.48e-05,2.5688

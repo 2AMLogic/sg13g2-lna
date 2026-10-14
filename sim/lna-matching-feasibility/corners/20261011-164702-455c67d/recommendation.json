@@ -1,0 +1,202 @@
+{
+  "generator": "sim/lna-matching-feasibility/q_study.py reduce",
+  "campaign": {
+    "verdict": "NO-GO",
+    "binding": "noise_floor",
+    "failing": [
+      "noise_floor"
+    ],
+    "limit_db": 1.2,
+    "nf290_worst_db": 2.569900206,
+    "nf_budget_left_db": -1.0699002059999998,
+    "nfmin290_worst_db": 1.544796495147075,
+    "physical_candidate_pool": [
+      "verify_ctl_em5_cmim_le0p60"
+    ],
+    "note": "Only the unmodified-model em5_cmim control verification is a physical candidate. Predictions, the ideal-choke diagnostic, bracket proxies and boundary verifications cannot produce a GO; this study maps requirements."
+  },
+  "requirements": {
+    "em5_cmim": {
+      "arm_role": "finite candidate",
+      "crossings": {
+        "nf290_worst_le_1p5": {
+          "threshold_db": 1.5,
+          "min_tested_q": null,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": true,
+          "lossless_crosses": false
+        },
+        "nf290_worst_le_1p2": {
+          "threshold_db": 1.2,
+          "min_tested_q": null,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": true,
+          "lossless_crosses": false
+        }
+      }
+    },
+    "ideal_choke": {
+      "arm_role": "diagnostic bound",
+      "crossings": {
+        "nf290_worst_le_1p5": {
+          "threshold_db": 1.5,
+          "min_tested_q": 20.0,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": false,
+          "lossless_crosses": true
+        },
+        "nf290_worst_le_1p2": {
+          "threshold_db": 1.2,
+          "min_tested_q": 40.0,
+          "tested_finite_qs": [
+            5.0,
+            10.0,
+            20.0,
+            40.0
+          ],
+          "not_reached": false,
+          "lossless_crosses": true
+        }
+      }
+    },
+    "isolation": {
+      "metric": "|Ztank(f_mid)| of the retained em5_cmim tank",
+      "current_ohm_measured": 797.9345288521633,
+      "current_ohm_retained_derived": 797.9009708046314,
+      "nfmin290_worst_le_1p2": "not reached at any sampled finite isolation (the unbracketed retained tank included); the only sampled point at or below the planning limit is the ideal-choke diagnostic bound",
+      "sampled_curve": [
+        {
+          "arm": "em5_cmim",
+          "rpar_ohm": null,
+          "z_tank_mid_ohm": 797.9345288521633,
+          "nfmin290_q10_worst_db": 1.544796495147075
+        },
+        {
+          "arm": "ideal_choke",
+          "rpar_ohm": null,
+          "z_tank_mid_ohm": 797.9345288521633,
+          "nfmin290_q10_worst_db": 0.476223829359945
+        },
+        {
+          "arm": "bracket_r400",
+          "rpar_ohm": 400.0,
+          "z_tank_mid_ohm": 266.43677417565135,
+          "nfmin290_q10_worst_db": 1.9857603003841908
+        },
+        {
+          "arm": "bracket_r200",
+          "rpar_ohm": 200.0,
+          "z_tank_mid_ohm": 159.9172101540967,
+          "nfmin290_q10_worst_db": 2.1615068623660014
+        },
+        {
+          "arm": "bracket_r100",
+          "rpar_ohm": 100.0,
+          "z_tank_mid_ohm": 88.86333058646885,
+          "nfmin290_q10_worst_db": 2.3174280411419863
+        },
+        {
+          "arm": "ideal_choke",
+          "rpar_ohm": null,
+          "z_tank_mid_ohm": null,
+          "nfmin290_q10_worst_db": 0.476223829359945
+        }
+      ],
+      "note": "sampled crossings only; no interpolation between sampled isolations"
+    }
+  },
+  "boundary": [
+    {
+      "tag": "cmim_lossless",
+      "arm": "em5_cmim",
+      "q_in": null,
+      "status": "verified",
+      "pred_nf290_worst_db": 2.1090060469333025,
+      "pred_nf290_mid_db": 2.0661170418270407,
+      "verified_nf290_worst_db": 2.114762685,
+      "verified_nf290_mid_db": 2.0716124776,
+      "verified_nf290_worst_11f_db": 2.114732629617796,
+      "residual_worst_11f_db": 0.005726582684493664,
+      "s11_db_worst": -11.45204910355686,
+      "s22_db_worst": -15.629563751832729,
+      "s21_db_min": 26.69755014862165,
+      "mu_bb_min": 1.0000003574010847,
+      "convergence": {
+        "singular_matrix": 0,
+        "gmin_stepping_failed": 0,
+        "source_stepping_failed": 0,
+        "transient_op_fallback": 0,
+        "bench_complete": true,
+        "normal": true
+      }
+    },
+    {
+      "tag": "choke_q40",
+      "arm": "ideal_choke",
+      "q_in": 40.0,
+      "status": "verified",
+      "pred_nf290_worst_db": 1.0600981258487492,
+      "pred_nf290_mid_db": 1.054278978970474,
+      "verified_nf290_worst_db": 1.0628583467,
+      "verified_nf290_mid_db": 1.0570421472,
+      "verified_nf290_worst_11f_db": 1.062762460027139,
+      "residual_worst_11f_db": 0.002664334178389849,
+      "s11_db_worst": -11.05336532619447,
+      "s22_db_worst": -15.500433035799357,
+      "s21_db_min": 30.986148580561927,
+      "mu_bb_min": 1.0000003573952292,
+      "convergence": {
+        "singular_matrix": 0,
+        "gmin_stepping_failed": 0,
+        "source_stepping_failed": 0,
+        "transient_op_fallback": 0,
+        "bench_complete": true,
+        "normal": true
+      }
+    },
+    {
+      "tag": "choke_lossless",
+      "arm": "ideal_choke",
+      "q_in": null,
+      "status": "verified",
+      "pred_nf290_worst_db": 0.7093462000055144,
+      "pred_nf290_mid_db": 0.701826518597119,
+      "verified_nf290_worst_db": 0.71182129943,
+      "verified_nf290_mid_db": 0.70430669063,
+      "verified_nf290_worst_11f_db": 0.7116968142642719,
+      "residual_worst_11f_db": 0.0023506142587574885,
+      "s11_db_worst": -10.973400569517839,
+      "s22_db_worst": -15.457124378834719,
+      "s21_db_min": 31.852004287219305,
+      "mu_bb_min": 0.9994731627198562,
+      "convergence": {
+        "singular_matrix": 0,
+        "gmin_stepping_failed": 0,
+        "source_stepping_failed": 0,
+        "transient_op_fallback": 0,
+        "bench_complete": true,
+        "normal": true
+      }
+    }
+  ],
+  "probe_control": {
+    "z_mid_measured": 797.9345288521633,
+    "z_mid_derived": 797.9009708046314
+  },
+  "problems": []
+}

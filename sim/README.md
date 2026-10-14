@@ -222,6 +222,18 @@ are committed beside every recorded number." Every experiment's own
 ngspice analysis (`.op`, `.ac`, `.noise`) used for each reported quantity
 — this file does not restate those per-experiment details.
 
+## Testbench inventory (T1 item 9)
+
+Every experiment, record and documented cold-start invocation in this tree
+is indexed in [`signoff/testbench-coverage.json`](../signoff/testbench-coverage.json)
+and hashed into the audited [`signoff/testbench-inventory.json`](../signoff/testbench-inventory.json).
+A new `sim/<experiment-slug>/` directory, record id, bench template or
+runner fails the read-only `testbench-inventory` CI check until the index
+classifies it. Scope, limits and regeneration are in
+[`signoff/README.md`](../signoff/README.md) "Item 9: the testbench
+inventory". The inventory is not a measurement and does not change this
+tree's append-only rule.
+
 ## Spec ratification: not claimed here
 
 Nothing in this tree ratifies a `spec/target-spec.md` row: ratification is
@@ -324,3 +336,14 @@ a target-spec row.
   variant except the control is a **probe**, nothing under `design/`
   changes because of it, and no number here is a `target-spec.md`
   conformance claim.
+- **[`lna-matching-feasibility/`](lna-matching-feasibility/README.md)** —
+  issue #186: a **nominal-cell-only** matching-network feasibility study
+  for #27. One characterization run measures the committed DUT's input
+  impedance, collector-node admittance and noise parameters, an ideal-Le
+  sweep, the EM-extracted inductor geometries and a base-feed what-if
+  probe. A stdlib solver synthesizes three candidate L-section input
+  networks plus an Lc + shunt-C + series-C output network for each of four
+  inductor-Q cases (ideal, Q = 20, Q = 10, EM-extracted Lc). Each candidate
+  is verified with one single-cell run of the same sp/NF/stability bench as
+  `lna-characterization/`. This is exploration, not a result: one PVT cell,
+  no `target-spec.md` claim, and nothing under `design/` changes.

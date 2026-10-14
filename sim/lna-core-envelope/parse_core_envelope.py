@@ -117,6 +117,11 @@ def main() -> int:
     ap.add_argument("--stab-grid", default=None, metavar="LO,HI,NDEC",
                     help="declared stability `sp dec NDEC LO HI` grid; when "
                          "given, every stability table must cover it")
+    ap.add_argument("--require-all-points", action="store_true",
+                    help="strict mode (used by run_core_envelope.sh): exit 5 "
+                         "BEFORE staging or publishing anything if any "
+                         "manifest point failed to reduce. Default (absent): "
+                         "partial reduction, exit 0 with a warning")
     args = ap.parse_args()
 
     # Declared-grid enforcement (#165). Absent args = historical replay and
@@ -291,6 +296,13 @@ def main() -> int:
     if not rows:
         print("parse_core_envelope.py: no parsable points", file=sys.stderr)
         return 1
+    if failed and args.require_all_points:
+        # Gate before any staging/publication so an incomplete campaign stays
+        # resumable (#128): nothing is written under records/.
+        print(f"parse_core_envelope.py: --require-all-points: {len(failed)} of "
+              f"{len(failed) + len(rows)} points failed; nothing published",
+              file=sys.stderr)
+        return 5
 
     # --- Control-variant regression check --------------------------------
     control_note = "not checked (no --reference-summary given)"

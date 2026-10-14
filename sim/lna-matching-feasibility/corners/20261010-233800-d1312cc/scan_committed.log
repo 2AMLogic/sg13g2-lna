@@ -1,0 +1,48 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- finite resonant base-feed study (issue #193), feed scan deck
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+DC ic1 0.0039403 ic2 0.00393483 ib1 5.4304E-06 vb1 0.843494 ve1 -1.73472E-18 vcasc 0.802693 voutn 1.8 vb2 1.64499 vbref 0.845286 idd 0.00471442 pdc 0.00848596
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 11
+DAT_WRITTEN scan_committed.inband.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 140
+DAT_WRITTEN scan_committed.stab.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 21
+
+No. of Data Rows : 1
+DAT_WRITTEN scan_committed.nf290.dat
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

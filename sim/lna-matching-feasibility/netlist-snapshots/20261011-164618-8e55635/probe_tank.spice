@@ -1,0 +1,73 @@
+* sg13g2-lna -- feed-isolation / input-Q requirements study (issue #200),
+* TANK-PROBE deck (one-port admittance of the installed resonant feed tank).
+* Generated from sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl
+* by sim/lna-matching-feasibility/q_study.py (control-gen) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+*
+* Purpose: measure Ytank(f) of the #193 feed tank (EM 5-turn spiral in
+* parallel with the pinned PDK cap_cmim) between the b1f / b1 nodes, once per
+* arm. The ctl arm is the UNMODIFIED retained tank: the control. The
+* bracket arms add ONE parallel resistor Rqbr across the tank -- a plain
+* ngspice resistor, therefore thermal-noisy, and DC-transparent (it carries
+* no bias current): an explicitly declared HYPOTHETICAL REQUIREMENT PROXY
+* that lowers the feed isolation. It is never an extracted geometry and the
+* EM model itself is not edited, so the substrate shunts, DC resistance and
+* capacitor parasitics stay exactly where the retained models put them.
+*
+* Measurement (declaration revision 2, issue #202): b1f driven by a 1 V AC
+* VOLTAGE source, b1 held at 0 V by a 0 V sensing source whose current is
+* the tank current (same polarity as the retained tune deck). The tank sees
+* the drive voltage exactly: the b1f-side substrate shunt loads the ideal
+* voltage source, not the tank, and the b1-side shunt has 0 V across it.
+* Ytank = i(sense) / v(drive), divided explicitly by q_study.py. (Revision 1
+* used a current-source drive, which divides through the b1f shunt; record
+* 20261011-120758-9abe609 is its stopped-run evidence.)
+* Isolation metric: |Ztank(f)| = 1/|Ytank(f)| over the 11 retained in-band
+* frequencies (2.4 .. 2.4835 GHz), reported at the band centre and band-min.
+*
+* One-port deck: no PDK transistor models. ONE process point / temperature
+* (27 C, typ.), as in sim/models/sg13g2_inductor_em.spice. Nominal cell only:
+* a single-corner exploration deck, not a PVT result.
+
+.include "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-200/sim/models/sg13g2_inductor_em.spice"
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib" cap_typ
+
+.options temp=27 tnom=27 gmin=1e-10
+
+* probe arm `ctl`
+Xtank_ctl b1f_ctl b1_ctl 0 inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Xcfeed_ctl b1f_ctl b1_ctl cap_cmim w=22.6559u l=22.6559u
+V_ctl b1f_ctl 0 dc 0 ac 1
+Vctlm b1_ctl 0 dc 0 ac 0
+
+* probe arm `r400` (HYPOTHETICAL REQUIREMENT PROXY)
+Xtank_r400 b1f_r400 b1_r400 0 inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Xcfeed_r400 b1f_r400 b1_r400 cap_cmim w=22.6559u l=22.6559u
+Rqbr_r400 b1f_r400 b1_r400 400
+V_r400 b1f_r400 0 dc 0 ac 1
+Vr400m b1_r400 0 dc 0 ac 0
+
+* probe arm `r200` (HYPOTHETICAL REQUIREMENT PROXY)
+Xtank_r200 b1f_r200 b1_r200 0 inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Xcfeed_r200 b1f_r200 b1_r200 cap_cmim w=22.6559u l=22.6559u
+Rqbr_r200 b1f_r200 b1_r200 200
+V_r200 b1f_r200 0 dc 0 ac 1
+Vr200m b1_r200 0 dc 0 ac 0
+
+* probe arm `r100` (HYPOTHETICAL REQUIREMENT PROXY)
+Xtank_r100 b1f_r100 b1_r100 0 inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Xcfeed_r100 b1f_r100 b1_r100 cap_cmim w=22.6559u l=22.6559u
+Rqbr_r100 b1f_r100 b1_r100 100
+V_r100 b1f_r100 0 dc 0 ac 1
+Vr100m b1_r100 0 dc 0 ac 0
+
+.control
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+ac lin 11 2.4e+09 2.4835e+09
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-200/sim/lna-matching-feasibility/corners/20261011-164618-8e55635/tank_y.dat real(i(vctlm)) imag(i(vctlm)) real(i(vr400m)) imag(i(vr400m)) real(i(vr200m)) imag(i(vr200m)) real(i(vr100m)) imag(i(vr100m))
+echo "DAT_WRITTEN tank_y.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end

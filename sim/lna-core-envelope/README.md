@@ -365,6 +365,19 @@ or unverifiable installed PDK exits 3 before any output is allocated or
 | finalized | `corners/<id>/finalized.json` exists | rejected `CORE_ENV_RECORD_FINALIZED` |
 | legacy | directory without a fingerprint (every record before #126) | rejected `CORE_ENV_RECORD_LEGACY` |
 
+**A campaign with a failed cell stays resumable (issue #128).** The runner
+always passes `--require-all-points` to `parse_core_envelope.py`. If any cell
+failed (simulator error, no `BENCH_COMPLETE`, missing or invalid tables) the
+parser exits 5 *before staging or publishing anything*, so the runner exits
+nonzero without writing `records/<id>{.csv,-variant-summary.csv,.md}` or
+`finalized.json`. The fingerprint, the completed cells' evidence and the lock
+release are as for any interrupted run: a matching retry is `interrupted`,
+re-simulates only the cells lacking `BENCH_COMPLETE`, then publishes and
+finalizes. Run standalone (without the flag) the parser keeps its historical
+partial reduction (exit 0, failed points listed in the `.md`). Covered by the
+real-parser case in `sim/tests/test-core-envelope-lifecycle.sh` and
+`test_require_all_points_*` in `tests/test_parse_core_envelope.py`.
+
 The fingerprint covers the committed DUT netlist, both bench templates, the
 (filtered) variant recipes, the PVT/frequency grid (including `CORE_ENV_SMOKE`),
 the verified release and SHA-256 of every model input, and the simulator

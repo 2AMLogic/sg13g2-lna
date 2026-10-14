@@ -1,0 +1,176 @@
+* sg13g2-lna -- matching-network feasibility study, BASE-FEED WHAT-IF probe
+* (issue #186). Generated from
+* sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl by
+* sim/lna-matching-feasibility/matching_solver.py (gen-char) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit this template and re-run.
+*
+* ONE PVT cell only (hbt_typ / mos_tt / 27 C / 1.80 V). A DESIGN-SPACE
+* PROBE, not a candidate and not a proposal to edit design/: it asks how the
+* input impedance, the optimum noise source impedance and NFmin move with Le
+* when Q1's base-bias feed resistor R3b (330 Ohm from the AC-grounded `bref`
+* node) is isolated at RF by an ideal 1 uH choke in series with it. DC is
+* unchanged (the choke is a DC short; the OP line below is compared with the
+* characterization deck's). Everything else is the committed DUT.
+*
+* Bench: 50 Ohm `sp` ports (portnum/z0 = 50), `sp lin 1 2.44175e+09 2.44175e+09 1`
+* at the band centre per Le value (donoise: NFmin/Rn/SOpt, NFmin referenced
+* to the analysis temperature, 300.15 K). `.options gmin=1e-10` as in
+* sim/lna-characterization.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+
+.options temp=27 tnom=27 gmin=1e-10
+
+** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/design/lna.sch
+.subckt lna vdd vss rfin rfout
+
+*.iopin vdd
+*.iopin vss
+*.iopin rfin
+*.iopin rfout
+XQ2 outn vb2 casc vss npn13G2 Nx=8
+XQ1 casc b1 e1 vss npn13G2 Nx=8
+Le e1 vss 1n m=1
+Lc vdd outn 5n m=1
+Cin rfin b1 100p m=1
+Cout outn rfout 100p m=1
+Cbyp2 vb2 vss 100p m=1
+Cvdd vdd vss 100p m=1
+R2a vdd vb2 1k m=1
+R2b vb2 vss 11k m=1
+XMb nc_b nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQb nc_b nc_a nc_e vss npn13G2 Nx=8
+Rp nc_e vss 3.4k m=1
+XMa nc_a nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQa nc_a nc_a vss vss npn13G2 Nx=1
+Rseed vdd nc_a 10meg m=1
+XMv vbg nc_b vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Rsum vbg cb3 18.4k m=1
+XQc cb3 cb3 vss vss npn13G2 Nx=1
+XMnp1 gsvo vbg es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMnp2 dn vl es vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+Rtail es vss 9.53k m=1
+XMld dn dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMlm gsvo dn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMref vl gsvo vdd vdd sg13_hv_pmos w=40u l=1u ng=1 m=1
+Rl vl vss 26k m=1
+XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1
+* BENCH EDIT (what-if probe only): R3b's RF path isolated by an ideal 1e-06 H choke
+R3b bref b1f 330 m=1
+Lfeed b1f b1 1e-06
+XQ3 bref bref vss vss npn13G2 Nx=1
+Cbref bref vss 100p m=1
+.ends
+
+
+Vdda vdda 0 dc 1.8
+Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50
+Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50
+Xa vdda 0 pin pout lna
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let idd = -i(vdda)
+echo "OP ic1 $&ic1 ic2 $&ic2 idd $&idd"
+
+* --- ideal-Le sweep, R3b feed choked ---
+alter l.xa.le = 1e-10
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 0.1 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 2e-10
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 0.2 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 3e-10
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 0.3 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 5e-10
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 0.5 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 7e-10
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 0.7 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 1e-09
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 1 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 1.5e-09
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 1.5 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 2e-09
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 2 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 3e-09
+sp lin 1 2.44175e+09 2.44175e+09 1
+let zin_r = real(50*(1+s_1_1)/(1-s_1_1))
+let zin_i = imag(50*(1+s_1_1)/(1-s_1_1))
+let s21m = abs(s_2_1)
+let nfmin_r = real(NFmin)
+let rn_r = real(Rn)
+let gopt_r = real(SOpt)
+let gopt_i = imag(SOpt)
+echo "FEEDSWEEP 3 $&zin_r $&zin_i $&s21m $&nfmin_r $&rn_r $&gopt_r $&gopt_i"
+alter l.xa.le = 1e-09
+echo "BENCH_COMPLETE"
+.endc
+.end

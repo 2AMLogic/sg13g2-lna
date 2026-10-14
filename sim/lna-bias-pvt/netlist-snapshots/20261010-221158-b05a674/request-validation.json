@@ -1,0 +1,44 @@
+{
+  "klt_module_version": "0.7.0",
+  "problems": [],
+  "requests": {
+    "mc_mismatch": {
+      "distinct_rndseeds": 200,
+      "first_rndseeds": [
+        1234184666,
+        291855498,
+        989145982,
+        732646802,
+        1169457107
+      ],
+      "n": 200,
+      "process_sections": [
+        "hbt_typ_mismatch",
+        "mos_tt_mismatch"
+      ],
+      "rndseed_sha256": "480de1c0708130fd252732b5db143ea4a5235134d11dd0b8cfeec7481e8d4456",
+      "seed": 68001,
+      "units": 200,
+      "vary": "mismatch"
+    },
+    "negctl_nominal": {
+      "distinct_rndseeds": 20,
+      "first_rndseeds": [
+        1234184666,
+        291855498,
+        989145982,
+        732646802,
+        1169457107
+      ],
+      "n": 20,
+      "process_sections": [
+        "hbt_typ",
+        "mos_tt"
+      ],
+      "rndseed_sha256": "6c96b45700ef78e668856a1e38334a4cb6a80c5f74cc9df5c8df497ae0901331",
+      "seed": 68001,
+      "units": 20,
+      "vary": "mismatch"
+    }
+  }
+}

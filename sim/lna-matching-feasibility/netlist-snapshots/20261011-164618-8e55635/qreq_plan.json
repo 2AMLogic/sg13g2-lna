@@ -1,0 +1,25 @@
+{
+  "generator": "sim/lna-matching-feasibility/q_study.py control-gen",
+  "declaration_sha256": "13d3cf0a1a9048f459b0315a22dd159995e4c5d1ec8d4787c723128a9dc583a7",
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "em_model_sha256": "6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
+  "retained_record": "20261011-101454-3ec590d",
+  "tune_record": "20261010-233800-d1312cc",
+  "retained_le_plan_sha256": "81e49608839d0f440bcd0cf08a0c228bc282dacca6ec066cb7ce513e93a3cd79",
+  "retained_le_match_plan_sha256": "55521bf330b8a0a1c2d40519cdf3fb25e506e904e3c730e94717da7ec348af07",
+  "retained_feed_plan_sha256": "a27287d1863706c4cdccd6b2f2c11f90f31ff1ec97598f731408d427829c430d",
+  "le_study_nh": 0.6,
+  "q_in_cases": {
+    "q5": 5.0,
+    "q10": 10.0,
+    "q20": 20.0,
+    "q40": 40.0,
+    "lossless": null
+  },
+  "rpar_ohm": [
+    400.0,
+    200.0,
+    100.0
+  ],
+  "tank_z_ret_ohm_declared": 798.0
+}

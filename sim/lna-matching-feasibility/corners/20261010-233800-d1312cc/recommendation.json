@@ -1,0 +1,25 @@
+{
+  "best_valid_feed": "em5_cideal",
+  "recommendation": {
+    "verdict": "NO-GO",
+    "binding": "noise_floor",
+    "failing": [
+      "noise_floor"
+    ],
+    "limit_db": 1.2,
+    "nf290_worst_db": 2.6104287338,
+    "nf_budget_left_db": -1.1104287338,
+    "nfmin290_worst_db": 1.513808676848731
+  },
+  "ideal_bound_gates": {
+    "verdict": "NO-GO",
+    "binding": "noise_match_penalty",
+    "failing": [
+      "noise_match_penalty"
+    ],
+    "limit_db": 1.2,
+    "nf290_worst_db": 1.8079666122,
+    "nf_budget_left_db": -0.3079666122,
+    "nfmin290_worst_db": 0.46692369536147976
+  }
+}

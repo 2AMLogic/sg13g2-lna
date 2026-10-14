@@ -128,9 +128,17 @@ step "breakdown-replay: unit tests and replay self-test" \
 step "breakdown-replay: check_breakdown_replay.py" \
   python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py
 
+# --- job: matching-feasibility-tests (issue #186)
+step "matching-feasibility-tests: solver unit tests and committed-record replay" \
+  python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v
+
 # --- job: record-citations
 step "record-citations: self-test" .github/scripts/test-check-record-citations.sh
 step "record-citations: check" .github/scripts/check-record-citations
+
+# --- job: testbench-inventory (issue #195; read-only, no PDK/ngspice/klt)
+step "testbench-inventory: self-test" .github/scripts/test-check-testbench-inventory.sh
+step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inventory.py
 
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
@@ -181,6 +189,7 @@ step "model-provenance: check" sim/models/check_sources.sh
 step "results-table-drift: renderer self-test" \
   python3 -I -m unittest discover -s sim/lna-characterization/tests -p test_render_results.py -v
 step "results-table-drift: check" python3 -I sim/lna-characterization/render_results.py --check
+step "results-table-drift: 290 K narrative check" python3 -I sim/lna-characterization/render_results.py --check-narrative
 
 # --- job: local-checks-drift
 step "local-checks-drift: self-test" .github/scripts/test-run-local-checks.sh

@@ -12,6 +12,9 @@
 #      mutation of each reference / request / report -> FAIL, naming it
 #   8. extract_report / lvs_report (scoped LVS): mutated hash, missing
 #      report, missing provenance.input, wrong role, malformed hash -> FAIL
+#   9. native DRC pair (issue #185): absent passes; one-sided, mutated
+#      report/GDS/deck/pdk/status bindings, or an executable below its
+#      recorded minimum -> FAIL, naming the relationship
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -184,6 +187,110 @@ run ex-abs 1 "absolute netlist_path"; named ex-abs "absolute"
 mk ex-sub; mkdir "$TMP/ex-sub/$C/sub"; mv "$TMP/ex-sub/$C/lna_core.extracted.spice" "$TMP/ex-sub/$C/sub/"
 exmut ex-sub 'd["netlist_path"] = "sub/lna_core.extracted.spice"'
 run ex-sub 0 "output resolved relative to report directory"
+
+# --- issue #185: native DRC report/sidecar pair ---
+# Fixture pairs are built by the real recorder (layout/native_drc_identity.py)
+# over a synthetic native report, in the throwaway copy only. No fabricated
+# native report is ever committed to the tree (issue #201 owns the real run).
+mknative() { # mknative <name>: consistent native pair on top of a fresh copy
+  mk "$1"
+  python3 -I - "$TMP/$1/$C/lna_core.gds" "$TMP/$1/$C/native_drc_report.json" <<'PY'
+import hashlib, json, sys
+gds_sha = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest()
+rep = {
+  "schema_version": 2, "file": "lna_core.gds", "deck": "ihp-sg13g2-native",
+  "dbu_um": 0.001, "status": "violations", "violation_count": 1,
+  "rule_counts": {"m1.width.1": 1}, "metrics": {"drc__error__count": 1},
+  "violations": [{"rule": "m1.width.1"}],
+  "coverage": {"schema_version": 1, "known": True},
+  "provenance": {
+    "klt_version": "0.7.0", "klayout_version": "0.30.30",
+    "pdk": {"name": "ihp-sg13g2", "version": "0.3.0"},
+    "deck": {"name": "ihp-sg13g2-native",
+             "content_hash": "sha256:" + "d" * 64, "released": True},
+    "input": {"role": "layout", "content_hash": "sha256:" + gds_sha},
+  },
+}
+json.dump(rep, open(sys.argv[2], "w"), indent=2)
+PY
+  python3 -I "$SRC/layout/native_drc_identity.py" record "$TMP/$1/$C" \
+    native_drc_report.json --gds "$TMP/$1/$C/lna_core.gds" \
+    --klayout-exe klayout --klayout-exe-resolved /usr/local/bin/klayout \
+    --klayout-exe-version "KLayout 0.30.30 (2026-01-01) deadbee" \
+    --min-klayout-version 0.29.0 --pdk ihp-sg13g2 \
+    --klt-version-json '{"schema_version":1,"version":"0.7.0","is_release":true}' \
+    --argv '["klt","drc","--engine","klayout","--pdk","ihp-sg13g2"]' >/dev/null
+}
+natmut() { # natmut <case> <python statement on d (the sidecar doc)>
+  python3 -I - "$TMP/$1/$C/native_drc_inputs.json" "$2" <<'PY'
+import json, sys
+p, stmt = sys.argv[1], sys.argv[2]
+d = json.load(open(p)); exec(stmt)
+json.dump(d, open(p, "w"), indent=2)
+PY
+}
+mk nat-absent; run nat-absent 0 "absent native pair passes"
+mknative nat-ok; run nat-ok 0 "consistent native pair"
+mknative nat-reponly; rm "$TMP/nat-reponly/$C/native_drc_inputs.json"
+run nat-reponly 1 "native report without sidecar"
+named nat-reponly "native_drc_inputs.json missing"
+mknative nat-sideonly; rm "$TMP/nat-sideonly/$C/native_drc_report.json"
+run nat-sideonly 1 "native sidecar without report"
+named nat-sideonly "native_drc_report.json missing"
+mknative nat-repbytes; echo " " >> "$TMP/nat-repbytes/$C/native_drc_report.json"
+run nat-repbytes 1 "mutated native report bytes"
+named nat-repbytes "report changed since this native run"
+mknative nat-sidesha; natmut nat-sidesha \
+  'd["report_sha256"] = "0" * 64'
+run nat-sidesha 1 "mutated recorded report digest"
+named nat-sidesha "report changed since this native run"
+mknative nat-gdssha; natmut nat-gdssha 'd["gds_sha256"] = "0" * 64'
+run nat-gdssha 1 "mutated recorded GDS digest"
+named nat-gdssha "GDS changed since this native run"
+mknative nat-gdsbytes; echo " " >> "$TMP/nat-gdsbytes/$C/lna_core.gds"
+run nat-gdsbytes 1 "mutated GDS bytes"
+named nat-gdsbytes "GDS changed since this native run"
+mknative nat-deck; natmut nat-deck 'd["deck_binding"] = {"name": "other"}'
+run nat-deck 1 "mutated deck binding"
+named nat-deck "deck_binding differs"
+mknative nat-pdk; natmut nat-pdk 'd["pdk_binding"] = {"name": "other-pdk"}'
+run nat-pdk 1 "mutated pdk binding"
+named nat-pdk "pdk_binding differs"
+mknative nat-status; natmut nat-status 'd["status"] = "clean"'
+run nat-status 1 "sidecar status != report status"
+named nat-status "status 'clean' != report status 'violations'"
+mknative nat-repstatus; python3 -I - "$TMP/nat-repstatus/$C/native_drc_report.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["status"] = "bananas"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run nat-repstatus 1 "report status outside the completed set"
+named nat-repstatus "want one of"
+mknative nat-repinput; python3 -I - "$TMP/nat-repinput/$C/native_drc_report.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["provenance"]["input"]["content_hash"] = "sha256:" + "0" * 64
+json.dump(d, open(p, "w"), indent=2)
+PY
+run nat-repinput 1 "native report repinned at other bytes"
+named nat-repinput "provenance.input.content_hash"
+mknative nat-oldexe; natmut nat-oldexe 'd["klayout_exe_version"] = "KLayout 0.28.16 (2023-12-30) old"'
+run nat-oldexe 1 "executable below its recorded minimum"
+named nat-oldexe "below min_klayout_version"
+mknative nat-badmin; natmut nat-badmin 'd["min_klayout_version"] = "banana"'
+run nat-badmin 1 "unparseable recorded minimum"
+named nat-badmin "min_klayout_version 'banana' unparseable"
+mknative nat-badschema; natmut nat-badschema 'd["schema"] = "x"'
+run nat-badschema 1 "wrong-schema native sidecar"
+mknative nat-noklt; natmut nat-noklt 'del d["klt"]'
+run nat-noklt 1 "native sidecar without klt identity"
+named nat-noklt "klt identity"
+mknative nat-noargv; natmut nat-noargv 'del d["argv"]'
+run nat-noargv 1 "native sidecar without argv"
+named nat-noargv "argv"
+mknative nat-nodeck; natmut nat-nodeck 'del d["deck_binding"]'
+run nat-nodeck 1 "native sidecar without deck binding"
+named nat-nodeck "missing deck_binding"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

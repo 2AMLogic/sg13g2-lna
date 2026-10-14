@@ -507,5 +507,69 @@ class TestCommittedRecord(unittest.TestCase):
                          "sim/lna-characterization/records/20260926-122301-088c734-summary.csv")
 
 
+class TestNfmin290Narrative(unittest.TestCase):
+    """Issue #187: the current 290 K reachability prose tracks the derived view.
+    PDK-free; mutations are applied to a scratch copy only."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.addCleanup(self._td.cleanup)
+        self.root = Path(self._td.name)
+        for rel in (rr.README, rr.RATIFIED, rr.SPEC, rr.NF290_VIEW.format(rec=rr.RECORD_ID)):
+            (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(ROOT / rel, self.root / rel)
+
+    def test_committed_narrative_is_fresh_with_expected_numbers(self):
+        self.assertEqual(run(ROOT, "--check-narrative")[0], 0)
+        d = rr.load_nfmin290(ROOT)
+        self.assertAlmostEqual(d["best"][0], 1.7389, places=4)
+        self.assertAlmostEqual(d["nominal"][0], 2.4454, places=4)
+        self.assertAlmostEqual(d["worst"][0], 3.4239, places=4)
+        self.assertAlmostEqual(d["nominal_gap"], 0.2105, places=4)
+        self.assertEqual(d["below_target"], 0)
+        text = (ROOT / rr.README).read_text(encoding="utf-8")
+        self.assertIn("band-low sample", text)
+        for stale in ("+0.575 dB over**", "+0.882 dB over**", "+1.228 dB over**",
+                      "gap is now only **0.274 dB**"):
+            self.assertNotIn(stale, text)
+
+    def test_stale_current_number_is_detected(self):
+        p = self.root / rr.README
+        text = p.read_text(encoding="utf-8")
+        p.write_text(text.replace("+0.945 dB over", "+0.882 dB over", 1), encoding="utf-8")
+        code, err = run(self.root, "--check-narrative")
+        self.assertEqual(code, 1)
+        self.assertIn("stale", err)
+
+    def test_changed_view_is_detected(self):
+        v = self.root / rr.NF290_VIEW.format(rec=rr.RECORD_ID)
+        # self-consistent edit (nfmin290 and nf290 both shift): narrative stale
+        txt = v.read_text().replace(",1.7389,0.1043,1.8432", ",1.7000,0.1432,1.8432")
+        v.write_text(txt, encoding="utf-8")
+        self.assertEqual(run(self.root, "--check-narrative")[0], 1)
+        # inconsistent edit: rejected outright
+        v.write_text(txt.replace(",1.7000,0.1432,", ",1.7000,0.9999,"), encoding="utf-8")
+        self.assertEqual(run(self.root, "--check-narrative")[0], 2)
+
+    def test_missing_markers_fail(self):
+        p = self.root / rr.README
+        p.write_text("no markers\n", encoding="utf-8")
+        code, err = run(self.root, "--check-narrative")
+        self.assertEqual(code, 1)
+        self.assertIn("marker", err)
+
+    def test_update_narrative_restores_and_touches_only_blocks(self):
+        p = self.root / rr.README
+        good = p.read_text(encoding="utf-8")
+        p.write_text(good.replace("+0.945 dB over", "+0.000 dB over", 1), encoding="utf-8")
+        self.assertEqual(run(self.root, "--update-narrative")[0], 0)
+        self.assertEqual(p.read_text(encoding="utf-8"), good)
+
+    def test_wrong_reference_temperature_rejected(self):
+        v = self.root / rr.NF290_VIEW.format(rec=rr.RECORD_ID)
+        v.write_text(v.read_text().replace(",290.00,", ",300.15,"), encoding="utf-8")
+        self.assertEqual(run(self.root, "--check-narrative")[0], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

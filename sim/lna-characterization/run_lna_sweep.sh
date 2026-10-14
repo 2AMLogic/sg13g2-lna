@@ -371,7 +371,8 @@ python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" \
   --summary-csv "${SUMMARY_CSV}" \
   --manifest "${MANIFEST}" --coverage-json "${COVERAGE_JSON}" \
   --band-lo "${F_BAND_LO}" --band-hi "${F_BAND_HI}" \
-  --df "${DF}" --f1 "${F1}" --f2 "${F2}"
+  --df "${DF}" --f1 "${F1}" --f2 "${F2}" \
+  --nfmin290
 
 COVERAGE_STATUS="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --coverage-status --coverage-json "${COVERAGE_JSON}")"
 COVERAGE_PROSE="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --coverage-prose --coverage-json "${COVERAGE_JSON}")"

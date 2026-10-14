@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
 import math
 import os
@@ -310,6 +311,110 @@ HIST_3PT_LABEL = "HISTORICAL three-point (lo/mid/hi: 2.4, 2.44175, 2.4835 GHz)"
 NF_XCHECK_TOL_DB = 1e-3  # grid sample vs the echoed lo/mid/hi at the same f
 
 
+# --- 290 K-referenced NFmin (issue #181) ----------------------------------
+# ngspice's `sp` NFmin is referenced to the ANALYSIS temperature (the cell's
+# temp_c), not to the IEEE T0 = 290 K of the ratified NF row, so it cannot be
+# subtracted from nf290 or compared with the 1.5 dB bar as-is. The re-reference
+# is the one already used by sim/lna-core-envelope (nf_reref, loaded from that
+# directory by explicit path so `python3 -I` works and there is ONE formula):
+#     F290 = 1 + (F_T - 1) * T / 290,   T = temp_c + 273.15 K
+# It is identity at T = 290 K. The raw column is never relabelled; the
+# re-referenced value is an additional, separately named column.
+# Sampling scope: the summary's NFmin is the band-LOW sample only (first point
+# of the in-band `sp` grid, 2.4 GHz). It is not an in-band extremum, and any
+# NF - NFmin gap is taken at that same frequency against nf290_db_at_band_lo,
+# never against the full-band (sampled-maximum) nf290_db_worst.
+T0_REF_K = 290.0
+KELVIN_OFFSET = 273.15
+_RF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                        "lna-core-envelope", "envelope_rf.py")
+_rf_spec = importlib.util.spec_from_file_location("envelope_rf", _RF_PATH)
+_rf = importlib.util.module_from_spec(_rf_spec)
+_rf_spec.loader.exec_module(_rf)
+nf_reref = _rf.nf_reref
+NFMIN290_SCOPE = ("band-low sample only (2.4 GHz, first in-band `sp` point); not"
+                  " an in-band extremum")
+NFMIN290_FIELDS = ("nfmin_analysis_temp_k", "nfmin290_t_ref_k",
+                   "nfmin290_db_at_band_lo", "nf290_minus_nfmin290_db_at_band_lo")
+
+
+def analysis_temp_k(temp_c) -> float:
+    return float(temp_c) + KELVIN_OFFSET
+
+
+def nfmin290_db(nfmin_db: float, temp_c) -> float:
+    """Re-reference an analysis-temperature NFmin [dB] to T0 = 290 K."""
+    return nf_reref(float(nfmin_db), analysis_temp_k(temp_c), T0_REF_K)
+
+
+def nfmin290_fields(temp_c, nfmin_db: float, nf290_lo_db: float) -> dict:
+    """The derived 290 K NFmin columns for one cell (band-low basis)."""
+    t_k = analysis_temp_k(temp_c)
+    n290 = nfmin290_db(nfmin_db, temp_c)
+    return {
+        "nfmin_analysis_temp_k": f"{t_k:.2f}",
+        "nfmin290_t_ref_k": f"{T0_REF_K:.2f}",
+        "nfmin290_db_at_band_lo": f"{n290:.4f}",
+        "nf290_minus_nfmin290_db_at_band_lo": f"{float(nf290_lo_db) - n290:.4f}",
+    }
+
+
+NFMIN290_VIEW_COLS = (
+    "source_record_id", "point_id", "corner_label", "temp_c", "vdd_v",
+    "freq_hz", "nfmin_sp_db_at_band_lo") + NFMIN290_FIELDS + ("nf290_db_at_band_lo",)
+
+
+def derive_nfmin290_view(summary_csv: str, source_record_id: str) -> list[dict]:
+    """PDK-free derivation of 290 K NFmin from a committed summary CSV.
+
+    Reads only the retained `nfmin_sp_db_at_band_lo` (analysis temperature,
+    4 decimals) and `nf290_db_at_band_lo` columns; the source CSV is never
+    written. Output rows carry the source record ID and the reference
+    temperature as provenance."""
+    with open(summary_csv) as fh:
+        cells = list(csv.DictReader(fh))
+    rows = []
+    for c in sorted(cells, key=lambda r: r["point_id"]):
+        row = {
+            "source_record_id": source_record_id,
+            "point_id": c["point_id"], "corner_label": c["corner_label"],
+            "temp_c": c["temp_c"], "vdd_v": c["vdd_v"],
+            "freq_hz": f"{HIST_3PT['lo']:.6e}",
+            "nfmin_sp_db_at_band_lo": c["nfmin_sp_db_at_band_lo"],
+        }
+        row.update(nfmin290_fields(c["temp_c"], float(c["nfmin_sp_db_at_band_lo"]),
+                                   float(c["nf290_db_at_band_lo"])))
+        row["nf290_db_at_band_lo"] = c["nf290_db_at_band_lo"]
+        rows.append(row)
+    return rows
+
+
+def nfmin290_headline(cells: list[dict], nf_limit_db: float = 1.5) -> str:
+    """Headline line for 290 K-referenced NFmin. `cells` are summary rows or
+    derive_nfmin290_view rows (both carry the NFMIN290_FIELDS columns)."""
+    best = min(cells, key=lambda r: float(r["nfmin290_db_at_band_lo"]))
+    worst = max(cells, key=lambda r: float(r["nfmin290_db_at_band_lo"]))
+    raw = min(cells, key=lambda r: float(r["nfmin_sp_db_at_band_lo"]))
+    gaps = [float(r["nf290_minus_nfmin290_db_at_band_lo"]) for r in cells]
+    nom = next((r for r in cells if (r["corner_label"], r["temp_c"], r["vdd_v"])
+                == ("typ", "27", "1.80")), None)
+    n_below = sum(1 for r in cells if float(r["nfmin290_db_at_band_lo"]) < nf_limit_db)
+    return (
+        f"- **NFmin re-referenced to T0 = 290 K (ngspice `sp` NFmin at the"
+        f" analysis temperature T, F290 = 1 + (F_T - 1)*T/290; {NFMIN290_SCOPE};"
+        f" ideal lossless noise match)**: best {best['nfmin290_db_at_band_lo']} dB at"
+        f" {cell_label(best)}; "
+        + (f"nominal {nom['nfmin290_db_at_band_lo']} dB; " if nom else "")
+        + f"worst {worst['nfmin290_db_at_band_lo']} dB at {cell_label(worst)};"
+        f" {n_below}/{len(cells)} cells below {nf_limit_db:g} dB."
+        f" nf290 - NFmin290 at 2.4 GHz (both 290 K, same frequency): "
+        + (f"nominal {nom['nf290_minus_nfmin290_db_at_band_lo']} dB, " if nom else "")
+        + f"range {min(gaps):.4f} .. {max(gaps):.4f} dB."
+        f" Raw analysis-temperature NFmin (context only, not 290 K): best"
+        f" {raw['nfmin_sp_db_at_band_lo']} dB at {cell_label(raw)}."
+    )
+
+
 def nf_grid_label(n: int, lo: float, hi: float) -> str:
     return f"lin {n} pts {lo / 1e9:.5g}..{hi / 1e9:.5g} GHz"
 
@@ -361,11 +466,18 @@ def read_nf_grid(path: str) -> list[tuple[float, float, float]]:
 
 
 def build_sparam_rows(
-    corners_dir: str, exclude=(), nf_spec=None
+    corners_dir: str, exclude=(), nf_spec=None, nfmin290: bool = False,
+    include=None,
 ) -> tuple[list[dict], dict, list[str], list[dict]]:
     """`exclude`: points whose tables failed grid validation; they are skipped
     (reported as skipped) so their extrema never enter an aggregate.
-    `nf_spec`: manifest grid contract for nf290.dat (None = derive)."""
+    `nf_spec`: manifest grid contract for nf290.dat (None = derive).
+    `nfmin290`: also emit the 290 K-referenced NFmin columns (issue #181).
+    Off by default so a historical replay keeps its exact column set.
+    `include`: the manifest's declared sp point IDs (issue #180). When given,
+    an undeclared sp_* log is not reduced at all -- it is neither a row nor a
+    skipped point (coverage lists it as `unexpected`). None = every sp_* log
+    on disk (manifest-free historical replay)."""
     rows: list[dict] = []
     nf_rows: list[dict] = []
     per_cell: dict[str, dict] = {}
@@ -376,6 +488,8 @@ def build_sparam_rows(
         point_id = fname[:-4]
         m = SP_NAME_RE.match(point_id)
         if not m:
+            continue
+        if include is not None and point_id not in include:
             continue
         if point_id in exclude or not is_complete(os.path.join(corners_dir, fname)) or any(
             not os.path.isfile(os.path.join(corners_dir, point_id + d))
@@ -497,6 +611,9 @@ def build_sparam_rows(
             "f_at_s22_mag_broadband_max_hz": f"{s22_max_f:.6e}",
         }
         cell = per_cell[point_id]
+        if nfmin290:
+            cell.update(nfmin290_fields(m.group("temp"), cell_rows[0][8],
+                                        log["nf290"]["lo"]))
         cell["_nf_grid"] = nf_grid
         cell["_nf_3pt"] = log["nf290"]
         if nf_grid is not None:
@@ -538,7 +655,12 @@ def finalize_nf_columns(per_cell: dict) -> None:
                                    " them are NOT checked")
 
 
-def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
+def build_iip3_rows(corners_dir: str, include=None) -> tuple[list[dict], list[str]]:
+    """`include`: the manifest's declared iip3 point IDs (issue #180). When
+    given, an undeclared drive level never becomes an IIP3 row, so it cannot
+    enter the accepted intercepts or the per-cell slope check; declared
+    nominal-only extra levels are members and stay included. None = every
+    iip3_* log on disk (manifest-free historical replay)."""
     rows: list[dict] = []
     skipped: list[str] = []
     for fname in sorted(os.listdir(corners_dir)):
@@ -547,6 +669,8 @@ def build_iip3_rows(corners_dir: str) -> tuple[list[dict], list[str]]:
         point_id = fname[:-4]
         m = IIP3_NAME_RE.match(point_id)
         if not m:
+            continue
+        if include is not None and point_id not in include:
             continue
         if not is_complete(os.path.join(corners_dir, fname)):
             skipped.append(point_id)
@@ -924,7 +1048,12 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
         "invalid_logs": invalid_logs,
         "frequency_grid_contract": man.get("grids") or "absent (legacy manifest)",
         "missing_drive_pairs": broken_pairs,
+        # Diagnostic only (issue #180): undeclared logs never make required
+        # coverage incomplete, and never enter the campaign CSVs/headlines.
         "unexpected": sorted(on_disk - set(expected)),
+        "aggregate_membership": ("manifest-declared sp/iip3 points only; points"
+                                 " listed under `unexpected` are excluded from"
+                                 " every CSV and headline"),
     }
     cov["status"] = (
         "complete"
@@ -968,6 +1097,8 @@ def coverage_prose(cov: dict | None) -> list[str]:
     else:
         grid_note = ("; sp frequency grids NOT validated (legacy manifest without"
                      " a grid contract)")
+    extra = ([f"  - Unexpected (undeclared; excluded from every aggregate):"
+              f" {', '.join(cov['unexpected'])}"] if cov.get("unexpected") else [])
     if cov["status"] == "complete":
         what = (
             "smoke inventory complete -- a plumbing check, NOT a PVT campaign"
@@ -975,7 +1106,7 @@ def coverage_prose(cov: dict | None) -> list[str]:
             else "campaign inventory complete"
         )
         return [f"- **Coverage**: {what}; {n_done}/{n_exp} expected points completed,"
-                " every mandatory IIP3 drive pair intact" + grid_note + "."]
+                " every mandatory IIP3 drive pair intact" + grid_note + "."] + extra
     lines = [
         f"- **Coverage**: PARTIAL INVENTORY -- {n_done}/{n_exp} expected points"
         " completed. This record is NOT a full campaign; every aggregate"
@@ -998,7 +1129,7 @@ def coverage_prose(cov: dict | None) -> list[str]:
             + " + ".join(bp["points"])
             + f" (unavailable: {', '.join(bp['unavailable'])})"
         )
-    return lines
+    return lines + extra
 
 
 def write_csv(path: str, rows: list[dict], fieldnames: list[str]) -> None:
@@ -1064,12 +1195,18 @@ def headlines(
             f"{worst_nf['nf290_db_worst']} dB at {cell_label(worst_nf)}; best "
             f"{best_nf['nf290_db_worst']} dB at {cell_label(best_nf)}."
         )
-    nfmin = min(cells, key=lambda r: float(r["nfmin_sp_db_at_band_lo"]))
-    out.append(
-        f"- **NFmin (ngspice `sp`, at 2.4 GHz, i.e. what an ideal noise match "
-        f"would give this circuit)**: best {nfmin['nfmin_sp_db_at_band_lo']} dB "
-        f"at {cell_label(nfmin)}."
-    )
+    if "nfmin290_db_at_band_lo" in cells[0]:
+        out.append(nfmin290_headline(cells))
+    else:
+        # Historical records: wording kept byte-identical (it predates the
+        # 290 K re-reference; see derive_nfmin290_view for the comparable
+        # value, published as a separate view, issue #181).
+        nfmin = min(cells, key=lambda r: float(r["nfmin_sp_db_at_band_lo"]))
+        out.append(
+            f"- **NFmin (ngspice `sp`, at 2.4 GHz, i.e. what an ideal noise match "
+            f"would give this circuit)**: best {nfmin['nfmin_sp_db_at_band_lo']} dB "
+            f"at {cell_label(nfmin)}."
+        )
     kmin = min(cells, key=lambda r: float(r["k_broadband_min"]))
     n_cells_unstable = sum(1 for r in cells if float(r["k_broadband_min"]) < 1.0)
     out.append(
@@ -1209,6 +1346,16 @@ def main() -> int:
     ap.add_argument("--f1")
     ap.add_argument("--f2")
     ap.add_argument("--headlines", action="store_true")
+    ap.add_argument("--nfmin290", action="store_true",
+                    help="reduction: add the 290 K-referenced NFmin columns to the"
+                    " summary (issue #181; the headline then uses them)")
+    ap.add_argument("--nfmin290-view", metavar="OUT_CSV",
+                    help="PDK-free: derive 290 K NFmin from --summary-csv of a"
+                    " committed record (--source-record names it) into OUT_CSV;"
+                    " the source CSV is only read")
+    ap.add_argument("--source-record", help="record ID for --nfmin290-view provenance")
+    ap.add_argument("--nfmin290-headline", metavar="VIEW_CSV",
+                    help="print the 290 K NFmin headline line for a derived view")
     ap.add_argument(
         "--iip3-slope-tol",
         type=float,
@@ -1242,6 +1389,17 @@ def main() -> int:
             print("\n".join(coverage_prose(cov)))
         return 0
 
+    if args.nfmin290_view:
+        if not (args.summary_csv and args.source_record):
+            raise SystemExit("--nfmin290-view requires --summary-csv and --source-record")
+        rows = derive_nfmin290_view(args.summary_csv, args.source_record)
+        write_csv(args.nfmin290_view, rows, list(NFMIN290_VIEW_COLS))
+        return 0
+    if args.nfmin290_headline:
+        with open(args.nfmin290_headline) as fh:
+            print(nfmin290_headline(list(csv.DictReader(fh))))
+        return 0
+
     if args.headlines:
         print(headlines(args.summary_csv, args.iip3_csv, args.iip3_slope_tol))
         return 0
@@ -1265,11 +1423,21 @@ def main() -> int:
     elif args.strict:
         raise SystemExit("--strict requires --manifest")
 
-    man_grids = read_manifest(args.manifest)["grids"] if args.manifest else {}
+    man = read_manifest(args.manifest) if args.manifest else None
+    man_grids = man["grids"] if man else {}
+    # Issue #180: with a manifest, campaign CSVs and headlines are built only
+    # from the declared (and therefore validated) inventory. Undeclared logs
+    # stay listed as `unexpected` in the coverage sidecar; they do not change
+    # the coverage status or the --strict exit code.
+    if cov is not None and cov["unexpected"]:
+        print("parse_lna_sweep.py: excluded from every aggregate (undeclared in"
+              " the manifest): " + ", ".join(cov["unexpected"]), file=sys.stderr)
     sparam_rows, per_cell, sp_skipped, nf_rows = build_sparam_rows(
         args.corners_dir,
         exclude={g["point"] for g in cov["invalid_grids"]} if cov else (),
         nf_spec=man_grids.get("nf290"),
+        nfmin290=args.nfmin290,
+        include=set(man["sp"]) if man else None,
     )
     if not sparam_rows and cov is not None and args.strict:
         print(f"parse_lna_sweep.py: {args.corners_dir}: no complete sp_* artefacts",
@@ -1280,7 +1448,8 @@ def main() -> int:
             f"{args.corners_dir}: no complete sp_* artefacts found"
             + (f" ({len(sp_skipped)} incomplete: {', '.join(sp_skipped)})" if sp_skipped else "")
         )
-    iip3_rows, iip3_skipped = build_iip3_rows(args.corners_dir)
+    iip3_rows, iip3_skipped = build_iip3_rows(
+        args.corners_dir, include=set(man["iip3"]) if man else None)
     join_iip3_into_summary(per_cell, iip3_rows)
 
     write_csv(args.sparam_csv, sparam_rows, list(sparam_rows[0].keys()))

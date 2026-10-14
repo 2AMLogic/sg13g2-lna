@@ -1,0 +1,32 @@
+* sg13g2-lna -- finite resonant base-feed study (issue #193), MIM-CAP PROBE
+* Generated from sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl
+* by sim/lna-matching-feasibility/feed_study.py (plan) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+*
+* Purpose: measure the pinned PDK cap_cmim subcircuit (cornerCAP.lib cap_typ)
+* as a one-port at the sizes the plan chose from the closed-form
+* C = cap_carea*W*L + 2*CJSW*(W+L), so the realised C and ESR at the band
+* centre are measured rather than assumed. The PDK model carries only the
+* 55 mOhm top-plate resistor: NO bottom-plate parasitic capacitance (the
+* model header says it is added by extraction). That missing evidence is
+* bracketed in the feed decks, not guessed here.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerCAP.lib" cap_typ
+
+.options temp=27 tnom=27 gmin=1e-10
+
+Xcem4 cp_em4 0 cap_cmim w=25.1633u l=25.1633u
+Icem4 0 cp_em4 dc 0 ac 1
+Xcem5 cp_em5 0 cap_cmim w=22.6559u l=22.6559u
+Icem5 0 cp_em5 dc 0 ac 1
+
+.control
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+ac lin 1 2.44175e+09 2.44175e+09
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/cmim_probe.dat real(v(cp_em4)) imag(v(cp_em4)) real(v(cp_em5)) imag(v(cp_em5))
+echo "DAT_WRITTEN cmim_probe.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end

@@ -11,6 +11,10 @@ signoff verdict. See "What the evidence supports" before citing anything.
 layout/
   README.md                     this file
   run_flow.sh                   regenerate everything below, in order
+  run_native_drc.py             native PDK DRC runner: version preflight +
+                                provenance (issue #185; evidence via #201)
+  native_drc_identity.py        records/validates native_drc_inputs.json (#185)
+  tests/                        PDK-free unit tests for the layout tooling
   pcell_env.py                  loads IHP's SG13_dev PyCell library headless
   lvs_reference.py              derives the scoped LVS reference from design/netlist/lna.spice
   tools/fetch-pcell-deps.sh     fetches the two PyCell submodule shims (pinned, sha256-checked)
@@ -29,6 +33,10 @@ layout/
     lna_core.extracted.spice    the netlist that extraction wrote
     lvs_report.json             klt lvs vs the scoped reference
     lvs_full_report.json        klt lvs vs design/netlist/lna.spice
+    native_drc_report.json      native-deck verdict from run_native_drc.py —
+                                NOT present in this tree (#201)
+    native_drc_inputs.json      binding of the native report to the GDS, deck,
+                                standalone executable and klt — NOT present yet
 ```
 
 ## Scope
@@ -178,6 +186,81 @@ ihp-sg13g2` failed on this host. The deck aborts in
 and the deck needs a newer DRC DSL. That is a host-tooling fact, and fixing
 it is a worker-spec change. It is not a klt gap, since `--min-klayout-version`
 exists for this case. There is no native-deck verdict in this tree.
+
+### Native DRC runner (`run_native_drc.py`, #185 — evidence via #201)
+
+IHP's own deck is the ground truth the curated report above cannot replace,
+and this tree has no verdict from it. `layout/run_native_drc.py` is the
+reproducible entry point that produces one, kept separate from
+`run_flow.sh` because its prerequisites differ. It consumes the committed
+`lna_core.gds` — it never regenerates or edits geometry — and publishes a
+pair beside the curated evidence:
+
+- `lna_core/native_drc_report.json` — the `klt drc --engine klayout --pdk
+  ihp-sg13g2` envelope, verbatim (clean, violations, or `coverage_unknown`);
+- `lna_core/native_drc_inputs.json` — written by
+  `layout/native_drc_identity.py` only after a completed run, binding the
+  report's exact bytes to the GDS, to the PDK/deck identity the report
+  itself records (copied verbatim from its provenance), and to the
+  standalone executable version, the klt identity and the exact argv.
+
+**Neither file exists in this tree.** The historical attempt failed because
+the worker's standalone `klayout` was 0.28.16; producing the real verdict
+needs an evidence host with a compatible executable, tracked as issue #201
+along with the exact compatible version and the actual findings. The runner,
+its preflight and its failure paths are the repository-side half (#185):
+reviewed and PDK-free-tested now, so #201 is a run, not new tooling.
+
+```bash
+python3 -I layout/run_native_drc.py --min-klayout-version <x.y.z> \
+    [--klayout-exe /path/to/klayout] [--pdk-root /path/to/containing/ihp-sg13g2]
+```
+
+Prerequisites, all explicit:
+
+- **The standalone KLayout application** — the binary the deck shells out
+  to, *not* the pip `klayout` module `generate.py` uses; installing the
+  module neither provides nor updates it. Resolved from `--klayout-exe`,
+  `$KLAYOUT_EXE`, then PATH.
+- **A caller-supplied `--min-klayout-version`, with no default on
+  purpose.** The deck's true minimum is only establishable on an evidence
+  host, and inventing a number would let a wrong binary fail mid-deck (or
+  worse, pass silently). The runner probes `-v` first and refuses with
+  detected-vs-required; the same value is then passed to klt, whose own
+  probe re-checks the binary it finds — the runner prepends the
+  preflighted executable's directory to PATH so both probes hit the same
+  binary.
+- **klt 0.7.0**, the same pinned, `uvx --isolated` release as
+  `run_flow.sh`; `check-klt-pin.sh` keeps the two pins from skewing.
+- **The IHP PDK install** (`$PDK_ROOT`, or `--pdk-root`) so klt resolves
+  the native deck for `--pdk ihp-sg13g2`.
+
+Completed-run semantics (per the klt 0.7.0 release docs): `klt drc --engine
+klayout` exits 0 for clean, 3 for violations, and 4 for
+`coverage_unknown` — zero findings without a caller-vouched rule-category
+assertion, which is how a genuinely clean layout looks until a reviewed
+`--expect-rule-categories-file` is supplied. The runner publishes all
+three verbatim with the report's own status, so a `clean` native claim
+always traces to an explicit recorded assertion in the binding's `argv`.
+Any other exit is a failed run: nothing is published, the raw output is
+kept in gitignored `native_drc_report.json.tmp`, and a previously
+published pair is moved to `native_drc_stale/<utc-timestamp>/` first — a
+failed rerun must never leave old evidence sitting in place as if it were
+fresh. Publication is staged and refused unless the report pins the
+committed GDS hash; each failure class has its own exit code (2 usage,
+3 no executable, 4 unparseable `-v`, 5 below minimum, 6 deck failure,
+7 publication self-check bug), listed in the runner's docstring. The
+freshness gate (item 6 below) fails a one-sided pair — an interrupted
+publication cannot pass silently.
+
+**Scope.** This is still the partial cell — 6 of the netlist's 30
+instances. A native verdict on it, clean or not, is a cell result: it
+cannot satisfy a block-level T1 row, `check-signoff-scope.py` still fails
+any `met` item 2/3/4 row backed by this scope, and
+`native_drc_report.json` is deliberately uncited in `signoff/manifest.json`
+until the layout scope is complete. Real native findings are accepted only
+through #201's evidence run.
+
 
 ### Extraction (`extract_report.json`)
 
@@ -331,6 +414,22 @@ evidence (the partial-scope guard above still applies);
    `mismatch`) and promotes no signoff row. If a run is interrupted between
    publishing a report and its sidecar entry, the report hash no longer matches
    and the gate fails rather than attesting the old report.
+6. the native DRC pair `native_drc_report.json` + `native_drc_inputs.json`
+   (written by `layout/run_native_drc.py` through
+   `layout/native_drc_identity.py`, issue #185). Entirely absent is allowed —
+   no native verdict exists in this tree until issue #201 supplies one — but
+   a one-sided pair fails, and a present pair must: bind the report's exact
+   bytes (`report_sha256`) and the committed GDS (`gds`/`gds_sha256`); agree
+   with the report's own `status` (one of clean / violations /
+   coverage_unknown) and with the deck and PDK identity in the report's
+   provenance (`deck_binding`/`pdk_binding`); record a non-empty klt identity
+   and argv; and record a standalone executable version (`klayout_exe_version`)
+   at or above the recorded `min_klayout_version`. The gate never runs the
+   native deck and never requires the pair to exist; it only checks that
+   what is committed is what the recorded invocation produced. A failed
+   runner rerun never leaves the old pair in place (it is segregated to
+   `native_drc_stale/`), and the pair names are only ever published
+   atomically after the report has been validated against the GDS hash.
 
 Regenerating the GDS and re-running the reports stays a deliberate local
 step (`layout/run_flow.sh`); CI only checks that the committed files agree.

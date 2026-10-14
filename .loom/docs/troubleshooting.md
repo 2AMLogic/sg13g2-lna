@@ -1478,40 +1478,29 @@ Run the sync script — or create the one label directly — to reconcile:
 
 ```bash
 gh label list --search operator                      # empty => not provisioned
-gh label create "loom:operator-only" --color F97316 \
-  --description "Requires human action or ruling outside automation (creds, infra, hardware); sweep skips"
+gh label create "loom:operator" --color EA580C \
+  --description "A human must act or decide; the body says which"
 ```
 
 **GitHub caps label descriptions at 100 characters.** A `labels.yml` entry with a
 longer description fails to sync (HTTP 422 "description is too long") and the label
 silently never gets created. Keep descriptions at or under 100 chars.
 
-#### `loom:blocked` vs `loom:operator-only` vs `loom:needs-capability`
+#### `loom:blocked` vs `loom:operator` vs `loom:frozen`
 
-These status labels look similar but mean different things to the automation:
+The three holds (`.loom/docs/label-state-machine.md` → "The three holds"):
 
-- **`loom:blocked`** — work is *automatable* but currently waiting on a dependency
-  (another issue, an unmerged PR, missing context). The intent is "unblock it, then
-  a Builder can proceed."
-- **`loom:operator-only`** — work requires a *human to act or rule outside
-  automation entirely* (rotating credentials, infra changes, hardware access,
-  manual deploys — or an owner-gated decision: an issue the code owner filed as a
-  TODO on owner-tracked code, where the design direction is the owner's call).
-  Sweep skips these in pre-flight rather than attempting them; a human must
-  do the work off-automation before the issue can proceed.
-- **`loom:needs-capability`** (#5817) — a narrower claim than `loom:operator-only`:
-  blocked on a missing tool/agent capability, not an operator-by-right decision.
-  Sweep skips these identically to `loom:operator-only` in pre-flight today; the
-  filed capability-request issue should be linked (`Depends on #N` / `Requires
-  #N`). See `.loom/docs/label-state-machine.md` § "`loom:needs-capability` — a
-  narrower claim than `loom:operator-only`" for the full split rationale.
+- **`loom:blocked`** — waiting on something automation resolves (another
+  issue, an unmerged PR, a missing capability with its capability marker). It
+  self-releases once the blocker resolves.
+- **`loom:operator`** — a human must act or decide: credentials, infra,
+  hardware, a ruling. The body says which (a `decision` block, a capability
+  marker, a `Blocked by #N` line). Sweep skips these issues in pre-flight.
+- **`loom:frozen`** — not now; only a human removes it.
 
-Reaching for `loom:blocked` when you mean `loom:operator-only` (or
-`loom:needs-capability`) conflates "waiting on a dependency" with "needs a human
-action outside automation," which muddies the daemon/sweep skip semantics. Use
-`loom:operator-only` for the human-must-act-off-automation case, and
-`loom:needs-capability` specifically when the blocker is missing tooling rather
-than a human ruling.
+The retired `loom:operator-only` / `-decision` / `-mechanical` /
+`-blocked` and `loom:needs-capability` labels map onto these (#11795; table in
+`label-state-machine.md`).
 
 ### An operator edit to `.loom/config.json` disappeared (#4641)
 
@@ -2188,6 +2177,68 @@ precisely the shape of the one stash in 148 that mattered.
   you.
 - It only ever considers `loom-quarantine:`-labelled entries. An Auditor drift
   shelf, a Judge park stash, or an ad-hoc `git stash` is never a candidate.
+
+**Which credential reads the issue state (#8876).** `stashes` is a standalone
+process, so it cannot see the credentials the daemon holds in memory. It never
+looks for them on disk either: no token is published into, copied to, or
+discovered from a checkout, `.loom/gh-config`, or a sidecar. Instead the route
+is chosen **once per run**, and the run prints `issue-state route: ...` on
+stderr naming the one that was used:
+
+1. **Daemon-assisted (`daemon-gh/<launcher>`).** If the machine-level daemon
+   socket (`$LOOM_SOCKET_PATH`, else `~/.loom/loom-daemon.sock`) is a socket
+   owned by you in a directory only you can write, and not inside the
+   checkout, `stashes` sends it one read-only `ReadIssueState` request: the
+   repo root, its `owner/repo`, and an issue number. The daemon accepts it only
+   for a root in `~/.loom/workspaces.json`, re-derives the slug from that
+   root's `origin` itself (a mismatch is *unknown*), and runs the single
+   `gh issue view` through its own `GhInvocation` routing (per-owner App
+   credential). Only `OPEN`/`CLOSED`/unknown and a non-secret route label
+   come back; the daemon
+   may live anywhere, including outside every managed root. Once the daemon
+   has answered, its answer is final for the run: an *unknown* from it is
+   never retried under ambient credentials.
+2. **Standalone (`standalone-gh/<launcher>`).** With no daemon (absent, down,
+   an untrusted socket, a daemon too old to know the request) or a repo the
+   daemon does not manage, the read runs in the CLI process through the same
+   `GhInvocation` facade, with the ambient `gh` login.
+
+A read that fails is *unknown*, and unknown never retires a stash.
+
+**A blind run is an error, not "0 retirable" (#8876).** When at least one issue was looked up and
+*every* lookup failed, the run prints one line ahead of the per-stash verdicts
+and exits **1**:
+
+```
+BLIND RUN: issue state unreadable for all 9 stash(es): every lookup failed (8 distinct issue(s)), so the ambient gh login this command runs under cannot read this repo's issues. Nothing was retired and nothing can be until that is fixed.
+```
+
+The same line is repeated on stderr as `Error: ...`. With `--json`, stdout
+stays one JSON document and carries the condition as an explicit field, which
+is present on every run:
+
+```json
+"issue_state": {
+  "unreadable_for_all": true,
+  "lookups_attempted": 8,
+  "lookups_unknown": 8,
+  "stashes_unknown": 9
+}
+```
+
+This applies to `list`, `retire` and `retire --execute` alike, and nothing is
+dropped. It is deliberately all-or-nothing: a run where some issues were read
+and one was not keeps the per-stash `KEEP ... could not determine the state of
+issue #N` line and exits 0, and stashes with no `issue=` token are never looked
+up, so they neither cause nor hide a blind run. Note that `--issue N` scoped to
+a single unreadable issue *is* a blind run: the only lookup failed.
+
+To fix a blind run, read the `issue-state route:` line first. On
+`daemon-gh/...` the daemon's own credential cannot read the repo (see
+`loom-daemon status` credential preflight). On `standalone-gh/...` check what
+the shell's `gh` login can see: `gh issue view
+<N> --json state` from the repo. A 404 on an issue you know exists means that
+account has no access to the repo; `gh auth login` as one that can read it.
 
 ### Taking a stash back off the stack without leaving conflict markers (#6501)
 
@@ -3023,7 +3074,10 @@ This is a **detect → fix** pair:
   those are reported `skipped`, never overwritten). Loom-internal files declared in
   `defaults/.loom-internal.list` are skipped (never resurrected into a consumer).
   On a successful non-dry-run it also re-stamps `loom_version`, `loom_commit`, and
-  a new `last_resync` date into `.loom/install-metadata.json`. Since that file is a
+  a new `last_resync` date into `.loom/install-metadata.json`, but only when the
+  run changed a surface or the version; a run that changed nothing leaves the file
+  byte-identical, and `loom_source_remote` is stamped in canonical
+  `https://host/owner/repo.git` form whatever the source clone's remote (#11680). Since that file is a
   machine-local stamp every host's resync rewrites, resync also ensures (every
   run, self-healing existing installs) a `merge=ours` attribute for it in a
   Loom-managed `.gitattributes` block plus the required local (never committed)
@@ -3368,10 +3422,11 @@ git reflog show <default-branch>   # every ref update this local checkout has se
 The script leaves exactly two signatures on the default branch's reflog, and
 nothing else:
 
-- **Direct push**: a single `commit: chore: resync installed Loom surfaces`
+- **Direct push**: a single `loom:resync: chore: resync installed Loom surfaces`
   entry (a fresh commit; the branch then matches `origin`).
-- **Branch + PR fallback**: `commit: chore: resync installed Loom surfaces`
-  immediately followed by `reset: moving to origin/<default>` — the reset is
+- **Branch + PR fallback**: `loom:resync: chore: resync installed Loom surfaces`
+  immediately followed by `loom:resync: updating HEAD` (a reset to
+  `origin/<default>`; git omits the target when the entry is tagged) — the reset is
   the script putting the default branch back on `origin`'s tip after pushing
   the commit to the side branch. The commit it moved away from is on
   `origin/chore/resync-installed` (with an open PR for it) — `git log
@@ -3379,8 +3434,12 @@ nothing else:
 
 Anything else is not this script. An entry reading `pull --ff-only` /
 `merge <sha>: Fast-forward` is an ordinary fast-forward picking up someone
-else's merged PR (also benign). A `rebase (finish):` entry — or a `reset:`
-that is *not* immediately preceded by that `commit:` entry, or one moving to
+else's merged PR (also benign). The `loom:resync:` prefix is the script's
+`GIT_REFLOG_ACTION` tag (#11566) — it is what keeps the daemon's out-of-band
+checkout detector from reporting the landing as a `checkout.external_change`;
+copies installed before #11566 wrote the same two entries untagged (`commit:` /
+`reset: moving to origin/<default>`). A `rebase (finish):` entry — or a reset
+that is *not* immediately preceded by that commit entry, or one moving to
 anything other than `origin/<default>` — is the signature this script is
 specifically designed never to produce: if you see one, it did **not** come
 from `land-resync-commit.sh`; track down what did. If a commit's SHA

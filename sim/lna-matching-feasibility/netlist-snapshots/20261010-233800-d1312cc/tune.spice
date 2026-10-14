@@ -1,0 +1,44 @@
+* sg13g2-lna -- finite resonant base-feed study (issue #193), TUNING deck
+* Generated from sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl
+* by sim/lna-matching-feasibility/feed_study.py (tune-gen) -- do not edit a
+* generated netlist-snapshots/*.spice file, edit the template and re-run.
+*
+* Purpose: measure the SERIES-BRANCH admittance Yser(f) of each EM inductor
+* geometry in the feed study, so the tank capacitor can be sized with the
+* inductor's own self-capacitance (Cser) already inside Yser. The EM model is
+* a pi network: series branch (Rser + ladder + Lmain, in parallel with Cser)
+* between la and lb, plus a substrate shunt (Coxh + Rsi || Csi) at each end.
+* With la driven at 1 V AC and lb held at 0 V by a 0 V source, the current
+* into that source is exactly Yser (the shunts are driven/shorted, so they do
+* not appear). The substrate shunts are NOT part of the tank; they load the
+* nodes b1f / b1 and are simulated in the full feed decks.
+* One-port decks only: no PDK transistor models are used. ONE process point
+* and temperature (27 C, typ.), as in sim/models/sg13g2_inductor_em.spice.
+
+.include "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/models/sg13g2_inductor_em.spice"
+
+.options temp=27 tnom=27 gmin=1e-10
+
+Xem1 la_em1 lb_em1 0 inductor w=8.220u s=3.290u d=47.650u nr_r=1 mc_rsh=1.0 mc_rsub=1.0
+Vem1a la_em1 0 dc 0 ac 1
+Vem1m lb_em1 0 dc 0
+Xem4 la_em4 lb_em4 0 inductor w=8.220u s=3.740u d=141.975u nr_r=4 mc_rsh=1.0 mc_rsub=1.0
+Vem4a la_em4 0 dc 0 ac 1
+Vem4m lb_em4 0 dc 0
+Xem5 la_em5 lb_em5 0 inductor w=6.100u s=3.290u d=110.110u nr_r=5 mc_rsh=1.0 mc_rsub=1.0
+Vem5a la_em5 0 dc 0 ac 1
+Vem5m lb_em5 0 dc 0
+
+.control
+set wr_singlescale
+set wr_vecnames
+option numdgt=10
+ac dec 200 1e+07 3e+10
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/tune_yser.dat real(i(vem1m)) imag(i(vem1m)) real(i(vem4m)) imag(i(vem4m)) real(i(vem5m)) imag(i(vem5m))
+echo "DAT_WRITTEN tune_yser.dat"
+ac lin 1 2.44175e+09 2.44175e+09
+wrdata /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-193/sim/lna-matching-feasibility/corners/20261010-233800-d1312cc/tune_yser_mid.dat real(i(vem1m)) imag(i(vem1m)) real(i(vem4m)) imag(i(vem4m)) real(i(vem5m)) imag(i(vem5m))
+echo "DAT_WRITTEN tune_yser_mid.dat"
+echo "BENCH_COMPLETE"
+.endc
+.end
