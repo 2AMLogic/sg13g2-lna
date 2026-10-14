@@ -5,11 +5,17 @@
 
 Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementation work is done, only a human merge decision is missing.
 
-- **#183**: signoff: attest T1 item 1 with an audited design-source inventory
+_None._
 
-## Operator Priority
+## Very Important
 
-Issues the operator starred (`loom:operator-priority`); land these first.
+`loom:very-important` (one counts per workspace); every stage takes these first.
+
+_None._
+
+## Important
+
+`loom:important`; taken before unlabelled work.
 
 _None._
 
@@ -59,10 +65,11 @@ _None._
 
 ## Backlog Balance
 
-| Tier | Count |
+| Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
-| Operator priority | 0 |
+| Operator merge-risk holds | 0 |
+| Very important | 0 |
+| Important | 0 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
@@ -70,5 +77,4 @@ _None._
 | Curated | 7 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
-
 <!-- guide:plan-body:end -->
