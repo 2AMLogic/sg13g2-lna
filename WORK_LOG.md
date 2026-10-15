@@ -1,5 +1,9 @@
 # Work Log
 
+### 2026-10-14
+
+- **Issue #46** (closed): README: embed the fleet burndown chart (one line)
+
 ### 2026-10-11
 
 - **Issue #202** (closed): sim: fix tank-probe drive in the #200 requirements study and complete the run
