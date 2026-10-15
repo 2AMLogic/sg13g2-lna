@@ -1,5 +1,10 @@
 # Work Log
 
+### 2026-10-15
+
+- **Issue #182** (closed): signoff: attest T1 design sources with an audited artifact inventory
+- **PR #183**: signoff: attest T1 item 1 with an audited design-source inventory
+
 ### 2026-10-14
 
 - **Issue #46** (closed): README: embed the fleet burndown chart (one line)
