@@ -1,0 +1,14 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:68b8e2e34630d96dd85281ecb43f8379553188b994bd926a6632205adc86b3b0",
+      "path": "signoff/design-source/inventory.json"
+    }
+  },
+  "schema_version": 1,
+  "source": "'.github/scripts/design-source-audit write' (issue #182)",
+  "status": "pass",
+  "summary": "Design sources audited: design/lna.sch, design/lna.sym, design/xschemrc, design/netlist/lna.spice pinned by sha256 in signoff/design-source/inventory.json. Netlist generated with xschem 3.4.4 against ihp-sg13g2 v0.3.0; connectivity is checked by .github/scripts/check-netlist-regen (not by this envelope). Says nothing about layout or RF performance.",
+  "t1_item": 1
+}
