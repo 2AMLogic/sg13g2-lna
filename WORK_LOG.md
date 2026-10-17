@@ -1,5 +1,10 @@
 # Work Log
 
+### 2026-10-17
+
+- **Issue #217** (closed): signoff: attest T1 item 10 (repo hygiene) with a tool-produced klt signoff --attest 10 envelope
+- **PR #218**: feat(signoff): attest T1 item 10 with an audited repo-hygiene inventory
+
 ### 2026-10-15
 
 - **Issue #182** (closed): signoff: attest T1 design sources with an audited artifact inventory
