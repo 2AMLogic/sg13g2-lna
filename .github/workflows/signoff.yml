@@ -40,6 +40,9 @@ name: signoff
 # `record-citations` (cited record ids resolve to committed evidence),
 # `testbench-inventory` (T1 item-9 testbench inventory is fresh against the
 # tracked benches, runners, records and documented invocations — issue #195),
+# `repo-hygiene` (T1 item-10 repo-hygiene inventory is fresh against the
+# README, LICENSE, spec source, this workflow and the declared checks — issue
+# #217),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
 # `netlist-regen` (authoritative complement: headless xschem regeneration of
@@ -265,6 +268,27 @@ jobs:
 
       - name: Testbench inventory is fresh and bound to item 9
         run: python3 -I .github/scripts/check-testbench-inventory.py
+
+  # T1 item-10 repo-hygiene inventory (issue #217): the audited inventory
+  # signoff/repo-hygiene/inventory.json hashes the README, LICENSE, spec
+  # source and this workflow, and names the harness / evidence-format checks
+  # CI runs. A changed hygiene file, an untracked or missing one, a README
+  # without its spec-table pointer or reproduction index, a declared command
+  # CI no longer runs, or a stale envelope / manifest / report binding fails
+  # here. Stdlib-only and read-only: no klt, PDK or network. It does not
+  # prove any declared command exits 0 (each has its own job;
+  # signoff/README.md, "Item 10").
+  repo-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Repo-hygiene checker self-test
+        run: .github/scripts/test-check-repo-hygiene.sh
+
+      - name: Repo-hygiene inventory is fresh and bound to item 10
+        run: python3 -I .github/scripts/check-repo-hygiene.py
 
   # Netlist freshness (issue #88): the committed design/netlist/lna.spice
   # must list the same devices (names, symbol types, values/params) as
