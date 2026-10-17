@@ -1,0 +1,179 @@
+{
+  "audit": {
+    "mechanical_checks": [
+      "every hygiene file (README, LICENSE, spec source, workflow, this audit) is tracked and present, and is hashed",
+      "README names the block, has a 'Target specification' section linking spec/target-spec.md and a 'Reproducing the results' section",
+      "spec/target-spec.md contains a markdown table with a header, a separator and at least one data row",
+      "LICENSE is non-empty",
+      "every declared command's script is tracked and present, and is hashed",
+      "every declared command appears verbatim as a single-line `run:` in its named CI job",
+      "the committed inventory equals the recomputed one; envelope, manifest citation and rolling report bind its hash"
+    ],
+    "not_checked": [
+      "that any declared command exits 0: each runs in its own CI job on every commit, and the envelope does not encode that outcome",
+      "that README prose is accurate or complete beyond the structural checks above",
+      "that CI covers every evidence format the repo holds"
+    ],
+    "verdict": "complete"
+  },
+  "block": "sg13g2-lna",
+  "command_scripts": {
+    ".github/scripts/check-layout-freshness": {
+      "bytes": 15272,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:7a6e13cfd86200879443c33b317ba82d3334845230d0c4f9db8668c18e9d95b4"
+    },
+    ".github/scripts/check-netlist-freshness": {
+      "bytes": 7635,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:0ceb76eaad2adb6a3fb87aa5f5241002eb6eda9639de502ffe19947ba1c07e3a"
+    },
+    ".github/scripts/check-record-citations": {
+      "bytes": 2580,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
+    },
+    ".github/scripts/check-repo-hygiene.py": {
+      "bytes": 13467,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:554809a2e52f8fd89ee16941a18fc14b4ff13856b086b39800577c8a426024fa"
+    },
+    ".github/scripts/check-signoff.sh": {
+      "bytes": 4947,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:1a79a58c132e25a9ca4f50deb9e3efd727791ce89c1471709171ad07aacb3f85"
+    },
+    ".github/scripts/check-sim-append-only": {
+      "bytes": 2915,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
+    },
+    ".github/scripts/check-testbench-inventory.py": {
+      "bytes": 30253,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:dfd96ba4d02a3c3c2d068aa02287378b1022f297f9c620a56b71a7d1a342fecd"
+    },
+    ".github/scripts/test-check-repo-hygiene.sh": {
+      "bytes": 8120,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:675e0c6a6f70d5898b4a632c561623964d7d71301aea31dcfaa404bbbc16e287"
+    },
+    ".github/scripts/test-check-signoff.sh": {
+      "bytes": 9303,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:41b7db9ba14347a04bc08a10b585f9cad78083e4b6a8da2e99c7c611b204c3b4"
+    },
+    ".github/scripts/test-run-local-checks.sh": {
+      "bytes": 7952,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:d3980eddaa12bfbffe5473d72555c7e51b67ab4b661c388c0a2ee242c7d9b9fb"
+    },
+    "sim/models/check_sources.sh": {
+      "bytes": 1830,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729"
+    }
+  },
+  "declared_commands": [
+    {
+      "command": ".github/scripts/test-check-signoff.sh",
+      "job": "signoff",
+      "keeps_valid": "drift-checker self-test",
+      "script": ".github/scripts/test-check-signoff.sh"
+    },
+    {
+      "command": ".github/scripts/check-signoff.sh",
+      "job": "signoff",
+      "keeps_valid": "T1 verdict-of-record format and drift",
+      "script": ".github/scripts/check-signoff.sh"
+    },
+    {
+      "command": ".github/scripts/check-record-citations",
+      "job": "record-citations",
+      "keeps_valid": "evidence record citations resolve",
+      "script": ".github/scripts/check-record-citations"
+    },
+    {
+      "command": "python3 -I .github/scripts/check-testbench-inventory.py",
+      "job": "testbench-inventory",
+      "keeps_valid": "item-9 inventory freshness",
+      "script": ".github/scripts/check-testbench-inventory.py"
+    },
+    {
+      "command": "python3 -I .github/scripts/check-netlist-freshness",
+      "job": "netlist-freshness",
+      "keeps_valid": "netlist matches schematic inventory",
+      "script": ".github/scripts/check-netlist-freshness"
+    },
+    {
+      "command": ".github/scripts/check-layout-freshness",
+      "job": "layout-freshness",
+      "keeps_valid": "layout evidence agrees with its provenance",
+      "script": ".github/scripts/check-layout-freshness"
+    },
+    {
+      "command": "sim/models/check_sources.sh",
+      "job": "model-provenance",
+      "keeps_valid": "vendored models match recorded sha256",
+      "script": "sim/models/check_sources.sh"
+    },
+    {
+      "command": ".github/scripts/check-sim-append-only --base \"origin/${{ github.base_ref }}\"",
+      "job": "sim-append-only",
+      "keeps_valid": "committed sim/ evidence is append-only (pull_request only)",
+      "script": ".github/scripts/check-sim-append-only"
+    },
+    {
+      "command": ".github/scripts/test-run-local-checks.sh",
+      "job": "local-checks-drift",
+      "keeps_valid": "local runner mirrors the workflow",
+      "script": ".github/scripts/test-run-local-checks.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-repo-hygiene.sh",
+      "job": "repo-hygiene",
+      "keeps_valid": "this audit's self-test",
+      "script": ".github/scripts/test-check-repo-hygiene.sh"
+    },
+    {
+      "command": "python3 -I .github/scripts/check-repo-hygiene.py",
+      "job": "repo-hygiene",
+      "keeps_valid": "this audit",
+      "script": ".github/scripts/check-repo-hygiene.py"
+    }
+  ],
+  "files": {
+    ".github/scripts/check-repo-hygiene.py": {
+      "bytes": 13467,
+      "role": "this audit",
+      "sha256": "sha256:554809a2e52f8fd89ee16941a18fc14b4ff13856b086b39800577c8a426024fa"
+    },
+    ".github/scripts/test-check-repo-hygiene.sh": {
+      "bytes": 8120,
+      "role": "this audit's self-test",
+      "sha256": "sha256:675e0c6a6f70d5898b4a632c561623964d7d71301aea31dcfaa404bbbc16e287"
+    },
+    ".github/workflows/signoff.yml": {
+      "bytes": 23841,
+      "role": "CI workflow",
+      "sha256": "sha256:e4cdec696c81fa688d32660bb4ffcef89492f3b59074ff66e5bb4fdee8eac26f"
+    },
+    "LICENSE": {
+      "bytes": 11358,
+      "role": "license",
+      "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "README.md": {
+      "bytes": 15652,
+      "role": "README stating the block, its spec table pointer and the reproduction index",
+      "sha256": "sha256:56a1153045439bc6f3b68fa1ed1e4079b5c825d88cbf6d10eb56958e9c691020"
+    },
+    "spec/target-spec.md": {
+      "bytes": 34193,
+      "role": "source of the spec table the README points to",
+      "sha256": "sha256:d833ff1e9d1fee9269e3f7bee289bf417798b1e97ba708842de14b228cbe3bd5"
+    }
+  },
+  "schema_version": 1,
+  "t1_item": 10
+}

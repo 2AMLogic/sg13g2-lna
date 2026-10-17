@@ -17,6 +17,10 @@
     "9": {
       "file": "signoff/testbench-inventory.envelope.json",
       "content_hash": "sha256:33e4064002c4fdad11a52c714a014c64fa5ae7a9ef599446a86bb18b441e62c8"
+    },
+    "10": {
+      "file": "signoff/repo-hygiene/envelope.json",
+      "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419"
     }
   }
 }

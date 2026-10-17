@@ -5,7 +5,7 @@
   "tier": null,
   "t1_item_count": 11,
   "build_t1_item_count": 11,
-  "t1_met_count": 2,
+  "t1_met_count": 3,
   "source_doc": "signoff/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335",
   "build": {
@@ -178,10 +178,26 @@
       "partition": null,
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/repo-hygiene/envelope.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": "signoff/repo-hygiene/inventory.json",
+          "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419",
+          "input_verified": true,
+          "summary": "Audited repo-hygiene inventory: README (block, spec-table pointer, reproduction index), license and CI workflow are tracked and hashed, and the declared harness and evidence-format checks are tracked scripts run by CI. Establishes presence and wiring only: not that any command exits 0, not RF compliance, not overall T1.",
+          "source": "signoff/repo-hygiene/inventory.json via .github/scripts/check-repo-hygiene.py"
+        }
+      }
     },
     {
       "tier": "T1",

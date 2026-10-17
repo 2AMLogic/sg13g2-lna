@@ -140,6 +140,10 @@ step "record-citations: check" .github/scripts/check-record-citations
 step "testbench-inventory: self-test" .github/scripts/test-check-testbench-inventory.sh
 step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inventory.py
 
+# --- job: repo-hygiene (issue #217; read-only, no PDK/ngspice/klt)
+step "repo-hygiene: self-test" .github/scripts/test-check-repo-hygiene.sh
+step "repo-hygiene: check" python3 -I .github/scripts/check-repo-hygiene.py
+
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness

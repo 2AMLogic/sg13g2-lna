@@ -1,0 +1,14 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419",
+      "path": "signoff/repo-hygiene/inventory.json"
+    }
+  },
+  "schema_version": 1,
+  "source": "signoff/repo-hygiene/inventory.json via .github/scripts/check-repo-hygiene.py",
+  "status": "pass",
+  "summary": "Audited repo-hygiene inventory: README (block, spec-table pointer, reproduction index), license and CI workflow are tracked and hashed, and the declared harness and evidence-format checks are tracked scripts run by CI. Establishes presence and wiring only: not that any command exits 0, not RF compliance, not overall T1.",
+  "t1_item": 10
+}
