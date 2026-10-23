@@ -186,13 +186,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419",
+        "content_hash": "sha256:257e277625cd9e5c7615c97abea46b03da51870d4a90df56fb9dc3304e1a9af4",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 10,
           "path": "signoff/repo-hygiene/inventory.json",
-          "content_hash": "sha256:254b626ccfdd8ca5e84f6085fdc8ec64b158d49e11d1ca2eb42dda4852de1419",
+          "content_hash": "sha256:257e277625cd9e5c7615c97abea46b03da51870d4a90df56fb9dc3304e1a9af4",
           "input_verified": true,
           "summary": "Audited repo-hygiene inventory: README (block, spec-table pointer, reproduction index), license and CI workflow are tracked and hashed, and the declared harness and evidence-format checks are tracked scripts run by CI. Establishes presence and wiring only: not that any command exits 0, not RF compliance, not overall T1.",
           "source": "signoff/repo-hygiene/inventory.json via .github/scripts/check-repo-hygiene.py"
