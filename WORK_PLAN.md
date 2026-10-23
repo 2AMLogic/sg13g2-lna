@@ -30,7 +30,8 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#222**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
+- **#224**: main CI: matching-feasibility-tests replay fails with last-digit float diffs since 2026-10-21
 
 ## PRs Awaiting Review
 
@@ -42,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#225**: ci: pin matching-feasibility-tests to ubuntu-24.04
 
 ## Proposed
 
@@ -54,6 +55,8 @@ Issues carrying `loom:curated`.
 - **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)*
 - **#90**: sim: measure full-DUT DC mismatch spread with a seeded fleet campaign and controls *(curated)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
+- **#222**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)*
+- **#224**: main CI: matching-feasibility-tests replay fails with last-digit float diffs since 2026-10-21 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -71,10 +74,10 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 6 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 8 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
