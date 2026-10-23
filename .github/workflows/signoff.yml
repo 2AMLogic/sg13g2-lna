@@ -226,7 +226,10 @@ jobs:
   # re-synthesis of its candidates from the retained characterization data.
   # Stdlib-only, no PDK/ngspice, single process; never writes under sim/.
   matching-feasibility-tests:
-    runs-on: ubuntu-latest
+    # Pinned to 24.04 (issue #224): the byte-exact replay is sensitive to the
+    # image's system Python / libm; ubuntu-latest moved to 26.04 and the
+    # replays then differed in the last float digit.
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
