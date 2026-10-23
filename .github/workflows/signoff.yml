@@ -43,6 +43,9 @@ name: signoff
 # `repo-hygiene` (T1 item-10 repo-hygiene inventory is fresh against the
 # README, LICENSE, spec source, this workflow and the declared checks — issue
 # #217),
+# `artifact-manifests` (manifests/artifacts/ holds only schema-valid
+# `artifact:` manifests, no storage locations, and no stored object also
+# committed — issue #222),
 # `netlist-freshness` (design/lna.sch device inventory vs the committed
 # netlist — issue #88),
 # `netlist-regen` (authoritative complement: headless xschem regeneration of
@@ -289,6 +292,24 @@ jobs:
 
       - name: Repo-hygiene inventory is fresh and bound to item 10
         run: python3 -I .github/scripts/check-repo-hygiene.py
+
+  # Artifact-store manifests (issue #222): new raw sim/signoff outputs live in
+  # the artifact store and git keeps manifests/artifacts/*.manifest.json. The
+  # check validates the manifest schema, accepts only artifact:<key> URIs,
+  # rejects storage locations, and fails if a stored object's sha256 matches a
+  # committed file. Stdlib-only and read-only: no klt, broker or network (the
+  # pinned klt 0.7.0 has no `artifact`), and nothing under sim/ is touched.
+  artifact-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Artifact-manifest checker self-test
+        run: .github/scripts/test-check-artifact-manifests.sh
+
+      - name: Artifact manifests are valid and hold no committed objects
+        run: python3 -I .github/scripts/check-artifact-manifests.py
 
   # Netlist freshness (issue #88): the committed design/netlist/lna.spice
   # must list the same devices (names, symbol types, values/params) as

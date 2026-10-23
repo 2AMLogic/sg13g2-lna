@@ -144,6 +144,10 @@ step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inv
 step "repo-hygiene: self-test" .github/scripts/test-check-repo-hygiene.sh
 step "repo-hygiene: check" python3 -I .github/scripts/check-repo-hygiene.py
 
+# --- job: artifact-manifests (issue #222; read-only, no klt/broker/network)
+step "artifact-manifests: self-test" .github/scripts/test-check-artifact-manifests.sh
+step "artifact-manifests: check" python3 -I .github/scripts/check-artifact-manifests.py
+
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness

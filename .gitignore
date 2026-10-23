@@ -105,3 +105,6 @@ layout/build/
 # layout/run_flow.sh scratch: unpublished klt output / lvs_inputs.json left
 # behind by a failed or interrupted run (never evidence)
 layout/*/*.tmp
+
+# sim/ artifact-store staging (sim_artifact_put): raw outputs awaiting upload, never evidence
+sim/artifact-scratch/
