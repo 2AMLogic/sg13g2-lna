@@ -325,3 +325,31 @@ sim_check_log() {
   fi
   return 0
 }
+
+sim_artifact_put() {
+  # sim_artifact_put <bench> <file>...
+  #
+  # Moves a run's raw outputs into the artifact store (issue #222) and leaves
+  # only a manifest in git: stages the files in the git-ignored
+  # sim/artifact-scratch/<bench>-<RECORD_ID>/, runs sim/tools/artifact_store.py
+  # (klt artifact put), and writes manifests/artifacts/<bench>-<RECORD_ID>.
+  # {manifest.json,summary.md}. Needs RECORD_ID (sim_record_paths). Fails
+  # closed (nonzero, nothing under manifests/) if the broker, klt or the
+  # upload is unavailable; the source files are removed only on success, so
+  # they are never lost. Files must be new, uncommitted run outputs.
+  local __sap_bench="${1:?sim_artifact_put: <bench> is required}"; shift
+  [[ $# -gt 0 ]] || { echo "sim_artifact_put: no files given" >&2; return 2; }
+  local __sap_scratch="${SIM_DIR}/artifact-scratch/${__sap_bench}-${RECORD_ID:?sim_artifact_put: RECORD_ID unset (call sim_record_paths)}"
+  local __sap_f __sap_rc=0
+  mkdir -p "${__sap_scratch}" || return 4
+  for __sap_f in "$@"; do
+    cp -p -- "${__sap_f}" "${__sap_scratch}/" || { rm -rf "${__sap_scratch}"; return 4; }
+  done
+  python3 -I "${SIM_DIR}/tools/artifact_store.py" put --bench "${__sap_bench}" \
+    --run-id "${RECORD_ID}" --scratch "${__sap_scratch}" || __sap_rc=$?
+  if (( __sap_rc == 0 )); then
+    rm -f -- "$@"
+  fi
+  rm -rf "${__sap_scratch}"
+  return "${__sap_rc}"
+}

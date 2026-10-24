@@ -16,11 +16,11 @@
     },
     "9": {
       "file": "signoff/testbench-inventory.envelope.json",
-      "content_hash": "sha256:33e4064002c4fdad11a52c714a014c64fa5ae7a9ef599446a86bb18b441e62c8"
+      "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02"
     },
     "10": {
       "file": "signoff/repo-hygiene/envelope.json",
-      "content_hash": "sha256:257e277625cd9e5c7615c97abea46b03da51870d4a90df56fb9dc3304e1a9af4"
+      "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345"
     }
   }
 }

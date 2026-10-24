@@ -158,13 +158,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:33e4064002c4fdad11a52c714a014c64fa5ae7a9ef599446a86bb18b441e62c8",
+        "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 9,
           "path": "signoff/testbench-inventory.json",
-          "content_hash": "sha256:33e4064002c4fdad11a52c714a014c64fa5ae7a9ef599446a86bb18b441e62c8",
+          "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02",
           "input_verified": true,
           "summary": "Audited testbench inventory for the published measurement scope: benches, runners, reducers, pins and documented cold-start invocations are committed, hashed and cross-referenced. Establishes shipped benches only: not that any command succeeds, not RF compliance, not overall T1.",
           "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py"
@@ -186,13 +186,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:257e277625cd9e5c7615c97abea46b03da51870d4a90df56fb9dc3304e1a9af4",
+        "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 10,
           "path": "signoff/repo-hygiene/inventory.json",
-          "content_hash": "sha256:257e277625cd9e5c7615c97abea46b03da51870d4a90df56fb9dc3304e1a9af4",
+          "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345",
           "input_verified": true,
           "summary": "Audited repo-hygiene inventory: README (block, spec-table pointer, reproduction index), license and CI workflow are tracked and hashed, and the declared harness and evidence-format checks are tracked scripts run by CI. Establishes presence and wiring only: not that any command exits 0, not RF compliance, not overall T1.",
           "source": "signoff/repo-hygiene/inventory.json via .github/scripts/check-repo-hygiene.py"

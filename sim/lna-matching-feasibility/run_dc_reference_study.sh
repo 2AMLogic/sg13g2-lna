@@ -34,6 +34,12 @@
 #                          historical record whose corners/ + characterization are the baseline.
 #   MATCH_NF_NPTS=<n>      must equal the baseline's (default 21).
 #   DCREF_RECORD_ID=<id>   record to run/finish (stages run, finish).
+#   SIM_ARTIFACT_STORE=1   finish stage: move the raw ngspice logs and wrdata
+#                          tables (corners/<id>/*.log, *.dat) into the artifact
+#                          store and commit only manifests/artifacts/
+#                          matching-dcref-<id>.{manifest.json,summary.md}
+#                          (issue #222). Fails closed (exit 5, raw files kept)
+#                          without $KLT_ARTIFACT_BROKER / klt artifact put.
 #
 # Output (append-only, sim/README.md layout):
 #   netlist-snapshots/<id>/  verify_*_rdc*.spice, candidates.json
@@ -129,6 +135,14 @@ if [[ "${STAGE}" == finish || "${STAGE}" == all ]]; then
   "${SOLVER[@]}" sensitivity --candidates "${SNAPSHOTS_OUT}/candidates.json" --corners "${CORNERS_OUT}" \
     --baseline-corners "${BASE_CORNERS}" --csv "${RECORDS_DIR}/${RECORD_ID}-sensitivity.csv" \
     --markdown "${CORNERS_OUT}/sensitivity.md" || SENS_RC=$?
+  STORE_RC=0
+  if [[ "${SIM_ARTIFACT_STORE:-0}" == 1 ]]; then
+    sim_artifact_put matching-dcref "${CORNERS_OUT}"/*.log "${CORNERS_OUT}"/*.dat || STORE_RC=$?
+    if (( STORE_RC != 0 )); then
+      echo "run_dc_reference_study.sh: artifact store upload failed (rc=${STORE_RC}); raw outputs kept under corners/${RECORD_ID}/, no manifest written." >&2
+      exit 5
+    fi
+  fi
   DESIGN_NETLIST_SHA="$(sha256sum "${REPO_ROOT}/design/netlist/lna.spice" | awk '{print $1}')"
   NGSPICE_SHA="$(sha256sum "$(command -v ngspice)" | awk '{print $1}')"
   {
@@ -157,7 +171,11 @@ if [[ "${STAGE}" == finish || "${STAGE}" == all ]]; then
     echo
     cat "${CORNERS_OUT}/sensitivity.md" 2>/dev/null || echo "(none)"
     echo
-    echo "- **Links**: decks and \`candidates.json\` \`netlist-snapshots/${RECORD_ID}/\`; logs and wrdata \`corners/${RECORD_ID}/\`;"
+    if [[ "${SIM_ARTIFACT_STORE:-0}" == 1 ]]; then
+      echo "- **Links**: decks and \`candidates.json\` \`netlist-snapshots/${RECORD_ID}/\`; logs and wrdata in the artifact store, named by \`manifests/artifacts/matching-dcref-${RECORD_ID}.manifest.json\`;"
+    else
+      echo "- **Links**: decks and \`candidates.json\` \`netlist-snapshots/${RECORD_ID}/\`; logs and wrdata \`corners/${RECORD_ID}/\`;"
+    fi
     echo "  \`records/${RECORD_ID}-sensitivity.csv\` (one row per candidate x Q case x R)."
     echo "- **Timestamp / author**: $(date -u +%Y-%m-%dT%H:%M:%SZ), Loom Builder (agent), issue #190."
   } > "${RECORDS_DIR}/${RECORD_ID}.md"
