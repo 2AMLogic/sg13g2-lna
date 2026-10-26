@@ -54,6 +54,7 @@ Issues carrying `loom:curated`.
 - **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)*
 - **#90**: sim: measure full-DUT DC mismatch spread with a seeded fleet campaign and controls *(curated)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
+- **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -74,7 +75,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 6 |
+| Curated | 7 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
