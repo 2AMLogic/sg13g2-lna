@@ -9,13 +9,13 @@
   "source_doc": "signoff/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335",
   "build": {
-    "version": "0.7.0",
-    "package_version": "0.7.0",
-    "git_commit": "0e2362bda7309829398a35d54efaa989d5806065",
-    "git_tag": "v0.7.0",
+    "version": "0.8.0",
+    "package_version": "0.8.0",
+    "git_commit": "c572046be644e0407f693f2410f3abb799d68a3a",
+    "git_tag": "v0.8.0",
     "dirty": false,
     "is_release": true,
-    "grading_ruleset_id": "sha256:eb8d2ba54d1700c78f1139ac111aee598fd7bc48688ab9654fca22995b6ac25e"
+    "grading_ruleset_id": "sha256:46c446d84423b7399ee1cf957b3d49801ae4f42a0bda53da92f435776cf977c4"
   },
   "items": [
     {
@@ -66,18 +66,9 @@
       "text": "latest `klt drc` JSON report: `status: clean`, fresh, with the deck identified (content hash). Known deck coverage gaps (rule-free layers, skipped rules) must be enumerated in the claim, not hidden behind \"clean\" \u2014 a clean verdict from a deck with undisclosed holes is a false claim. The report already states its own gaps, so the disclosure is those fields quoted from the cited envelope's `coverage` block (`docs/cli/drc.md`), not prose written from memory: `coverage.layers_in_stream_without_rules` (layers drawn in this stream that the deck has no rule for), `coverage.rules_skipped` (rules the deck carries but this run did not evaluate), and `coverage.deck_scope` (which chapters of the foundry DRM the deck transcribes at all). A claim that leaves a non-empty `layers_in_stream_without_rules` or `rules_skipped` unstated, or that never states the `deck_scope` its \"clean\" was measured inside, has not satisfied this item however clean the `status` is. **This disclosure is claimant-enforced, not tool-enforced**: `klt signoff` grades item 3 on `status: \"clean\"` alone \u2014 a deck with rule-free drawn layers or skipped rules grades `met` exactly like a fully-covering one. Since #2002 it does *report* all three fields (item 3's citation carries a `coverage` block quoting them verbatim, `docs/cli/signoff.md` \u2192 \"DRC coverage is reported, not graded\"), so a reviewer no longer has to re-open the DRC envelope to find them \u2014 but reporting is not enforcing: nothing compares them against what the claim actually disclosed, so a `met` verdict from `klt signoff` is still not evidence that the gaps were disclosed. A reviewer must read the reported `coverage` against the claim themselves.",
       "notes": [],
       "status": "unmet",
-      "reason": "check_failed",
+      "reason": "no_evidence",
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "critical_metric_blockers": [
-          {
-            "metric": "drc__error__count",
-            "value": 36,
-            "higher_is_better": false
-          }
-        ]
-      }
+      "citation": null
     },
     {
       "tier": "T1",
@@ -158,13 +149,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02",
+        "content_hash": "sha256:aea0c0ce8b09ae9b837745dad30e0577cd13ebf7bbd2466aee82175a9f22ee92",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 9,
           "path": "signoff/testbench-inventory.json",
-          "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02",
+          "content_hash": "sha256:aea0c0ce8b09ae9b837745dad30e0577cd13ebf7bbd2466aee82175a9f22ee92",
           "input_verified": true,
           "summary": "Audited testbench inventory for the published measurement scope: benches, runners, reducers, pins and documented cold-start invocations are committed, hashed and cross-referenced. Establishes shipped benches only: not that any command succeeds, not RF compliance, not overall T1.",
           "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py"
@@ -186,13 +177,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345",
+        "content_hash": "sha256:2350f80e0a6748bc1123929b66c7027e8d3c52535e00f0ab06cf519319f14eef",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 10,
           "path": "signoff/repo-hygiene/inventory.json",
-          "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345",
+          "content_hash": "sha256:2350f80e0a6748bc1123929b66c7027e8d3c52535e00f0ab06cf519319f14eef",
           "input_verified": true,
           "summary": "Audited repo-hygiene inventory: README (block, spec-table pointer, reproduction index), license and CI workflow are tracked and hashed, and the declared harness and evidence-format checks are tracked scripts run by CI. Establishes presence and wiring only: not that any command exits 0, not RF compliance, not overall T1.",
           "source": "signoff/repo-hygiene/inventory.json via .github/scripts/check-repo-hygiene.py"

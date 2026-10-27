@@ -81,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.7.0"
+        run: python3 -m pip install "klayout-tools==0.8.0"
 
       - name: Grader pin matches the layout flow's klt release
         run: .github/scripts/check-klt-pin.sh
@@ -301,7 +301,7 @@ jobs:
   # check validates the manifest schema, accepts only artifact:<key> URIs,
   # rejects storage locations, and fails if a stored object's sha256 matches a
   # committed file. Stdlib-only and read-only: no klt, broker or network (the
-  # pinned klt 0.7.0 has no `artifact`), and nothing under sim/ is touched.
+  # job never calls `klt artifact`), and nothing under sim/ is touched.
   artifact-manifests:
     runs-on: ubuntu-latest
     steps:
@@ -397,7 +397,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.7.0"
+        run: python3 -m pip install "klayout-tools==0.8.0"
 
       - name: Design-source audit self-test
         run: .github/scripts/test-design-source-audit.sh

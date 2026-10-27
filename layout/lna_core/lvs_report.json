@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "lna_core.gds",
+  "layout": {
+    "path": "layout/lna_core/lna_core.gds",
+    "scope": "repo"
+  },
   "reference": "lna_core.lvs_reference.spice",
   "top": "lna_core",
   "reference_top": ".TOP",
@@ -17,6 +20,8 @@
     "compare_parameters": null,
     "power_connectivity": null,
     "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -24,9 +29,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "mismatch",
   "power_connectivity": {
     "status": "unchecked",
@@ -68,9 +75,9 @@
       ]
     },
     {
-      "class": "RPPD",
+      "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 0,
+      "layout_devices": 1,
       "reference_devices": 1,
       "compared": [
         "R"
@@ -99,18 +106,18 @@
   "error_count": 20,
   "category_counts": {
     "device.geometry_not_compared": 2,
-    "device.unmatched": 6,
+    "device.unmatched": 7,
     "net.merged": 6,
-    "net.split": 1,
-    "net.unmatched": 5,
-    "topology": 3
+    "net.split": 2,
+    "net.unmatched": 4,
+    "topology": 2
   },
   "category_error_counts": {
-    "device.unmatched": 6,
+    "device.unmatched": 7,
     "net.merged": 6,
-    "net.split": 1,
-    "net.unmatched": 5,
-    "topology": 2
+    "net.split": 2,
+    "net.unmatched": 4,
+    "topology": 1
   },
   "counts": {
     "nets": {
@@ -119,7 +126,7 @@
       "matched": 2
     },
     "devices": {
-      "layout": 2,
+      "layout": 3,
       "reference": 6,
       "matched": 1
     },
@@ -149,12 +156,12 @@
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.0",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:bf483105cb17948270f0cad45d9418787654bfc0a5ffd04a2e2413d8c7d3b6e7",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
@@ -195,13 +202,13 @@
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
-      "description": "device class 'RPPD' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "description": "device class 'rppd' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
       "side": "both",
       "net": null,
       "device": {
         "layout": null,
         "reference": null,
-        "class": "RPPD"
+        "class": "rppd"
       },
       "property": null,
       "details": {
@@ -215,7 +222,7 @@
           "P",
           "W"
         ],
-        "layout_devices": 0,
+        "layout_devices": 1,
         "reference_devices": 1
       },
       "circuit": null,
@@ -232,6 +239,23 @@
         "layout": "\\$33",
         "reference": null,
         "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$49",
+        "reference": null,
+        "class": "rppd"
       },
       "property": null,
       "details": null,
@@ -426,7 +450,7 @@
       "description": "a reference net's role is divided across multiple layout nets",
       "side": "layout",
       "net": {
-        "layout": "vss",
+        "layout": "b1",
         "reference": null
       },
       "device": null,
@@ -437,12 +461,12 @@
       "subcircuit": null
     },
     {
-      "category": "net.unmatched",
+      "category": "net.split",
       "severity": "error",
-      "description": "layout net has no reference counterpart",
+      "description": "a reference net's role is divided across multiple layout nets",
       "side": "layout",
       "net": {
-        "layout": "b1",
+        "layout": "vss",
         "reference": null
       },
       "device": null,
@@ -519,10 +543,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'nfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "nfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -532,23 +560,14 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'NPN13G2'",
       "side": "reference",
       "net": null,
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
-      "side": "reference",
-      "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "NPN13G2"
+      },
       "property": null,
       "details": null,
       "circuit": null,

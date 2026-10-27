@@ -30,7 +30,7 @@ The writer exits nonzero and writes nothing under `manifests/` if
 `$KLT_ARTIFACT_BROKER` is unset, `klt` is missing or has no `artifact put`, or
 the broker is unreachable or refuses. There is no local fallback and no
 committing the raw bytes instead. Writing needs a klt with `artifact` (fleet
-workers have one); the repo's pinned grader klt (`0.7.0`) is unchanged.
+workers have one); the repo's pinned grader klt (`0.8.0`) is unchanged.
 
 ## Reading and checking
 

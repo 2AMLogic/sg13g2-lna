@@ -6,21 +6,17 @@
       "file": "signoff/design-source/audit.json",
       "content_hash": "sha256:68b8e2e34630d96dd85281ecb43f8379553188b994bd926a6632205adc86b3b0"
     },
-    "3": {
-      "file": "layout/lna_core/drc_report.json",
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
-    },
     "4": {
       "file": "layout/lna_core/lvs_full_report.json",
       "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
     },
     "9": {
       "file": "signoff/testbench-inventory.envelope.json",
-      "content_hash": "sha256:1f97a944915fd78696f327975fe6e6937f94c0ba41d6f5559d5e2cf12979bc02"
+      "content_hash": "sha256:aea0c0ce8b09ae9b837745dad30e0577cd13ebf7bbd2466aee82175a9f22ee92"
     },
     "10": {
       "file": "signoff/repo-hygiene/envelope.json",
-      "content_hash": "sha256:2d3fac6bda357db53667f96d79acbe9ad1b4c1fb3596ed7b82a189d7fafb0345"
+      "content_hash": "sha256:2350f80e0a6748bc1123929b66c7027e8d3c52535e00f0ab06cf519319f14eef"
     }
   }
 }

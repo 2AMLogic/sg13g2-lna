@@ -1954,7 +1954,7 @@
     }
   },
   "files": {
-    "README.md": "sha256:56a1153045439bc6f3b68fa1ed1e4079b5c825d88cbf6d10eb56958e9c691020",
+    "README.md": "sha256:3ed6bfd4dbc3c40c5bc08c53b72c270bc47c84f6b988bf3e821dff05a74b56ec",
     "design/netlist/lna.spice": "sha256:23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
@@ -2157,7 +2157,7 @@
     "grader": {
       "source": ".github/workflows/signoff.yml",
       "tool": "klayout-tools",
-      "version": "0.7.0"
+      "version": "0.8.0"
     },
     "pdk": {
       "file": "sim/pdk.json",

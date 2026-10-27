@@ -4,8 +4,8 @@
 New sim/signoff evidence bytes live in the artifact store; git keeps only
 `manifests/artifacts/<bench>-<run-id>.manifest.json` (klt artifact manifest,
 schema_version 1) plus a Markdown summary. This check is read-only and
-stdlib-only (no klt, broker or network; the pinned klt 0.7.0 has no
-`artifact`). For every tracked *.manifest.json under manifests/artifacts/:
+stdlib-only (no klt, broker or network; it never calls `klt artifact`,
+which the pinned klt 0.8.0 has). For every tracked *.manifest.json under manifests/artifacts/:
 
   * schema: schema_version 1, `entries` a non-empty list, each entry exactly
     sha256/size/kind/producer/uri (+ optional name, media_type), with the
