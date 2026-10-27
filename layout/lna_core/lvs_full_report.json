@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "lna_core.gds",
+  "layout": {
+    "path": "layout/lna_core/lna_core.gds",
+    "scope": "repo"
+  },
   "reference": "../../design/netlist/lna.spice",
   "top": "lna_core",
   "reference_top": ".TOP",
@@ -22,6 +25,8 @@
     "compare_parameters": null,
     "power_connectivity": null,
     "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -29,9 +34,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "mismatch",
   "power_connectivity": {
     "status": "unchecked",
@@ -117,16 +124,45 @@
           "reason": "secondary"
         }
       ]
+    },
+    {
+      "class": "rppd",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 0,
+      "compared": [
+        "R"
+      ],
+      "not_compared": [
+        {
+          "parameter": "L",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "W",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
     }
   ],
-  "mismatch_count": 10,
-  "error_count": 7,
+  "mismatch_count": 19,
+  "error_count": 14,
   "category_counts": {
-    "device.geometry_not_compared": 3,
-    "topology": 7
+    "device.geometry_not_compared": 4,
+    "reference.unresolved_subckt_call": 6,
+    "topology": 9
   },
   "category_error_counts": {
-    "topology": 7
+    "reference.unresolved_subckt_call": 6,
+    "topology": 8
   },
   "counts": {
     "nets": {
@@ -135,7 +171,7 @@
       "matched": 0
     },
     "devices": {
-      "layout": 2,
+      "layout": 3,
       "reference": 24,
       "matched": 0
     },
@@ -165,12 +201,12 @@
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.0",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:bf483105cb17948270f0cad45d9418787654bfc0a5ffd04a2e2413d8c7d3b6e7",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
@@ -267,6 +303,192 @@
       "subcircuit": null
     },
     {
+      "category": "device.geometry_not_compared",
+      "severity": "warning",
+      "description": "device class 'rppd' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": {
+        "device_kind": "resistor",
+        "compared_parameters": [
+          "R"
+        ],
+        "not_compared_parameters": [
+          "A",
+          "L",
+          "P",
+          "W"
+        ],
+        "layout_devices": 1,
+        "reference_devices": 0
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'Q2' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=8)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "Q2"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'Q1' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=8)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "Q1"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'QB' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=8)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "QB"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'QA' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=1)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "QA"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'QC' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=1)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "QC"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
+      "category": "reference.unresolved_subckt_call",
+      "severity": "error",
+      "description": "reference instance 'Q3' in circuit '.TOP' calls subcircuit 'NPN13G2', which is not defined in the reference netlist, was not converted to a device, and has no same-named layout circuit -- the reader substitutes an empty placeholder, so whatever device(s) it stands for are never compared. Define the subcircuit, map it to a device class (reference.form \"subckt-call\" + reference.device_map), or write it as a plain-element card (see docs/cli/lvs.md, \"reference.unresolved_subckt_call\")",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "callee": "NPN13G2",
+        "reader_circuit": "NPN13G2(NX=1)",
+        "pin_count": 4
+      },
+      "circuit": {
+        "layout": null,
+        "reference": ".TOP"
+      },
+      "instance": {
+        "layout": null,
+        "reference": "Q3"
+      },
+      "subcircuit": {
+        "layout": null,
+        "reference": "NPN13G2"
+      }
+    },
+    {
       "category": "topology",
       "severity": "error",
       "description": "circuit could not be matched to a counterpart",
@@ -285,10 +507,31 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'cap_cmim'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "device class could not be mapped to a counterpart: 'rppd'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rppd"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -330,10 +573,14 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'IND'",
       "side": "reference",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "IND"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -343,10 +590,31 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'CAP'",
       "side": "reference",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "CAP"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'RES__renewed'",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RES__renewed"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -356,10 +624,14 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'RES'",
       "side": "reference",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RES"
+      },
       "property": null,
       "details": null,
       "circuit": null,

@@ -30,7 +30,7 @@ set -euo pipefail
 LAYOUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${LAYOUT_DIR}/.." && pwd)"
 CELL_DIR="${LAYOUT_DIR}/lna_core"
-KLT_RELEASE="0.7.0"
+KLT_RELEASE="0.8.0"
 read -r -a KLT_CMD <<< "${KLT:-uvx --isolated --from klayout-tools==${KLT_RELEASE} klt}"
 PYTHON="${PYTHON:-python3}"
 NX_ARGS=()

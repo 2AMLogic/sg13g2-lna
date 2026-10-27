@@ -7,7 +7,7 @@ island of design/netlist/lna.spice (issue #63, layout/toolchain bring-up).
     python3 layout/lna_core/generate.py --nx 10      # issue #58's knob
 
 Requires the pip ``klayout`` package (``import pya``); the committed GDS was
-written with klayout 0.30.12 (the version klt 0.7.0 itself runs).
+written with klayout 0.30.12 (the version klt 0.8.0 itself runs).
 
 What is drawn is set by ``realization.json`` (scope + PDK realization of
 every in-scope netlist instance); every device is the PDK's OWN PyCell from

@@ -5,7 +5,7 @@
   report rendered by `klt signoff --manifest` — never a hand-maintained
   checkbox list in an issue body.
 - **Date**: 2026-09-21, issue #30 (companion item-11 work item: #35).
-- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.7.0` from
+- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.8.0` from
   PyPI) and the vendored checklist below.
 - **Does not**: grade anything itself. Every row's verdict comes from the
   tool's own mechanical parse-and-grade; this directory only declares what
@@ -27,7 +27,7 @@ audited inventory (see the item-1 and item-10 bullets below and "Item 9:
 the testbench inventory"). That establishes an
 audited design source and shipped, pinned, documented benches only. It is
 not RF compliance and not overall T1. Every other item renders `unmet`:
-items 3 and 4 render `check_failed`, and the rest render `no_evidence`. The
+item 4 renders `check_failed`, and the rest render `no_evidence`. The
 block does have committed evidence:
 the schematic and its derived netlist in `design/`, six `sim/` experiments
 (indexed in the root `README.md` §"Campaign index and the record of
@@ -55,15 +55,19 @@ each record describes".
 Only some evidence kinds can be cited for each row, so the rows break
 down as follows:
 
-- **Items 3 and 4 cite failing evidence** from issue #63's layout bring-up.
+- **Item 4 cites failing evidence** and item 3 is uncited. Both come from
+  issue #63's layout bring-up.
   That layout (`layout/lna_core/`) draws the cascode core and the DR-0003
   bias island, 6 of the netlist's 30 instances, from the PDK's own PyCells.
-  Item 3 cites `layout/lna_core/drc_report.json` (`status: "violations"`,
-  36 `cont.width.1` on PDK-PyCell contact bars, klayout-tools#2943). Item 4
+  Item 3 cited `layout/lna_core/drc_report.json` while it was
+  `status: "violations"` (36 `cont.width.1`, klayout-tools#2943). Under klt
+  0.8.0 that report is `clean` for the partial cell, so the citation was
+  withdrawn (issue #235) rather than let a partial layout render the block's
+  row `met`. Item 4
   cites `layout/lna_core/lvs_full_report.json` (`status: "mismatch"`
-  against `design/netlist/lna.spice`). Both pin the GDS hash, and both
-  render `unmet`/`check_failed`. That is a statement that the evidence
-  exists and fails, not a claim. **Scope guard:** these citations point
+  against `design/netlist/lna.spice`). It pins the GDS hash and
+  renders `unmet`/`check_failed`. That is a statement that the evidence
+  exists and fails, not a claim. **Scope guard:** the item 4 citation points
   at a partial layout. If a klt fix (klayout-tools#2943, #2864, #2679)
   would make either report pass, complete the layout scope or withdraw
   the citation first. Otherwise a partial cell would render the block's
@@ -136,9 +140,9 @@ down as follows:
   `README.md`, `LICENSE`, `spec/target-spec.md` (the source of the spec
   table the README points to), the CI workflow and the checker itself, and
   declares the harness and evidence-format commands CI runs (each with its
-  CI job and tracked script). The pinned klt (`0.7.0`) has no
-  `klt signoff --attest`; that flag exists only in unreleased builds, so
-  this repo follows the item 1 and 9 pattern instead. `check-repo-hygiene.py`
+  CI job and tracked script). The pinned klt (`0.8.0`) has
+  `klt signoff --attest` (items 1, 9, 10), but this repo has not adopted it;
+  it keeps the item 1 and 9 pattern of a repo-side inventory and envelope. `check-repo-hygiene.py`
   (job `repo-hygiene`, read-only, stdlib plus `git ls-files`) fails when an
   inventoried file is missing, untracked or changed without refreshing the
   inventory, when the README stops naming the block or loses its "Target
@@ -157,7 +161,7 @@ down as follows:
 
   ```bash
   python3 -I .github/scripts/check-repo-hygiene.py --write
-  uvx --from "klayout-tools==0.7.0" klt signoff --manifest signoff/manifest.json \
+  uvx --from "klayout-tools==0.8.0" klt signoff --manifest signoff/manifest.json \
     --tiers-doc signoff/design-evidence-tiers.md --format json > signoff/t1-report.json
   ```
 
@@ -217,7 +221,7 @@ the item just to make a row go green.
   no RTL, no partition boundary. A `mixed-signal` declaration would be
   wrong here.
 - **`evidence`** — the map from item id to evidence entry. It currently
-  holds items 3 and 4, both failing (see above), and item 9, the audited
+  holds item 4 (failing, see above), items 1 and 10, and item 9, the audited
   testbench inventory. Cite honestly:
   - **File-backed** — `{"file": "<repo-root-relative path>", "content_hash": "sha256:<hash>"}`.
     Every citation MUST pin `content_hash` to the committed artifact it
@@ -268,7 +272,7 @@ the item just to make a row go green.
 
 T1 item 9 asks that every claimed measurement's testbench is committed,
 with a documented cold-start invocation a third party can run, and a
-pinned PDK revision. The pinned klt (`0.7.0`) accepts item 9 only as an
+pinned PDK revision. The pinned klt (`0.8.0`) accepts item 9 only as an
 artifact-anchored generic envelope: it declares `"t1_item": 9` and pins
 the audited artifact by path and content hash, and the manifest pins the
 same hash. This repo's artifact is the testbench inventory.
@@ -359,7 +363,7 @@ only python3 and git.
 
 ```bash
 python3 -I .github/scripts/check-testbench-inventory.py --write
-python3 -m pip install klayout-tools==0.7.0   # or a venv / uvx --from "klayout-tools==0.7.0" klt
+python3 -m pip install klayout-tools==0.8.0   # or a venv / uvx --from "klayout-tools==0.8.0" klt
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -428,7 +432,7 @@ It is refreshed deliberately, in the same commit as whatever change
 re-grades the block:
 
 ```bash
-python3 -m pip install klayout-tools==0.7.0   # the pinned release
+python3 -m pip install klayout-tools==0.8.0   # the pinned release
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -449,8 +453,8 @@ pristine copy would render each cited row `unreadable_evidence` and fail
 for a reason that is not drift.
 
 The cited envelopes are produced by a different `klt` than the one that
-grades them. `layout/run_flow.sh` writes them with the `0.7.0` release;
-this gate grades them with the same `0.7.0` release. The grader reads
+grades them. `layout/run_flow.sh` writes them with the `0.8.0` release;
+this gate grades them with the same `0.8.0` release. The grader reads
 the `drc`/`lvs` envelopes of the layout flow without error. That was checked when they
 were cited (issue #63), and the byte-drift gate re-checks it on every run.
 `.github/scripts/check-klt-pin.sh` (a CI step) fails if the pin named here, in
@@ -503,8 +507,8 @@ in the cited file's directory, `realization.json` and
 - Missing or malformed scope metadata, a stale partition, or an input-hash
   disagreement is a hard failure, never read as full scope.
 
-Allowed: uncited rows, and failing partial evidence (the current items 3
-and 4 stay cited and `unmet`).
+Allowed: uncited rows, and failing partial evidence (the current item 4
+stays cited and `unmet`; item 3 is uncited since klt 0.8.0, see above).
 
 Remediation when it fires: either withdraw the partial citation from
 `manifest.json` and refresh the record, or complete the layout so that

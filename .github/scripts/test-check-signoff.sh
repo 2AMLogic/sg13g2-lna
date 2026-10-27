@@ -81,10 +81,11 @@ for entry in evidence.values():
         shutil.copy2(src, dst)
 PY
   # Scope metadata the guard binds citations to (issue #80): realization,
-  # provenance, the extraction envelope and the declared netlist. No GDS
+  # provenance, the extraction and DRC envelopes (the DRC one is uncited in
+  # the committed manifest; fixtures re-cite it) and the declared netlist. No GDS
   # or regeneration needed.
   mkdir -p "$tree/layout/lna_core" "$tree/design/netlist"
-  for f in realization.json lna_core.provenance.json extract_report.json; do
+  for f in realization.json lna_core.provenance.json extract_report.json drc_report.json; do
     cp "$ROOT/layout/lna_core/$f" "$tree/layout/lna_core/$f"
   done
   cp "$ROOT/design/netlist/lna.spice" "$tree/design/netlist/lna.spice"
@@ -129,7 +130,11 @@ exec(code)
      > signoff/t1-report.json 2>/dev/null; true)
 }
 
-PASS_DRC='d = rd(L + "/drc_report.json"); d.update(status="clean", violation_count=0, rule_counts={}, metrics={"drc__error__count": 0}, violations=[]); wr(L + "/drc_report.json", d)'
+# The committed manifest leaves item 3 uncited (klt 0.8.0 grades the partial
+# cell's DRC clean); CITE_DRC re-cites it so the fixtures below can exercise
+# the scope guard on a met DRC row.
+CITE_DRC='m = rd(t + "/signoff/manifest.json"); m["evidence"]["3"] = {"file": "layout/lna_core/drc_report.json", "content_hash": m["evidence"]["4"]["content_hash"]}; wr(t + "/signoff/manifest.json", m)'
+PASS_DRC="$CITE_DRC"'; d = rd(L + "/drc_report.json"); d.update(status="clean", violation_count=0, rule_counts={}, metrics={"drc__error__count": 0}, violations=[]); wr(L + "/drc_report.json", d)'
 PASS_LVS='d = rd(L + "/lvs_full_report.json"); d["status"] = "match"; wr(L + "/lvs_full_report.json", d)'
 
 # 1. Pristine copy passes.
@@ -168,7 +173,7 @@ run_msg "partial cell with met DRC+LVS rows fails per item" 1 "$t" \
 
 # 6. A passing partial extraction envelope cited for item 2.
 t="$(fresh_tree)"
-edit_tree "$t" 'm = rd(t + "/signoff/manifest.json"); m["evidence"]["2"] = {"file": "layout/lna_core/extract_report.json", "content_hash": m["evidence"]["3"]["content_hash"]}; wr(t + "/signoff/manifest.json", m)'
+edit_tree "$t" 'm = rd(t + "/signoff/manifest.json"); m["evidence"]["2"] = {"file": "layout/lna_core/extract_report.json", "content_hash": m["evidence"]["4"]["content_hash"]}; wr(t + "/signoff/manifest.json", m)'
 run_msg "passing partial extraction cannot establish layout presence" 1 "$t" \
   "item 2 (Layout)" "partial scope"
 
@@ -216,7 +221,7 @@ t="$(fresh_tree)"
 edit_tree "$t" 'p = rd(L + "/lna_core.provenance.json"); p["gds_sha256"] = "0" * 64; wr(L + "/lna_core.provenance.json", p)'
 run_msg "scope provenance hash disagreement fails" 1 "$t" "input hash disagreement"
 t="$(fresh_tree)"
-edit_tree "$t" 'd = rd(L + "/drc_report.json"); d["provenance"]["input"]["content_hash"] = "sha256:" + "0" * 64; wr(L + "/drc_report.json", d)'
+edit_tree "$t" "$CITE_DRC"'; d = rd(L + "/drc_report.json"); d["provenance"]["input"]["content_hash"] = "sha256:" + "0" * 64; wr(L + "/drc_report.json", d)'
 run_msg "report input hash disagreement fails" 1 "$t" "input hash disagreement"
 
 echo "self-test: $pass passed, $fail failed"

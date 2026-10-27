@@ -3,7 +3,7 @@
 
 T1 item 10 ("Repo hygiene") asks for a README stating what the block is, its
 spec table, and how to reproduce every result; a license; and CI that at
-minimum keeps the harness and evidence formats valid. The pinned klt (0.7.0)
+minimum keeps the harness and evidence formats valid. The pinned klt (0.8.0)
 accepts item 10 as an artifact-anchored generic envelope bound to an audited
 artifact. That artifact is `signoff/repo-hygiene/inventory.json`, derived here
 from the tracked tree.

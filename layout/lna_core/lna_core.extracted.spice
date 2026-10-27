@@ -1,16 +1,16 @@
 * extracted by klt extract --deck sg13g2
 
 * cell lna_core
+* pin b1
 * pin bref
 * pin gsvo
 * pin vdd
 * pin vss
-* pin b1
 * pin e1
 * pin vb2
 * pin casc
 * pin outn
-.SUBCKT lna_core bref gsvo vdd vss b1 e1 vb2 casc outn
+.SUBCKT lna_core b1 bref gsvo vdd vss e1 vb2 casc outn
 * device instance $1 r0 *1 -69.16,18 pfet
 M$1 bref gsvo vdd vdd pfet L=1U W=16U AS=5.44P AD=3.04P PS=32.68U PD=16.38U
 * device instance $2 r0 *1 -67.78,18 pfet
@@ -107,4 +107,6 @@ C$46 vss bref 6.250695e-12
 C$47 vss bref 6.250695e-12
 * device instance $48 r0 *1 91.75,-46.25 cap_cmim
 C$48 vss bref 6.250695e-12
+* device instance $49 r0 *1 -12.503,-1.14 rppd
+X$49 bref b1 vss rppd r=329.741550696 L=1.005U W=1U
 .ENDS lna_core

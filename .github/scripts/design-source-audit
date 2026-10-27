@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Design-source inventory + T1 item-1 audit envelope (issue #182).
 
-T1 item 1 ("Design sources") has no `klt` verb. The pinned klt 0.7.0 grades
+T1 item 1 ("Design sources") has no `klt` verb. The pinned klt 0.8.0 grades
 it through an artifact-anchored generic envelope (signoff/design-evidence-
 tiers.md, "Not every item has a tool behind it"): the envelope declares
 `"t1_item": 1` and pins the audited artifact by path + content hash, and the

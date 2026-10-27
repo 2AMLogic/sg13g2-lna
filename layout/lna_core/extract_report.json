@@ -1,18 +1,23 @@
 {
-  "schema_version": 3,
-  "file": "lna_core.gds",
+  "schema_version": 4,
+  "file": {
+    "path": "layout/lna_core/lna_core.gds",
+    "scope": "repo"
+  },
   "deck": "sg13g2",
   "top": "lna_core",
   "dbu_um": 0.001,
   "netlist_path": "lna_core.extracted.spice",
-  "netlist_sha256": "477d013b1cc8e0f97f210158052c9985623f190368f628822b32f3811a869825",
+  "netlist_sha256": "b8dff8b84779eedde917765fd14c746436fa2e7ea7e1d551d5215e2bb49c3d87",
+  "netlist_normalized_sha256": "9e29c4362628b4845a016fbe447ea9a6a3b4bfb085ee1ebf099c9e723b2f5755",
   "status": "extracted",
-  "device_count": 48,
+  "device_count": 49,
   "net_count": 9,
   "pin_count": 9,
   "device_counts": {
     "cap_cmim": 16,
-    "pfet": 32
+    "pfet": 32,
+    "rppd": 1
   },
   "dummy_devices_dropped": 0,
   "ignored_layers": [
@@ -1079,6 +1084,28 @@
       ]
     },
     {
+      "name": "$49",
+      "class": "rppd",
+      "nets": {
+        "a": "bref",
+        "b": "b1",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 329.741551,
+        "l_um": 1.005,
+        "w_um": 1.0,
+        "area_um2": 1.005,
+        "perimeter_um": 4.01
+      },
+      "instance_path": [
+        {
+          "cell": "rppd",
+          "array_index": null
+        }
+      ]
+    },
+    {
       "name": "$5",
       "class": "pfet",
       "nets": {
@@ -1203,9 +1230,9 @@
     {
       "name": "b1",
       "pin": true,
-      "device_count": 0,
+      "device_count": 1,
       "net_id": 5,
-      "pin_index": 4,
+      "pin_index": 0,
       "label_positions_um": [
         {
           "text": "b1",
@@ -1217,9 +1244,9 @@
     {
       "name": "bref",
       "pin": true,
-      "device_count": 48,
+      "device_count": 49,
       "net_id": 2,
-      "pin_index": 0,
+      "pin_index": 1,
       "label_positions_um": [
         {
           "text": "bref",
@@ -1265,8 +1292,8 @@
       "name": "gsvo",
       "pin": true,
       "device_count": 32,
-      "net_id": 8,
-      "pin_index": 1,
+      "net_id": 7,
+      "pin_index": 2,
       "label_positions_um": [
         {
           "text": "gsvo",
@@ -1308,7 +1335,7 @@
       "pin": true,
       "device_count": 64,
       "net_id": 9,
-      "pin_index": 2,
+      "pin_index": 3,
       "label_positions_um": [
         {
           "text": "vdd",
@@ -1320,9 +1347,9 @@
     {
       "name": "vss",
       "pin": true,
-      "device_count": 16,
+      "device_count": 17,
       "net_id": 13,
-      "pin_index": 3,
+      "pin_index": 4,
       "label_positions_um": [
         {
           "text": "vss",
@@ -1333,29 +1360,37 @@
     }
   ],
   "warnings": [
-    "3 candidate 'dantenna' regions match every other drawn-layer predicate of that device class but are missing its device-recognition marker Recog.diode (99/31) -- so this geometry extracted as no device at all rather than as a diode, and the zero device count for this class is not evidence that the layout contains none. Draw the missing layer(s), or run `klt deck devices --deck sg13g2 --class dantenna` for the class's complete marker/requires/excludes set. See docs/cli/extract.md's 'Marker-gated and predicate-gated device classes' section.",
+    "3 candidate 'dantenna' regions match every other drawn-layer predicate of that device class but are missing its device-recognition marker Recog.diode (99/31) -- so this geometry extracted as no device at all rather than as a diode, and the zero device count for this class is not evidence that the layout contains none. Draw the missing layer(s), or run `klt deck devices --deck sg13g2 --class dantenna` for the class's complete marker/requires/excludes set. See docs/cli/extract.md's 'Marker-gated and predicate-gated device classes' section. Note: this geometry also matches SiGe HBT (npn13G2/npn13G2l/npn13G2v), a device family this deck does not model, so it is probably not a diode at all -- see the sg13g2.py docstring section 'SiGe HBTs -- investigated, declined (issue #1232)'.",
+    "16 drawn capacitors ('cap_cmim') written as a fixed-value 'C' card (the deck's nominal area+perimeter value) -- PDK process corners (e.g. mimcap_ff/mimcap_ss) do not apply to it, so schematic-vs-extracted deltas at non-typical corners include a capacitor-corner term; pass --pdk to bind the PDK capacitor subcircuit instead. See docs/cli/extract.md's 'SPICE model binding' section.",
     "10 layers (1/20, 5/2, 26/0, 31/2, 32/0, 33/0, 40/0, 51/0, 52/0, 63/0) carrying 124 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
   "unmodelled_poly": [],
   "merged_net_labels": [],
+  "split_net_labels": [],
   "voltage_domain_warnings": [],
   "missing_flavour_markers": [],
+  "unsupported_devices": [],
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
   "matched_device_groups": [],
   "def_pin_promotion": null,
+  "pin_renames": null,
+  "rename_declared_pins": false,
+  "declared_pins": null,
+  "def_pins": null,
   "label_layers": null,
+  "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.7.0",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:bf483105cb17948270f0cad45d9418787654bfc0a5ffd04a2e2413d8c7d3b6e7",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
@@ -1367,8 +1402,20 @@
   "spef_path": null,
   "subcircuit": null,
   "metrics": {
-    "extract__device__count": 48,
+    "extract__device__count": 49,
     "extract__net__count": 9,
     "extract__pin__count": 9
+  },
+  "timing": {
+    "stages": {
+      "read_layout": 0.001,
+      "device_extraction": 0.261,
+      "diagnostics": 0.0,
+      "netlist_write": 0.001,
+      "netlist_hash": 0.0,
+      "netlist_normalized_hash": 0.001
+    },
+    "total_seconds": 0.377,
+    "unattributed_seconds": 0.113
   }
 }

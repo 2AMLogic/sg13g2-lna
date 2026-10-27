@@ -115,7 +115,7 @@ it crashes with an uncaught traceback instead
 **Reproducibility.** `generate.py` writes GDS with no timestamps and no
 PCell context. Two runs give byte-identical output. The committed
 `lna_core.gds` has sha256 `e2d75415…a14f`, at nx=8, written with pip
-`klayout` 0.30.12 (the version klt 0.7.0 uses). `lna_core.provenance.json`
+`klayout` 0.30.12 (the version klt 0.8.0 uses). `lna_core.provenance.json`
 records that hash. It also records a sha256 over the PyCell library sources
 (`sha256:6292d8c1…bb48`), the PDK's `.fetched-version` (0.3.0) and the two
 shim commits. A different PyCell revision therefore shows up as a changed
@@ -127,13 +127,13 @@ python3 -m venv .venv && .venv/bin/pip install klayout==0.30.12
 PYTHON=.venv/bin/python layout/run_flow.sh
 ```
 
-`run_flow.sh` runs klt as the **PyPI release** `klayout-tools==0.7.0`,
+`run_flow.sh` runs klt as the **PyPI release** `klayout-tools==0.8.0`,
 isolated through `uvx --isolated`. A host's installed `klt` can be a
 post-tag build, and the development host's was (`0.7.0+g5c94de0ebbfe`,
-`is_release: false`). A plain `uvx --from klayout-tools==0.7.0` silently
+`is_release: false`; a git build of 0.8.x now reports `0.8.1.devN+g<sha>`). A plain `uvx --from klayout-tools==0.8.0` silently
 reuses an installed tool of the same version, so `--isolated` is
 load-bearing here. `klt_version.json` records the producing build:
-`0.7.0`, tag `v0.7.0`, commit `0e2362bd`, `is_release: true`, klayout
+`0.8.0`, tag `v0.8.0`, commit `c572046be644`, `is_release: true`, klayout
 0.30.12.
 
 ## Evidence, as recorded
@@ -141,42 +141,43 @@ load-bearing here. `klt_version.json` records the producing build:
 All four reports pin the same layout: `provenance.input.content_hash =
 sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f`.
 All four name the same deck: `sg13g2`,
-`sha256:bf483105cb17948270f0cad45d9418787654bfc0a5ffd04a2e2413d8c7d3b6e7`,
+`sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15`,
 `released: true`. `klt env-provenance lint-envelope` finds no absolute host
 paths in them.
 
-### DRC (`drc_report.json`): `status: "violations"`, 36
+### DRC (`drc_report.json`): `status: "clean"`, 0
 
-`rule_counts: {"cont.width.1": 36}`. The other 38 rules this run checked
-report nothing. Every finding is a non-square contact bar inside a PDK
-PyCell: 17 of 1.65 × 0.16 µm (HBT collector bars), 17 of 1.52 × 0.16 µm
-(HBT base bars) and 2 of 0.16 × 0.86 µm (the rppd terminal heads, rotated).
-IHP's own deck checks `Cnt.a` over square contacts only
-(`cont_sq = cont.not(cont.non_squares)`) and sends bars to the `CntB.*`
-rules. klt's curated `cont.width.1` checks every contact. These findings
-therefore come from a gap in how the deck was transcribed, and the caller
-cannot clear them without editing vendor geometry. Filed as
-[klayout-tools#2943](https://github.com/2AMLogic/klayout-tools/issues/2943).
-They are recorded as-is. No geometry was changed to make them go away.
+`rule_counts: {}`. Under klt 0.7.0 the same GDS reported 36 `cont.width.1`
+findings on non-square contact bars inside PDK PyCells (HBT collector and
+base bars, the rppd terminal heads;
+[klayout-tools#2943](https://github.com/2AMLogic/klayout-tools/issues/2943)).
+Under klt 0.8.0 (deck `content_hash` changed, see above) the curated deck
+reports nothing for them. The GDS is byte-identical (sha256 `e2d75415…a14f`)
+and no geometry was changed; the verdict change comes from the klt/deck
+upgrade alone. **This is a clean verdict on a partial cell, not DRC clean for
+the block** (see "Signoff citations": the item-3 citation is withdrawn for
+that reason). The schema is now 3, and `coverage` lists more deck layers than
+before; the coverage fields below are re-quoted from the 0.8.0 envelope.
 
 The coverage fields below are quoted verbatim from the envelope's `coverage`
 block, as T1 item 3 requires:
 
 - `coverage.layers_in_stream_without_rules`:
-  `["1/20", "5/2", "7/21", "8/2", "8/25", "10/2", "10/25", "14/0", "26/0", "28/0", "31/0", "31/2", "32/0", "33/0", "40/0", "44/0", "51/0", "52/0", "63/0", "111/0", "126/25", "128/0", "129/0"]`
+  `["5/2", "7/21", "8/2", "8/25", "10/2", "10/25", "26/0", "28/0", "31/2", "32/0", "33/0", "40/0", "44/0", "51/0", "52/0", "63/0", "111/0", "126/25", "128/0", "129/0"]`
 - `coverage.rules_skipped`:
-  `["topmetal1.enclosing.topvia2.1", "topmetal2.enclosing.topvia2.1", "topmetal2.space.1", "topmetal2.width.1", "topvia2.space.1", "topvia2.width.1"]`.
+  `["nwell.enclosing.nactiv.1", "nwell.enclosing.nactiv.dig.1", "nwell.enclosing.nactiv.hv.1", "nwell.space.nactiv.1", "nwell.space.nactiv.dig.1", "nwell.space.nactiv.hv.1", "topmetal1.enclosing.topvia2.1", "topmetal2.enclosing.topvia2.1", "topmetal2.space.1", "topmetal2.width.1", "topvia2.space.1", "topvia2.width.1"]`.
   The same envelope's `coverage.inapplicable` gives each of these the
   reason `no_applicable_geometry`, because this cell draws no
-  TopVia2/TopMetal2.
+  TopVia2/TopMetal2 and no NWell/nActiv pair for the `nwell.*nactiv` rules.
 - `coverage.deck_scope`:
-  `["Act", "Cnt", "Gat", "M1", "M2", "M3", "M4", "M5", "MIM", "TM1", "TM2", "TV1", "TV2", "V1", "V2", "V3", "V4"]`
+  `["Act", "Cnt", "Gat", "M1", "M2", "M3", "M4", "M5", "MIM", "NW", "TM1", "TM2", "TV1", "TV2", "V1", "V2", "V3", "V4", "pSD"]`
 
 The same block also carries a `voltage_domain_warnings` entry: the curated
 deck applies the LV thresholds to geometry under ThickGateOx (44/0), so
-XMis's HV-specific gate rules are not checked. NWell, pSD/nSD, the HBT
+XMis's HV-specific gate rules are not checked. nSD, the HBT
 layers (EmWind, TRANS, Activ:mask), PolyRes/SalBlock/EXTBlock and Vmim
-appear only in the without-rules list above. None of them is checked, by
+appear only in the without-rules list above (NWell and pSD are in the
+0.8.0 deck scope). None of them is checked, by
 construction.
 
 **The PDK's native DRC deck was not run.** `klt drc --engine klayout --pdk
@@ -230,12 +231,12 @@ Prerequisites, all explicit:
   probe re-checks the binary it finds — the runner prepends the
   preflighted executable's directory to PATH so both probes hit the same
   binary.
-- **klt 0.7.0**, the same pinned, `uvx --isolated` release as
+- **klt 0.8.0**, the same pinned, `uvx --isolated` release as
   `run_flow.sh`; `check-klt-pin.sh` keeps the two pins from skewing.
 - **The IHP PDK install** (`$PDK_ROOT`, or `--pdk-root`) so klt resolves
   the native deck for `--pdk ihp-sg13g2`.
 
-Completed-run semantics (per the klt 0.7.0 release docs): `klt drc --engine
+Completed-run semantics (per the klt 0.8.0 release docs): `klt drc --engine
 klayout` exits 0 for clean, 3 for violations, and 4 for
 `coverage_unknown` — zero findings without a caller-vouched rule-category
 assertion, which is how a genuinely clean layout looks until a reviewed
@@ -265,8 +266,9 @@ through #201's evidence run.
 ### Extraction (`extract_report.json`)
 
 The run recognises 32 `pfet` (XMis's fingers, L=1u W=16u, all four
-terminals on the intended nets) and 16 `cap_cmim` (6.250695 pF each,
-`vss`–`bref`). It finds 9 nets, which are exactly the 9 labelled ones.
+terminals on the intended nets), 16 `cap_cmim` (6.250695 pF each,
+`vss`–`bref`) and, new under klt 0.8.0, 1 `rppd` (`bref`–`b1`,
+r=329.74 Ω, L=1.005u W=1u; 49 devices in all, 48 under 0.7.0). It finds 9 nets, which are exactly the 9 labelled ones.
 Nothing is merged or dangling: `single_terminal_nets`, `dead_metal` and
 `merged_net_labels` are all empty.
 
@@ -277,20 +279,24 @@ Nothing is merged or dangling: `single_terminal_nets`, `dead_metal` and
   [#2864](https://github.com/2AMLogic/klayout-tools/issues/2864), with
   per-gap issues #2860-#2863). Their terminals extract as plain nets:
   `casc`, `b1`, `e1`, `outn`, `vb2` and the `bref` diode tie.
-- `R3b` (`rppd`). The curated deck takes the resistor body from GatPoly ∩
-  PolyRes. The PDK's own `rppd` PyCell draws the body on PolyRes with
-  **no** GatPoly under it, as IHP's LVS (`res_derivations.lvs`) expects. As a
-  result, no PDK-native poly resistor is ever recognised. This is already
-  filed as [klayout-tools#2679](https://github.com/2AMLogic/klayout-tools/issues/2679)
-  and is reproduced here.
+- `R3b` (`rppd`) was not recognised under klt 0.7.0 (the curated deck took
+  the body from GatPoly ∩ PolyRes, while the PDK's `rppd` PyCell has no
+  GatPoly under it;
+  [klayout-tools#2679](https://github.com/2AMLogic/klayout-tools/issues/2679)).
+  Klt 0.8.0 extracts it as a device (the `X$49 … rppd` card in
+  `lna_core.extracted.spice`). Whether it pairs with the schematic's R3B is
+  the LVS question below.
 
 ### LVS against `design/netlist/lna.spice` (`lvs_full_report.json`): `status: "mismatch"`
 
 This compare uses `reference.form: "subckt-call"` with `reference.deck:
 "sg13g2"`, on the design netlist exactly as committed, with
 `combine_devices: true`. The two top circuits do not pair at all.
-`category_counts` is `{"device.geometry_not_compared": 3, "topology": 7}`.
-`counts.devices` is layout 2, reference 24, matched 0. `counts.nets` is
+`category_counts` is `{"device.geometry_not_compared": 4,
+"reference.unresolved_subckt_call": 6, "topology": 9}` (0.8.0 adds the
+explicit `reference.unresolved_subckt_call` category for the `npn13G2`
+calls; 14 errors, 19 mismatches in all).
+`counts.devices` is layout 3, reference 24, matched 0. `counts.nets` is
 layout 9, reference 19, matched 0. This failure is expected: 24 of the 30
 netlist instances are out of scope, and the `npn13G2` subcircuit calls pass
 through as undefined abstract circuits. The run says nothing per device.
@@ -309,7 +315,10 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
   `pfet` L=1U W=512U against the reference `MMis bref gsvo vdd vdd pfet
   L=1U W=512U`, and nets `gsvo` and `vdd` pair.
 - **Unmatched, because of extraction gaps**: `Q1`, `Q2`, `Q3` (class
-  `NPN13G2`, no layout devices) and `R3B` (class `RPPD`, no layout devices).
+  `NPN13G2`, no layout devices). `R3B` (reference class `RPPD`) also stays
+  unmatched under 0.8.0 even though the layout now has an extracted `rppd`
+  device; the report's 7 `device.unmatched` entries do not name the
+  devices, so the cause of that non-pairing is not established here.
 - **Unmatched**: `Cbref`. Layout: the 16 extracted units combined into one
   `cap_cmim` of 16 × 6.250695 pF = 100.011 pF. Reference: `CBREF 100P`, the
   schematic value. The two differ by 0.011 %, and the compare is exact, so
@@ -323,12 +332,12 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
   [klayout-tools#2946](https://github.com/2AMLogic/klayout-tools/issues/2946).
   No tolerance is declared in the committed request, and the reference
   keeps the schematic's value rather than the realized one.
-- The report's three `topology` entries do not name the class they are
+- The report's `topology` entries do not name the class they are
   about. Filed as
   [klayout-tools#2945](https://github.com/2AMLogic/klayout-tools/issues/2945).
 - Warnings, listed with the claim as T1 item 4 asks:
   `device.geometry_not_compared` for `cap_cmim` (A/P not compared, only C)
-  and for `RPPD` (A/L/P/W not compared, only R). The MOS flavour (HV
+  and for `rppd` (A/L/P/W not compared, only R). The MOS flavour (HV
   vs LV) is not part of the compare at all, because the deck reports both
   as `pfet`. `power_connectivity.status: "unchecked"`.
 
@@ -337,13 +346,13 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
 - **It does support:** a committed, reproducible, parameterised GDS of 6 of
   the netlist's 30 instances, drawn from the PDK's own PyCells. The drawn
   interconnect passes every curated sg13g2 rule the run checked, apart from
-  the vendor contact bars above. MIM, M1–M5, TM1 and V1–V4/TV1 all fall
+  the checked rules (the curated 0.8.0 verdict is `clean`). MIM, M1–M5, TM1 and V1–V4/TV1 all fall
   inside the deck's checked scope. The XMis bank, as drawn, extracts to the
   netlist's own device (W=512u, L=1u) on the right nets. The Cbref bank
   extracts to 100.011 pF between `vss` and `bref`.
 - **It does not support:**
-  - DRC clean. The curated status is `violations`, and the native deck did
-    not run.
+  - DRC clean for the block. The curated status is `clean` for this partial
+    cell only, and the native deck did not run.
   - LVS match. Both compares are `mismatch`.
   - Any statement about the HBTs' or R3b's connectivity, because klt
     cannot see those devices.
@@ -355,19 +364,20 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
 
 ## Signoff citations
 
-`signoff/manifest.json` cites `drc_report.json` for **item 3** and
-`lvs_full_report.json` for **item 4**, both pinned to the GDS hash above.
-Both render `unmet` / `check_failed`, which records that the evidence
-exists and fails. Neither is a claim. **Item 2 is deliberately uncited.**
+`signoff/manifest.json` cites `lvs_full_report.json` for **item 4**, pinned
+to the GDS hash above. It renders `unmet` / `check_failed`, which records
+that the evidence exists and fails. It is not a claim. **Item 3 is no longer
+cited** (klt 0.8.0 issue #235): under 0.8.0 `drc_report.json` is `clean` for
+this partial cell, which would render item 3 `met` for a cell that is not the
+block, so the citation was withdrawn as the scope guard requires. **Item 2 is deliberately uncited.**
 A layout of 6 of 30 instances does not back "Layout" for the block. Item 2
 accepts any passing envelope (klt cannot check topical relevance), so
 citing `extract_report.json` would turn the row `met` on a partial layout.
 
-A future fix to klayout-tools#2943 could make this partial layout DRC-clean
-under the curated deck. Then item 3 would render `met` for a cell that is
-not the block. Before re-running the flow under such a klt, either complete
-the layout scope or withdraw the item-3 citation. The same applies to item
-4 if #2864 and #2679 both land.
+That is exactly what happened with klt 0.8.0 (the #2943 contact-bar
+findings no longer fire). Re-cite `drc_report.json` for item 3 only once the
+layout scope is complete. The same applies to item 4 if #2864 and #2679
+both land.
 
 CI enforces this: `.github/scripts/check-signoff-scope.py` (run by
 `check-signoff.sh`) fails a `met` item 2/3/4 row backed by this partial

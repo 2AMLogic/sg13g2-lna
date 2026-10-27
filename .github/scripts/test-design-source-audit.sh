@@ -110,7 +110,7 @@ repin "$TMP/wok"
 expect "written audit passes check once cited" 0 "$TMP/wok" check
 
 # klt: the pinned grader itself
-if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)" = "klt 0.7.0" ]; then
+if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)" = "klt 0.8.0" ]; then
   item1() { (cd "$1" && klt signoff --manifest signoff/manifest.json --tiers-doc signoff/design-evidence-tiers.md --format json 2>/dev/null) \
     | python3 -I -c 'import json,sys; r=json.load(sys.stdin); i=[x for x in r["items"] if x["id"]==1][0]; print(i["status"], bool((i.get("citation") or {}).get("artifact_binding")))'; }
   mk kok
@@ -120,7 +120,7 @@ if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)
   case "$(item1 "$TMP/kmut")" in met*) echo "FAIL: mutated inventory still renders item 1 met"; fail=$((fail+1)) ;;
     *) echo "PASS: mutated inventory cannot render item 1 met"; pass=$((pass+1)) ;; esac
 else
-  echo "SKIP: klt cases (release klt 0.7.0 not on PATH)"; skip=$((skip+1))
+  echo "SKIP: klt cases (release klt 0.8.0 not on PATH)"; skip=$((skip+1))
 fi
 
 echo "$pass passed, $fail failed, $skip skipped"
