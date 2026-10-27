@@ -1,5 +1,15 @@
 # Work Log
 
+### 2026-10-24
+
+- **Issue #222** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
+- **PR #223**: feat: manifest-forward artifact store writer and CI check for new sim evidence
+
+### 2026-10-23
+
+- **Issue #224** (closed): main CI: matching-feasibility-tests replay fails with last-digit float diffs since 2026-10-21
+- **PR #225**: ci: pin matching-feasibility-tests to ubuntu-24.04
+
 ### 2026-10-17
 
 - **Issue #217** (closed): signoff: attest T1 item 10 (repo hygiene) with a tool-produced klt signoff --attest 10 envelope
