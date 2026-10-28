@@ -76,10 +76,20 @@ for i in 1 2 3 4 5 6 7 8; do
   if [ "$rc" -eq 0 ] && grep -q '^OK ' "$TMP/c$i.out"; then wins=$((wins+1))
   elif [ "$rc" -eq 4 ] && [ ! -s "$TMP/c$i.out" ]; then losses=$((losses+1)); fi
 done
-if [ "$wins" -eq 1 ] && [ "$losses" -eq 7 ] \
-   && [ -d "$E2/netlist-snapshots/$ID" ] && [ -d "$E2/corners/$ID" ]; then
+c2_ok=1; c2_why=""
+if [ "$wins" -ne 1 ] || [ "$losses" -ne 7 ]; then c2_ok=0; c2_why="$c2_why counts(wins=$wins losses=$losses)"; fi
+if [ ! -d "$E2/netlist-snapshots/$ID" ]; then c2_ok=0; c2_why="$c2_why missing(netlist-snapshots/$ID)"; fi
+if [ ! -d "$E2/corners/$ID" ]; then c2_ok=0; c2_why="$c2_why missing(corners/$ID)"; fi
+if [ "$c2_ok" -eq 1 ]; then
   ok "8 concurrent callers: exactly one winner, losers exit 4 with no paths, winner's dirs intact"
-else bad "concurrency (wins=$wins losses=$losses)"; fi
+else
+  bad "concurrency (wins=$wins losses=$losses):$c2_why"
+  # Diagnostics only; the assertions above are unchanged.
+  for i in 1 2 3 4 5 6 7 8; do
+    echo "  caller $i rc=$(cat "$TMP/c$i.rc" 2>/dev/null) stdout=[$(cat "$TMP/c$i.out" 2>/dev/null)] stderr=[$(cat "$TMP/c$i.err" 2>/dev/null)]"
+  done
+  echo "  listing of $E2:"; listing "$E2" | sed 's/^/    /'
+fi
 
 # 3. pre-existing artifacts
 reject_case() { # <label> <setup-cmd...>
