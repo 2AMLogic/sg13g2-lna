@@ -13,8 +13,7 @@
 #      block name; spec has no table; LICENSE empty      -> FAILS, --write refuses
 #   5. declared command no longer run by its CI job      -> FAILS, --write refuses
 #   6. hygiene file changed without refreshing           -> FAILS (stale hash)
-#   7. stale outer binding (envelope, manifest, report,
-#      missing citation)                                 -> FAILS
+#   7. stale envelope                                    -> FAILS
 #   8. --write on a pristine fixture then check          -> passes after rebind
 
 set -u
@@ -162,25 +161,12 @@ expect "changed workflow without refresh is stale" 1 "$T" "STALE: .github/workfl
 T="$(case_tree)"; edit "$T" signoff/repo-hygiene/envelope.json 's.replace("\"pass\"", "\"fail\"")'
 expect "stale envelope fails" 1 "$T" "does not equal the envelope"
 
-T="$(case_tree)"; edit "$T" signoff/manifest.json 's.replace("signoff/repo-hygiene/envelope.json", "signoff/other.json")'
-expect "stale manifest citation fails" 1 "$T" "citation is"
-
-T="$(case_tree)"; edit "$T" signoff/manifest.json 'import json; d = json.loads(s); d["evidence"].pop("10"); s = json.dumps(d)'
-expect "missing manifest citation fails" 1 "$T" "citation is None"
-
-T="$(case_tree)"; edit "$T" signoff/t1-report.json 'import json; d = json.loads(s); [i.update(status="unmet", citation=None) for i in d["items"] if i["id"] == 10]; s = json.dumps(d)'
-expect "report not showing item 10 met fails" 1 "$T" "is not 'met'"
-
-# 8. --write rebinds after a legitimate change (report must then be refreshed)
+# 8. --write rebinds after a legitimate change
 T="$(case_tree)"; edit "$T" README.md 's + "\n"'
 run_check "$T" --write
 if [ "$RC" -eq 0 ]; then ok "--write regenerates after a change"; else bad "--write failed (rc=$RC)"; fi
 run_check "$T"
-if [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q "is not 'met' bound"; then
-  ok "after --write the rolling report is stale until the grader refreshes it"
-else
-  bad "report staleness not detected after --write (rc=$RC)"; printf '%s\n' "$OUT" | head -5 >&2
-fi
+if [ "$RC" -eq 0 ]; then ok "after --write the check passes"; else bad "check fails after --write (rc=$RC)"; printf '%s\n' "$OUT" | head -5 >&2; fi
 
 echo
 echo "pass=$pass fail=$fail"

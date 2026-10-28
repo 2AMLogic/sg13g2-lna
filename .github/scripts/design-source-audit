@@ -182,7 +182,7 @@ def cmd_write(root, skip_gate):
         with open(os.path.join(root, rel), "wb") as f:
             f.write(b)
     print(f"wrote {INVENTORY} and {AUDIT}")
-    print(f"manifest item 1 content_hash must be {sha(inv_b)}")
+    print("re-attest item 1 (signoff/README.md) and refresh the rolling report")
     return 0
 
 
@@ -222,7 +222,7 @@ def cmd_check(root, live):
                 raise Stale(f"stale inventory: {path} changed since the audit "
                             f"(recorded {ent.get('sha256')}, now {sha(data)}); regenerate with "
                             "'.github/scripts/design-source-audit write' after check-netlist-regen passes")
-        # 2. outer bindings: envelope -> inventory, manifest -> inventory.
+        # 2. outer binding: envelope -> inventory.
         inv_hash = sha(committed_inv_b)
         inp = (c_aud.get("provenance") or {}).get("input") or {}
         if c_aud.get("t1_item") != 1 or c_aud.get("kind") != "generic" or c_aud.get("status") != "pass":
@@ -230,15 +230,6 @@ def cmd_check(root, live):
         if inp.get("path") != INVENTORY or inp.get("content_hash") != inv_hash:
             raise Stale(f"stale audit: {AUDIT} pins {inp.get('content_hash')} for {inp.get('path')}, "
                         f"but {INVENTORY} hashes to {inv_hash}")
-        try:
-            ent = json.loads(read(root, MANIFEST)).get("evidence", {}).get("1")
-        except ValueError as e:
-            raise Stale(f"{MANIFEST} is not valid JSON: {e}")
-        if not isinstance(ent, dict) or ent.get("file") != AUDIT:
-            raise Stale(f"{MANIFEST} item 1 does not cite {AUDIT}")
-        if ent.get("content_hash") != inv_hash:
-            raise Stale(f"stale citation: {MANIFEST} item 1 pins {ent.get('content_hash')}, "
-                        f"inventory hashes to {inv_hash}")
         # 3. byte-for-byte equal to a rebuild: catches identity drift (xschem
         # pin, PDK pin, regen-check script edits) and hand edits to either file.
         _, exp_inv_b, exp_aud_b = expected(root)
@@ -252,7 +243,7 @@ def cmd_check(root, live):
     except Stale as e:
         print(f"design-source-audit: FAIL: {e}", file=sys.stderr)
         return 3 if str(e).startswith("--live-tools") else 1
-    print("OK: design-source inventory, audit envelope and manifest item-1 citation are fresh"
+    print("OK: design-source inventory, audit envelope are fresh"
           + (" and bound to the live regeneration tools" if live else ""))
     return 0
 

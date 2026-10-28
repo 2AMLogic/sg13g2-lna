@@ -17,8 +17,7 @@
 #   5. omitted family / new sim/ family              -> FAILS
 #   6. omitted claim, new record id, new bench file  -> FAILS
 #   7. removed invocation documentation              -> FAILS
-#   8. stale outer binding (envelope, manifest,
-#      report, missing citation)                     -> FAILS
+#   8. stale or missing envelope                     -> FAILS
 #   9. incomplete audit (open gap, no cold start)    -> FAILS, --write refuses
 #  10. new claim-source family mention / bench-like
 #      file outside sim/                             -> FAILS
@@ -85,22 +84,11 @@ PY
   rebind "$BASE"
 }
 
-# rebind <tree>: regenerate inventory/envelope/manifest and point the rolling
-# report's item-9 row at the new hash (what the pinned grader would render).
+# rebind <tree>: regenerate inventory and envelope after a legitimate change.
+# (The manifest and the rolling report bind the klt --attest envelope, not
+# this inventory, since issue #238; check-signoff.sh gates those.)
 rebind() {
   (cd "$1" && git add -A && python3 -I .github/scripts/check-testbench-inventory.py --write >/dev/null) || return 1
-  python3 -I - "$1" <<'PY'
-import hashlib, json, sys
-t = sys.argv[1]
-h = "sha256:" + hashlib.sha256(open(t + "/signoff/testbench-inventory.json", "rb").read()).hexdigest()
-r = json.load(open(t + "/signoff/t1-report.json"))
-for it in r["items"]:
-    if it["id"] == 9:
-        it["status"] = "met"
-        it["citation"]["artifact_binding"]["content_hash"] = h
-        it["citation"]["content_hash"] = h
-json.dump(r, open(t + "/signoff/t1-report.json", "w"), indent=2)
-PY
   (cd "$1" && git add -A)
 }
 
@@ -195,18 +183,6 @@ expect "stale envelope hash is rejected" 1 "$t" "stale envelope"
 t="$(new_case)"
 pyedit "$t" 'e = rd("signoff/testbench-inventory.envelope.json"); e["status"] = "fail"; wr("signoff/testbench-inventory.envelope.json", e)'
 expect "non-pass envelope is rejected" 1 "$t" "stale envelope"
-t="$(new_case)"
-pyedit "$t" 'm = rd("signoff/manifest.json"); m["evidence"]["9"]["content_hash"] = "sha256:" + "1" * 64; wr("signoff/manifest.json", m)'
-expect "stale manifest hash is rejected" 1 "$t" "stale manifest binding"
-t="$(new_case)"
-pyedit "$t" 'm = rd("signoff/manifest.json"); del m["evidence"]["9"]; wr("signoff/manifest.json", m)'
-expect "missing manifest citation is rejected" 1 "$t" "stale manifest binding"
-t="$(new_case)"
-pyedit "$t" 'r = rd("signoff/t1-report.json"); [it["citation"]["artifact_binding"].__setitem__("content_hash", "sha256:" + "2" * 64) for it in r["items"] if it["id"] == 9]; wr("signoff/t1-report.json", r)'
-expect "stale rolling report is rejected" 1 "$t" "stale rolling report"
-t="$(new_case)"
-pyedit "$t" 'r = rd("signoff/t1-report.json"); [it.update(status="unmet", reason="no_evidence", citation=None) for it in r["items"] if it["id"] == 9]; wr("signoff/t1-report.json", r)'
-expect "rolling report without a met item 9 is rejected" 1 "$t" "stale rolling report"
 t="$(new_case)"; rm "$t/signoff/testbench-inventory.envelope.json"
 expect "missing envelope is rejected" 1 "$t" "envelope .* is missing"
 

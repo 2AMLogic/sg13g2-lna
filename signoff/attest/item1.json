@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 1,
+  "description": "Design sources for sg13g2-lna. The freshness check regenerates the netlist with the pinned xschem 3.4.4 and the pinned IHP-Open-PDK; it needs both, so it is local_only and --check carries its committed outcome (the netlist-regen CI job runs the same command).",
+  "sources": [
+    "design/lna.sch",
+    "design/lna.sym",
+    "design/xschemrc"
+  ],
+  "derived": [
+    {
+      "path": "design/netlist/lna.spice",
+      "generator": "xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./lna.sch",
+      "check": {
+        "argv": [
+          ".github/scripts/check-netlist-regen"
+        ],
+        "local_only": true
+      }
+    }
+  ]
+}

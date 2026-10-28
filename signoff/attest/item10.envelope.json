@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 10,
+  "summary": "T1 item 10 (Repo hygiene): 11/11 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/attest/item10.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 11,
+    "passed_count": 11,
+    "checks": [
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/signoff.yml",
+        "passed": true,
+        "content_hash": "sha256:91771f613365c4da3f0030146e96da4bd6a99549098a5bb8c0b249aaa7c69988"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "LICENSE",
+        "passed": true,
+        "content_hash": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "README.md",
+        "passed": true,
+        "content_hash": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/target-spec.md",
+        "passed": true,
+        "content_hash": "sha256:d833ff1e9d1fee9269e3f7bee289bf417798b1e97ba708842de14b228cbe3bd5"
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "record-citations",
+        "argv": [
+          ".github/scripts/check-record-citations"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "testbench-inventory",
+        "argv": [
+          "python3",
+          "-I",
+          ".github/scripts/check-testbench-inventory.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "netlist-freshness",
+        "argv": [
+          "python3",
+          "-I",
+          ".github/scripts/check-netlist-freshness"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "layout-freshness",
+        "argv": [
+          ".github/scripts/check-layout-freshness"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "model-provenance",
+        "argv": [
+          "sim/models/check_sources.sh"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "local-checks-drift",
+        "argv": [
+          ".github/scripts/test-run-local-checks.sh"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "repo-hygiene",
+        "argv": [
+          "python3",
+          "-I",
+          ".github/scripts/check-repo-hygiene.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/attest/item10.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:d4253cc8169d84ba70d4093b4e34530e4372a88f1095b270c914a36cd44efbdf"
+    }
+  }
+}

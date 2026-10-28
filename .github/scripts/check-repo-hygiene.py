@@ -11,12 +11,10 @@ from the tracked tree.
 Modes
 -----
 (default) check   Read-only. Recompute the inventory from the tracked tree and
-                  fail on any divergence from the committed inventory,
-                  envelope, manifest citation or rolling report. Needs only
-                  python3 (stdlib) and `git ls-files`; no klt, PDK or network.
---write           Regenerate the inventory. The envelope and the manifest
-                  citation for item 10 are emitted only when the audit is
-                  complete. An incomplete audit writes nothing and exits 1.
+                  fail on any divergence from the committed inventory or
+                  envelope. Needs only python3 (stdlib) and `git ls-files`; no klt, PDK or network.
+--write           Regenerate the inventory. The envelope for item 10 is
+                  emitted only when the audit is complete. An incomplete audit writes nothing and exits 1.
 
 What is checked mechanically is listed in MECHANICAL_CHECKS and is copied into
 the inventory. What is NOT checked (that a declared command exits 0, that the
@@ -78,7 +76,7 @@ MECHANICAL_CHECKS = [
     "LICENSE is non-empty",
     "every declared command's script is tracked and present, and is hashed",
     "every declared command appears verbatim as a single-line `run:` in its named CI job",
-    "the committed inventory equals the recomputed one; envelope, manifest citation and rolling report bind its hash",
+    "the committed inventory equals the recomputed one; the envelope binds its hash",
 ]
 
 NOT_CHECKED = [
@@ -235,22 +233,12 @@ def check_bindings(root, audit, inv_bytes):
         env = None
     if env is not None and env != envelope_for(inv_hash):
         audit.err("%s does not equal the envelope derived from the inventory (hash %s)" % (ENVELOPE, inv_hash))
-    manifest = json.loads(read_text(root, MANIFEST))
-    cite = manifest.get("evidence", {}).get(str(ITEM))
-    if cite != {"file": ENVELOPE, "content_hash": inv_hash}:
-        audit.err("%s item %d citation is %r, expected %s at %s" % (MANIFEST, ITEM, cite, ENVELOPE, inv_hash))
-    report = json.loads(read_text(root, REPORT))
-    row = next((i for i in report.get("items", []) if i.get("id") == ITEM), None)
-    c = (row or {}).get("citation") or {}
-    ab = c.get("artifact_binding") or {}
-    if not row or row.get("status") != "met" or ab.get("content_hash") != inv_hash or ab.get("path") != INVENTORY:
-        audit.err("%s item %d is not 'met' bound to %s at %s; refresh the report" % (REPORT, ITEM, INVENTORY, inv_hash))
 
 
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--root", default=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope + manifest citation)")
+    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope)")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root)
 
@@ -271,13 +259,8 @@ def main(argv):
         inv_hash = sha256_bytes(data)
         with open(os.path.join(root, ENVELOPE), "w") as fh:
             fh.write(json.dumps(envelope_for(inv_hash), indent=2, sort_keys=True) + "\n")
-        manifest = json.loads(read_text(root, MANIFEST))
-        manifest.setdefault("evidence", {})[str(ITEM)] = {"file": ENVELOPE, "content_hash": inv_hash}
-        manifest["evidence"] = dict(sorted(manifest["evidence"].items(), key=lambda kv: int(kv[0])))
-        with open(os.path.join(root, MANIFEST), "w") as fh:
-            fh.write(json.dumps(manifest, indent=2) + "\n")
-        print("wrote %s (%s), %s and the item %d manifest citation" % (INVENTORY, inv_hash, ENVELOPE, ITEM))
-        print("now refresh the rolling report with the pinned grader (signoff/README.md)")
+        print("wrote %s (%s) and %s" % (INVENTORY, inv_hash, ENVELOPE))
+        print("re-attest item 10 (signoff/README.md) and refresh the rolling report")
         return 0
 
     try:

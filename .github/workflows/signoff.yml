@@ -74,7 +74,35 @@ permissions:
   contents: read
 
 jobs:
+  # T1 items 1, 9 and 10 are attested by the tool, not hand-rolled: `klt
+  # signoff --attest N` ran the item's mechanical checks over the inventories
+  # in signoff/attest/ and wrote the envelopes the manifest cites (issue #238).
+  # `--check` re-attests and fails on drift in an inventoried file, a check's
+  # outcome or the committed envelope. Item 1's freshness check
+  # (check-netlist-regen) needs xschem 3.4.4 and the SG13G2 PDK, so it is
+  # `local_only`: this job carries its committed outcome and lists it as
+  # skipped, and the netlist-regen job below is what re-runs it on every
+  # commit. Runs before the signoff gate, which grades the cited envelopes.
+  attest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned klt
+        run: python3 -m pip install "klayout-tools==0.8.0"
+
+      - name: T1 item 1 attestation reproduces
+        run: klt signoff --attest 1 --inventory signoff/attest/item1.json --check signoff/attest/item1.envelope.json
+
+      - name: T1 item 9 attestation reproduces
+        run: klt signoff --attest 9 --inventory signoff/attest/item9.json --check signoff/attest/item9.envelope.json
+
+      - name: T1 item 10 attestation reproduces
+        run: klt signoff --attest 10 --inventory signoff/attest/item10.json --check signoff/attest/item10.envelope.json
+
   signoff:
+    needs: attest
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository

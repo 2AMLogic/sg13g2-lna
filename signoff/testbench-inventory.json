@@ -29,7 +29,7 @@
       "every listed input, shared input and record file is hashed (sha256); corner and snapshot trees get a git-blob digest",
       "the PDK pin and the grader pin are read from sim/pdk.json and the workflow",
       "the committed inventory equals the recomputed one byte for byte",
-      "the envelope, the manifest citation and the rolling report (when present) bind the same inventory hash"
+      "the envelope binds the same inventory hash"
     ],
     "open_gaps": [],
     "reviewer_checks": [
@@ -1954,7 +1954,7 @@
     }
   },
   "files": {
-    "README.md": "sha256:3ed6bfd4dbc3c40c5bc08c53b72c270bc47c84f6b988bf3e821dff05a74b56ec",
+    "README.md": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e",
     "design/netlist/lna.spice": "sha256:23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",

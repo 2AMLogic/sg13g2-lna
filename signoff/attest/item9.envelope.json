@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 9,
+  "summary": "T1 item 9 (Testbenches shipped): 25/25 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/attest/item9.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 25,
+    "passed_count": 25,
+    "checks": [
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:f8d8c4c5f022fca99b6ac94b422d80d818861aa0865eabfef18ef3debd825bd3"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:47385354d4a7f0dc92c8935b06602457d56b3a4fa2d5d58dd23cdd7db513777b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:a472fc3aeeb7cf2e238147e94c27bc72c0335c419e25c8e022fff212d48126f4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/biasref-topology/testbench/tb_servo_minigrid.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:d6486dee90418b1015065f4f52a8d3914233842f59bcfadb804463edc901bbc2"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/biasref-topology/testbench/tb_servo_startup.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:390d968fb48d0e65348369615c7a247bb57b60c22ec16c5be27fe098970ce3b4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:a420e674418ce5c48057da31f868a61246cac539d56fa16ff8deb35df14e56b4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:955a56ad5cb24325d85805eb619413c1639d3f7fe529821f0601f060cf7caa80"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:a5f332c8c85d5274d1459f7e7a186ac0e3cce218cc6f96ba42af6a323ee1ddeb"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:30c97647bab717ef457c0e5487cdd71acb032441cc09bb47d2ed9d4b90e9e8ea"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:770ce0be22bc7cc96bbcadee200d5f138b7fea21821825a741738c108fcc5a3d"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice",
+        "passed": true,
+        "content_hash": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:8e7f6abe62cb725bf2308461a5481e75e7e6c53c4892aff068d0f4c61696f59e"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:f789ab2988ff9c305a9a2d7e4d1aefd2c28061ad13e3b821b720b65f007579f7"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:7a4f33f9045a5958b10bc8bd0eca596042c71b43abed5eee01bde35fd4a0ab91"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:61044b3b06f5b232aa310b92e646f4c9c38a90c0ae82277f98af3f3fd4452c45"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:2a187369aca6c70013fca69eedbf25453b093fec1fbe89920b8a1ffece87c30f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:6f694e5bdb75a12bcb0a86fdc43685a15315b55a003c0203a4b0425fb7a91cb6"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:9247b5f71e3f7618d17da5f1c81880b0aed20afaa0e4f470ed12b7debd228373"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:3233052b85bc364459f3346581e7644f2dd29a687fd28121589b5dc12d73fc3b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl",
+        "passed": true,
+        "content_hash": "sha256:04ba13c05d8c20004f80d37eb6b0a23d9403ed72612d26420c140266445bbce4"
+      },
+      {
+        "check": "command",
+        "role": "cold_start",
+        "argv": [
+          "python3",
+          "-I",
+          "sim/lna-core-envelope/tests/check_envelope_replay.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "pin",
+        "role": "pdk",
+        "passed": true,
+        "value": {
+          "name": "ihp-sg13g2",
+          "revision": "v0.3.0"
+        }
+      },
+      {
+        "check": "pin",
+        "role": "tools",
+        "passed": true,
+        "value": {
+          "klt": "0.8.0",
+          "ngspice": "46",
+          "xschem": "3.4.4"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/attest/item9.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:66b524e4637380d8c0b443b519fc0590f120a944a913e803742d3bc518fac57b"
+    }
+  }
+}

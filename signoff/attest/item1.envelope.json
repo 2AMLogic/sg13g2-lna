@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 1,
+  "summary": "T1 item 1 (Design sources): 5/5 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/attest/item1.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 5,
+    "passed_count": 5,
+    "checks": [
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/lna.sch",
+        "passed": true,
+        "content_hash": "sha256:f15333595c8ea14d0437eef02abc53a061745759dfc4b2655d7ccbeda92a62fd"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/lna.sym",
+        "passed": true,
+        "content_hash": "sha256:b022bb2b6b9a127788f6acb13bb08dd29cbb262423da8c785961e3c6daad0b5f"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/xschemrc",
+        "passed": true,
+        "content_hash": "sha256:8d7df6fcc99d833c372066ae8e83816b434edf912b817a58ad09fca3d5cbfad0"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/netlist/lna.spice",
+        "passed": true,
+        "content_hash": "sha256:23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1"
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/netlist/lna.spice",
+        "generator": "xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./lna.sch",
+        "argv": [
+          ".github/scripts/check-netlist-regen"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true,
+        "local_only": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/attest/item1.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787"
+    }
+  }
+}
