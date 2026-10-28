@@ -1,5 +1,10 @@
 # Work Log
 
+### 2026-10-28
+
+- **Issue #241** (closed): test flake: sim-record-paths concurrency case fails intermittently (wins=1 losses=7)
+- **PR #242**: test: report which term fails in sim_record_paths concurrency case
+
 ### 2026-10-27
 
 - **Issue #235** (closed): Bump klayout-tools pin 0.7.0 → 0.8.0
