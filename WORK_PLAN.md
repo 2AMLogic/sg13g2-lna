@@ -30,7 +30,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#238**: T1 grading: attest items 1, 9, 10 with klt signoff --attest and re-grade against the current tiers doc
 
 ## PRs Awaiting Review
 
@@ -55,6 +55,7 @@ Issues carrying `loom:curated`.
 - **#90**: sim: measure full-DUT DC mismatch spread with a seeded fleet campaign and controls *(curated)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
+- **#238**: T1 grading: attest items 1, 9, 10 with klt signoff --attest and re-grade against the current tiers doc *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -72,10 +73,10 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 7 |
+| Curated | 8 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
