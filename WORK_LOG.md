@@ -1,5 +1,10 @@
 # Work Log
 
+### 2026-10-27
+
+- **Issue #235** (closed): Bump klayout-tools pin 0.7.0 → 0.8.0
+- **PR #236**: chore: bump pinned klayout-tools to 0.8.0 and regenerate layout evidence
+
 ### 2026-10-24
 
 - **Issue #222** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
