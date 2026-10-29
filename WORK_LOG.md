@@ -1,5 +1,10 @@
 # Work Log
 
+### 2026-10-29
+
+- **Issue #238** (closed): T1 grading: attest items 1, 9, 10 with klt signoff --attest and re-grade against the current tiers doc
+- **PR #240**: feat: attest T1 items 1, 9, 10 with klt signoff --attest
+
 ### 2026-10-28
 
 - **Issue #241** (closed): test flake: sim-record-paths concurrency case fails intermittently (wins=1 losses=7)
