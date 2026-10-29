@@ -70,6 +70,17 @@ shell_lint() {
   shellcheck --shell=bash --severity=warning "${files[@]}"
 }
 
+# --- job: attest (issue #238; klt signoff --attest --check, needs release klt)
+klt_pin="$(grep -Eo 'klayout-tools==[0-9][0-9.]*' .github/workflows/signoff.yml | head -n 1 | cut -d= -f3)"
+klt_have="$(command -v klt >/dev/null 2>&1 && klt --version 2>/dev/null | head -n 1)"
+if [ -n "$klt_pin" ] && [ "$klt_have" = "klt $klt_pin" ]; then
+  step "attest: T1 item 1 attestation reproduces" klt signoff --attest 1 --inventory signoff/attest/item1.json --check signoff/attest/item1.envelope.json
+  step "attest: T1 item 9 attestation reproduces" klt signoff --attest 9 --inventory signoff/attest/item9.json --check signoff/attest/item9.envelope.json
+  step "attest: T1 item 10 attestation reproduces" klt signoff --attest 10 --inventory signoff/attest/item10.json --check signoff/attest/item10.envelope.json
+else
+  skip "attest: items 1, 9, 10 (need release klt $klt_pin on PATH, have: ${klt_have:-none}; CI pip-installs it)"
+fi
+
 # --- job: signoff
 step "signoff: check-klt-pin.sh" .github/scripts/check-klt-pin.sh
 klt_pin="$(grep -Eo 'klayout-tools==[0-9][0-9.]*' .github/workflows/signoff.yml | head -n 1 | cut -d= -f3)"

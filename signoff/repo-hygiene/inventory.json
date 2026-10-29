@@ -7,7 +7,7 @@
       "LICENSE is non-empty",
       "every declared command's script is tracked and present, and is hashed",
       "every declared command appears verbatim as a single-line `run:` in its named CI job",
-      "the committed inventory equals the recomputed one; envelope, manifest citation and rolling report bind its hash"
+      "the committed inventory equals the recomputed one; the envelope binds its hash"
     ],
     "not_checked": [
       "that any declared command exits 0: each runs in its own CI job on every commit, and the envelope does not encode that outcome",
@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 13467,
+      "bytes": 12164,
       "role": "script of a declared CI command",
-      "sha256": "sha256:6192f081ced1622295868af5d1d82a4c785d4c35fa209ac7d0082319d23ece48"
+      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -49,19 +49,19 @@
       "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
     },
     ".github/scripts/check-testbench-inventory.py": {
-      "bytes": 30253,
+      "bytes": 28193,
       "role": "script of a declared CI command",
-      "sha256": "sha256:dfd96ba4d02a3c3c2d068aa02287378b1022f297f9c620a56b71a7d1a342fecd"
+      "sha256": "sha256:fc7f3fcc5fbfa9a67b8eaa081234cf7096e2e1f8f9f804efed7d00c21bb28c8e"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 8120,
+      "bytes": 7288,
       "role": "script of a declared CI command",
-      "sha256": "sha256:675e0c6a6f70d5898b4a632c561623964d7d71301aea31dcfaa404bbbc16e287"
+      "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 9823,
+      "bytes": 9959,
       "role": "script of a declared CI command",
-      "sha256": "sha256:7a9fb308d380c168d66c3df7423e81b497c197a988a11f4b75409d7ef5e7e1ae"
+      "sha256": "sha256:5156cc9635fccf5320ba5a0b92a6a3ddee33b92e42ab9e60f18ba4f8165feec8"
     },
     ".github/scripts/test-run-local-checks.sh": {
       "bytes": 7952,
@@ -144,19 +144,19 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 13467,
+      "bytes": 12164,
       "role": "this audit",
-      "sha256": "sha256:6192f081ced1622295868af5d1d82a4c785d4c35fa209ac7d0082319d23ece48"
+      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 8120,
+      "bytes": 7288,
       "role": "this audit's self-test",
-      "sha256": "sha256:675e0c6a6f70d5898b4a632c561623964d7d71301aea31dcfaa404bbbc16e287"
+      "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 25061,
+      "bytes": 26458,
       "role": "CI workflow",
-      "sha256": "sha256:4d91e2c4d13bb121365c4f5b09d81940ba63ca30f671d3ec048020c43c443576"
+      "sha256": "sha256:91771f613365c4da3f0030146e96da4bd6a99549098a5bb8c0b249aaa7c69988"
     },
     "LICENSE": {
       "bytes": 11358,
@@ -164,9 +164,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 15652,
+      "bytes": 15728,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:3ed6bfd4dbc3c40c5bc08c53b72c270bc47c84f6b988bf3e821dff05a74b56ec"
+      "sha256": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e"
     },
     "spec/target-spec.md": {
       "bytes": 34193,

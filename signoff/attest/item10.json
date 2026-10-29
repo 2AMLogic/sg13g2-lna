@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 10,
+  "description": "Hygiene artifacts and the PDK-free audit commands CI already runs in its own jobs (same argv as signoff.yml). Excluded: check-signoff.sh (grades the report these envelopes feed), the sim-append-only gate (needs a PR base ref), and jobs that need ngspice, xschem or the PDK.",
+  "hygiene": [
+    "README.md",
+    "LICENSE",
+    "spec/target-spec.md",
+    ".github/workflows/signoff.yml"
+  ],
+  "checks": [
+    {
+      "name": "record-citations",
+      "argv": [
+        ".github/scripts/check-record-citations"
+      ]
+    },
+    {
+      "name": "testbench-inventory",
+      "argv": [
+        "python3",
+        "-I",
+        ".github/scripts/check-testbench-inventory.py"
+      ]
+    },
+    {
+      "name": "netlist-freshness",
+      "argv": [
+        "python3",
+        "-I",
+        ".github/scripts/check-netlist-freshness"
+      ]
+    },
+    {
+      "name": "layout-freshness",
+      "argv": [
+        ".github/scripts/check-layout-freshness"
+      ]
+    },
+    {
+      "name": "model-provenance",
+      "argv": [
+        "sim/models/check_sources.sh"
+      ]
+    },
+    {
+      "name": "local-checks-drift",
+      "argv": [
+        ".github/scripts/test-run-local-checks.sh"
+      ]
+    },
+    {
+      "name": "repo-hygiene",
+      "argv": [
+        "python3",
+        "-I",
+        ".github/scripts/check-repo-hygiene.py"
+      ]
+    }
+  ]
+}

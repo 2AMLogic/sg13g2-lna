@@ -12,12 +12,10 @@ Modes
 -----
 (default) check   Read-only. Recompute the inventory from the tracked tree and
                   the coverage index, and fail on any divergence from the
-                  committed inventory, envelope, manifest citation or rolling
-                  report. Needs only python3 (stdlib) and `git ls-files`; no
+                  committed inventory or envelope. Needs only python3 (stdlib) and `git ls-files`; no
                   PDK, ngspice, klt or network, and it writes nothing.
---write           Regenerate the inventory. The envelope and the manifest
-                  citation for item 9 are emitted only when the audit is
-                  complete. An incomplete audit writes nothing and exits 1.
+--write           Regenerate the inventory. The envelope for item 9 is
+                  emitted only when the audit is complete. An incomplete audit writes nothing and exits 1.
 
 What is checked mechanically is listed in MECHANICAL_CHECKS below and is
 copied into the inventory. What is NOT checked (that a documented command
@@ -85,7 +83,7 @@ MECHANICAL_CHECKS = [
     "every listed input, shared input and record file is hashed (sha256); corner and snapshot trees get a git-blob digest",
     "the PDK pin and the grader pin are read from sim/pdk.json and the workflow",
     "the committed inventory equals the recomputed one byte for byte",
-    "the envelope, the manifest citation and the rolling report (when present) bind the same inventory hash",
+    "the envelope binds the same inventory hash",
 ]
 
 
@@ -599,43 +597,12 @@ def check_bindings(audit, inv_bytes, require_envelope=True):
                         "stale envelope: field %r differs from what the current inventory "
                         "requires (regenerate with --write)" % k
                     )
-    manifest = load_json(audit, MANIFEST, "manifest")
-    if manifest is not None:
-        cite = (manifest.get("evidence") or {}).get(str(ITEM))
-        want = {"file": ENVELOPE, "content_hash": inv_hash}
-        if cite != want:
-            audit.err(
-                "stale manifest binding: evidence[%d] is %s, expected %s"
-                % (ITEM, json.dumps(cite, sort_keys=True), json.dumps(want, sort_keys=True))
-            )
-    rep_path = os.path.join(root, REPORT)
-    if os.path.exists(rep_path):
-        try:
-            report = json.loads(read_text(root, REPORT))
-        except ValueError:
-            audit.err("%s is not valid JSON" % REPORT)
-            return
-        row = None
-        for it in report.get("t1_items", report.get("items", [])):
-            if isinstance(it, dict) and it.get("id") == ITEM:
-                row = it
-        if row is None:
-            audit.err("%s has no item %d row" % (REPORT, ITEM))
-        else:
-            cit = row.get("citation") or {}
-            ab = cit.get("artifact_binding") or {}
-            if row.get("status") != "met" or ab.get("content_hash") != inv_hash \
-                    or ab.get("path") != INVENTORY:
-                audit.err(
-                    "stale rolling report: item %d is %r with binding %s; refresh %s with the "
-                    "pinned grader" % (ITEM, row.get("status"), json.dumps(ab, sort_keys=True), REPORT)
-                )
 
 
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--root", default=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope + manifest citation if complete)")
+    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope)")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root)
 
@@ -660,13 +627,8 @@ def main(argv):
         inv_hash = sha256_bytes(data)
         with open(os.path.join(root, ENVELOPE), "w") as fh:
             fh.write(json.dumps(envelope_for(inv_hash), indent=2, sort_keys=True) + "\n")
-        manifest = json.loads(read_text(root, MANIFEST))
-        manifest.setdefault("evidence", {})[str(ITEM)] = {"file": ENVELOPE, "content_hash": inv_hash}
-        manifest["evidence"] = dict(sorted(manifest["evidence"].items(), key=lambda kv: int(kv[0])))
-        with open(os.path.join(root, MANIFEST), "w") as fh:
-            fh.write(json.dumps(manifest, indent=2) + "\n")
-        print("wrote %s (%s), %s and the item %d manifest citation" % (INVENTORY, inv_hash, ENVELOPE, ITEM))
-        print("now refresh the rolling report with the pinned grader (signoff/README.md)")
+        print("wrote %s (%s) and %s" % (INVENTORY, inv_hash, ENVELOPE))
+        print("re-attest item 9 (signoff/README.md) and refresh the rolling report")
         return 0
 
     try:
@@ -693,7 +655,7 @@ def main(argv):
             print("BINDING: %s" % e, file=sys.stderr)
         print("FAIL: item 9 outer bindings are stale", file=sys.stderr)
         return 1
-    print("OK: testbench inventory is fresh (%d claims, %d hashed files) and bound by envelope, manifest and report"
+    print("OK: testbench inventory is fresh (%d claims, %d hashed files) and bound by its envelope"
           % (len(inv["claims"]), len(inv["files"])))
     return 0
 

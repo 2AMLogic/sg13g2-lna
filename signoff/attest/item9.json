@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 9,
+  "description": "Testbench templates of the signoff/testbench-inventory.json claims. cold_start is the PDK-free documented replay of the core-envelope derivation; the ngspice runs themselves need ngspice and the PDK and are not re-run here.",
+  "testbenches": [
+    "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl",
+    "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl",
+    "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl",
+    "sim/biasref-topology/testbench/tb_servo_minigrid.spice.tmpl",
+    "sim/biasref-topology/testbench/tb_servo_startup.spice.tmpl",
+    "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl",
+    "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl",
+    "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl",
+    "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl",
+    "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl",
+    "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl",
+    "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+    "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice",
+    "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl",
+    "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_match_char.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl",
+    "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl"
+  ],
+  "cold_start": {
+    "argv": [
+      "python3",
+      "-I",
+      "sim/lna-core-envelope/tests/check_envelope_replay.py"
+    ]
+  },
+  "pins": {
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "revision": "v0.3.0"
+    },
+    "tools": {
+      "klt": "0.8.0",
+      "ngspice": "46",
+      "xschem": "3.4.4"
+    }
+  }
+}

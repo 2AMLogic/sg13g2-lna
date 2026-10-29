@@ -3,20 +3,20 @@
   "kind": "analog",
   "evidence": {
     "1": {
-      "file": "signoff/design-source/audit.json",
-      "content_hash": "sha256:68b8e2e34630d96dd85281ecb43f8379553188b994bd926a6632205adc86b3b0"
+      "file": "signoff/attest/item1.envelope.json",
+      "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787"
     },
     "4": {
       "file": "layout/lna_core/lvs_full_report.json",
       "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f"
     },
     "9": {
-      "file": "signoff/testbench-inventory.envelope.json",
-      "content_hash": "sha256:aea0c0ce8b09ae9b837745dad30e0577cd13ebf7bbd2466aee82175a9f22ee92"
+      "file": "signoff/attest/item9.envelope.json",
+      "content_hash": "sha256:66b524e4637380d8c0b443b519fc0590f120a944a913e803742d3bc518fac57b"
     },
     "10": {
-      "file": "signoff/repo-hygiene/envelope.json",
-      "content_hash": "sha256:2350f80e0a6748bc1123929b66c7027e8d3c52535e00f0ab06cf519319f14eef"
+      "file": "signoff/attest/item10.envelope.json",
+      "content_hash": "sha256:d4253cc8169d84ba70d4093b4e34530e4372a88f1095b270c914a36cd44efbdf"
     }
   }
 }

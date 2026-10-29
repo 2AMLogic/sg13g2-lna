@@ -59,6 +59,9 @@ run_case() {
 
 fresh_tree() {
   tree="$(mktemp -d)"
+  # scope:"repo" inputs of the klt --attest envelopes resolve against the
+  # nearest .git ancestor (issue #238).
+  git init -q "$tree"
   cp -R "$ROOT/signoff" "$tree/signoff"
   # The manifest's file-backed citations are repo-root-relative and are
   # graded (and re-hashed) by the render, so a pristine copy must carry

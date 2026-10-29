@@ -7,17 +7,18 @@
 #   2. wiring-only schematic edit (listed input stale)      -> FAILS
 #   3. symbol / xschemrc / derived-netlist byte edit        -> FAILS (each)
 #   4. listed input missing; unlisted design/ file added    -> FAILS (each)
-#   5. inventory lists a stale hash but audit + manifest are re-pinned to the
-#      mutated inventory (outer bindings all consistent)    -> FAILS
-#   6. inventory mutated, audit/manifest untouched          -> FAILS
-#   7. audit pin stale / manifest pin stale / citation gone -> FAILS (each)
+#   5. inventory lists a stale hash but the audit is re-pinned to the
+#      mutated inventory (outer binding consistent)         -> FAILS
+#   6. inventory mutated, audit untouched                   -> FAILS
+#   7. audit pin stale                                      -> FAILS
 #   8. PDK pin or regen-check script drift                  -> FAILS (each)
 # `write` cases (regeneration gate, stub check-netlist-regen):
 #   9. gate exits non-zero -> refuses to write (exit 3); gate exits 0 -> writes
 #      files that then pass `check`
 # klt cases (only when the pinned release klt is on PATH, else SKIP):
-#  10. fresh tree renders item 1 met with artifact_binding  -> met
-#  11. inventory bytes mutated, citation not updated        -> item 1 NOT met
+#  10. fresh tree renders item 1 met from the klt signoff --attest
+#      envelope (issue #238), with artifact_binding         -> met
+#  11. attest inventory bytes mutated, citation not updated -> item 1 NOT met
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
@@ -33,6 +34,8 @@ mk() {
   cp "$ROOT/.github/scripts/check-netlist-regen" "$d/.github/scripts/"
   cp "$ROOT"/signoff/manifest.json "$ROOT"/signoff/design-evidence-tiers.md "$d/signoff/"
   cp "$ROOT"/signoff/design-source/*.json "$d/signoff/design-source/"
+  mkdir -p "$d/signoff/attest"; cp "$ROOT"/signoff/attest/*.json "$d/signoff/attest/"
+  git init -q "$d"   # scope:"repo" input paths resolve against the nearest .git
 }
 expect() { # <label> <want-rc> <root> [args...]
   label="$1"; want="$2"; r="$3"; shift 3
@@ -40,8 +43,8 @@ expect() { # <label> <want-rc> <root> [args...]
   if [ "$got" -eq "$want" ]; then echo "PASS: $label"; pass=$((pass+1))
   else echo "FAIL: $label (got $got, wanted $want)"; sed 's/^/    /' "$TMP/err"; fail=$((fail+1)); fi
 }
-# repin <root>: rewrite audit + manifest so the outer bindings follow the
-# current inventory bytes (simulates a careless refresh).
+# repin <root>: rewrite the audit so its outer binding follows the current
+# inventory bytes (simulates a careless refresh).
 repin() {
   python3 -I - "$1" <<'PY'
 import hashlib, json, sys
@@ -50,9 +53,6 @@ h = "sha256:" + hashlib.sha256(open(r + "/signoff/design-source/inventory.json",
 a = json.load(open(r + "/signoff/design-source/audit.json"))
 a["provenance"]["input"]["content_hash"] = h
 open(r + "/signoff/design-source/audit.json", "w").write(json.dumps(a, indent=2, sort_keys=True) + "\n")
-m = json.load(open(r + "/signoff/manifest.json"))
-m["evidence"]["1"]["content_hash"] = h
-open(r + "/signoff/manifest.json", "w").write(json.dumps(m, indent=2) + "\n")
 PY
 }
 
@@ -83,12 +83,6 @@ expect "inventory mutated without updating citation" 1 "$TMP/inv" check
 
 mk aud; sed -i 's/"content_hash": "sha256:[0-9a-f]*"/"content_hash": "sha256:00"/' "$TMP/aud/signoff/design-source/audit.json"
 expect "audit pins a stale inventory hash" 1 "$TMP/aud" check
-mk man; sed -i 's/"content_hash": "sha256:[0-9a-f]*"/"content_hash": "sha256:00"/' "$TMP/man/signoff/manifest.json"
-expect "manifest pins a stale hash" 1 "$TMP/man" check
-mk gone; python3 -I -c '
-import json,sys
-p=sys.argv[1]+"/signoff/manifest.json"; m=json.load(open(p)); m["evidence"].pop("1"); json.dump(m,open(p,"w"))' "$TMP/gone"
-expect "manifest no longer cites item 1" 1 "$TMP/gone" check
 
 mk pdk; sed -i 's/"release_tag": "v0.3.0"/"release_tag": "v0.4.0"/' "$TMP/pdk/sim/pdk.json"
 expect "PDK pin drift" 1 "$TMP/pdk" check
@@ -116,7 +110,7 @@ if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)
   mk kok
   if [ "$(item1 "$TMP/kok")" = "met True" ]; then echo "PASS: klt grades item 1 met with artifact_binding"; pass=$((pass+1))
   else echo "FAIL: klt did not grade item 1 met: $(item1 "$TMP/kok")"; fail=$((fail+1)); fi
-  mk kmut; printf ' ' >> "$TMP/kmut/signoff/design-source/inventory.json"
+  mk kmut; printf ' ' >> "$TMP/kmut/signoff/attest/item1.json"
   case "$(item1 "$TMP/kmut")" in met*) echo "FAIL: mutated inventory still renders item 1 met"; fail=$((fail+1)) ;;
     *) echo "PASS: mutated inventory cannot render item 1 met"; pass=$((pass+1)) ;; esac
 else
