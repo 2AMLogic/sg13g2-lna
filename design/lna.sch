@@ -234,11 +234,11 @@ N -830 480 -840 480 {}
 C {lab_pin.sym} -840 480 0 0 {name=l32 lab=lb_x}
 N -770 480 -750 480 {}
 C {lab_pin.sym} -750 480 0 0 {name=l33 lab=xin}
-C {capa.sym} -700 540 0 0 {name=Cpin value=0.625995p m=1}
-N -700 510 -700 490 {}
-C {lab_pin.sym} -700 490 0 0 {name=l34 lab=xin}
-N -700 570 -700 600 {}
-C {lab_pin.sym} -700 600 0 0 {name=l35 lab=vss}
+C {capa.sym} -620 540 0 0 {name=Cpin value=0.625995p m=1}
+N -620 510 -620 490 {}
+C {lab_pin.sym} -620 490 0 0 {name=l34 lab=xin}
+N -620 570 -620 600 {}
+C {lab_pin.sym} -620 600 0 0 {name=l35 lab=vss}
 C {capa.sym} 700 40 0 0 {name=Cpout value=0.504268p m=1}
 N 700 10 700 -20 {}
 C {lab_pin.sym} 700 -20 0 0 {name=l36 lab=xout}

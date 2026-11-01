@@ -17,7 +17,7 @@
         "role": "source",
         "path": "design/lna.sch",
         "passed": true,
-        "content_hash": "sha256:f15333595c8ea14d0437eef02abc53a061745759dfc4b2655d7ccbeda92a62fd"
+        "content_hash": "sha256:8a747194ea7d995e540c0da81c824f01b7c28283334ad2cee0530d6146d40be0"
       },
       {
         "check": "present",
@@ -38,7 +38,7 @@
         "role": "derived",
         "path": "design/netlist/lna.spice",
         "passed": true,
-        "content_hash": "sha256:23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1"
+        "content_hash": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae"
       },
       {
         "check": "command",
