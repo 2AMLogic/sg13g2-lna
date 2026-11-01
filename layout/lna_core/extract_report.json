@@ -1409,13 +1409,13 @@
   "timing": {
     "stages": {
       "read_layout": 0.001,
-      "device_extraction": 0.261,
+      "device_extraction": 0.206,
       "diagnostics": 0.0,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.001
     },
-    "total_seconds": 0.377,
-    "unattributed_seconds": 0.113
+    "total_seconds": 0.292,
+    "unattributed_seconds": 0.084
   }
 }

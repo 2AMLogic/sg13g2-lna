@@ -1,0 +1,42 @@
+{
+  "aggregate_membership": "manifest-declared sp/iip3 points only; points listed under `unexpected` are excluded from every CSV and headline",
+  "completed": [
+    "sp_typ_27c_vdd1.80v",
+    "iip3_typ_27c_vdd1.80v_a1mv",
+    "iip3_typ_27c_vdd1.80v_a2mv"
+  ],
+  "expected": [
+    "sp_typ_27c_vdd1.80v",
+    "iip3_typ_27c_vdd1.80v_a1mv",
+    "iip3_typ_27c_vdd1.80v_a2mv"
+  ],
+  "failed": [],
+  "frequency_grid_contract": {
+    "inband": {
+      "hi": 2483500000.0,
+      "lo": 2400000000.0,
+      "mode": "lin",
+      "n": 11
+    },
+    "nf290": {
+      "hi": 2483500000.0,
+      "lo": 2400000000.0,
+      "mode": "lin",
+      "n": 11
+    },
+    "stability": {
+      "hi": 30000000000.0,
+      "lo": 10000000.0,
+      "mode": "dec",
+      "n": 40
+    }
+  },
+  "invalid": [],
+  "invalid_grids": [],
+  "invalid_logs": [],
+  "inventory_kind": "smoke",
+  "missing": [],
+  "missing_drive_pairs": [],
+  "status": "complete",
+  "unexpected": []
+}

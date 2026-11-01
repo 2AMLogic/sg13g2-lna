@@ -45,6 +45,19 @@ design/
   `lna.sym` in a hierarchical schematic of its own (both were verified to
   work — see "What has been verified" below).
 
+## Matching network (issue #27, nominal-cell only)
+
+`lna.sch` now carries the ranked-1 `lp_noise` network from
+`sim/lna-matching-feasibility` (record `20261010-201010-6aca84c`, Q = 10 case):
+series `Lb` + `Rlb` and shunt `Cpin` at the input, shunt `Cpout` and series
+`Csout` at the output, plus the Q = 10 loss resistors `Rlc` (series with `Lc`)
+and `Rle` (parallel with `Le`) the match was synthesized with. Nominal-cell
+smoke record `20261101-023246-5bbb70c` reproduces the feasibility numbers
+(S11 -11.55 dB, S22 -15.61 dB, S21 20.06-20.24 dB, NF290 3.34 dB). It is
+**not final**: the 45-cell PVT/stability gate has not been run, the ratified NF
+row is not met, and the inductors remain ideal L plus explicit loss. The
+pre-match DUT the study tooling needs is frozen in `sim/pre-match-dut/`.
+
 ## What these design issues do NOT do
 
 Per `CLAUDE.md`'s evidence discipline ("no claim without a testbench") and

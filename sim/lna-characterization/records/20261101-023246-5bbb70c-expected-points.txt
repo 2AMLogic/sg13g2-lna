@@ -1,0 +1,8 @@
+kind smoke
+grid inband lin 11 2.4e9 2.4835e9
+grid nf290 lin 11 2.4e9 2.4835e9
+grid stability dec 40 1e7 3e10
+sp sp_typ_27c_vdd1.80v
+iip3 iip3_typ_27c_vdd1.80v_a1mv
+iip3 iip3_typ_27c_vdd1.80v_a2mv
+pair iip3_typ_27c_vdd1.80v_a1mv iip3_typ_27c_vdd1.80v_a2mv

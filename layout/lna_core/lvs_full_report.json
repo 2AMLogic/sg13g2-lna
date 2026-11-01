@@ -64,7 +64,7 @@
       "class": "CAP",
       "device_kind": "capacitor",
       "layout_devices": 0,
-      "reference_devices": 5,
+      "reference_devices": 8,
       "compared": [
         "C"
       ],
@@ -102,7 +102,7 @@
       "class": "RES",
       "device_kind": "resistor",
       "layout_devices": 0,
-      "reference_devices": 8,
+      "reference_devices": 11,
       "compared": [
         "R"
       ],
@@ -153,12 +153,12 @@
       ]
     }
   ],
-  "mismatch_count": 19,
+  "mismatch_count": 20,
   "error_count": 14,
   "category_counts": {
     "device.geometry_not_compared": 4,
     "reference.unresolved_subckt_call": 6,
-    "topology": 9
+    "topology": 10
   },
   "category_error_counts": {
     "reference.unresolved_subckt_call": 6,
@@ -167,12 +167,12 @@
   "counts": {
     "nets": {
       "layout": 9,
-      "reference": 19,
+      "reference": 23,
       "matched": 0
     },
     "devices": {
       "layout": 3,
-      "reference": 24,
+      "reference": 31,
       "matched": 0
     },
     "pins": {
@@ -197,7 +197,7 @@
     "engine_version": "0.30.12",
     "netgen_binary": null,
     "layout_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
-    "reference_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+    "reference_sha256": "2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
     "extracted_netlist": null
   },
   "provenance": {
@@ -238,7 +238,7 @@
           "P"
         ],
         "layout_devices": 0,
-        "reference_devices": 5
+        "reference_devices": 8
       },
       "circuit": null,
       "instance": null,
@@ -296,7 +296,7 @@
           "W"
         ],
         "layout_devices": 0,
-        "reference_devices": 8
+        "reference_devices": 11
       },
       "circuit": null,
       "instance": null,
@@ -572,14 +572,31 @@
     },
     {
       "category": "topology",
-      "severity": "error",
-      "description": "device class could not be mapped to a counterpart: 'IND'",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'IND__renewed'",
       "side": "reference",
       "net": null,
       "device": {
         "layout": null,
         "reference": null,
-        "class": "IND"
+        "class": "IND__renewed"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'RES__renewed'",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RES__renewed"
       },
       "property": null,
       "details": null,
@@ -606,14 +623,14 @@
     },
     {
       "category": "topology",
-      "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'RES__renewed'",
+      "severity": "error",
+      "description": "device class could not be mapped to a counterpart: 'IND'",
       "side": "reference",
       "net": null,
       "device": {
         "layout": null,
         "reference": null,
-        "class": "RES__renewed"
+        "class": "IND"
       },
       "property": null,
       "details": null,

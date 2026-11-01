@@ -52,7 +52,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-DESIGN_NETLIST = REPO / "design" / "netlist" / "lna.spice"
+DESIGN_NETLIST = REPO / "sim" / "pre-match-dut" / "lna.pre27.spice"
 EM_MODEL = REPO / "sim" / "models" / "sg13g2_inductor_em.spice"
 TB_CHAR = HERE / "testbench" / "tb_match_char.spice.tmpl"
 TB_VERIFY = HERE / "testbench" / "tb_match_verify.spice.tmpl"

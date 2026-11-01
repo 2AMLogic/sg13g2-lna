@@ -180,18 +180,26 @@ N 20 750 20 700 {}
 C {lab_pin.sym} 20 700 0 0 {name=l9 lab=e1}
 N 20 810 20 860 {}
 C {lab_pin.sym} 20 860 0 0 {name=l10 lab=vss}
+C {res.sym} 120 780 0 0 {name=Rle value=153.42 m=1}
+N 120 750 120 720 {}
+C {lab_pin.sym} 120 720 0 0 {name=l41 lab=e1}
+N 120 810 120 840 {}
+C {lab_pin.sym} 120 840 0 0 {name=l42 lab=vss}
 
 * --- Lc: collector load inductor (vdd -> outn), IDEALIZED, see header ---
 C {ind.sym} 20 -160 0 0 {name=Lc value=5n m=1}
 N 20 -190 20 -240 {}
 C {lab_pin.sym} 20 -240 0 0 {name=l11 lab=vdd}
 N 20 -130 20 -80 {}
-C {lab_pin.sym} 20 -80 0 0 {name=l12 lab=outn}
+C {lab_pin.sym} 20 -80 0 0 {name=l12 lab=lc_x}
+C {res.sym} 20 -50 0 0 {name=Rlc value=7.67098 m=1}
+N 20 -20 20 -10 {}
+C {lab_pin.sym} 20 -10 0 0 {name=l40 lab=outn}
 
 * --- Cin: input DC-block / AC-couple (rfin -> b1) ---
 C {capa.sym} -500 600 0 0 {name=Cin value=100p m=1}
 N -500 570 -500 520 {}
-C {lab_pin.sym} -500 520 0 0 {name=l13 lab=rfin}
+C {lab_pin.sym} -500 520 0 0 {name=l13 lab=xin}
 N -500 630 -500 680 {}
 C {lab_pin.sym} -500 680 0 0 {name=l14 lab=b1}
 
@@ -200,7 +208,47 @@ C {capa.sym} 500 -100 0 0 {name=Cout value=100p m=1}
 N 500 -130 500 -180 {}
 C {lab_pin.sym} 500 -180 0 0 {name=l15 lab=outn}
 N 500 -70 500 -20 {}
-C {lab_pin.sym} 500 -20 0 0 {name=l16 lab=rfout}
+C {lab_pin.sym} 500 -20 0 0 {name=l16 lab=xout}
+
+* --- Matching network (issue #27): lp_noise topology, ranked 1 in
+* sim/lna-matching-feasibility/README.md (record 20261010-201010-6aca84c,
+* Q = 10 case, NOMINAL-CELL values, 2.44175 GHz). NOT a final match: the
+* 45-cell PVT/stability gate (CLAUDE.md) has not been run on it.
+* Input: rfin -> Lb (4.564 nH) -> Rlb (7.00 Ohm, Lb's Q = 10 series loss
+* kept explicit so the synthesized match is not silently lossless) -> xin,
+* shunt Cpin 0.626 pF at xin, then Cin (the DC block) to b1.
+* Output: outn -> Cout -> xout, shunt Cpout 0.504 pF at xout, series Csout
+* 0.346 pF to rfout. Le/Lc stay the idealized 1 nH / 5 nH placeholders, but
+* each now carries the Q = 10 loss the match was synthesized with, exactly
+* as in the feasibility bench's 'q10' decks: Rlc = 7.67098 Ohm in series with
+* Lc, Rle = 153.42 Ohm in parallel with Le (DC-transparent: the L shorts it).
+* Without Lc's loss the 5 nH collector load is a lossless high-Q tank and no
+* 50 Ohm output match exists (simulated S22 = -0.09 dB, record 20261101-023117-5bbb70c).
+C {ind.sym} -900 480 1 0 {name=Lb value=4.56374n m=1}
+N -930 480 -960 480 {}
+C {lab_pin.sym} -960 480 0 0 {name=l30 lab=rfin}
+N -870 480 -850 480 {}
+C {lab_pin.sym} -850 480 0 0 {name=l31 lab=lb_x}
+C {res.sym} -800 480 1 0 {name=Rlb value=7.00168 m=1}
+N -830 480 -840 480 {}
+C {lab_pin.sym} -840 480 0 0 {name=l32 lab=lb_x}
+N -770 480 -750 480 {}
+C {lab_pin.sym} -750 480 0 0 {name=l33 lab=xin}
+C {capa.sym} -620 540 0 0 {name=Cpin value=0.625995p m=1}
+N -620 510 -620 490 {}
+C {lab_pin.sym} -620 490 0 0 {name=l34 lab=xin}
+N -620 570 -620 600 {}
+C {lab_pin.sym} -620 600 0 0 {name=l35 lab=vss}
+C {capa.sym} 700 40 0 0 {name=Cpout value=0.504268p m=1}
+N 700 10 700 -20 {}
+C {lab_pin.sym} 700 -20 0 0 {name=l36 lab=xout}
+N 700 70 700 100 {}
+C {lab_pin.sym} 700 100 0 0 {name=l37 lab=vss}
+C {capa.sym} 800 -100 1 0 {name=Csout value=0.346489p m=1}
+N 770 -100 750 -100 {}
+C {lab_pin.sym} 750 -100 0 0 {name=l38 lab=xout}
+N 830 -100 850 -100 {}
+C {lab_pin.sym} 850 -100 0 0 {name=l39 lab=rfout}
 
 * --- Cbyp2: RF-bypass Q2's cascode base per DR-1 ("RF-bypassed") ---
 C {capa.sym} 420 -40 0 0 {name=Cbyp2 value=100p m=1}

@@ -1,0 +1,277 @@
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- matched-circuit s-parameter / nf / stability bench (issue #18)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00393844 ic2 0.00393289 ib1 5.43844E-06 vce1 0.802526 vce2 0.967204 vbe1 0.843474 idd 0.00471123 pdc 0.00848022
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  2.40000e+09Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+No. of Data Rows : 11
+INBAND_DAT_WRITTEN /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-27/sim/lna-characterization/corners/20261101-023246-5bbb70c/sp_typ_27c_vdd1.80v.inband.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 140
+STAB_DAT_WRITTEN /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-27/sim/lna-characterization/corners/20261101-023246-5bbb70c/sp_typ_27c_vdd1.80v.stability.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 11
+
+No. of Data Rows : 1
+NF_SPECTRUM_PLOT noise2
+NF_DAT_WRITTEN /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-27/sim/lna-characterization/corners/20261101-023246-5bbb70c/sp_typ_27c_vdd1.80v.nf290.dat
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  2.40000e+09Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+No. of Data Rows : 1
+GAIN lo 20.063
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+NF lo 3.29246 3.2137
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+GAIN mid 20.2365
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  2.44175e+09Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: singular matrix:  check node xb.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+No. of Data Rows : 1
+NF mid 3.31328 3.23418
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+GAIN hi 20.1629
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+NF hi 3.33561 3.25616
+BENCH_COMPLETE
+Note: Simulation executed from .control section 

@@ -57,7 +57,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SIM_DIR = HERE.parent
 REPO = SIM_DIR.parent
-DESIGN_NETLIST = REPO / "design" / "netlist" / "lna.spice"
+DESIGN_NETLIST = REPO / "sim" / "pre-match-dut" / "lna.pre27.spice"
 PDK_JSON = SIM_DIR / "pdk.json"
 
 SCHEMA = "lna-bias-mc-campaign/1"
