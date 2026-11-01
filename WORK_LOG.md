@@ -1,5 +1,9 @@
 # Work Log
 
+### 2026-11-01
+
+- **PR #247**: feat(design): add lp_noise matching network to the LNA (nominal-cell, not final)
+
 ### 2026-10-29
 
 - **Issue #238** (closed): T1 grading: attest items 1, 9, 10 with klt signoff --attest and re-grade against the current tiers doc
