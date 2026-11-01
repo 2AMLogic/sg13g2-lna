@@ -2,6 +2,7 @@
 
 ### 2026-11-01
 
+- **PR #249**: feat(sim): add matched-DUT variant to the LNA PVT variant campaign
 - **PR #247**: feat(design): add lp_noise matching network to the LNA (nominal-cell, not final)
 
 ### 2026-10-29
