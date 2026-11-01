@@ -172,7 +172,7 @@ t="$(fresh_tree)"
 edit_tree "$t" "$PASS_DRC
 $PASS_LVS"
 run_msg "partial cell with met DRC+LVS rows fails per item" 1 "$t" \
-  "item 3 (DRC clean)" "item 4 (LVS clean)" "6 of 30 instances drawn"
+  "item 3 (DRC clean)" "item 4 (LVS clean)" "6 of 37 instances drawn"
 
 # 6. A passing partial extraction envelope cited for item 2.
 t="$(fresh_tree)"
