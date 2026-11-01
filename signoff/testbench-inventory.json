@@ -1882,6 +1882,100 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-matched-smoke-20261101",
+      "limitations": "ONE PVT cell (typ/27 C/1.80 V); not a PVT result and not a stability sign-off: the 45-cell gate has not been run on the matched DUT. Inductors are ideal L plus explicit loss resistors. NF row not met. Descriptive, not a conformance verdict.",
+      "records": [
+        {
+          "corners": {
+            "files": 6,
+            "git_blob_digest": "sha256:1a4477e5ea6f3291834c430adcc3dec8536bdff049c360eb32bc54dde6ee2e1c"
+          },
+          "id": "20261101-023117-5bbb70c",
+          "netlist_snapshots": {
+            "files": 3,
+            "git_blob_digest": "sha256:5034ba404462ca60c8d90d1bba5e9380db69c5341402a10c1612f06a7ebdf366"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-coverage.json",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-expected-points.txt",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-iip3.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-nf290.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-sparam.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-summary.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c.md",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 6,
+            "git_blob_digest": "sha256:22d047783fa50bc91cc6f8c8591a93d063ce83bbc407ad5312f993ce0360e026"
+          },
+          "id": "20261101-023246-5bbb70c",
+          "netlist_snapshots": {
+            "files": 3,
+            "git_blob_digest": "sha256:3a16e722c9310fa54b3bc914ba1d7e58c3cdd2ca38efe542a92096c2fe669f89"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-coverage.json",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-expected-points.txt",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-iip3.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-nf290.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-sparam.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c.md",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Single nominal-cell (LNA_SWEEP_SMOKE) S-parameters, NF, stability and IIP3 of the DUT with the #27 lp_noise matching network: 20261101-023117-5bbb70c without Lc/Le loss (S22 -0.09 dB, negative result), 20261101-023246-5bbb70c with the Q = 10 loss the match was synthesized for.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -2048,6 +2142,22 @@
     "sim/lna-characterization/records/20260926-122301-088c734-sparam.csv": "sha256:1a756745b038421bccc45d771222936fe78189cbb1abb67864d4b4a2a59b1573",
     "sim/lna-characterization/records/20260926-122301-088c734-summary.csv": "sha256:96f37d9ed0af8a822702674e9cdc29b709f66bee1730b0cbd8532b2cb7bc02ac",
     "sim/lna-characterization/records/20260926-122301-088c734.md": "sha256:16dd3e25e2ffed2bae7f1c78734da7553c53a35512e96f2f44a050c9d10ce964",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-coverage.json": "sha256:628b0481b4016b58908650b324d6dddd2838ba1806d73c935eeeb64f717be2df",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-expected-points.txt": "sha256:2e17ffda808ea4a84f4a5faa13691b62f96519012ac87a85dee4feff733673c0",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-iip3.csv": "sha256:164b0d9617f333bf5594bcfcd9f181c3c6026ae14ea0678a280e66303352fe17",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-nf290.csv": "sha256:3a12042c3c051e75a19e15df5911b75aa89508547c11355bef2b9fc15f54eebd",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-sparam.csv": "sha256:470db65d279be73817c2d6966d9b7da37270f200745d8354fe4f8022436e471b",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c-summary.csv": "sha256:5a273cfbe6b5491e4c9775f23e22251f90a499d17504845fae71ced90a3c54b0",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c.md": "sha256:1c25b403376ab6ec416249927a888d4bca995aed69b9ef704f482f7de392d1a4",
+    "sim/lna-characterization/records/20261101-023117-5bbb70c.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-coverage.json": "sha256:628b0481b4016b58908650b324d6dddd2838ba1806d73c935eeeb64f717be2df",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-expected-points.txt": "sha256:2e17ffda808ea4a84f4a5faa13691b62f96519012ac87a85dee4feff733673c0",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-iip3.csv": "sha256:bb94e75a4fab98f02bcb10d52c70bf722abe05a793681b57c0e16328cabcda32",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-nf290.csv": "sha256:dbd51eec7c3cafcc437bb80da0f757ab4f51cb4c824b92c05413fdc5ebc46fac",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-sparam.csv": "sha256:7ee4a673ec27ab13a9317775273b3245449e7b8b76c96fe9fe0fd35846d4d0eb",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv": "sha256:a33934c2334885794af0e500eceddb9ffe8d8c293e2aefaf2912c913fa8dcda9",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c.md": "sha256:cc21576f4511209afc5fc7e6248da1fa77dfd56fd16541698170e58992fd6bfb",
+    "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:d1c984551ddb0c52b147f4bf7d6b070f3125d9d431c38a7e456880b2629f049b",
     "sim/lna-characterization/run_lna_variant.sh": "sha256:0cf4b54af1b0ef4c90703e2b0663d3ddad1f267dfe3bab4397bb3dc69869d24e",
@@ -2206,6 +2316,7 @@
   },
   "support_dirs": {
     "models": "vendored EM inductor model and its provenance check; support code, no records (hashed as shared group em-model)",
+    "pre-match-dut": "frozen pre-#27 copy of the DUT netlist that the matching-feasibility, variant, bias-PVT and core-envelope tooling replay against; an input, no records",
     "tests": "PDK-free shell tests of the shared runner surface; not benches (the core-envelope lifecycle test is listed as a replay check)",
     "tools": "build-osdi.sh, pdk_identity.py, reducer_common.py and their tests; support code, no records (hashed in shared groups)"
   },

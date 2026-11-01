@@ -1420,6 +1420,60 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-matched-smoke-20261101",
+      "limitations": "ONE PVT cell (typ/27 C/1.80 V); not a PVT result and not a stability sign-off: the 45-cell gate has not been run on the matched DUT. Inductors are ideal L plus explicit loss resistors. NF row not met. Descriptive, not a conformance verdict.",
+      "record_ids": [
+        "20261101-023117-5bbb70c",
+        "20261101-023246-5bbb70c"
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Single nominal-cell (LNA_SWEEP_SMOKE) S-parameters, NF, stability and IIP3 of the DUT with the #27 lp_noise matching network: 20261101-023117-5bbb70c without Lc/Le loss (S22 -0.09 dB, negative result), 20261101-023246-5bbb70c with the Q = 10 loss the match was synthesized for.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -1538,6 +1592,7 @@
   },
   "support_dirs": {
     "models": "vendored EM inductor model and its provenance check; support code, no records (hashed as shared group em-model)",
+    "pre-match-dut": "frozen pre-#27 copy of the DUT netlist that the matching-feasibility, variant, bias-PVT and core-envelope tooling replay against; an input, no records",
     "tests": "PDK-free shell tests of the shared runner surface; not benches (the core-envelope lifecycle test is listed as a replay check)",
     "tools": "build-osdi.sh, pdk_identity.py, reducer_common.py and their tests; support code, no records (hashed in shared groups)"
   },
