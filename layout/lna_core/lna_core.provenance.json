@@ -4,7 +4,7 @@
   "gds_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
   "top_cell": "lna_core",
   "nx": 8,
-  "klayout_python": "0.30.12",
+  "klayout_python": "0.30.10",
   "pdk_variant": "ihp-sg13g2",
   "pdk_fetched_version": "0.3.0",
   "pcell_lib_sha256": "sha256:6292d8c183a21fef56dd5e3b30d187d79b7d9160c8af26e2c484d5f09c16bb48",

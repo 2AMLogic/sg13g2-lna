@@ -1,0 +1,119 @@
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+Warning: singular matrix:  check node xa.xout
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xa.xout
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: singular matrix:  check node xa.xout
+
+Warning: True gmin stepping failed
+Note: Starting source stepping
+Warning: source stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-lna -- two-tone transient iip3 bench (issue #18)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+OP ic1 0.00394101 ic2 0.00393557 vce1 0.802694 vce2 0.997334 idd 0.00471551
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                        1.8
+vin                                          0
+va                                           0
+rfin                               3.28487e-07
+rfout                              4.81025e-06
+xa.outn                                1.80002
+xa.vb2                                 1.64499
+xa.casc                               0.802685
+xa.xq2.s1                          2.02655e-06
+xa.xq2.t                               6.86349
+xa.b1                                 0.843495
+xa.e1                             -9.40418e-06
+xa.xq1.s1                          4.67305e-06
+xa.xq1.t                               5.53335
+xa.xin                             4.22056e-07
+xa.xout                                1.78485
+xa.lb_x                            3.76068e-07
+xa.nc_b                               0.834659
+xa.nc_a                               0.739892
+xa.nc_e                              0.0556082
+xa.xqb.s1                          6.19406e-07
+xa.xqb.t                             0.0222548
+xa.xqa.s1                          3.79403e-08
+xa.xqa.t                              0.138009
+xa.vbg                                 1.03973
+xa.cb3                                0.739681
+xa.xqc.s1                          2.43084e-07
+xa.xqc.t                              0.136748
+xa.gsvo                               0.910047
+xa.es                                 0.221514
+xa.dn                                 0.890423
+xa.vl                                  1.03983
+xa.bref                               0.845287
+xa.xq3.s1                          1.68715e-07
+xa.xq3.t                               4.86371
+l.xa.lb#branch                     6.56974e-09
+l.xa.lc#branch                      0.00393581
+l.xa.le#branch                      0.00394656
+vt2#branch                         6.56974e-09
+vt1#branch                         6.56974e-09
+vdd#branch                         -0.00471551
+
+ Reference value :  1.00000e-06 Reference value :  1.01066e-06 Reference value :  1.02074e-06 Reference value :  1.03067e-06 Reference value :  1.04075e-06 Reference value :  1.05140e-06 Reference value :  1.06199e-06 Reference value :  1.07234e-06 Reference value :  1.08283e-06 Reference value :  1.09337e-06 Reference value :  1.10361e-06 Reference value :  1.11405e-06 Reference value :  1.12461e-06 Reference value :  1.13509e-06 Reference value :  1.14531e-06 Reference value :  1.15459e-06 Reference value :  1.16499e-06 Reference value :  1.17582e-06 Reference value :  1.18611e-06 Reference value :  1.19645e-06 Reference value :  1.20709e-06 Reference value :  1.21789e-06 Reference value :  1.22829e-06 Reference value :  1.23886e-06 Reference value :  1.24951e-06 Reference value :  1.26028e-06
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.0105712 tone2 0.0105659 im3l 7.92991E-08 im3h 8.80019E-08 src1 0.000999621
+FFT: Time span: 2.62144e-07 s, input length: 65536, zero padding: 0
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+FFTDF 3.8147E+06
+FFT tone1 0.0105712 tone2 0.0105659 im3l 7.92508E-08 im3h 8.80338E-08 im5l 1.00275E-10 im5h 1.25931E-10 src1 0.000999621 src2 0.000999618
+BENCH_COMPLETE
+Note: Simulation executed from .control section 
