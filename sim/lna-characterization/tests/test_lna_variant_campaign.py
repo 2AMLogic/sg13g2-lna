@@ -35,8 +35,16 @@ class VariantHelpers(unittest.TestCase):
 
     def test_variant_table_is_consistent(self):
         for name, (desc, lc, le_q) in V.VARIANTS.items():
-            self.assertIn(lc, ("ideal", "em"), name)
+            self.assertIn(lc, ("ideal", "em", "design"), name)
             self.assertTrue(le_q is None or le_q > 0, name)
+
+    def test_matched_variant_inlines_live_netlist_verbatim(self):
+        body = V.dut_subckt("design", None)
+        self.assertIn("Lb lb_x rfin", body)  # the #27 input network is present
+        self.assertNotIn(V.LC_LINE, body)    # not the pre-match Lc
+        self.assertNotIn("VARIANT EDIT", body)
+        self.assertNotIn("Lb ", V.dut_subckt("ideal", None))  # baseline stays pre-match
+        self.assertIn("matched", V.header("matched", "sp_band"))
 
     def test_dut_subckt_edits(self):
         ideal = V.dut_subckt("ideal", None)
