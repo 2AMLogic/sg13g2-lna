@@ -1,5 +1,12 @@
 # Work Log
 
+### 2026-11-05
+
+- **PR #254**: refactor(sim): share one file-SHA-256 helper across sim scripts
+- **PR #252**: feat(sim): publish 200-sample full-DUT DC mismatch campaign from fleet
+- **Issue #253** (closed): Dedupe the file-SHA-256 helper copied across nine sim scripts
+- **Issue #90** (closed): sim: measure full-DUT DC mismatch spread with a seeded fleet campaign and controls
+
 ### 2026-11-01
 
 - **PR #249**: feat(sim): add matched-DUT variant to the LNA PVT variant campaign
