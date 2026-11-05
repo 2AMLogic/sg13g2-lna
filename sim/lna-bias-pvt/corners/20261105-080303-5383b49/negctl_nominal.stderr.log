@@ -1,0 +1,10 @@
+klt: batch job klt-sim-1a47cadbdbf1 submitting to s3://<bucket>/jobs/klt-sim-1a47cadbdbf1
+klt sim: batch job klt-sim-1a47cadbdbf1: submitted
+{
+  "schema_version": 1,
+  "error": {
+    "command": "sim",
+    "message": "batch backend failed: batch-fleet-provision.sh launch failed (exit 1): error: 240 vCPU already running + 1 instance(s) of up to 32 vCPU exceeds BATCH_MAX_VCPU=224, and only 0 type(s) fit the -16 vCPU left (floor 3) \u2014 the spot quota is shared with ci-spot (batch-fleet.md \u00a7vCPU budget)",
+    "code": "batch_no_capacity"
+  }
+}

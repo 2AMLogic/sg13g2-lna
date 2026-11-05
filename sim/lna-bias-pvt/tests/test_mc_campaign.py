@@ -421,6 +421,20 @@ class TestReduce(Base):
         self.assertTrue(any("state 'failed'" in p for p in s["problems"]))
         self.assertTrue(any("missing_report" in p for p in s["problems"]))
 
+    def test_failed_state_with_bar_exceeded_exit_is_accepted(self):
+        def bar(rep):
+            rep["environment"]["remote"]["exit_code"] = "3"
+        self.write_all(main=report(mc.N_MAIN, state="failed", mutate=bar))
+        rc, s = self.reduce()
+        self.assertFalse(any("fleet job state" in p for p in s["problems"]))
+
+    def test_failed_state_with_other_exit_is_rejected(self):
+        def bad(rep):
+            rep["environment"]["remote"]["exit_code"] = "1"
+        self.write_all(main=report(mc.N_MAIN, state="failed", mutate=bad))
+        rc, s = self.reduce()
+        self.assertTrue(any("fleet job state" in p for p in s["problems"]))
+
     def test_error_envelope(self):
         self.write_all()
         self.write("negctl_nominal", {"schema_version": 1, "error": {"command": "sim", "message": "boom"}})

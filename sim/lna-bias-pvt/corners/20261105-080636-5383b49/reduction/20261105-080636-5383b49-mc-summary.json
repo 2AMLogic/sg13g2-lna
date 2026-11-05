@@ -1,0 +1,1286 @@
+{
+  "bench_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+  "complete": true,
+  "controls_pass": true,
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "issue": 90,
+  "negative_control": {
+    "collapsed": true,
+    "deterministic_reference": {
+      "agrees": true,
+      "record": "20260921-173552-2aeafef",
+      "rel_tol": 0.0001,
+      "values": {
+        "ib1": {
+          "control": 5.43039921e-06,
+          "reference": 5.4304e-06,
+          "rel_diff": 1.4547731284792031e-07
+        },
+        "ic1": {
+          "control": 0.00394029829,
+          "reference": 0.0039403,
+          "rel_diff": 4.33977108368924e-07
+        },
+        "ic3": {
+          "control": 0.000506173823,
+          "reference": 0.000506174,
+          "rel_diff": 3.4968212500694273e-07
+        },
+        "idd": {
+          "control": 0.004714422,
+          "reference": 0.00471442,
+          "rel_diff": 4.242303400661481e-07
+        },
+        "pdc": {
+          "control": 0.0084859596,
+          "reference": 0.00848596,
+          "rel_diff": 4.7136682253557915e-08
+        },
+        "vb1": {
+          "control": 0.84349444,
+          "reference": 0.843494,
+          "rel_diff": 5.21639750834562e-07
+        },
+        "vbref": {
+          "control": 0.845286471,
+          "reference": 0.845286,
+          "rel_diff": 5.572078562780959e-07
+        }
+      }
+    },
+    "distinct_rndseeds": 20,
+    "max_minus_min": {
+      "ib1": 0.0,
+      "ic1": 0.0,
+      "ic2": 0.0,
+      "ic3": 0.0,
+      "idd": 0.0,
+      "mis_delvto": 0.0,
+      "mnp1_delvto": 0.0,
+      "mnp2_delvto": 0.0,
+      "mref_delvto": 0.0,
+      "pdc": 0.0,
+      "q1_area": 0.0,
+      "q2_area": 0.0,
+      "q3_area": 0.0,
+      "qa_area": 0.0,
+      "qb_area": 0.0,
+      "qc_area": 0.0,
+      "vb1": 0.0,
+      "vbref": 0.0,
+      "vdd_node": 0.0
+    },
+    "pass": true,
+    "sampled_params_at_nominal": true,
+    "samples_expected": 20,
+    "samples_ok": 20
+  },
+  "pdk_pin": "v0.3.0",
+  "problems": [],
+  "record_id": "20261105-080636-5383b49",
+  "replay": {
+    "abs_tol": 1e-15,
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "mismatches": [],
+    "n_mismatches": 0,
+    "pass": true,
+    "rel_tol": 1e-07,
+    "samples_compared": 200
+  },
+  "runs": {
+    "mc_mismatch": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": "46",
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": true,
+          "family": "mosfet",
+          "note": "MOS per-instance mismatch is active: every selected process section is a *_mismatch section (hbt_typ_mismatch, mos_tt_mismatch), which includes the agauss() mismatch subcircuits (see docs/cli/sim.md's 'Known-good mismatch mechanisms')."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-04591566329422a44",
+        "client_klt_version": "0.9.1.dev18+gc663b4c65069",
+        "elapsed_seconds": 11,
+        "exit_code": "3",
+        "instance_type": "m7i.4xlarge",
+        "job_id": "klt-sim-7c910807c489",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "match",
+        "runner_klt_version": "0.9.0",
+        "state": "failed"
+      },
+      "monte_carlo": {
+        "n": 200,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 200,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": null,
+      "provenance_klt_version": "0.9.1.dev18+gc663b4c65069",
+      "report_status": "fail",
+      "request": "mc_mismatch.request.json",
+      "seed_sequence_verified": true,
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 31,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 20,
+        "diagnostic_counts": {},
+        "excluded_value_counts": {
+          "ib1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic2": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic3": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "idd": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mis_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp1_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp2_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mref_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "pdc": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q1_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q2_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q3_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qa_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qb_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qc_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vb1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vbref": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vdd_node": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          }
+        },
+        "failures": {},
+        "pdc_vs_vdd_idd_max_abs_err": 5.399999891686491e-11,
+        "samples_expected": 200,
+        "samples_ok": 200,
+        "samples_present": 200,
+        "stats": {
+          "ib1": {
+            "max": 9.76935072e-06,
+            "mean": 5.6050871059999995e-06,
+            "min": 3.88322146e-06,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 9.069458791645005e-07,
+            "zero_spread": false
+          },
+          "ic1": {
+            "max": 0.00651221831,
+            "mean": 0.00404225392585,
+            "min": 0.002885639,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005951596248724864,
+            "zero_spread": false
+          },
+          "ic2": {
+            "max": 0.00650197466,
+            "mean": 0.00403657820935,
+            "min": 0.00288180466,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005941696502922937,
+            "zero_spread": false
+          },
+          "ic3": {
+            "max": 0.000534325149,
+            "mean": 0.00050625719304,
+            "min": 0.000474879822,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 1.1448264892758976e-05,
+            "zero_spread": false
+          },
+          "idd": {
+            "max": 0.00731738185,
+            "mean": 0.00481686968875,
+            "min": 0.00365200889,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005980903561144484,
+            "zero_spread": false
+          },
+          "mis_delvto": {
+            "max": 0.000474732398,
+            "mean": -2.16311955191e-06,
+            "min": -0.00051645212,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.00019905097401922054,
+            "zero_spread": false
+          },
+          "mnp1_delvto": {
+            "max": 0.0066866301,
+            "mean": -0.000172588659436,
+            "min": -0.0080438538,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0023801743797761104,
+            "zero_spread": false
+          },
+          "mnp2_delvto": {
+            "max": 0.00579396036,
+            "mean": -0.00012693731158399998,
+            "min": -0.00726983,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.002297267090130608,
+            "zero_spread": false
+          },
+          "mref_delvto": {
+            "max": 0.00200509729,
+            "mean": -1.490598187199998e-06,
+            "min": -0.0015863532,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0007231144651145132,
+            "zero_spread": false
+          },
+          "pdc": {
+            "max": 0.0131712873,
+            "mean": 0.008670365440199999,
+            "min": 0.00657361599,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0010765626419531752,
+            "zero_spread": false
+          },
+          "q1_area": {
+            "max": 1.36853325,
+            "mean": 0.998886250625,
+            "min": 0.723165088,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10361880276294762,
+            "zero_spread": false
+          },
+          "q2_area": {
+            "max": 1.31394191,
+            "mean": 0.9923809928449999,
+            "min": 0.643492203,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09896845252036512,
+            "zero_spread": false
+          },
+          "q3_area": {
+            "max": 1.25465436,
+            "mean": 0.983167859925,
+            "min": 0.64454198,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10454956960244487,
+            "zero_spread": false
+          },
+          "qa_area": {
+            "max": 1.23054114,
+            "mean": 1.002023444905,
+            "min": 0.727862895,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09892167303397874,
+            "zero_spread": false
+          },
+          "qb_area": {
+            "max": 1.32202979,
+            "mean": 1.007226331335,
+            "min": 0.731781699,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10478371461307233,
+            "zero_spread": false
+          },
+          "qc_area": {
+            "max": 1.24949711,
+            "mean": 1.0115215897749998,
+            "min": 0.7688701,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09895538308713751,
+            "zero_spread": false
+          },
+          "vb1": {
+            "max": 0.863644677,
+            "mean": 0.844469713175,
+            "min": 0.834418188,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0044556245836830715,
+            "zero_spread": false
+          },
+          "vbref": {
+            "max": 0.866868563,
+            "mean": 0.846319395685,
+            "min": 0.835717866,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.004689203648174887,
+            "zero_spread": false
+          },
+          "vdd_node": {
+            "max": 1.8,
+            "mean": 1.8,
+            "min": 1.8,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          }
+        },
+        "status_counts": {
+          "fail": 31,
+          "pass": 169
+        }
+      }
+    },
+    "mc_mismatch_replay": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": "46",
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": true,
+          "family": "mosfet",
+          "note": "MOS per-instance mismatch is active: every selected process section is a *_mismatch section (hbt_typ_mismatch, mos_tt_mismatch), which includes the agauss() mismatch subcircuits (see docs/cli/sim.md's 'Known-good mismatch mechanisms')."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-04591566329422a44",
+        "client_klt_version": "0.9.1.dev18+gc663b4c65069",
+        "elapsed_seconds": 11,
+        "exit_code": "3",
+        "instance_type": "m7i.4xlarge",
+        "job_id": "klt-sim-3fe14efeb799",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "match",
+        "runner_klt_version": "0.9.0",
+        "state": "failed"
+      },
+      "monte_carlo": {
+        "n": 200,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 200,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": null,
+      "provenance_klt_version": "0.9.1.dev18+gc663b4c65069",
+      "report_status": "fail",
+      "request": "mc_mismatch.request.json",
+      "seed_sequence_verified": true,
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 31,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 20,
+        "diagnostic_counts": {},
+        "excluded_value_counts": {
+          "ib1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic2": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic3": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "idd": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mis_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp1_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp2_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mref_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "pdc": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q1_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q2_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q3_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qa_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qb_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qc_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vb1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vbref": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vdd_node": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          }
+        },
+        "failures": {},
+        "pdc_vs_vdd_idd_max_abs_err": 5.399999891686491e-11,
+        "samples_expected": 200,
+        "samples_ok": 200,
+        "samples_present": 200,
+        "stats": {
+          "ib1": {
+            "max": 9.76935072e-06,
+            "mean": 5.6050871059999995e-06,
+            "min": 3.88322146e-06,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 9.069458791645005e-07,
+            "zero_spread": false
+          },
+          "ic1": {
+            "max": 0.00651221831,
+            "mean": 0.00404225392585,
+            "min": 0.002885639,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005951596248724864,
+            "zero_spread": false
+          },
+          "ic2": {
+            "max": 0.00650197466,
+            "mean": 0.00403657820935,
+            "min": 0.00288180466,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005941696502922937,
+            "zero_spread": false
+          },
+          "ic3": {
+            "max": 0.000534325149,
+            "mean": 0.00050625719304,
+            "min": 0.000474879822,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 1.1448264892758976e-05,
+            "zero_spread": false
+          },
+          "idd": {
+            "max": 0.00731738185,
+            "mean": 0.00481686968875,
+            "min": 0.00365200889,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0005980903561144484,
+            "zero_spread": false
+          },
+          "mis_delvto": {
+            "max": 0.000474732398,
+            "mean": -2.16311955191e-06,
+            "min": -0.00051645212,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.00019905097401922054,
+            "zero_spread": false
+          },
+          "mnp1_delvto": {
+            "max": 0.0066866301,
+            "mean": -0.000172588659436,
+            "min": -0.0080438538,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0023801743797761104,
+            "zero_spread": false
+          },
+          "mnp2_delvto": {
+            "max": 0.00579396036,
+            "mean": -0.00012693731158399998,
+            "min": -0.00726983,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.002297267090130608,
+            "zero_spread": false
+          },
+          "mref_delvto": {
+            "max": 0.00200509729,
+            "mean": -1.490598187199998e-06,
+            "min": -0.0015863532,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0007231144651145132,
+            "zero_spread": false
+          },
+          "pdc": {
+            "max": 0.0131712873,
+            "mean": 0.008670365440199999,
+            "min": 0.00657361599,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0010765626419531752,
+            "zero_spread": false
+          },
+          "q1_area": {
+            "max": 1.36853325,
+            "mean": 0.998886250625,
+            "min": 0.723165088,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10361880276294762,
+            "zero_spread": false
+          },
+          "q2_area": {
+            "max": 1.31394191,
+            "mean": 0.9923809928449999,
+            "min": 0.643492203,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09896845252036512,
+            "zero_spread": false
+          },
+          "q3_area": {
+            "max": 1.25465436,
+            "mean": 0.983167859925,
+            "min": 0.64454198,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10454956960244487,
+            "zero_spread": false
+          },
+          "qa_area": {
+            "max": 1.23054114,
+            "mean": 1.002023444905,
+            "min": 0.727862895,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09892167303397874,
+            "zero_spread": false
+          },
+          "qb_area": {
+            "max": 1.32202979,
+            "mean": 1.007226331335,
+            "min": 0.731781699,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.10478371461307233,
+            "zero_spread": false
+          },
+          "qc_area": {
+            "max": 1.24949711,
+            "mean": 1.0115215897749998,
+            "min": 0.7688701,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.09895538308713751,
+            "zero_spread": false
+          },
+          "vb1": {
+            "max": 0.863644677,
+            "mean": 0.844469713175,
+            "min": 0.834418188,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0044556245836830715,
+            "zero_spread": false
+          },
+          "vbref": {
+            "max": 0.866868563,
+            "mean": 0.846319395685,
+            "min": 0.835717866,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.004689203648174887,
+            "zero_spread": false
+          },
+          "vdd_node": {
+            "max": 1.8,
+            "mean": 1.8,
+            "min": 1.8,
+            "n_finite": 200,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          }
+        },
+        "status_counts": {
+          "fail": 31,
+          "pass": 169
+        }
+      }
+    },
+    "negctl_nominal": {
+      "corner_section_libs": [
+        {
+          "name": "cornerHBT.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "path": null,
+          "scope": "external",
+          "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+        }
+      ],
+      "engine_version": "46",
+      "family_mismatch": [
+        {
+          "active": null,
+          "family": "bipolar",
+          "note": "mismatch activity for the 'bipolar' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "capacitor",
+          "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": null,
+          "family": "resistor",
+          "note": "mismatch activity for the 'resistor' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        },
+        {
+          "active": false,
+          "family": "mosfet",
+          "note": "No selected process section (hbt_typ, mos_tt) is a *_mismatch section; plain mos_<corner> and mos_tt_stat sections carry no per-instance mismatch, so no MOS mismatch is sampled -- select e.g. mos_tt_mismatch via corners.process."
+        },
+        {
+          "active": null,
+          "family": "other",
+          "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'sg13g2'; treat any sampled spread for it as unconfirmed."
+        }
+      ],
+      "fleet": {
+        "ami_id": "ami-04591566329422a44",
+        "client_klt_version": "0.9.1.dev18+gc663b4c65069",
+        "elapsed_seconds": 8,
+        "exit_code": "0",
+        "instance_type": "m7i.4xlarge",
+        "job_id": "klt-sim-586e9fcdf8ef",
+        "lifecycle": "spot",
+        "provider": "aws-batch-fleet",
+        "runner_compatibility": "match",
+        "runner_klt_version": "0.9.0",
+        "state": "done"
+      },
+      "monte_carlo": {
+        "n": 20,
+        "seed": 68001,
+        "vary": "mismatch"
+      },
+      "n_requested": 20,
+      "netlist_sha256": "9e82018b340293d66c7f936e82566f5c391634e5272ae83dd97def3027491d33",
+      "osdi_preload": null,
+      "provenance_klt_version": "0.9.1.dev18+gc663b4c65069",
+      "report_status": "pass",
+      "request": "negctl_nominal.request.json",
+      "seed_sequence_verified": true,
+      "summary": {
+        "count_ic1_eq_bar": 0,
+        "count_ic1_gt_bar": 0,
+        "count_pdc_eq_bar": 0,
+        "count_pdc_ge_bar": 0,
+        "diagnostic_counts": {},
+        "excluded_value_counts": {
+          "ib1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic2": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "ic3": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "idd": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mis_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp1_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mnp2_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "mref_delvto": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "pdc": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q1_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q2_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "q3_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qa_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qb_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "qc_area": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vb1": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vbref": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          },
+          "vdd_node": {
+            "n_finite": 0,
+            "n_missing": 0,
+            "n_nonfinite": 0
+          }
+        },
+        "failures": {},
+        "pdc_vs_vdd_idd_max_abs_err": 0.0,
+        "samples_expected": 20,
+        "samples_ok": 20,
+        "samples_present": 20,
+        "stats": {
+          "ib1": {
+            "max": 5.43039921e-06,
+            "mean": 5.43039921e-06,
+            "min": 5.43039921e-06,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "ic1": {
+            "max": 0.00394029829,
+            "mean": 0.00394029829,
+            "min": 0.00394029829,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "ic2": {
+            "max": 0.00393482891,
+            "mean": 0.00393482891,
+            "min": 0.00393482891,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "ic3": {
+            "max": 0.000506173823,
+            "mean": 0.000506173823,
+            "min": 0.000506173823,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "idd": {
+            "max": 0.004714422,
+            "mean": 0.004714422,
+            "min": 0.004714422,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "mis_delvto": {
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "mnp1_delvto": {
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "mnp2_delvto": {
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "mref_delvto": {
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "pdc": {
+            "max": 0.0084859596,
+            "mean": 0.0084859596,
+            "min": 0.0084859596,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "q1_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "q2_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "q3_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "qa_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "qb_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "qc_area": {
+            "max": 1.0,
+            "mean": 1.0,
+            "min": 1.0,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "vb1": {
+            "max": 0.84349444,
+            "mean": 0.84349444,
+            "min": 0.84349444,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "vbref": {
+            "max": 0.845286471,
+            "mean": 0.845286471,
+            "min": 0.845286471,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          },
+          "vdd_node": {
+            "max": 1.8,
+            "mean": 1.8,
+            "min": 1.8,
+            "n_finite": 20,
+            "n_missing": 0,
+            "n_nonfinite": 0,
+            "stdev": 0.0,
+            "zero_spread": true
+          }
+        },
+        "status_counts": {
+          "pass": 20
+        }
+      }
+    }
+  },
+  "schema": "lna-bias-mc-summary/1",
+  "seed": 68001,
+  "seed_sequences_verified": true,
+  "temperature_c": 27,
+  "thresholds": {
+    "ic1_exceeds_if_gt_A": 0.0045,
+    "pdc_exceeds_if_ge_W": 0.01
+  },
+  "variation": {
+    "all_sampled_params_vary": true,
+    "corr_ln_ic1_vs_ln_q1_over_q3_area": 0.9883222237759889,
+    "pass": true,
+    "sampled_params": {
+      "mis_delvto": {
+        "expected_sigma_from_pdk_text": 0.00019887378220871646,
+        "stdev": 0.00019905097401922054,
+        "zero_spread": false
+      },
+      "mnp1_delvto": {
+        "expected_sigma_from_pdk_text": 0.0022135943621178654,
+        "stdev": 0.0023801743797761104,
+        "zero_spread": false
+      },
+      "mnp2_delvto": {
+        "expected_sigma_from_pdk_text": 0.0022135943621178654,
+        "stdev": 0.002297267090130608,
+        "zero_spread": false
+      },
+      "mref_delvto": {
+        "expected_sigma_from_pdk_text": 0.0007115124735378852,
+        "stdev": 0.0007231144651145132,
+        "zero_spread": false
+      },
+      "q1_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.10361880276294762,
+        "zero_spread": false
+      },
+      "q2_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.09896845252036512,
+        "zero_spread": false
+      },
+      "q3_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.10454956960244487,
+        "zero_spread": false
+      },
+      "qa_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.09892167303397874,
+        "zero_spread": false
+      },
+      "qb_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.10478371461307233,
+        "zero_spread": false
+      },
+      "qc_area": {
+        "expected_sigma_from_pdk_text": 0.1,
+        "stdev": 0.09895538308713751,
+        "zero_spread": false
+      }
+    },
+    "zero_spread_explanations": {
+      "vdd_node": "ideal supply source: V(vdd) is set by `alter vdd=1.8`, not by the DUT"
+    },
+    "zero_spread_quantities": [
+      "vdd_node"
+    ]
+  },
+  "vdd_v": 1.8
+}
