@@ -706,7 +706,7 @@
       "dut": "present",
       "family": "lna-bias-pvt",
       "id": "lna-bias-pvt-mc-campaign-blocked",
-      "limitations": "BLOCKED on the batch fleet runner image. No distribution has been measured; the committed failure records hold redacted reports only. Attests that the bench ships, not that it has produced a result.",
+      "limitations": "Earlier fleet submissions (2026-10) and the 20261105-080303 attempt failed before producing a distribution; their committed records hold redacted reports only. The published distribution is claim lna-bias-pvt-mc-campaign-20261105-080636-5383b49.",
       "records": [
         {
           "corners": {
@@ -747,6 +747,20 @@
             "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "published_files": []
+        },
+        {
+          "corners": {
+            "files": 8,
+            "git_blob_digest": "sha256:44d118532364c4f0adbc4a9829ddb090b7ad78bde095f0fe83b38ae1202b778d"
+          },
+          "id": "20261105-080303-5383b49",
+          "netlist_snapshots": {
+            "files": 5,
+            "git_blob_digest": "sha256:a8a7656a31359b7325b5d81f3df59fef7a1f6c5e4cff530c81e8a9b59e6baebc"
+          },
+          "published_files": [
+            "sim/lna-bias-pvt/records/20261105-080303-5383b49.pdk-provenance.json"
+          ]
         }
       ],
       "reducers": [
@@ -766,6 +780,76 @@
         "dut-netlist"
       ],
       "summary": "Full-DUT DC mismatch campaign (issue #90): bench, request generation and reduction ship; both fleet submissions failed before producing a distribution.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet (never local)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-bias-pvt/mc_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_mc_campaign.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "KLT_SIM_BACKEND=batch (the runner refuses any other backend)",
+            "klt >= 0.7.0 client and a fleet runner image that supports it",
+            "PDK_ROOT/PDK"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-mc-campaign-20261105-080636-5383b49",
+      "limitations": "Full-DUT DC mismatch at one operating point (27 C, VDD 1.8 V, DC op only); 200 samples, nominal process sections plus per-instance mismatch. No RF behaviour. The two mc_mismatch fleet jobs report state 'failed' with 200/200 samples ok; see the record's mc-summary.md.",
+      "records": [
+        {
+          "corners": {
+            "files": 10,
+            "git_blob_digest": "sha256:4a45a6e37f12d2f01227f795b2346554675da30413baa10aa7dd115c33d300dc"
+          },
+          "id": "20261105-080636-5383b49",
+          "netlist_snapshots": {
+            "files": 5,
+            "git_blob_digest": "sha256:5ffbab047cbeaeec22e3692972748503f84f23a8a0495c3cd1227be2487afaae"
+          },
+          "published_files": [
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-samples.csv",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.json",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/hbt_audit.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_mc_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-bias-pvt/run_mc_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Full-DUT DC mismatch campaign (issue #90) run on the klt 0.9.0 fleet runner: 200-sample mismatch distribution with nominal negative control.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim batch fleet (never local)",
         "osdi_models": true,
@@ -2105,9 +2189,9 @@
     "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl": "sha256:a5f332c8c85d5274d1459f7e7a186ac0e3cce218cc6f96ba42af6a323ee1ddeb",
     "sim/hbt-characterization/tests/test_parse_hbt_log.py": "sha256:fc8f69be6e6c2e96ae4934aa9fc10b7c446fb417b570b9512a928992c156ac3c",
     "sim/hbt-characterization/tests/test_rederive_nf_fixed_t0.py": "sha256:a0789e1868b103ece2d70d5c2ee3321dc91468d57acd556be62a45f41f2e373f",
-    "sim/lna-bias-pvt/README.md": "sha256:bbd282fbd207e2d7020fd560cdb68edbbe636953aea7f680402bd6cdc46980f5",
+    "sim/lna-bias-pvt/README.md": "sha256:d6ed99213ac8fd42908a1bc0cdc6873e41fff972a4436291360cb3055332d5aa",
     "sim/lna-bias-pvt/hbt_audit.py": "sha256:bcfbe5bfd39d67970b8a9dbbbf9dab095f23a9659b5aaf4ccc5415294c25f2c8",
-    "sim/lna-bias-pvt/mc_campaign.py": "sha256:49906968ef521d2b124ce0e2e1a9cc6c73c298d7e427c7e1357042e3cb109dee",
+    "sim/lna-bias-pvt/mc_campaign.py": "sha256:7c06209737947077b012e81980b805c507a9a6001a16860f2f357dee7daaa14c",
     "sim/lna-bias-pvt/records/20260921-132025-d6da30a-startup.csv": "sha256:43028fdb77abd37ea9e2cfb7a3a463ce890a23595c2aed4a6a84a0dbfc7a80b6",
     "sim/lna-bias-pvt/records/20260921-132025-d6da30a-summary.csv": "sha256:013815c3cd85fbed77a5e6eb9f119e8bf0c3b658dbe74adf2f1341cd3138cfb5",
     "sim/lna-bias-pvt/records/20260921-132025-d6da30a.md": "sha256:60ece1b5eea41eafcb09c80433dddf024704adcfe79145414a856b3a506207b5",
@@ -2118,13 +2202,18 @@
     "sim/lna-bias-pvt/records/20260921-173552-2aeafef.md": "sha256:c65cd7cb40b5a8ae001bda4533826d06703425d216616e1a317b6f40fc59e84e",
     "sim/lna-bias-pvt/records/20261010-161633-0914d9a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-bias-pvt/records/20261010-221158-b05a674.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-bias-pvt/records/20261105-080303-5383b49.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-samples.csv": "sha256:ae34e645e287ae88ba07c3791d82f31456ea7b142415fd829cedf4b4ae4c66bd",
+    "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.json": "sha256:14e0aed79f5b2a00bf09c56f4b64f1d51c14a065a4924c485bff2847893033a0",
+    "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md": "sha256:dc006d98eee5e66011529a2f34b66c54612a65a413740e81af64b45163118fee",
+    "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-bias-pvt/reduce_biasop.py": "sha256:16fdfea8af2ea47d42c3a6c1e56b61033165002ea8a444a6f54496f34899e754",
     "sim/lna-bias-pvt/run_biasop_sweep.sh": "sha256:9f6be5290745b41f728720d9e814d8693e743c84aced377cb3e3432d605a0712",
     "sim/lna-bias-pvt/run_mc_campaign.sh": "sha256:6d7b2bff6bf52f81acc4b8d3812137426d27d4342f5e4ff273b3b3f736df14a4",
     "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl": "sha256:30c97647bab717ef457c0e5487cdd71acb032441cc09bb47d2ed9d4b90e9e8ea",
     "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl": "sha256:770ce0be22bc7cc96bbcadee200d5f138b7fea21821825a741738c108fcc5a3d",
     "sim/lna-bias-pvt/tests/test_hbt_audit.py": "sha256:feab70a562d0fa5ea4efdad389f6ed5feba94f0cdb652dca2204199f9450f9ec",
-    "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:45a2f306c30a5b3401fb70bdbc6756f70d0bc161f2cc697fdf2fdb5900ec7157",
+    "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
     "sim/lna-characterization/README.md": "sha256:66ab269999a7377d62513e95368cba943604f0412433af7486c8e83520f007ba",
