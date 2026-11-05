@@ -46,6 +46,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib.util
 import io
 import json
 import math
@@ -154,8 +155,13 @@ def sha256_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
-def sha256_file(p: Path) -> str:
-    return sha256_bytes(Path(p).read_bytes())
+# Shared file-digest helper, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path).
+_as_spec = importlib.util.spec_from_file_location(
+    "artifact_store", Path(__file__).resolve().parent.parent / "tools" / "artifact_store.py")
+_artifact_store = importlib.util.module_from_spec(_as_spec)
+_as_spec.loader.exec_module(_artifact_store)
+sha256_file = _artifact_store.sha256_file
 
 
 # =============================================================================
