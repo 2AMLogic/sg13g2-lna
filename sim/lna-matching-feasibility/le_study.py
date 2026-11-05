@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
+import importlib.util
 import json
 import math
 import re
@@ -106,8 +106,13 @@ def planned_decks() -> int:
     return 2 * len(study_points()) + 2
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+# Shared file-digest helper, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path).
+_as_spec = importlib.util.spec_from_file_location(
+    "artifact_store", Path(__file__).resolve().parent.parent / "tools" / "artifact_store.py")
+_artifact_store = importlib.util.module_from_spec(_as_spec)
+_as_spec.loader.exec_module(_artifact_store)
+sha256 = _artifact_store.sha256_file
 
 
 def prior_feed_plan() -> dict:
