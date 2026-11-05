@@ -751,8 +751,14 @@ def reduce(snapshot_dir: Path, corners_dir: Path, out_dir: Path, record_id: str)
                           "corner_section_libs": env.get("corner_section_libs")})
             if fid["provider"] != "aws-batch-fleet" or not fid["job_id"]:
                 problems.append(f"{run}: not a batch-fleet report (environment.remote missing)")
-            if fid["state"] != "done":
-                problems.append(f"{run}: fleet job state {fid['state']!r}")
+            # klt sim exits 3 when a limit bar is exceeded and 4 when a sample
+            # errored; the fleet then reports state 'failed' with that exit code
+            # although the full report was written. Those are results, not
+            # infrastructure failures (any other failed state is still rejected).
+            if not (fid["state"] == "done"
+                    or (fid["state"] == "failed" and str(fid["exit_code"]) in ("3", "4"))):
+                problems.append(f"{run}: fleet job state {fid['state']!r} "
+                                f"(exit_code {fid['exit_code']!r})")
             if (emc.get("n"), emc.get("seed"), emc.get("vary")) != (n, SEED, "mismatch"):
                 problems.append(f"{run}: environment.monte_carlo {emc} != request")
             if env.get("netlist_sha256") != m["bench_sha256"]:

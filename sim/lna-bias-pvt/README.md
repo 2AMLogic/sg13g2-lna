@@ -150,10 +150,10 @@ and the full-DUT total `I_DD` and `P_dc = VDD·I_DD` (against the ratified
 committed DUT as the RF benches. They are also directly set by the DR-0003
 core's mirror/servo devices, whose mismatch moves the bias current.
 
-**Monte Carlo evidence for them is absent.** No record under
-[`records/`](records/) is a statistical run. Every record is the
-deterministic 45-cell corner grid described above, and the corner spread it
-reports is process/temperature/supply spread, not a mismatch distribution.
+**Monte Carlo evidence exists for these DC observables only at one operating
+point** (record `20261105-080636-5383b49`, see below). Every other record is
+the deterministic 45-cell corner grid described above, whose spread is
+process/temperature/supply spread, not a mismatch distribution.
 The coverage gaps, kept separate:
 
 - **Device mismatch is supported by the PDK models but not exercised.** The
@@ -173,10 +173,9 @@ The coverage gaps, kept separate:
 
 The first campaign on these observables is
 [#90](https://github.com/2AMLogic/sg13g2-lna/issues/90). Its tooling is
-committed (see "Full-DUT DC mismatch campaign" below). **It has not
-produced a distribution yet:** on 2026-10-10 every fleet submission failed
-before simulating, because the batch fleet's runner image carries an older
-klt. It is a fleet-submitted `klt sim` `monte_carlo` campaign on the full
+committed (see "Full-DUT DC mismatch campaign" below). **The first
+distribution is record `20261105-080636-5383b49`** (see below); the
+2026-10-10 submissions had failed before simulating on an older runner klt. It is a fleet-submitted `klt sim` `monte_carlo` campaign on the full
 DUT at one nominal point (27 °C, 1.80 V, nominal process sections plus
 per-instance mismatch). When its record lands, the resulting distribution
 has these limits:
@@ -198,8 +197,27 @@ The spec-level statement is
 
 ## Full-DUT DC mismatch campaign (issue #90)
 
-**Status (2026-10-10): BLOCKED on the batch fleet. No distribution has been
-measured.** The request set was generated and validated, then submitted
+**Status (2026-11-05): the live fleet campaign RAN (record
+`20261105-080636-5383b49`, runner klt 0.9.0, AMI `ami-04591566329422a44`,
+client klt `0.9.1.dev18+gc663b4c65069`, ngspice-46).** Results are in
+`records/20261105-080636-5383b49-mc-{summary.md,summary.json,samples.csv}`.
+Fleet jobs: `klt-sim-7c910807c489` (main, n=200, seed 68001),
+`klt-sim-3fe14efeb799` (replay, same request), `klt-sim-586e9fcdf8ef`
+(mismatch-disabled negative control, n=20). At 27 C / 1.80 V: I_C1 mean
+4.04 mA, stdev 0.595 mA, 31 of 200 samples above 4.5 mA; P_dc mean 8.67 mW,
+stdev 1.08 mW, 20 of 200 at or above 10 mW; 200/200 finite, no failed
+samples. Replay matched exactly (max diff 0); the negative control collapsed
+to the deterministic point. These are observed counts at one operating point,
+not a qualified yield. RF rows and passive tolerance remain unmeasured.
+Because `klt sim` exit 3 (bar exceeded) shows up as fleet state `failed`, the
+reducer now accepts that state when the exit code is 3 or 4. A first attempt
+(`20261105-080303-5383b49`) stopped at the negative control with
+`batch_no_capacity` (shared spot vCPU quota); its main and replay reports are
+kept as a failure record, reports gzipped as in earlier records. Nothing was
+run locally.
+
+**Earlier status (2026-10-10): BLOCKED on the batch fleet. No distribution
+had been measured.** The request set was generated and validated, then submitted
 three times. All three fleet jobs failed in 5-8 s with exit 87,
 `batch_runner_version_mismatch`: the runner image runs klt `0.5.0` and the
 submitting client is `0.7.0+g21e45ce7233b`. Job ids:

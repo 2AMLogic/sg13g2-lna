@@ -527,11 +527,12 @@
       "dut": "present",
       "family": "lna-bias-pvt",
       "id": "lna-bias-pvt-mc-campaign-blocked",
-      "limitations": "BLOCKED on the batch fleet runner image. No distribution has been measured; the committed failure records hold redacted reports only. Attests that the bench ships, not that it has produced a result.",
+      "limitations": "Earlier fleet submissions (2026-10) and the 20261105-080303 attempt failed before producing a distribution; their committed records hold redacted reports only. The published distribution is claim lna-bias-pvt-mc-campaign-20261105-080636-5383b49.",
       "record_ids": [
         "20261010-161633-0914d9a",
         "20261010-221158-b05a674",
-        "mc-activation-probe-20261010"
+        "mc-activation-probe-20261010",
+        "20261105-080303-5383b49"
       ],
       "reducers": [
         "sim/lna-bias-pvt/hbt_audit.py"
@@ -550,6 +551,60 @@
         "dut-netlist"
       ],
       "summary": "Full-DUT DC mismatch campaign (issue #90): bench, request generation and reduction ship; both fleet submissions failed before producing a distribution.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet (never local)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-bias-pvt/mc_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_mc_campaign.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "KLT_SIM_BACKEND=batch (the runner refuses any other backend)",
+            "klt >= 0.7.0 client and a fleet runner image that supports it",
+            "PDK_ROOT/PDK"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-mc-campaign-20261105-080636-5383b49",
+      "limitations": "Full-DUT DC mismatch at one operating point (27 C, VDD 1.8 V, DC op only); 200 samples, nominal process sections plus per-instance mismatch. No RF behaviour. The two mc_mismatch fleet jobs report state 'failed' with 200/200 samples ok; see the record's mc-summary.md.",
+      "record_ids": [
+        "20261105-080636-5383b49"
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/hbt_audit.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_mc_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-bias-pvt/run_mc_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Full-DUT DC mismatch campaign (issue #90) run on the klt 0.9.0 fleet runner: 200-sample mismatch distribution with nominal negative control.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim batch fleet (never local)",
         "osdi_models": true,
