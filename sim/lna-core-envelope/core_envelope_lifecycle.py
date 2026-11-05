@@ -12,18 +12,20 @@ to hash anything. The digest covers every component, so a stored fingerprint
 that was edited or truncated cannot match.
 """
 import hashlib
+import importlib.util
 import json
 import os
 import sys
 import time
 
 
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+# Shared file-digest helper, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path).
+_as_spec = importlib.util.spec_from_file_location(
+    "artifact_store", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools", "artifact_store.py"))
+_artifact_store = importlib.util.module_from_spec(_as_spec)
+_as_spec.loader.exec_module(_artifact_store)
+sha256_file = _artifact_store.sha256_file
 
 
 def digest(components):
