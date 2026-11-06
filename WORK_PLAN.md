@@ -30,7 +30,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#258**: design: give the output-match node xout a DC path and re-run the matched DUT's 125 C cells
 
 ## PRs Awaiting Review
 
@@ -54,6 +54,8 @@ Issues carrying `loom:curated`.
 - **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
+- **#258**: design: give the output-match node xout a DC path and re-run the matched DUT's 125 C cells *(curated)*
+- **#260**: PR #259 follow-up: add Rbleed to layout, rerun LVS, re-attest T1 items 1/10 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -72,10 +74,10 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 6 |
+| Curated | 8 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
