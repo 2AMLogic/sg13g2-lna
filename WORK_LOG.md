@@ -1,5 +1,9 @@
 # Work Log
 
+### 2026-11-06
+
+- **Issue #255** (closed): Simplify: 8 inline importlib loaders replaced a one-line sha256 helper (+34 net LOC)
+
 ### 2026-11-05
 
 - **PR #254**: refactor(sim): share one file-SHA-256 helper across sim scripts
