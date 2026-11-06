@@ -162,6 +162,8 @@ step "artifact-manifests: check" python3 -I .github/scripts/check-artifact-manif
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness
+step "netlist-freshness: floating-node guard self-test" .github/scripts/test-check-floating-nodes.sh
+step "netlist-freshness: floating-node guard" python3 -I .github/scripts/check-floating-nodes
 
 # --- job: netlist-regen (issue #138; needs xschem 3.4.4 + the pinned PDK,
 # never installed here -- CI provisions them via block-scalar steps)

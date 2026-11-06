@@ -250,6 +250,17 @@ C {lab_pin.sym} 750 -100 0 0 {name=l38 lab=xout}
 N 830 -100 850 -100 {}
 C {lab_pin.sym} 850 -100 0 0 {name=l39 lab=rfout}
 
+* --- Rbleed: DC path for xout (issue #258). xout otherwise touches only
+* capacitors (Cout, Cpout, Csout) and is a singular node at DC, which made
+* 18 of 45 PVT cells fail DC convergence. 100 kOhm to vss: its shunt
+* admittance (10 uS) is ~0.05 % of the 50 Ohm port's 20 mS, so it is
+* negligible at 2.4 GHz, while giving xout a DC path.
+C {res.sym} 900 40 0 0 {name=Rbleed value=100k m=1}
+N 900 10 900 -20 {}
+C {lab_pin.sym} 900 -20 0 0 {name=l43 lab=xout}
+N 900 70 900 100 {}
+C {lab_pin.sym} 900 100 0 0 {name=l44 lab=vss}
+
 * --- Cbyp2: RF-bypass Q2's cascode base per DR-1 ("RF-bypassed") ---
 C {capa.sym} 420 -40 0 0 {name=Cbyp2 value=100p m=1}
 N 420 -70 420 -120 {}

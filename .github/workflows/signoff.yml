@@ -358,6 +358,12 @@ jobs:
       - name: Committed netlist device inventory matches the schematic
         run: python3 -I .github/scripts/check-netlist-freshness
 
+      - name: Floating-node guard self-test
+        run: .github/scripts/test-check-floating-nodes.sh
+
+      - name: Every net in the committed netlist has a DC path
+        run: python3 -I .github/scripts/check-floating-nodes
+
   # Netlist regeneration (issue #138): the authoritative complement to
   # netlist-freshness. Provisions xschem (Ubuntu 24.04 package, 3.4.4 -- the
   # version check-netlist-regen pins) and the SG13G2 PDK release pinned in
