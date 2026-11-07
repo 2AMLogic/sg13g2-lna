@@ -1,0 +1,277 @@
+// Renovate configuration for 2AMLogic/sg13g2-lna
+// Docs: https://docs.renovatebot.com/configuration-options/
+// Pipeline docs: docs/ops/dependency-security-pipeline.md
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Extend recommended defaults, plus security-focused presets
+  "extends": [
+    "config:recommended",
+    "security:openssf-scorecard",
+    ":dependencyDashboard"
+  ],
+
+  // Override Mend-hosted "silent" default (applied when app is installed on
+  // "All repositories").  "full" lets Renovate create branches, PRs, and the
+  // Dependency Dashboard issue.
+  "mode": "full",
+
+  // --- Supply chain security ---
+
+  // 14-day quarantine: do not propose updates until 14 days after release.
+  // This lets registries catch and yank malicious packages before we see them.
+  // Ref: https://docs.renovatebot.com/key-concepts/minimum-release-age/
+  "minimumReleaseAge": "14 days",
+
+  // Flag known vulnerabilities from the OSV database
+  "osvVulnerabilityAlerts": true,
+
+  // --- Merge policy ---
+
+  // Renovate never merges its own PRs.
+  //
+  // Scope note: this key governs Renovate only -- it is not an end-to-end
+  // merge gate for this repo. The `labels` key below routes these PRs into the
+  // Loom pipeline, whose Champion does auto-merge on `loom:pr`. Two things
+  // hold that path today (both measured 2026-09-26): `draftPR` below, and
+  // Champion's CRITICAL_PATTERNS (champion-pr-merge.md:1044-1053) listing
+  // `.github/workflows/` and `package.json` -- between them 100% of this
+  // repo's current dependency surface, so criterion #3 holds such a PR for a
+  // human. Neither covers `pyproject.toml`/`uv.lock`, so revisit this if a
+  // Python manifest ever lands here.
+  "automerge": false,
+
+  // Create PRs as drafts -- consistent with AGENTS.md PR policy, and the
+  // primary brake on the path described above.
+  //
+  // Consequence a human must action: Champion's merge path has no draft gate
+  // (measured 2026-09-26: zero `draft` matches in merge-pr.sh,
+  // lib/forge-helpers.sh or champion-pr-merge.md; criterion #4 gates on
+  // `mergeable`, not `mergeStateStatus`, and a draft reads MERGEABLE/CLEAN).
+  // So a Renovate PR gets reviewed and labeled `loom:pr`, then fails an
+  // unmergeable-draft merge attempt on every Champion pass until someone
+  // clicks "Ready for review". Fail-safe -- nothing merges -- but recurring
+  // noise: undrafting is a required human step, not an optional one.
+  "draftPR": true,
+
+  // --- Schedule ---
+
+  // Weekly on Monday mornings (UTC). Security/vulnerability PRs bypass
+  // both this schedule and minimumReleaseAge (Renovate built-in behavior).
+  // Ref: https://docs.renovatebot.com/key-concepts/minimum-release-age/
+  // "Security updates bypass any minimumReleaseAge checks"
+  "schedule": ["before 10am on monday"],
+  "timezone": "UTC",
+
+  // --- Python (uv) ---
+  // The `packageRules` entries further below are genuinely Python-scoped
+  // (matchManagers: pep621, which carries uv.lock) and are no-ops here -- this
+  // repo has no Python manifest (measured 2026-09-26: no pyproject.toml,
+  // uv.lock or requirements*.txt tracked). Those apply only if one is ever
+  // added.
+  //
+  // The two keys immediately below are NOT Python-scoped: both are top-level
+  // and apply to every manager Renovate runs. This heading is presentational
+  // only. They are inert today because nothing here carries a version range
+  // or a lockfile -- not because they are limited to Python.
+
+  // Update lockfiles without widening declared version ranges (e.g. leaving
+  // pyproject.toml ranges untouched). Renovate detects uv.lock natively.
+  "rangeStrategy": "update-lockfile",
+
+  // Refresh uv.lock even when no direct dependency range changes.
+  // This is how Renovate keeps transitive dependencies current.
+  // Match the repo's Monday morning schedule explicitly; Renovate otherwise
+  // applies a separate lock-file-maintenance default schedule.
+  //
+  // Quarantine gap -- the 14-day `minimumReleaseAge` above does NOT cover what
+  // this refreshes (all measured 2026-09-26 against renovatebot/renovate@main):
+  //
+  //   * Renovate marks `lockFileMaintenance` unsupported for minimumReleaseAge
+  //     -- "Not possible, as we delegate to the package manager to perform the
+  //     required changes" (docs/usage/key-concepts/minimum-release-age.md:178),
+  //     and it "does not currently manage any transitive dependencies -- instead
+  //     leaving that to package managers and lockFileMaintenance" (ibid:293).
+  //   * So the quarantine cannot age-check these updates, and leaving the check
+  //     applied risks suppressing them outright rather than making them safer.
+  //     The packageRules below opt them out explicitly, mirroring Renovate's own
+  //     security:minimumReleaseAge* presets -- see the comment there.
+  //   * Closing the gap for real needs the package-manager side, which Renovate
+  //     wires up for npm (`--before=<date>`, ibid:83) and Poetry
+  //     (`POETRY_SOLVER_MIN_RELEASE_AGE`, ibid:97) but NOT for uv: that doc
+  //     never mentions uv, and lib/modules/manager/pep621/processors/uv.ts
+  //     (386 lines) has zero matches for minimumReleaseAge/exclude-newer.
+  //     Renovate's own advice is to set the check in the package manager too
+  //     (ibid:76). When a Python manifest lands here, set uv's `exclude-newer`
+  //     to get transitive quarantine:
+  //     https://docs.astral.sh/uv/reference/settings/#exclude-newer
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 10am on monday"]
+  },
+
+  // --- PR behavior ---
+
+  // Label every Renovate PR so it enters the Loom review queue.
+  //
+  // Without this, Renovate's PRs are bot-authored and unlabeled, and
+  // .loom/scripts/judge-fallback-guard.sh (lines 182-185) skips any external
+  // bot author permanently -- the fallback queue applies no labels, so such a
+  // PR can never leave it. The PRs would exist but nothing in the pipeline
+  // would ever review them, silently defeating the "automerge: false, humans
+  // review" posture this config is built around. This is the Renovate analog
+  // of the per-entry `labels:` that check-dependabot-labels.sh enforces for
+  // Dependabot (that check is a no-op here: no .github/dependabot.yml).
+  //
+  // Top-level `labels` applies to every PR Renovate opens; none of the
+  // packageRules below override it.
+  // Ref: https://docs.renovatebot.com/configuration-options/#labels
+  "labels": ["loom:review-requested"],
+
+  // Limit concurrent PRs to keep review queue manageable
+  "prConcurrentLimit": 5,
+
+  // Add release notes and changelogs to PR body for agent review.
+  //
+  // Spelled with the current option name. `fetchReleaseNotes` (used here until
+  // now) is not a live option: measured 2026-09-26, it is the only key in this
+  // file absent from Renovate's option registry (lib/config/options/index.ts),
+  // having been renamed to `fetchChangeLogs`. It still "works" -- migration
+  // rewrites it in memory, boolean `true` -> `'pr'` -- but silently, since
+  // `configMigration` defaults to false, so no migration PR is raised and a
+  // stale key can sit here indefinitely looking authoritative. Note `'pr'` is
+  // also `fetchChangeLogs`'s own default, so the old line was setting the
+  // default it would have had anyway; kept explicit because it is policy here.
+  // Ref: https://docs.renovatebot.com/configuration-options/#fetchchangelogs
+  "fetchChangeLogs": "pr",
+
+  // --- Package grouping ---
+
+  "packageRules": [
+    // --- Quarantine exemptions ---
+    //
+    // Renovate cannot age-check these four update-type groups: they carry no
+    // release timestamp, or the package manager performs the change. Its docs
+    // mark all six update types ❌ for minimumReleaseAge
+    // (docs/usage/key-concepts/minimum-release-age.md:175-182), and its own
+    // security:minimumReleaseAge* presets opt them out with
+    // `minimumReleaseAge: null` plus a PR-body warning, because applying the
+    // check to them "results in updates that will never come"
+    // (lib/config/presets/internal/security.preset.ts:37-82). Leaving the bare
+    // 14-day check applied to them therefore buys no safety and risks
+    // suppressing the updates entirely -- including the lockFileMaintenance run
+    // configured above, which is this repo's only transitive-dependency path.
+    //
+    // These mirror that preset datasource-agnostically: it adds
+    // matchDatasources per generated preset and pins 3 days, whereas this repo
+    // wants its own 14 days across every manager. Measured 2026-09-26 against
+    // renovatebot/renovate@main. The exemptions are deliberate and narrow --
+    // they widen nothing for ordinary major/minor/patch updates, which remain
+    // fully quarantined.
+    {
+      "description": "No quarantine for update types the package manager controls",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Lock file maintenance does not enforce this repo's 14-day quarantine -- Renovate delegates the change to the package manager. Transitive versions in this PR are NOT age-checked. uv has no Renovate-side release-age support; see renovate.json5 (`lockFileMaintenance`) for the gap and the uv-side `exclude-newer` fix."
+      ]
+    },
+    {
+      "description": "No quarantine for update types that carry no release timestamp",
+      "matchUpdateTypes": ["bump", "lockfileUpdate", "rollback"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate does not enforce minimumReleaseAge for `bump`, `lockfileUpdate` or `rollback` updates, so this PR was raised without the 14-day check. Validate the release age by hand."
+      ]
+    },
+    {
+      "description": "No quarantine for version/digest pinning",
+      "matchUpdateTypes": ["pin"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate's pin functionality does not yet wire in release age (renovatebot/renovate#40288), so the 14-day check was not applied. Validate the release age by hand."
+      ]
+    },
+    {
+      "description": "No quarantine for package replacements",
+      "matchUpdateTypes": ["replacement"],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "⚠️ Renovate's replacement functionality does not yet wire in release age (renovatebot/renovate#39400), so the 14-day check was not applied. Validate the release age by hand."
+      ]
+    },
+
+    // --- Grouping ---
+
+    // Group all non-major Python dependency updates into one PR.
+    //
+    // `pep621` is the manager, and it is sufficient: uv is not a manager but a
+    // *processor* under pep621 (lib/modules/manager/pep621/processors/uv.ts,
+    // `lockfileName = 'uv.lock'`), so pep621 is what matches pyproject.toml and
+    // carries uv.lock with it. The former `"uv"` entry here matched nothing.
+    // Measured 2026-09-26 against renovate 44.115.10: its manager list holds 117
+    // names including `pep621` and NOT `uv`; pep621's managerFilePatterns is
+    // `/(^|/)pyproject\.toml$/`. Worth knowing that this was silent -- 44.x does
+    // not validate manager names at all (a rule naming
+    // `totally-bogus-manager` yields zero errors and zero warnings), whereas
+    // renovate 37.x rejected `uv` outright: "You have included an unsupported
+    // manager in a package rule." Revisit if uv is ever promoted to a manager.
+    {
+      "groupName": "python minor/patch dependencies",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+
+    // Group all GitHub Actions SHA updates into one PR
+    // (SHA-pinning policy carried from the noc0dev template — this repo's
+    // own AGENTS.md has no such mandate; measured 2026-09-22)
+    // Renovate preserves inline version comments (# vX.Y.Z) natively when updating digests
+    {
+      "groupName": "github-actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"]
+    }
+
+    // Major updates get individual PRs -- deliberately with no rule here.
+    // Ungrouped-and-individual is already Renovate's default, and the two
+    // entries removed from this list (pep621 majors, github-actions majors)
+    // were not merely redundant, they were unreachable: each contained nothing
+    // but selectors, and massageConfig() *deletes* such rules before validation
+    // or lookup ever sees them --
+    //   newRules.filter(rule => !Object.keys(rule).every(
+    //     k => k.startsWith('match') || k.startsWith('exclude')))
+    // (lib/config/massage.ts). Measured against renovate 44.115.10 by feeding
+    // this file's own former rule list through massageConfig: 3 rules in, 1 out,
+    // both selectors-only rules dropped. Removed 2026-09-26; majors still get
+    // their own PRs, by Renovate's default rather than by a rule Renovate throws
+    // away.
+    //
+    // Note for anyone re-deriving this from validation.ts: that file does carry
+    // "Each packageRule must contain at least one non-match* or non-exclude*
+    // field", which reads like the consequence here -- but it is unreachable for
+    // a selectors-only rule, because massageConfig runs first and removes the
+    // rule. Measured: `renovate-config-validator --no-global` on the pre-fix file
+    // reports zero warnings and zero errors for those two rules; the only thing
+    // it flagged was the fetchReleaseNotes migration handled above.
+
+    // Note: security/vulnerability PRs bypass both schedule and
+    // minimumReleaseAge by default (Renovate built-in behavior).
+    // Ref: https://docs.renovatebot.com/key-concepts/minimum-release-age/
+    // No packageRule needed — vulnerabilityAlerts config below handles it.
+  ],
+
+  // --- Ignored paths ---
+
+  // Don't touch vendored dependencies (submodules)
+  "ignorePaths": [
+    "vendor/**",
+    ".claude/**",
+    "infra/pulumi/**"
+  ],
+
+  // --- Vulnerability alerts ---
+
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
+}
