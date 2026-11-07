@@ -1,0 +1,36 @@
+{
+  "counts": {
+    "matched/noise": {
+      "expected": 15,
+      "valid": 15
+    },
+    "matched/sp_band": {
+      "expected": 15,
+      "valid": 15
+    },
+    "matched/sp_stab": {
+      "expected": 15,
+      "valid": 15
+    }
+  },
+  "coverage": "complete",
+  "disclosures": [
+    "NF290 is the maximum over a discrete frequency grid (the same grid for every variant; see the row's sampling text); a peak narrower than the grid spacing can be missed, so this is not continuous-band coverage. Records produced before issue #134 are three-point (lo/mid/hi) and are not comparable as full-grid results.",
+    "ngspice sp-analysis port NF / NFmin (nf_sp_db_*, nfmin_sp_db_*) are distinct from the ratified T0 = 290 K value (nf290_db_*); only nf290_db_worst is compared with the NF target.",
+    "DC bias current and DC power are NOT measured by these three requests; the Power and bias rows are not covered.",
+    "Two-tone IIP3 is NOT measured by these three requests; the IIP3 row is not covered.",
+    "Supply (VDD) and band are configured bench conditions, not independently measured compliance results.",
+    "Comparisons describe sampled bench results only (the `ideal` variant is the frozen UNMATCHED pre-#27 DUT with ideal passives; `matched` is the committed design/netlist/lna.spice with its modelled finite-Q passives). A numeric pass does not establish matched physical performance, complete spec compliance, signoff, or T1 item 5.",
+    "No missing observable is inferred from another campaign or DUT."
+  ],
+  "expected_cells_per_analysis": 15,
+  "grid": "full",
+  "ideal_rows": null,
+  "issues": [],
+  "matched_rows": null,
+  "nf290_grid": "noise lin 11 pts 2.4..2.4835 GHz (8.35 MHz spacing); sampled maximum, not a continuous-band bound -- a peak narrower than the spacing can be missed",
+  "nf290_npts": 11,
+  "requested_variants": [
+    "matched"
+  ]
+}

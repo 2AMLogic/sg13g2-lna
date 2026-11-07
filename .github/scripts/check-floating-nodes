@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Floating-node guard for design/netlist/lna.spice (issue #258).
+
+Fails if any net has no DC path to vss, vdd, ground (0) or a subcircuit port
+through non-capacitor elements. A net touched only by capacitors is singular
+at DC (ngspice: "singular matrix: check node ...").
+
+Model: union all pins of every non-capacitor element (R, L, V, I, D, X, M, Q,
+...; subcircuit/device instances are treated as conducting between all their
+pins, a deliberately conservative, optimistic-for-the-circuit simplification
+that can only miss a floating gate, never flag a connected net). Capacitor
+elements (names starting with C) do NOT join nets. Roots are vss, vdd, 0 and
+the ports named by the `**.subckt` line. A net in a component with no root is
+reported.
+
+Exit: 0 ok, 1 floating net(s) found (named), 2 usage/unreadable input.
+Usage: check-floating-nodes [--netlist FILE] [--root DIR]
+Stdlib only. Read-only.
+"""
+import argparse
+import os
+import re
+import sys
+
+SUBCKT_RE = re.compile(r"^\*\*\.subckt\s+\S+\s+(.*)$")
+ROOTS = {"vss", "vdd", "0", "gnd"}
+
+
+def parse(text):
+    ports = set()
+    parent = {}
+    nets_seen = set()
+
+    def find(a):
+        parent.setdefault(a, a)
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    def union(a, b):
+        parent[find(a)] = find(b)
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        m = SUBCKT_RE.match(line)
+        if m:
+            ports.update(p.lower() for p in m.group(1).split())
+            continue
+        if not line or line[0] in "*.+":
+            continue
+        toks = line.split()
+        name = toks[0]
+        kind = name[0].upper()
+        if kind in "RLVIC":
+            nodes = [t.lower() for t in toks[1:3]]
+        else:
+            # X/M/Q/D...: nodes are the tokens before the model/param.
+            nodes = [t.lower() for t in toks[1:] if "=" not in t]
+            if kind == "X" and nodes:
+                nodes = nodes[:-1]  # last bare token is the subckt/model name
+        for n in nodes:
+            nets_seen.add(n)
+            find(n)
+        if kind != "C":
+            for n in nodes[1:]:
+                union(nodes[0], n)
+    roots = ROOTS | ports
+    for r in roots:
+        find(r)
+    rootset = {find(r) for r in roots}
+    return sorted(n for n in nets_seen if find(n) not in rootset)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default=None)
+    ap.add_argument("--netlist", default=None)
+    a = ap.parse_args()
+    root = a.root or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+    path = a.netlist or os.path.join(root, "design", "netlist", "lna.spice")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError as e:
+        print(f"check-floating-nodes: cannot read {path}: {e}", file=sys.stderr)
+        return 2
+    bad = parse(text)
+    if bad:
+        print(f"check-floating-nodes: FAIL -- no DC path to vss/vdd/port: {', '.join(bad)}")
+        return 1
+    print("check-floating-nodes: OK -- every net has a DC path to vss/vdd/a port")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
