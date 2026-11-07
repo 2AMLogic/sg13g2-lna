@@ -2060,6 +2060,118 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_variant.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "a fleet runner image that supports it, or a local ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-xout-bleed-20261106",
+      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "records": [
+        {
+          "corners": {
+            "files": 146,
+            "git_blob_digest": "sha256:daa0c862cb39a5ad952604bb76e3131254c557176ae3048cc4820e080b280074"
+          },
+          "id": "20261106-054735-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:700413ccf966d95e9077adb06af21b7a174adf6ca6b3b142f5ab25434c19be30"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-054735-64b37ae-compare.csv",
+            "sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv",
+            "sim/lna-characterization/records/20261106-054735-64b37ae.md",
+            "sim/lna-characterization/records/20261106-054735-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 97,
+            "git_blob_digest": "sha256:c6657ee4aa40885391cb804b9f6def56eb165f5979706a08d1dd3ddcc4d30297"
+          },
+          "id": "20261106-055142-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:1b69855bf215a2b556a36b52f9f9efeab06ff0af32756a8b3393b7ecb5fe08a3"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-055142-64b37ae-compare.csv",
+            "sim/lna-characterization/records/20261106-055142-64b37ae-summary.csv",
+            "sim/lna-characterization/records/20261106-055142-64b37ae.md",
+            "sim/lna-characterization/records/20261106-055142-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 2,
+            "git_blob_digest": "sha256:bde93d1a194e1d7625510aff9eeefa194d162cbb27859e6dcd8343efffd95b14"
+          },
+          "id": "20261106-055453-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:98dde66047550ed41d5771718bbe57958e2e99f23b47dab3cef777d0a352e455"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-055453-64b37ae.md",
+            "sim/lna-characterization/records/20261106-055453-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-258-xout-bleed-convergence",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md"
+          ]
+        }
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_variant.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -2133,7 +2245,7 @@
   },
   "files": {
     "README.md": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e",
-    "design/netlist/lna.spice": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
+    "design/netlist/lna.spice": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
     "sim/README.md": "sha256:5b4701705b3a901e7da5b9f7293e80a55ff5bbef3f72ef377b3a9326707dc0d7",
@@ -2217,7 +2329,7 @@
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
     "sim/lna-characterization/README.md": "sha256:66ab269999a7377d62513e95368cba943604f0412433af7486c8e83520f007ba",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:96234f8b0eed30e27a94ac3e98aa7ec389c5e4c258d4ec67d3bfc4184f9fab2f",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:8cdf6a3ba8382c669a31ae94ccebd946c6fae4f4a67987e77a449e1d2bff2e91",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
@@ -2247,9 +2359,20 @@
     "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv": "sha256:a33934c2334885794af0e500eceddb9ffe8d8c293e2aefaf2912c913fa8dcda9",
     "sim/lna-characterization/records/20261101-023246-5bbb70c.md": "sha256:cc21576f4511209afc5fc7e6248da1fa77dfd56fd16541698170e58992fd6bfb",
     "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261106-054735-64b37ae-compare.csv": "sha256:8ca88acd25aa1b305013585568cab22f098793a6f5dff2d058b96ba4da859e60",
+    "sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv": "sha256:4b353969fb30506966101090b7cba92964f7d9e1cbafdd7c0fc8c8314a6fd53f",
+    "sim/lna-characterization/records/20261106-054735-64b37ae.md": "sha256:bbfc56fb05406b175eb83cf2c17f44bdd03b6168f54a2da97e45607aec87992f",
+    "sim/lna-characterization/records/20261106-054735-64b37ae.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261106-055142-64b37ae-compare.csv": "sha256:8ca88acd25aa1b305013585568cab22f098793a6f5dff2d058b96ba4da859e60",
+    "sim/lna-characterization/records/20261106-055142-64b37ae-summary.csv": "sha256:77cf3041f86ea3227e177a79e797216c75c5abef634d7ee55cb692c396ae870b",
+    "sim/lna-characterization/records/20261106-055142-64b37ae.md": "sha256:a4cef7376436cecafdf77048607c7343d73908ff7ada1387056aa9dba1ef2b1a",
+    "sim/lna-characterization/records/20261106-055142-64b37ae.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261106-055453-64b37ae.md": "sha256:16ea84b6644f5b0728db1220f0bbd32a415a31d60f5fa0c51d55ad9d9fb68353",
+    "sim/lna-characterization/records/20261106-055453-64b37ae.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:d1c984551ddb0c52b147f4bf7d6b070f3125d9d431c38a7e456880b2629f049b",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:0cf4b54af1b0ef4c90703e2b0663d3ddad1f267dfe3bab4397bb3dc69869d24e",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:bf9fc14c140e3074f3f74a45eec4ef7cf26ab557f263b9db3ecef921e3c2123d",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",

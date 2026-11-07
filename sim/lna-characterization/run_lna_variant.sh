@@ -25,6 +25,9 @@
 #   LNA_VARIANTS=a,b,c    subset of variants (default: all)
 #   LNA_NF_NPTS=<n>       points of the 290 K NF sweep (odd, >= 11; default 11 =
 #                         the S-parameter grid); identical for every variant.
+#   LNA_TEMPS=125         temperature slice (comma list from -40,27,125; issue #258) so
+#                         no single request nears the batch job ceiling. A slice is a
+#                         partial grid: its record covers only those temperatures.
 #   LNA_VARIANT_SMOKE=1   single nominal cell per request (plumbing check only;
 #                         NOT a PVT campaign -- do not commit as evidence)
 #   LNA_VARIANT_BACKEND=  override the klt backend (default: whatever klt picks,
@@ -85,6 +88,7 @@ NF_NPTS="${LNA_NF_NPTS:-11}"
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
 [[ -n "${LNA_VARIANTS:-}" ]] && GEN_ARGS+=(--variants "${LNA_VARIANTS}")
 [[ -n "${LNA_VARIANT_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_variant.sh: LNA_VARIANT_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }
+[[ -n "${LNA_TEMPS:-}" ]] && GEN_ARGS+=("--temps=${LNA_TEMPS}")
 python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen "${GEN_ARGS[@]}"
 
 KLT_ARGS=(--format json)
@@ -122,6 +126,7 @@ SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}" --nf-npts "${NF_NPTS}"
   --coverage-json "${CORNERS_OUT}/coverage.json")
 [[ -n "${LNA_VARIANTS:-}" ]] && SUMMARIZE_ARGS+=(--variants "${LNA_VARIANTS}")
 [[ -n "${LNA_VARIANT_SMOKE:-}" ]] && SUMMARIZE_ARGS+=(--grid smoke)
+[[ -n "${LNA_TEMPS:-}" ]] && SUMMARIZE_ARGS+=("--temps=${LNA_TEMPS}")
 # Reduction failure (incomplete/failed/duplicate/non-finite coverage) is NOT
 # masked: diagnostics, logs, reports and the record below are still written,
 # then the script exits nonzero at the end.

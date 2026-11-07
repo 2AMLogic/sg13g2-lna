@@ -776,8 +776,24 @@ def _issue_text(i):
     return " ".join(parts)
 
 
+def apply_temps(spec: str) -> None:
+    """Restrict the campaign to a temperature slice (issue #258): request() and
+    expected_grid() both read TEMPS, so gen and summarize stay in agreement as
+    long as they are given the same --temps. Empty spec = all of TEMPS."""
+    global TEMPS
+    if not spec:
+        return
+    want = [int(t) for t in spec.split(",") if t]
+    bad = [t for t in want if t not in TEMPS]
+    if bad or not want:
+        raise SystemExit(f"--temps must be a comma list drawn from {TEMPS} (got {spec!r})")
+    TEMPS = [t for t in TEMPS if t in want]
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    temps_help = ("temperature slice, e.g. --temps=125 (default: all of -40,27,125). Pass the same "
+                  "value to gen and summarize; a slice is a partial grid, not a PVT campaign")
     sub = p.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("gen")
     g.add_argument("--outdir", required=True)
@@ -786,6 +802,7 @@ def main():
     g.add_argument("--backend", default="")
     g.add_argument("--nf-npts", type=int, default=N_NF,
                    help=f"points of the 290 K NF sweep (odd, >= {N_BAND}); default {N_NF}")
+    g.add_argument("--temps", default="", help=temps_help)
     g.set_defaults(fn=cmd_gen)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
@@ -799,8 +816,10 @@ def main():
                    help="NF grid the reports were generated with (must match gen)")
     s.add_argument("--variants", default="",
                    help="comma list of variants that must be complete (default: ideal + any present)")
+    s.add_argument("--temps", default="", help=temps_help)
     s.set_defaults(fn=cmd_summarize)
     a = p.parse_args()
+    apply_temps(a.temps)
     sys.exit(a.fn(a) or 0)
 
 
