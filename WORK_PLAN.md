@@ -30,6 +30,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
+- **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever)
 - **#258**: design: give the output-match node xout a DC path and re-run the matched DUT's 125 C cells
 
 ## PRs Awaiting Review
@@ -73,7 +74,7 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 8 |
