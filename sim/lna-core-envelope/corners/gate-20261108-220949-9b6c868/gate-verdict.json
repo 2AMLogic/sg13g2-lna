@@ -1,0 +1,42 @@
+{
+  "client_klt_version": "klt 0.9.0",
+  "gate_record_id": "gate-20261108-220949-9b6c868",
+  "jobs": {
+    "gate__s_fixi_a80__ideal__noise": {
+      "instance_type": "m6i.4xlarge",
+      "job_id": "klt-sim-8be654ae6448",
+      "runner_klt_version": "0.9.0",
+      "state": "done"
+    },
+    "gate__s_fixi_a80__ideal__op": {
+      "instance_type": "m7i.4xlarge",
+      "job_id": "klt-sim-cbf5a9be5c43",
+      "runner_klt_version": "0.9.0",
+      "state": "done"
+    },
+    "gate__s_fixi_a80__ideal__sp_band": {
+      "instance_type": "m7i.4xlarge",
+      "job_id": "klt-sim-cf58480bc1dc",
+      "runner_klt_version": "0.9.0",
+      "state": "done"
+    },
+    "gate__s_fixi_a80__ideal__sp_stab": {
+      "instance_type": "m7i.4xlarge",
+      "job_id": "klt-sim-69cbba7fd695",
+      "runner_klt_version": "0.9.0",
+      "state": "done"
+    },
+    "gate__s_fixi_a80__lc_em__sp_band": {
+      "instance_type": "m7i.4xlarge",
+      "job_id": "klt-sim-e48e652dc77d",
+      "runner_klt_version": "0.9.0",
+      "state": "done"
+    }
+  },
+  "pass": true,
+  "pdk_pin": "v0.3.0",
+  "problems": [],
+  "provenance": "live",
+  "schema": "core-envelope-gate/2",
+  "scope": "plumbing only: one nominal cell per analysis; says nothing about the 45-cell specification or NF performance"
+}

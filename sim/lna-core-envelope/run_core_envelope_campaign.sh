@@ -55,6 +55,10 @@ if [[ "${BACKEND}" != "batch" ]]; then
   exit 3
 fi
 
+# The batch fleet is vCPU-budgeted; wait with backoff for capacity instead of
+# failing the step on batch_no_capacity (host rule). Never falls back to local.
+CAPACITY_WAIT="${CORE_ENV_CAPACITY_WAIT_S:-600}"
+
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
 python3 -I "${GEN}" check-client "${KLT_VERSION}" || exit 3
 
@@ -86,7 +90,7 @@ for req in "${SNAP}"/*.request.json; do
   errlog="${CORNERS}/${stem}.stderr.log"
   echo "run_core_envelope_campaign.sh: klt sim ${stem}"
   rc=0
-  klt sim "${req}" -o "${CORNERS}/${stem}.artifacts" --backend batch --format json > "${report}" 2> "${errlog}" || rc=$?
+  klt sim "${req}" -o "${CORNERS}/${stem}.artifacts" --backend batch --wait-for-capacity "${CAPACITY_WAIT}" --format json > "${report}" 2> "${errlog}" || rc=$?
   if (( rc != 0 )); then
     echo "run_core_envelope_campaign.sh: ${stem} exited ${rc} (see ${errlog}); STOPPING. Nothing is published; no local fallback." >&2
     echo "${stem}: rc=${rc}" >> "${CORNERS}/STOPPED"
