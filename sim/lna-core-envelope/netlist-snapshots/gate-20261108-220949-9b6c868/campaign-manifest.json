@@ -1,0 +1,331 @@
+{
+  "backend_field": "batch",
+  "design_netlist_sha256": "23f9445b01dbec997a2247e40deb6fcaf09b4c2a4a3301c0aae2d37ad27768d1",
+  "divider": {
+    "points": {
+      "d0": [
+        1000,
+        11000
+      ],
+      "dm1": [
+        1250,
+        10750
+      ],
+      "dm2": [
+        1500,
+        10500
+      ],
+      "dm3": [
+        1750,
+        10250
+      ],
+      "dp1": [
+        750,
+        11250
+      ],
+      "dp2": [
+        500,
+        11500
+      ],
+      "dp3": [
+        250,
+        11750
+      ]
+    },
+    "r2a_base_ohm": 1000,
+    "step_ohm": 250,
+    "sum_ohm": 12000
+  },
+  "em_model_sha256": "6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
+  "generator_sha256": "aa3278d55fde36aa6de33dbf76e1844bb94c0b82d918aa77a4c220cc06de70a4",
+  "git_sha": "9b6c868",
+  "grid": {
+    "labels": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "n_cells": 45,
+    "temps_c": [
+      -40,
+      27,
+      125
+    ],
+    "vdds_v": [
+      1.62,
+      1.8,
+      1.98
+    ]
+  },
+  "hot_cells": [
+    [
+      "wcs",
+      125.0,
+      1.62
+    ],
+    [
+      "typ",
+      125.0,
+      1.8
+    ],
+    [
+      "bcs",
+      125.0,
+      1.98
+    ]
+  ],
+  "issue": 58,
+  "loss_cases": {
+    "ideal": {
+      "desc": "ideal Le and Lc (as committed)",
+      "lc": "ideal",
+      "le_q": null
+    },
+    "lc_em": {
+      "desc": "Lc = EM-extracted 5-turn model; Le ideal",
+      "lc": "em",
+      "le_q": null
+    },
+    "le_q10": {
+      "desc": "Le + series R, Q=10 at 2.44175 GHz (bracket); Lc ideal",
+      "lc": "ideal",
+      "le_q": 10
+    },
+    "le_q20": {
+      "desc": "Le + series R, Q=20 at 2.44175 GHz (bracket); Lc ideal",
+      "lc": "ideal",
+      "le_q": 20
+    },
+    "le_q5": {
+      "desc": "Le + series R, Q=5 at 2.44175 GHz (bracket); Lc ideal",
+      "lc": "ideal",
+      "le_q": 5
+    }
+  },
+  "min_klt_version": "0.7.0",
+  "note": "Generated requests only. Contains no measured result; a record of results exists only once reports are collected under corners/<record-id>/ and reduced.",
+  "pdk_pin": "v0.3.0",
+  "record_id": "gate-20261108-220949-9b6c868",
+  "requests": [
+    {
+      "analysis": "op",
+      "case": "gate__s_fixi_a80__ideal",
+      "divider_k": 0,
+      "divider_ohm": [
+        1000,
+        11000
+      ],
+      "expected_cells": [
+        [
+          "typ",
+          27.0,
+          1.8
+        ]
+      ],
+      "expected_measurements": [
+        "ic1",
+        "ic2",
+        "ib1",
+        "ib2",
+        "vb2",
+        "vce1",
+        "vce2",
+        "vbe1",
+        "vbe2",
+        "vbc1",
+        "vbc2",
+        "idd",
+        "pdc"
+      ],
+      "kind": "gate",
+      "loss": "ideal",
+      "netlist": "gate__s_fixi_a80__ideal__op.spice",
+      "netlist_sha256": "99c4c905f72c90b06df93e6948fd37b9db5db8f0559d41aa1b2167255b227d4c",
+      "request": "gate__s_fixi_a80__ideal__op.request.json",
+      "request_sha256": "ffa3730f931e4d7e18df23b5d4552a2014b629d333f30047a123b0819c35b02f",
+      "sizing": "s_fixi_a80",
+      "stem": "gate__s_fixi_a80__ideal__op"
+    },
+    {
+      "analysis": "sp_band",
+      "case": "gate__s_fixi_a80__ideal",
+      "divider_k": 0,
+      "divider_ohm": [
+        1000,
+        11000
+      ],
+      "expected_cells": [
+        [
+          "typ",
+          27.0,
+          1.8
+        ]
+      ],
+      "expected_measurements": [
+        "s21_db_mid",
+        "s21_db_min",
+        "s21_db_max",
+        "s11_db_mid",
+        "s11_db_worst",
+        "s22_db_mid",
+        "s22_db_worst",
+        "s12_db_mid",
+        "mu_band_min",
+        "k_band_min",
+        "nf_sp_db_mid",
+        "nf_sp_db_worst",
+        "nfmin_sp_db_mid",
+        "nfmin_sp_db_lo",
+        "nfmin_sp_db_worst",
+        "cin_ff_mid"
+      ],
+      "kind": "gate",
+      "loss": "ideal",
+      "netlist": "gate__s_fixi_a80__ideal__sp_band.spice",
+      "netlist_sha256": "bbf5da0ff94c254250a54baa7ef3c939caf55f8d5523bc28b8b493aab67e2ae0",
+      "request": "gate__s_fixi_a80__ideal__sp_band.request.json",
+      "request_sha256": "24419c928407a9a7f3454008572779a0da1f1f59d91c6bad183fb13a38342112",
+      "sizing": "s_fixi_a80",
+      "stem": "gate__s_fixi_a80__ideal__sp_band"
+    },
+    {
+      "analysis": "sp_stab",
+      "case": "gate__s_fixi_a80__ideal",
+      "divider_k": 0,
+      "divider_ohm": [
+        1000,
+        11000
+      ],
+      "expected_cells": [
+        [
+          "typ",
+          27.0,
+          1.8
+        ]
+      ],
+      "expected_measurements": [
+        "mu_min",
+        "n_mu_lt1",
+        "f_mu_lt1_lo_hz",
+        "f_mu_lt1_hi_hz",
+        "k_min",
+        "n_k_lt1",
+        "s11_mag_max",
+        "s22_mag_max",
+        "n_s22_gt1",
+        "s11_mag_gt1_n",
+        "n_pts"
+      ],
+      "kind": "gate",
+      "loss": "ideal",
+      "netlist": "gate__s_fixi_a80__ideal__sp_stab.spice",
+      "netlist_sha256": "e34872f2daccebb04b97ba486f7cc27db7ba9615fe4c5a634a249e32023169fc",
+      "request": "gate__s_fixi_a80__ideal__sp_stab.request.json",
+      "request_sha256": "fd721555c4c769d39ca506969509be9d0bae4418456714bb6eef6dce4d45b366",
+      "sizing": "s_fixi_a80",
+      "stem": "gate__s_fixi_a80__ideal__sp_stab"
+    },
+    {
+      "analysis": "noise",
+      "case": "gate__s_fixi_a80__ideal",
+      "divider_k": 0,
+      "divider_ohm": [
+        1000,
+        11000
+      ],
+      "expected_cells": [
+        [
+          "typ",
+          27.0,
+          1.8
+        ]
+      ],
+      "expected_measurements": [
+        "nf290_db_lo",
+        "nf290_db_mid",
+        "nf290_db_hi",
+        "nf290_db_worst",
+        "nf290_db_f00",
+        "nf290_db_f01",
+        "nf290_db_f02",
+        "nf290_db_f03",
+        "nf290_db_f04",
+        "nf290_db_f05",
+        "nf290_db_f06",
+        "nf290_db_f07",
+        "nf290_db_f08",
+        "nf290_db_f09",
+        "nf290_db_f10"
+      ],
+      "kind": "gate",
+      "loss": "ideal",
+      "netlist": "gate__s_fixi_a80__ideal__noise.spice",
+      "netlist_sha256": "f2558bd17c112062f2745705eeffe81019154524c04bb5ceb60be2662c561a78",
+      "request": "gate__s_fixi_a80__ideal__noise.request.json",
+      "request_sha256": "7e49b0f39699f8c3c1c2e96e144b6568176e0a29b62e31a1d8d338fb0fad5a4d",
+      "sizing": "s_fixi_a80",
+      "stem": "gate__s_fixi_a80__ideal__noise"
+    },
+    {
+      "analysis": "sp_band",
+      "case": "gate__s_fixi_a80__lc_em",
+      "divider_k": 0,
+      "divider_ohm": [
+        1000,
+        11000
+      ],
+      "expected_cells": [
+        [
+          "typ",
+          27.0,
+          1.8
+        ]
+      ],
+      "expected_measurements": [
+        "s21_db_mid",
+        "s21_db_min",
+        "s21_db_max",
+        "s11_db_mid",
+        "s11_db_worst",
+        "s22_db_mid",
+        "s22_db_worst",
+        "s12_db_mid",
+        "mu_band_min",
+        "k_band_min",
+        "nf_sp_db_mid",
+        "nf_sp_db_worst",
+        "nfmin_sp_db_mid",
+        "nfmin_sp_db_lo",
+        "nfmin_sp_db_worst",
+        "cin_ff_mid"
+      ],
+      "kind": "gate",
+      "loss": "lc_em",
+      "netlist": "gate__s_fixi_a80__lc_em__sp_band.spice",
+      "netlist_sha256": "e4614e27530bb001f464be1293e25980dc2bd532cc216e2af128a05d1377f359",
+      "request": "gate__s_fixi_a80__lc_em__sp_band.request.json",
+      "request_sha256": "34af9b2509d3e4284dd398af980a41feecdf4fd22680c8abca41ee998de839cd",
+      "sizing": "s_fixi_a80",
+      "stem": "gate__s_fixi_a80__lc_em__sp_band"
+    }
+  ],
+  "schema": "core-envelope-campaign/1",
+  "set": "gate",
+  "sizing": {
+    "s_ctrl_a8": {
+      "desc": "committed core (control): Nx=8, XMis w=512u, no edit",
+      "m": null,
+      "nx": null,
+      "xmis_w_um": null
+    },
+    "s_fixi_a80": {
+      "desc": "larger emitter array: RF cascode pair Nx=10 m=8, XMis w=51.2u",
+      "m": 8,
+      "nx": 10,
+      "xmis_w_um": "51.2"
+    }
+  },
+  "status": "request-set-not-run"
+}

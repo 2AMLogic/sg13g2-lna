@@ -1261,6 +1261,18 @@
             "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv",
             "sim/lna-core-envelope/records/20260926-180931-90b07a0.md"
           ]
+        },
+        {
+          "corners": {
+            "files": 31,
+            "git_blob_digest": "sha256:2ab8b27061ec7af0e31412764249e606ca3b9b8d756b3b736ab64f18f90d5c5d"
+          },
+          "id": "gate-20261108-220949-9b6c868",
+          "netlist_snapshots": {
+            "files": 11,
+            "git_blob_digest": "sha256:df7a5ce43d2dd2dee308efeec6adcd12a6308baeccf2003e7574750462815fd6"
+          },
+          "published_files": []
         }
       ],
       "reducers": [
@@ -2270,7 +2282,7 @@
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.md": "sha256:7dba629237229d55e65f75c6d0aa4498105bb35f44842e21d83660b745e67984",
     "sim/lna-core-envelope/reduce_core_envelope_campaign.py": "sha256:06f81970f09d5fe6e90a25ae2f4186b4fc6ff54a1efcbf236def6ef52d7e2b10",
     "sim/lna-core-envelope/run_core_envelope.sh": "sha256:3eb1f42fa2b1b4b88110b3e680a8821d6fddb27c1b383c6263cb0514e2fba9af",
-    "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:aa26d36ee3fb0e490055379b1bf4dfce47de7d3e5dd4ca662e4fa02914b6f484",
+    "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:efadc0f1fba50b5504859055bc454ed69b73d52a045eb1dd712ee982ab961c9c",
     "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl": "sha256:f789ab2988ff9c305a9a2d7e4d1aefd2c28061ad13e3b821b720b65f007579f7",
     "sim/lna-core-envelope/tests/check_envelope_replay.py": "sha256:58e1bb2a2ec5881d40bce9866c68ff5f7bd7152f15012f5561dfff53ffe652e9",
     "sim/lna-core-envelope/tests/synthetic_reports.py": "sha256:3659ece5d83a95a4834ec08ee5b03b03a292bc27b0b8b0cd99f29ba0c3035427",

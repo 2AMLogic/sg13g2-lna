@@ -939,7 +939,8 @@
       "id": "core-envelope-20260926-180931-90b07a0",
       "limitations": "Every variant except the control is a probe: nothing under design/ changes because of it. Not a target-spec conformance claim.",
       "record_ids": [
-        "20260926-180931-90b07a0"
+        "20260926-180931-90b07a0",
+        "gate-20261108-220949-9b6c868"
       ],
       "reducers": [
         "sim/lna-core-envelope/parse_core_envelope.py",
