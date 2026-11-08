@@ -1,5 +1,9 @@
 # Work Log
 
+### 2026-11-08
+
+- **PR #263**: sim: wait for batch capacity in core-envelope runner; record passing fleet gate (#58)
+
 ### 2026-11-06
 
 - **Issue #255** (closed): Simplify: 8 inline importlib loaders replaced a one-line sha256 helper (+34 net LOC)
