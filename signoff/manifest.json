@@ -4,7 +4,7 @@
   "evidence": {
     "1": {
       "file": "signoff/attest/item1.envelope.json",
-      "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787"
+      "content_hash": "sha256:1b4d4b3080f37c1e7cd9099552f4413ae135007618ab08f3945d2fe1f20f4a4e"
     },
     "4": {
       "file": "layout/lna_core/lvs_full_report.json",
@@ -12,7 +12,7 @@
     },
     "9": {
       "file": "signoff/attest/item9.envelope.json",
-      "content_hash": "sha256:66b524e4637380d8c0b443b519fc0590f120a944a913e803742d3bc518fac57b"
+      "content_hash": "sha256:45a6e2e9553f3e9505f0ebed9181470babef03a31eb931573150719872544a76"
     },
     "10": {
       "file": "signoff/attest/item10.envelope.json",

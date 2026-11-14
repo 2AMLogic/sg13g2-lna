@@ -30,8 +30,17 @@ set -euo pipefail
 LAYOUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${LAYOUT_DIR}/.." && pwd)"
 CELL_DIR="${LAYOUT_DIR}/lna_core"
-KLT_RELEASE="0.8.0"
-read -r -a KLT_CMD <<< "${KLT:-uvx --isolated --from klayout-tools==${KLT_RELEASE} klt}"
+KLT_RELEASE="0.9.2"
+# klayout: klayout-tools requires `klayout` without an upper bound, so a bare
+# uvx resolve takes whatever is newest on PyPI. That silently drifts off the
+# version klt itself declares as klayout_version_expected (0.30.12 at 0.9.2,
+# while PyPI already carries 0.30.13), which would publish evidence whose own
+# klt_version.json records actual != expected -- and klt warns that deck
+# content_hash and coverage counts move with the engine. Pin it so a rerun is
+# reproducible; bump it when klt's expected version moves. Upstream gap:
+# klayout-tools#5601 (a released pin cannot reach a reproducible engine).
+KLAYOUT_PIN="0.30.12"
+read -r -a KLT_CMD <<< "${KLT:-uvx --isolated --from klayout-tools==${KLT_RELEASE} --with klayout==${KLAYOUT_PIN} klt}"
 PYTHON="${PYTHON:-python3}"
 NX_ARGS=()
 if [[ -n "${NX:-}" ]]; then NX_ARGS=(--nx "${NX}"); fi
