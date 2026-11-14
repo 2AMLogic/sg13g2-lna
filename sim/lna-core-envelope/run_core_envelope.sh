@@ -219,8 +219,29 @@ DUT_RENDERED="${SCRATCH}/dut_rendered.spice"
 
 sed -e 's|^\*\*\.subckt|.subckt|' -e 's|^\*\*\.ends|.ends|' -e '/^\.end$/d' \
     "${DESIGN_NETLIST}" > "${DUT1_BASE}"
+DUT1_BASE_LINES="$(wc -l < "${DUT1_BASE}")"
+# Base-input precondition (issue #277): the per-variant substitutions in
+# render_dut are full-line matches against exact spellings in THIS recovered
+# text. Validate every anchor once, up front, so a wrong base input reports
+# itself as an environment problem (exit 3) instead of surfacing later as a
+# per-variant failure (exit 4) that blames the first variant in the table.
+missing_anchor() {  # <anchor-name> <expected exact line>
+  local name="$1" want="$2" got=""
+  got="$(grep -h "^${name}" "${DUT1_BASE}" | head -1 || true)"
+  echo "run_core_envelope.sh: base netlist ${DESIGN_NETLIST} (sha256 ${DESIGN_NETLIST_SHA}) is missing the '${name}' anchor line the variant substitutions require." >&2
+  echo "  expected (${name}): ${want}" >&2
+  echo "  found   (${name}): ${got:-<no ${name} line>}" >&2
+  echo "  checked in the recovered base text: ${DUT1_BASE} (${DUT1_BASE_LINES} lines)" >&2
+  exit 3
+}
 grep -q '^\.subckt lna ' "${DUT1_BASE}" || {
   echo "run_core_envelope.sh: could not recover '.subckt lna ...' from ${DESIGN_NETLIST}" >&2; exit 3; }
+grep -q '^XQ2 outn vb2 casc vss npn13G2 Nx=8$' "${DUT1_BASE}" \
+  || missing_anchor XQ2 'XQ2 outn vb2 casc vss npn13G2 Nx=8'
+grep -q '^XQ1 casc b1 e1 vss npn13G2 Nx=8$' "${DUT1_BASE}" \
+  || missing_anchor XQ1 'XQ1 casc b1 e1 vss npn13G2 Nx=8'
+grep -q '^XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1$' "${DUT1_BASE}" \
+  || missing_anchor XMis 'XMis bref gsvo vdd vdd sg13_hv_pmos w=512u l=1u ng=1 m=1'
 
 # --- PVT grid (identical to sim/lna-characterization/) ------------------
 CORNER_LABELS=(typ bcs wcs sf fs)
@@ -332,10 +353,19 @@ for spec in "${VARIANTS[@]}"; do
   # substitution ever stops matching (e.g. the netlist is regenerated with a
   # different device line spelling).
   if [[ "${KIND}" == "1stage" ]]; then
+    # These greps match the RENDERED DUT text, not the committed netlist file
+    # (issue #277): on failure, print what would have matched, the line the
+    # rendered text actually has, and the base text's provenance.
     echo "${DUT_TXT}" | grep -q "^XQ1 casc b1 e1 vss npn13G2 Nx=${NX1} m=${M1}$" || {
-      echo "run_core_envelope.sh: variant ${VID}: XQ1 geometry substitution did not match ${DESIGN_NETLIST}." >&2; exit 4; }
+      echo "run_core_envelope.sh: variant ${VID}: XQ1 geometry substitution did not match the rendered DUT text (rendered from ${DUT1_BASE}, ${DUT1_BASE_LINES} lines; committed netlist ${DESIGN_NETLIST} sha256 ${DESIGN_NETLIST_SHA})." >&2
+      echo "  required pattern: ^XQ1 casc b1 e1 vss npn13G2 Nx=${NX1} m=${M1}\$" >&2
+      echo "  found: $(echo "${DUT_TXT}" | grep -n '^XQ1 ' | head -1 || echo '<no XQ1 line in the rendered text>')" >&2
+      exit 4; }
     echo "${DUT_TXT}" | grep -q "w=${WIS}u l=1u ng=1 m=1$" || {
-      echo "run_core_envelope.sh: variant ${VID}: XMis width substitution did not match ${DESIGN_NETLIST}." >&2; exit 4; }
+      echo "run_core_envelope.sh: variant ${VID}: XMis width substitution did not match the rendered DUT text (rendered from ${DUT1_BASE}, ${DUT1_BASE_LINES} lines; committed netlist ${DESIGN_NETLIST} sha256 ${DESIGN_NETLIST_SHA})." >&2
+      echo "  required pattern: w=${WIS}u l=1u ng=1 m=1\$" >&2
+      echo "  found: $(echo "${DUT_TXT}" | grep -n '^XMis ' | head -1 || echo '<no XMis line in the rendered text>')" >&2
+      exit 4; }
   else
     echo "${DUT_TXT}" | grep -q '@@' && {
       echo "run_core_envelope.sh: variant ${VID}: unsubstituted @@...@@ token left in the two-stage DUT." >&2; exit 4; }
