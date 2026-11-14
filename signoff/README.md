@@ -5,7 +5,7 @@
   report rendered by `klt signoff --manifest` — never a hand-maintained
   checkbox list in an issue body.
 - **Date**: 2026-09-21, issue #30 (companion item-11 work item: #35).
-- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.8.0` from
+- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.9.2` from
   PyPI) and the vendored checklist below.
 - **Does not**: grade anything itself. Every row's verdict comes from the
   tool's own mechanical parse-and-grade; this directory only declares what
@@ -62,7 +62,7 @@ down as follows:
   That layout (`layout/lna_core/`) draws the cascode core and the DR-0003
   bias island, 6 of the netlist's 30 instances, from the PDK's own PyCells.
   Item 3 cited `layout/lna_core/drc_report.json` while it was
-  `status: "violations"` (36 `cont.width.1`, klayout-tools#2943). Under klt
+  `status: "violations"` (36 `cont.width.1`, klayout-tools#2943). Since klt
   0.8.0 that report is `clean` for the partial cell, so the citation was
   withdrawn (issue #235) rather than let a partial layout render the block's
   row `met`. Item 4
@@ -165,7 +165,7 @@ down as follows:
   ```bash
   python3 -I .github/scripts/check-repo-hygiene.py --write
   # then re-attest (see "Attested items 1, 9 and 10") and
-  uvx --from "klayout-tools==0.8.0" klt signoff --manifest signoff/manifest.json \
+  uvx --from "klayout-tools==0.9.2" klt signoff --manifest signoff/manifest.json \
     --tiers-doc signoff/design-evidence-tiers.md --format json > signoff/t1-report.json
   ```
 
@@ -275,7 +275,7 @@ the item just to make a row go green.
 ## Attested items 1, 9 and 10
 
 Items 1, 9 and 10 are graded from envelopes that `klt signoff --attest N`
-wrote (klt 0.8.0, `docs/cli/signoff.md`, "Attesting items 1, 9 and 10"),
+wrote (klt 0.9.2, `docs/cli/signoff.md`, "Attesting items 1, 9 and 10"),
 not from hand-written ones. Each envelope carries
 `attestation.producer: "klt signoff --attest"` and the list of mechanical
 checks that ran; the manifest pins the attest inventory's hash.
@@ -300,11 +300,11 @@ and the PDK on the host:
 
 ```bash
 for n in 1 9 10; do
-  uvx --from "klayout-tools==0.8.0" klt signoff --attest $n \
+  uvx --from "klayout-tools==0.9.2" klt signoff --attest $n \
     --inventory signoff/attest/item$n.json -o signoff/attest/item$n.envelope.json
 done
 # if an inventory changed, update its evidence."N".content_hash in manifest.json, then
-uvx --from "klayout-tools==0.8.0" klt signoff --manifest signoff/manifest.json \
+uvx --from "klayout-tools==0.9.2" klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json > signoff/t1-report.json
 ```
 
@@ -315,7 +315,7 @@ each item before the `signoff` gate.
 
 T1 item 9 asks that every claimed measurement's testbench is committed,
 with a documented cold-start invocation a third party can run, and a
-pinned PDK revision. The pinned klt (`0.8.0`) accepts item 9 only as an
+pinned PDK revision. The pinned klt (`0.9.2`) accepts item 9 only as an
 artifact-anchored generic envelope: it declares `"t1_item": 9` and pins
 the audited artifact by path and content hash. This repo's artifact is the
 testbench inventory (the manifest cites the `--attest` envelope since issue
@@ -407,7 +407,7 @@ only python3 and git.
 
 ```bash
 python3 -I .github/scripts/check-testbench-inventory.py --write
-python3 -m pip install klayout-tools==0.8.0   # or a venv / uvx --from "klayout-tools==0.8.0" klt
+python3 -m pip install klayout-tools==0.9.2   # or a venv / uvx --from "klayout-tools==0.9.2" klt
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -454,9 +454,9 @@ from", `KLT_TIERS_DOC`).
 | Field | Value |
 |---|---|
 | Source | `2AMLogic/klayout-tools` `docs/design-evidence-tiers.md` |
-| Pinned at | commit `0e2362bda7309829398a35d54efaa989d5806065` (2026-10-08, the `v0.7.0` tag commit) |
-| File SHA-256 | `4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335` |
-| Last doc-touching upstream commit | `067f04858e37ec40985c8ad8aa56f4beade4b170` (feat(signoff): artifact-anchored generic evidence for T1 items 1/2/9/10) |
+| Pinned at | commit `046ba74652fc096bd97071fc3237f7159dd40183` (2026-11-14, the `v0.9.2` tag commit) |
+| File SHA-256 | `d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a` |
+| Last doc-touching upstream commit | `d2289c68410566e7baa3c7c4dd68a2aa5b2648bd` (feat(signoff): grade item 11 on the ERC substrate-path result) |
 | License | Apache-2.0 (klayout-tools is Apache-2.0; this copy is verbatim, unmodified) |
 
 **Upgrade procedure**: copy the newer doc from klayout-tools verbatim,
@@ -476,7 +476,7 @@ It is refreshed deliberately, in the same commit as whatever change
 re-grades the block:
 
 ```bash
-python3 -m pip install klayout-tools==0.8.0   # the pinned release
+python3 -m pip install klayout-tools==0.9.2   # the pinned release
 klt signoff --manifest signoff/manifest.json \
   --tiers-doc signoff/design-evidence-tiers.md --format json \
   > signoff/t1-report.json
@@ -497,8 +497,8 @@ pristine copy would render each cited row `unreadable_evidence` and fail
 for a reason that is not drift.
 
 The cited envelopes are produced by a different `klt` than the one that
-grades them. `layout/run_flow.sh` writes them with the `0.8.0` release;
-this gate grades them with the same `0.8.0` release. The grader reads
+grades them. `layout/run_flow.sh` writes them with the `0.9.2` release;
+this gate grades them with the same `0.9.2` release. The grader reads
 the `drc`/`lvs` envelopes of the layout flow without error. That was checked when they
 were cited (issue #63), and the byte-drift gate re-checks it on every run.
 `.github/scripts/check-klt-pin.sh` (a CI step) fails if the pin named here, in

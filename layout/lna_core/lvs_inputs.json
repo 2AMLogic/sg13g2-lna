@@ -5,7 +5,7 @@
       "gds_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
       "reference": "design/netlist/lna.spice",
       "reference_sha256": "2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
-      "report_sha256": "f2683995924ee56b3cff103a7f8521a2190591fdbf434c78273d9b33078d895a",
+      "report_sha256": "7f95337d32b2bd68991feac1859ff0707fb8fd7e45dcf11be010ca2064154973",
       "request": "lvs_full_request.json",
       "request_sha256": "c747cdeff0a6fcf26c7203674e55d5b80057799631616dd0ede4b136f6e9bb42"
     },
@@ -14,7 +14,7 @@
       "gds_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
       "reference": "layout/lna_core/lna_core.lvs_reference.spice",
       "reference_sha256": "0adb75dc45d0707a0dc9eb51f4fc937c48fd9ddc2acabd70cfd21bdfc97de8a5",
-      "report_sha256": "efe22284741cad77b46958bf825414dbbb83eb6bbe4b2b63b212fb048f8e0478",
+      "report_sha256": "056ee97c8734c8e53975723baab1563b530e9490d92f63b639c669cb52f33dc8",
       "request": "lvs_request.json",
       "request_sha256": "d14b2a9f6cd3a73f7fbc9dc86552904a11ba34e9d79168ecbd0ef634ea2be76f"
     }

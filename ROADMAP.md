@@ -11,14 +11,14 @@ in the `sim/` records, the verdict in [`signoff/t1-report.json`](signoff/t1-repo
 
 ## Where it stands
 
-**T1: 3 of 11 items met** (`signoff/t1-report.json`, graded by `klt` 0.8.0).
+**T1: 3 of 11 items met** (`signoff/t1-report.json`, graded by `klt` 0.9.2).
 The tracker is [#4](https://github.com/2AMLogic/sg13g2-lna/issues/4).
 
 | Item | State | Evidence or open work |
 |---|---|---|
 | 1 Design sources | met | `signoff/attest/item1.envelope.json` (PR #240) |
 | 2 Layout | unmet, no evidence | `layout/lna_core/` draws 6 instances of the netlist; #228 |
-| 3 DRC clean | unmet, no evidence | partial-cell `drc_report.json` reads `clean` under `klt` 0.8.0 and is deliberately uncited (`signoff/README.md`); #229 |
+| 3 DRC clean | unmet, no evidence | partial-cell `drc_report.json` reads `clean` under `klt` 0.9.2 and is deliberately uncited (`signoff/README.md`); #229 |
 | 4 LVS clean | unmet, check failed | `layout/lna_core/lvs_full_report.json` reads `mismatch`; #230 |
 | 5 Corner verification | unmet, no evidence | no `klt sim` envelope for the current DUT; #231, behind #27 and #58 |
 | 6 Monte Carlo | unmet, no evidence | DC mismatch campaign `20261105-080636-5383b49` exists (PR #252) but is not a `klt yield` envelope and reads the pre-match DUT; #68 |
@@ -58,12 +58,13 @@ No open issue is ready to draw today. Items 1 and 2 have no issue yet.
    `signoff/README.md` says no statistical evidence exists at all. Done when
    each statement names the DUT its record actually ran, `check-record-citations`
    and `check-repo-hygiene.py` pass, and the item 10 attestation is refreshed.
-2. **Bump the `klt` pin from 0.8.0.** PyPI carries 0.9.1 and the batch runner
-   reported 0.9.0 in the `20261105-080636-5383b49` record, so campaign clients
-   and the signoff pin have diverged. Done when `check-klt-pin.sh` passes on
-   the new pin, `layout/lna_core/` evidence and `signoff/t1-report.json` are
-   regenerated, and the partial-layout scope guard still holds (no row turns
-   `met` on a 6-instance cell). Precedent: #235.
+2. **Bump the `klt` pin past 0.9.2.** Done for 0.8.0 -> 0.9.2 (#272): the
+   signoff pin now matches the newest release, and the scope guard held (no row
+   turned `met`). The campaign client floor in `sim/pdk.json`
+   (`klt_variant_campaign.min_version`) is still a separate `>= 0.7.0` floor,
+   and the batch runner reported 0.9.0 in the `20261105-080636-5383b49` record,
+   so a campaign client can still differ from the signoff pin by design. Next
+   bump is due when a release after 0.9.2 lands. Precedent: #235, #272.
 3. **Account for `Rbleed` in the layout scope, on the PR #259 branch.**
    PR #259 adds `Rbleed xout vss 100k` and fails `layout-freshness` because
    `layout/lna_core/realization.json` no longer partitions the netlist.

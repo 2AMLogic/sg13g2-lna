@@ -36,12 +36,12 @@
     ".github/scripts/check-repo-hygiene.py": {
       "bytes": 12164,
       "role": "script of a declared CI command",
-      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
+      "sha256": "sha256:6565cfa5fadf65abd1eb821b71ee0cafd94c1886c27d70720ddfc39755aea178"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
       "role": "script of a declared CI command",
-      "sha256": "sha256:18c3c494615ea8738eeb42b8d219bcb1de9d20070430fc427fbbd7987805f0b2"
+      "sha256": "sha256:e8d3bf8e30108d30c83b0763c895421ad76ae09dcb59f58fd76d3e10007caeda"
     },
     ".github/scripts/check-sim-append-only": {
       "bytes": 2915,
@@ -59,9 +59,9 @@
       "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 9959,
+      "bytes": 12328,
       "role": "script of a declared CI command",
-      "sha256": "sha256:49bac4e96421d1d27dd2b2c4dba220c23b0a9bd63b4b59b5a395dc70ee3df6d0"
+      "sha256": "sha256:b673fcd521c0a85e2b9242d53f7ef3ae6c942553f5f978feebffacdc82eac4d9"
     },
     ".github/scripts/test-run-local-checks.sh": {
       "bytes": 7952,
@@ -146,7 +146,7 @@
     ".github/scripts/check-repo-hygiene.py": {
       "bytes": 12164,
       "role": "this audit",
-      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
+      "sha256": "sha256:6565cfa5fadf65abd1eb821b71ee0cafd94c1886c27d70720ddfc39755aea178"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
       "bytes": 7288,
@@ -156,7 +156,7 @@
     ".github/workflows/signoff.yml": {
       "bytes": 26458,
       "role": "CI workflow",
-      "sha256": "sha256:91771f613365c4da3f0030146e96da4bd6a99549098a5bb8c0b249aaa7c69988"
+      "sha256": "sha256:49a3af326fe1e01caf8a4d6baaab449470fd1576db8456bf4ebfa4dd7a271cb1"
     },
     "LICENSE": {
       "bytes": 11358,
@@ -164,9 +164,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 15728,
+      "bytes": 15752,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e"
+      "sha256": "sha256:6331aab8f270c1b3e44023a0452ed38f02aff53694c2b97aff415acaa2314bb0"
     },
     "spec/target-spec.md": {
       "bytes": 34193,

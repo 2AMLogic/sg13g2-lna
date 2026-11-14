@@ -28,7 +28,7 @@ Prerequisites, all explicit:
     purpose: the deck's true minimum is established only on an evidence
     host (issue #201). This repo does not invent one, and installing the
     pip `klayout` module does not update the standalone binary.
-  - klt: the pinned PyPI release klayout-tools==0.8.0 run isolated through
+  - klt: the pinned PyPI release klayout-tools==0.9.2 run isolated through
     uvx (override with $KLT), the same release layout/run_flow.sh pins.
     The same --min-klayout-version is passed to klt, which re-probes the
     binary it finds on PATH; the runner prepends the preflighted
@@ -36,7 +36,7 @@ Prerequisites, all explicit:
   - The IHP PDK install ($PDK_ROOT, or --pdk-root) so klt can resolve the
     native deck for --pdk (default ihp-sg13g2).
 
-Completed-run exit semantics (verified against the klt 0.8.0 release docs):
+Completed-run exit semantics (verified against the klt 0.9.2 release docs):
 `klt drc --engine klayout` exits 0 for clean, 3 for violations, and 4 for
 coverage_unknown — zero findings without a caller-vouched rule-category
 assertion, which is how a genuinely clean layout looks until someone
@@ -69,7 +69,12 @@ from pathlib import Path
 LAYOUT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = LAYOUT_DIR.parent
 IDENTITY = LAYOUT_DIR / "native_drc_identity.py"
-KLT_RELEASE = "0.8.0"  # keep in sync with layout/run_flow.sh (check-klt-pin.sh)
+KLT_RELEASE = "0.9.2"  # keep in sync with layout/run_flow.sh (check-klt-pin.sh)
+# klayout: pinned for the same reason as run_flow.sh's KLAYOUT_PIN -- klt does
+# not bound its own `klayout` dependency, so a bare uvx resolve drifts off the
+# version klt declares as klayout_version_expected (klayout-tools#5601). Keep
+# the two in sync.
+KLAYOUT_PIN = "0.30.12"
 REPORT_NAME = "native_drc_report.json"
 SIDE_NAME = "native_drc_inputs.json"
 STAGING = REPORT_NAME + ".tmp"
@@ -231,7 +236,8 @@ def main(argv):
     # run is not evidence; the pair names are the only publication channel
 
     klt_cmd = shlex.split(os.environ.get(
-        "KLT", f"uvx --isolated --from klayout-tools=={KLT_RELEASE} klt"))
+        "KLT", f"uvx --isolated --from klayout-tools=={KLT_RELEASE} "
+               f"--with klayout=={KLAYOUT_PIN} klt"))
     exe_req = args.klayout_exe or os.environ.get("KLAYOUT_EXE") or "klayout"
 
     # --- preflight: the standalone executable and its version ---
