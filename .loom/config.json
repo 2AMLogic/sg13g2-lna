@@ -11,6 +11,12 @@
   "runtimes": {
     "default": "claude"
   },
+  "buildGate": {
+    "enabled": true,
+    "command": ".github/scripts/run-local-checks.sh",
+    "fastCommand": ".github/scripts/run-local-checks.sh",
+    "timeoutSeconds": 900
+  },
   "safehouse": {
     "enabled": false,
     "socket": null,

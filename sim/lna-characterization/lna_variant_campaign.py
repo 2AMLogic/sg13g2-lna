@@ -118,7 +118,31 @@ VARIANTS = {
     "matched": ("committed matched DUT (design/netlist/lna.spice, verbatim)", "design", None),
     "lc_em_le_q10": ("Lc = EM 5-turn model AND Le Q=10", "em", 10),
 }
-ANALYSES = ["sp_band", "sp_stab", "noise"]
+ANALYSES = ["op", "sp_band", "sp_stab", "noise"]
+
+# DC operating point, measured per variant per cell (issue #56, prompted by the
+# #186/#188 note on this issue). The `le_q*` variants model Le's loss as a
+# SERIES resistor, `Le e1 le_x 1n` + `Rle le_x vss R`, and that resistor carries
+# Q1's DC emitter current: it adds real emitter degeneration the mirror
+# reference Q3 does not see, so it moves the bias point as well as adding RF
+# loss. Without an OP measurement a gain or NF delta from one of those variants
+# cannot be attributed to inductor loss alone -- the confound is invisible in
+# the sp/noise reports. `ve1` is the measurement that exposes it directly: the
+# DC voltage the loss resistor lifts the emitter node to (0 V for every ideal-Le
+# variant, since an ideal inductor is a DC short). Instance `Xa` is the DUT in
+# every op netlist, as in the sp netlists.
+OP_MEASUREMENTS = [
+    # name, expr, unit
+    ("ic1", "@q.xa.xq1.qnpn13g2[ic]", "A"),
+    ("ic2", "@q.xa.xq2.qnpn13g2[ic]", "A"),
+    ("ib1", "@q.xa.xq1.qnpn13g2[ib]", "A"),
+    ("ve1", "v(xa.e1)", "V"),
+    ("vbe1", "v(xa.b1) - v(xa.e1)", "V"),
+    ("vce1", "v(xa.casc) - v(xa.e1)", "V"),
+    ("vce2", "v(xa.outn) - v(xa.casc)", "V"),
+    ("idd", "-i(vdd)", "A"),
+    ("pdc", "v(vdd)*(-i(vdd))", "W"),
+]
 
 LE_LINE = "Le e1 vss 1n m=1"
 LC_LINE = "Lc vdd outn 5n m=1"
@@ -192,7 +216,7 @@ def netlist(variant: str, analysis: str, rel_model: str) -> str:
         parts.append(f'.include "{rel_model}"\n')
     parts.append(dut_subckt(lc, le_q))
     parts.append("Vdd vdd 0 dc 1.8\n")
-    if analysis.startswith("sp"):
+    if analysis.startswith("sp") or analysis == "op":
         parts.append(
             "Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50\n"
             "Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50\n"
@@ -216,6 +240,8 @@ MID = (N_BAND - 1) // 2
 
 
 def measurements(analysis: str, nf_npts: int = N_NF):
+    if analysis == "op":
+        return [{"name": n, "expr": e, "unit": u} for n, e, u in OP_MEASUREMENTS]
     m = []
 
     def add(name, expr, unit=""):
@@ -263,6 +289,8 @@ def measurements(analysis: str, nf_npts: int = N_NF):
 
 
 def analysis_card(analysis: str, nf_npts: int = N_NF) -> dict:
+    if analysis == "op":
+        return {"kind": "op", "args": ""}
     if analysis == "sp_band":
         return {"kind": "sp", "args": f"lin {N_BAND} {F_LO:g} {F_HI:g} 1"}
     if analysis == "sp_stab":
@@ -661,11 +689,16 @@ def cmd_summarize(a):
     # ideal-vs-variant comparison, one row per (variant != ideal, cell)
     cmp_cols = [("s21_db_mid", "d_s21_db"), ("nf290_db_mid", "d_nf290_db"),
                 ("nf290_db_worst", "d_nf290_worst_db"), ("nfmin_sp_db_mid", "d_nfmin_db"), ("s11_db_mid", "d_s11_db"),
-                ("s22_db_mid", "d_s22_db"), ("mu_band_min", "d_mu_band")]
+                ("s22_db_mid", "d_s22_db"), ("mu_band_min", "d_mu_band"),
+                # Bias deltas: a non-zero d_ic1_a means this variant's RF deltas
+                # above are NOT attributable to inductor loss alone (see
+                # OP_MEASUREMENTS). d_ve1_v is the DC lift of the emitter node.
+                ("ic1", "d_ic1_a"), ("ve1", "d_ve1_v"), ("vce1", "d_vce1_v"),
+                ("idd", "d_idd_a")]
     with open(a.compare_csv, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["variant", "corner_label", "temp_c", "vdd_v"]
-                   + [c for _, c in cmp_cols] + ["mu_min_ideal", "mu_min_variant",
+                   + [c for _, c in cmp_cols] + ["ic1_pct", "mu_min_ideal", "mu_min_variant",
                                                   "n_mu_lt1_ideal", "n_mu_lt1_variant",
                                                   "s22_mag_max_ideal", "s22_mag_max_variant",
                                                   "n_s22_gt1_ideal", "n_s22_gt1_variant"])
@@ -685,9 +718,16 @@ def cmd_summarize(a):
                 x = dct.get(n)
                 return "" if x is None else f"{x:.6g}"
 
+            def pct(n):
+                x, y = r.get(n), base.get(n)
+                if x is None or y is None or not y:
+                    return ""
+                return f"{100.0 * (x - y) / y:+.2f}"
+
             w.writerow([key[0], key[1], int(key[2]), f"{key[3]:.2f}"]
                        + [d(n) for n, _ in cmp_cols]
-                       + [g(base, "mu_min"), g(r, "mu_min"), g(base, "n_mu_lt1"), g(r, "n_mu_lt1"),
+                       + [pct("ic1"),
+                          g(base, "mu_min"), g(r, "mu_min"), g(base, "n_mu_lt1"), g(r, "n_mu_lt1"),
                           g(base, "s22_mag_max"), g(r, "s22_mag_max"),
                           g(base, "n_s22_gt1"), g(r, "n_s22_gt1")])
     print(f"summarize: wrote {a.compare_csv}")
@@ -707,6 +747,14 @@ def cmd_summarize(a):
         return (f"min {lo[0]:.{nd}f} @ {lo[1][1]}/{lo[1][2]:g}C/{lo[1][3]:.2f}V, "
                 f"max {hi[0]:.{nd}f} @ {hi[1][1]}/{hi[1][2]:g}C/{hi[1][3]:.2f}V")
 
+    def span_scaled(variant, name, scale, nd=3):
+        v = agg(variant, name)
+        if not v:
+            return "n/a"
+        lo = min(v, key=lambda t: t[0]); hi = max(v, key=lambda t: t[0])
+        return (f"min {lo[0] * scale:.{nd}f} @ {lo[1][1]}/{lo[1][2]:g}C/{lo[1][3]:.2f}V, "
+                f"max {hi[0] * scale:.{nd}f} @ {hi[1][1]}/{hi[1][2]:g}C/{hi[1][3]:.2f}V")
+
     for v in variants:
         n = len({k for k in rows if k[0] == v})
         lines.append(f"### Variant `{v}` -- {VARIANTS[v][0]} ({n} cells)")
@@ -722,6 +770,36 @@ def cmd_summarize(a):
             w = max(nfw, key=lambda t: t[0])
             lines.append(f"- NF @290 K worst SAMPLED point [dB]: max {w[0]:.3f} at {w[1] / 1e9:.6g} GHz, "
                          f"{w[2][1]}/{w[2][2]:g}C/{w[2][3]:.2f}V -- {nf_grid_text(nf_npts)}")
+        # Bias attribution (issue #56, #186/#188 note): state I_C1 and the DC
+        # emitter lift, and whether this variant's RF deltas are confounded by a
+        # bias shift rather than being inductor loss alone.
+        if agg(v, "ic1"):
+            lines.append(f"- I_C1 [mA]: {span_scaled(v, 'ic1', 1e3, 4)}")
+            lines.append(f"- DC emitter lift v(e1) [mV]: {span_scaled(v, 've1', 1e3, 3)}")
+            if v != "ideal":
+                base_ic1 = [r["ic1"] for k, r in rows.items()
+                            if k[0] == "ideal" and r.get("ic1") is not None]
+                mine = [(r["ic1"], k) for k, r in rows.items()
+                        if k[0] == v and r.get("ic1") is not None]
+                pcts = []
+                for val, k in mine:
+                    b = rows.get(("ideal",) + k[1:], {}).get("ic1")
+                    if b:
+                        pcts.append((100.0 * (val - b) / b, k))
+                if pcts:
+                    worst = max(pcts, key=lambda t: abs(t[0]))
+                    if abs(worst[0]) < 0.05:
+                        lines.append("- Bias attribution: I_C1 within +/-0.05 % of `ideal` at every cell "
+                                     "-- the deltas above are inductor loss, not a bias shift.")
+                    else:
+                        lines.append(
+                            f"- Bias attribution: **I_C1 shifts up to {worst[0]:+.2f} % vs `ideal`** "
+                            f"(worst {worst[1][1]}/{worst[1][2]:g}C/{worst[1][3]:.2f}V). The RF deltas "
+                            "above are NOT inductor loss alone -- this variant's loss resistor is in "
+                            "series with Le and carries Q1's DC emitter current, adding real emitter "
+                            "degeneration. See README 'Bias confound'.")
+                elif base_ic1:
+                    lines.append("- Bias attribution: no per-cell `ideal` I_C1 to compare against.")
         lines.append("")
     complete = not issues
     banner = []

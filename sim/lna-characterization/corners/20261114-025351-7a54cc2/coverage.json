@@ -1,0 +1,218 @@
+{
+  "counts": {
+    "ideal/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "ideal/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "ideal/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "ideal/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em_le_q10/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em_le_q10/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em_le_q10/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "lc_em_le_q10/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q10/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q10/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q10/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q10/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q20/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q20/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q20/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q20/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q5/noise": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q5/op": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q5/sp_band": {
+      "expected": 45,
+      "valid": 45
+    },
+    "le_q5/sp_stab": {
+      "expected": 45,
+      "valid": 45
+    }
+  },
+  "coverage": "complete",
+  "disclosures": [
+    "NF290 is the maximum over a discrete frequency grid (the same grid for every variant; see the row's sampling text); a peak narrower than the grid spacing can be missed, so this is not continuous-band coverage. Records produced before issue #134 are three-point (lo/mid/hi) and are not comparable as full-grid results.",
+    "ngspice sp-analysis port NF / NFmin (nf_sp_db_*, nfmin_sp_db_*) are distinct from the ratified T0 = 290 K value (nf290_db_*); only nf290_db_worst is compared with the NF target.",
+    "DC bias current and DC power are NOT measured by these three requests; the Power and bias rows are not covered.",
+    "Two-tone IIP3 is NOT measured by these three requests; the IIP3 row is not covered.",
+    "Supply (VDD) and band are configured bench conditions, not independently measured compliance results.",
+    "Comparisons describe sampled bench results only (the `ideal` variant is the frozen UNMATCHED pre-#27 DUT with ideal passives; `matched` is the committed design/netlist/lna.spice with its modelled finite-Q passives). A numeric pass does not establish matched physical performance, complete spec compliance, signoff, or T1 item 5.",
+    "No missing observable is inferred from another campaign or DUT."
+  ],
+  "expected_cells_per_analysis": 45,
+  "grid": "full",
+  "ideal_rows": [
+    {
+      "analysis": "sp_band",
+      "coverage_complete": true,
+      "expected_cells": 45,
+      "frequency_sampling": "sp lin 11 pts 2.4-2.4835 GHz; vecmin(db(s_2_1)) over the 11 points",
+      "label": "In-band minimum |S21| [dB]",
+      "measurement": "s21_db_min",
+      "port_convention": "50 Ohm reference at both ports (sp port sources with portnum/z0; 50 Ohm Thevenin source with noiseless Rs/RL for .noise)",
+      "reduction": "min",
+      "row": "gain",
+      "spec_row": "spec/target-spec.md: Gain (S21)",
+      "target": "> 15 dB (strict inequality; equality fails)",
+      "valid_cells": 45,
+      "verdict": "FAILS target at the worst sampled cell",
+      "worst_cell": "wcs/125C/1.62V",
+      "worst_value": 10.2747521
+    },
+    {
+      "analysis": "sp_band",
+      "coverage_complete": true,
+      "expected_cells": 45,
+      "frequency_sampling": "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_1_1)) over the 11 points",
+      "label": "Worst in-band |S11| [dB]",
+      "measurement": "s11_db_worst",
+      "port_convention": "50 Ohm reference at both ports (sp port sources with portnum/z0; 50 Ohm Thevenin source with noiseless Rs/RL for .noise)",
+      "reduction": "max",
+      "row": "s11",
+      "spec_row": "spec/target-spec.md: Input match (S11)",
+      "target": "< -10 dB (strict inequality; equality fails)",
+      "valid_cells": 45,
+      "verdict": "FAILS target at the worst sampled cell",
+      "worst_cell": "bcs/-40C/1.98V",
+      "worst_value": -2.9616269
+    },
+    {
+      "analysis": "sp_band",
+      "coverage_complete": true,
+      "expected_cells": 45,
+      "frequency_sampling": "sp lin 11 pts 2.4-2.4835 GHz; vecmax(db(s_2_2)) over the 11 points",
+      "label": "Worst in-band |S22| [dB]",
+      "measurement": "s22_db_worst",
+      "port_convention": "50 Ohm reference at both ports (sp port sources with portnum/z0; 50 Ohm Thevenin source with noiseless Rs/RL for .noise)",
+      "reduction": "max",
+      "row": "s22",
+      "spec_row": "spec/target-spec.md: Output match (S22)",
+      "target": "< -10 dB (strict inequality; equality fails)",
+      "valid_cells": 45,
+      "verdict": "FAILS target at the worst sampled cell",
+      "worst_cell": "bcs/-40C/1.98V",
+      "worst_value": -0.0033470028
+    },
+    {
+      "analysis": "sp_stab",
+      "coverage_complete": true,
+      "expected_cells": 45,
+      "frequency_sampling": "sp dec 40 pts/decade 10 MHz-30 GHz; vecmin(mu) over the sweep",
+      "label": "Broadband minimum mu (Edwards-Sinsky)",
+      "measurement": "mu_min",
+      "port_convention": "50 Ohm reference at both ports (sp port sources with portnum/z0; 50 Ohm Thevenin source with noiseless Rs/RL for .noise)",
+      "reduction": "min",
+      "row": "stability",
+      "spec_row": "spec/target-spec.md: Stability",
+      "target": "> 1 (strict inequality; equality fails)",
+      "valid_cells": 45,
+      "verdict": "FAILS target at the worst sampled cell",
+      "worst_cell": "bcs/-40C/1.98V",
+      "worst_value": 0.999995918
+    },
+    {
+      "analysis": "noise",
+      "coverage_complete": true,
+      "expected_cells": 45,
+      "frequency_sampling": "noise lin 11 pts 2.4..2.4835 GHz (8.35 MHz spacing); sampled maximum, not a continuous-band bound -- a peak narrower than the spacing can be missed",
+      "label": "NF at T0 = 290 K, band maximum of 11 sampled points [dB]",
+      "measurement": "nf290_db_worst",
+      "nf_grid": {
+        "hi_hz": 2483500000.0,
+        "lo_hz": 2400000000.0,
+        "mode": "lin",
+        "n": 11
+      },
+      "port_convention": "50 Ohm reference at both ports (sp port sources with portnum/z0; 50 Ohm Thevenin source with noiseless Rs/RL for .noise)",
+      "reduction": "max",
+      "row": "nf290",
+      "spec_row": "spec/target-spec.md: Noise figure (NF)",
+      "target": "< 1.5 dB (strict inequality; equality fails)",
+      "valid_cells": 45,
+      "verdict": "FAILS target at the worst sampled cell",
+      "worst_cell": "wcs/125C/1.62V",
+      "worst_frequency_hz": 2400000000.0,
+      "worst_value": 3.77586269
+    }
+  ],
+  "issues": [],
+  "matched_rows": null,
+  "nf290_grid": "noise lin 11 pts 2.4..2.4835 GHz (8.35 MHz spacing); sampled maximum, not a continuous-band bound -- a peak narrower than the spacing can be missed",
+  "nf290_npts": 11,
+  "requested_variants": [
+    "ideal",
+    "lc_em",
+    "le_q20",
+    "le_q10",
+    "le_q5",
+    "lc_em_le_q10"
+  ]
+}

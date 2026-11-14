@@ -29,6 +29,8 @@
 #                         NOT a PVT campaign -- do not commit as evidence)
 #   LNA_VARIANT_BACKEND=  override the klt backend (default: whatever klt picks,
 #                         i.e. $KLT_SIM_BACKEND)
+#   LNA_VARIANT_CAPACITY_WAIT_S=<s>  how long a batch submit waits with backoff
+#                         for fleet vCPU capacity (default 600; batch only)
 #   KLT_NGSPICE_BINARY=   ngspice binary for local-backend runs. The PDK's
 #                         PSP103 OSDI builds target OSDI v0.4, so a local run
 #                         needs ngspice >= 46 (the worker's /usr/bin/ngspice 42
@@ -89,9 +91,96 @@ python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen "${GEN_ARGS[@]}"
 
 KLT_ARGS=(--format json)
 [[ -n "${LNA_VARIANT_BACKEND:-}" ]] && KLT_ARGS+=(--backend "${LNA_VARIANT_BACKEND}")
+# The Spot batch fleet is vCPU-budgeted: a burst of requests gets
+# `batch_no_capacity`, which fails the submit outright. Waiting with backoff is
+# the host rule for every batch `klt sim`, so pass --wait-for-capacity whenever
+# the effective backend is batch. It is a submit-side wait only: it never
+# retries on another backend and never falls back to a local grid.
+EFFECTIVE_BACKEND="${LNA_VARIANT_BACKEND:-${KLT_SIM_BACKEND:-local}}"
+CAPACITY_WAIT="${LNA_VARIANT_CAPACITY_WAIT_S:-600}"
+if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
+  KLT_ARGS+=(--wait-for-capacity "${CAPACITY_WAIT}")
+fi
 
 echo "run_lna_variant.sh: record ${RECORD_ID}; klt ${KLT_VERSION}; KLT_SIM_BACKEND=${KLT_SIM_BACKEND:-<unset>}"
 FAILED=()
+
+# --- batch: submit the whole set in one invocation -----------------------
+# Submitting the requests one at a time serialises the fleet's own launch
+# overhead (~2 min per job) behind every request: the 7-variant x 3-analysis
+# campaign is 21 requests, so a serial loop spends hours waiting on spot
+# launches rather than on ngspice. `klt sim --batch-set` is the sanctioned
+# scheduler for a set of independent requests (it forces backend batch and
+# never falls back to local ngspice): at most --max-in-flight run on the fleet
+# at once and the rest queue. Each member writes its own
+# <set-dir>/<stem>/report.json, which is copied to the same
+# corners/<id>/<stem>.report.json path the serial loop produces, so the
+# reducer, the coverage validator and the record provenance below are
+# unchanged and cannot tell the two submission paths apart.
+if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
+  MAX_IN_FLIGHT="${LNA_VARIANT_MAX_IN_FLIGHT:-7}"
+  CAPACITY_RETRIES="${LNA_VARIANT_CAPACITY_RETRIES:-3}"
+  SET_OUT="${CORNERS_OUT}/set"
+  mkdir -p "${SET_OUT}"
+  REQS=()
+  for req in "${SNAPSHOTS_OUT}"/*.request.json; do REQS+=("${req}"); done
+  echo "run_lna_variant.sh: klt sim --batch-set ${#REQS[@]} requests, max-in-flight ${MAX_IN_FLIGHT}, --wait-for-capacity ${CAPACITY_WAIT}"
+  SET_REPORT="${CORNERS_OUT}/set-report.json"
+  SET_ERRLOG="${CORNERS_OUT}/set.stderr.log"
+  set_rc=0
+  klt sim --batch-set "${REQS[@]}" -o "${SET_OUT}" \
+    --max-in-flight "${MAX_IN_FLIGHT}" --capacity-retries "${CAPACITY_RETRIES}" \
+    --wait-for-capacity "${CAPACITY_WAIT}" --format json \
+    > "${SET_REPORT}" 2> "${SET_ERRLOG}" || set_rc=$?
+  # Materialise each member's report at the per-request path the reducer reads.
+  # The source path comes from the envelope's own `requests[].report` field, not
+  # from a guessed directory name: klt names a member's directory after the
+  # request file with only the LAST suffix removed, so `ideal_noise.request.json`
+  # lands in `ideal_noise.request/`, not `ideal_noise/`.
+  python3 -I - "${SET_REPORT}" "${CORNERS_OUT}" <<'PYEOF'
+import json, os, re, shutil, sys
+envelope, corners_out = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(envelope))
+except Exception as exc:
+    sys.exit(f"run_lna_variant.sh: cannot read set envelope {envelope}: {exc}")
+for r in d.get("requests") or []:
+    src = r.get("report")
+    stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
+    if not stem:
+        continue
+    if src and os.path.isfile(src):
+        shutil.copyfile(src, os.path.join(corners_out, f"{stem}.report.json"))
+    else:
+        print(f"run_lna_variant.sh: {stem}: no report to collect "
+              f"({'missing ' + src if src else 'member never produced one'})",
+              file=sys.stderr)
+PYEOF
+  # Per-member status from the aggregate envelope: a non-zero member exit is a
+  # failure even when the set as a whole returned 0.
+  while read -r stem rc; do
+    [[ -z "${stem}" ]] && continue
+    echo "run_lna_variant.sh: ${stem} exited ${rc} (see ${SET_ERRLOG}, ${SET_REPORT})" >&2
+    FAILED+=("${stem}:${rc}")
+  done < <(python3 -I - "${SET_REPORT}" <<'PYEOF'
+import json, os, re, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+for r in d.get("requests") or []:
+    if r.get("exit_code"):
+        # strip the whole ".request.json" suffix, not just ".json", so the
+        # label matches the <variant>_<analysis> stem used everywhere else
+        stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
+        print("%s %s" % (stem or "<unknown>", r["exit_code"]))
+PYEOF
+  )
+  if (( set_rc != 0 )) && [[ ${#FAILED[@]} -eq 0 ]]; then
+    FAILED+=("batch-set:${set_rc}")
+    echo "run_lna_variant.sh: --batch-set exited ${set_rc} with no per-request failure (see ${SET_ERRLOG})" >&2
+  fi
+else
 for req in "${SNAPSHOTS_OUT}"/*.request.json; do
   stem="$(basename "${req}" .request.json)"
   report="${CORNERS_OUT}/${stem}.report.json"
@@ -114,6 +203,7 @@ for req in "${SNAPSHOTS_OUT}"/*.request.json; do
     fi
   fi
 done
+fi
 
 SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}" --nf-npts "${NF_NPTS}"
   --summary-csv "${RECORDS_DIR}/${RECORD_ID}-summary.csv"
@@ -164,7 +254,7 @@ PYEOF
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\`; HBT sections from \`cornerHBT.lib\`, MOS from"
   echo "  \`cornerMOShv.lib\` with the same label->section map as \`run_lna_sweep.sh\`."
   echo "- **PDK identity (verified)**: \`${SIM_PDK_RELEASE}\` via ${SIM_PDK_ID_ROUTE}; model hashes in \`records/${RECORD_ID}.pdk-provenance.json\`"
-  echo "- **Runner**: client \`${KLT_VERSION}\`; backend \`${LNA_VARIANT_BACKEND:-${KLT_SIM_BACKEND:-local}}\`."
+  echo "- **Runner**: client \`${KLT_VERSION}\`; backend \`${EFFECTIVE_BACKEND}\`$([[ "${EFFECTIVE_BACKEND}" == batch ]] && echo " (--wait-for-capacity ${CAPACITY_WAIT} s)")."
   echo "  Jobs (klt \`environment.remote\`):"
   echo "${JOBS}"
   if [[ ${#FAILED[@]} -gt 0 ]]; then
