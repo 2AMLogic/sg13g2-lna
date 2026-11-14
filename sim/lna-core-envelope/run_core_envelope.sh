@@ -115,7 +115,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 
-# shellcheck source=/dev/null
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
 
 # Installed-PDK preflight (issue #118) FIRST: a wrong/unverifiable install
@@ -222,10 +223,13 @@ sed -e 's|^\*\*\.subckt|.subckt|' -e 's|^\*\*\.ends|.ends|' -e '/^\.end$/d' \
 grep -q '^\.subckt lna ' "${DUT1_BASE}" || {
   echo "run_core_envelope.sh: could not recover '.subckt lna ...' from ${DESIGN_NETLIST}" >&2; exit 3; }
 
-# --- PVT grid (identical to sim/lna-characterization/) ------------------
+# --- PVT grid (the same five labels as sim/lna-characterization/) -------
+# The label -> PDK-section maps are canonical in sim/env.sh
+# (SIM_HBT_SECTION_OF / SIM_MOS_SECTION_OF, issue #283). GRID_DESC below
+# still folds the RESOLVED sections into this record's fingerprint, so a
+# map change is a fingerprint change and an interrupted record cannot be
+# resumed across one.
 CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
 TEMPS=(-40 27 125)
 VDDS=(1.62 1.80 1.98)
 
@@ -284,7 +288,10 @@ import json, sys
 d = json.load(sys.stdin)
 print(d["installed_release_raw"] + " " + " ".join(sorted(m["sha256"] for m in d["model_inputs"])))')"
 GRID_DESC="corners=${CORNER_LABELS[*]};temps=${TEMPS[*]};vdds=${VDDS[*]};inband=${F_BAND_LO},${F_BAND_MID},${F_BAND_HI},${N_INBAND};stab=${F_STAB_LO},${F_STAB_HI},${N_STAB_DEC}"
-for _c in "${CORNER_LABELS[@]}"; do GRID_DESC+=";${_c}=${HBT_SECTION_OF[$_c]},${MOS_SECTION_OF[$_c]}"; done
+# sim_grid_desc reproduces this line's former output byte-for-byte, so an
+# in-flight record's fingerprint is unchanged by the move to sim/env.sh.
+RESOLVED_SECTIONS="$(sim_grid_desc)"
+GRID_DESC+=";${RESOLVED_SECTIONS}"
 NEW_FP="${SCRATCH}/fingerprint.json"
 python3 -I "${LIFECYCLE}" fingerprint "${NEW_FP}" \
   "dut=file:${DESIGN_NETLIST}" "bench_template=file:${TEMPLATE}" "dut2_template=file:${DUT2_TMPL}" \
@@ -352,7 +359,7 @@ for spec in "${VARIANTS[@]}"; do
         stab="${CORNERS_OUT}/${pid}.stability.dat"
         env \
           S_VARIANT="${VID}" \
-          S_HBT="${HBT_SECTION_OF[$corner]}" S_MOS="${MOS_SECTION_OF[$corner]}" \
+          S_HBT="${SIM_HBT_SECTION_OF[$corner]}" S_MOS="${SIM_MOS_SECTION_OF[$corner]}" \
           S_MODELS_LIB="${MODELS_LIB}" S_MOS_LIB="${MOS_LIB}" S_OSDI_DIR="${OSDI_DIR}" \
           S_TEMP="${temp}" S_VDD="${vdd}" \
           S_N_INBAND="${N_INBAND}" S_F_LO="${F_BAND_LO}" S_F_MID="${F_BAND_MID}" S_F_HI="${F_BAND_HI}" \
@@ -459,6 +466,7 @@ python3 -I "${PARSER}" \
   --require-all-points \
   --inband-grid "${F_BAND_LO},${F_BAND_HI},${N_INBAND}" \
   --stab-grid "${F_STAB_LO},${F_STAB_HI},${N_STAB_DEC}" \
+  --resolved-sections "${RESOLVED_SECTIONS}" \
   --design-netlist-sha "${DESIGN_NETLIST_SHA}" \
   --ngspice-version "${NGSPICE_VERSION}" \
   --pdk-root "${PDK_ROOT}/${PDK}" \

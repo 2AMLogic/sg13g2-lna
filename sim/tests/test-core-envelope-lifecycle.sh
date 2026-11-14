@@ -66,7 +66,8 @@ mktree() {
 import argparse, os, sys
 ap = argparse.ArgumentParser()
 for a in ("record-id", "corners-dir", "records-dir", "manifest", "design-netlist-sha",
-          "ngspice-version", "pdk-root", "pdk-release", "pdk-provenance", "reference-summary", "inband-grid", "stab-grid"):
+          "ngspice-version", "pdk-root", "pdk-release", "pdk-provenance", "reference-summary", "inband-grid", "stab-grid",
+          "resolved-sections"):
     ap.add_argument("--" + a)
 ap.add_argument("--require-all-points", action="store_true")
 a = ap.parse_args()

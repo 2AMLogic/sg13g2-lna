@@ -68,22 +68,28 @@ MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
 
 # --- Sweep grid ----------------------------------------------------------
 # Corner labels mirror cornerMOShv.lib's five-label convention (for
-# fleet-wide consistency), mapped onto cornerHBT.lib's three REAL sections
-# -- see sim/README.md "Corner label convention" for the discrepancy this
-# resolves (target-spec.md/porting-plan.md described five HBT sections
-# at the time this grid was recorded; target-spec.md's Verification
-# corners section and the installed PDK both give three). sf/fs fall
-# back to hbt_typ, the same convention sg13g2-bandgap's HBT_SECTION_OF
-# map already uses.
+# fleet-wide consistency); they resolve against the canonical
+# cornerHBT.lib section map in sim/env.sh (SIM_HBT_SECTION_OF, issue
+# #283), which has three REAL sections -- see sim/README.md "Corner label
+# convention" for the discrepancy this resolves (target-spec.md and
+# porting-plan.md described five HBT sections at the time this grid was
+# recorded; target-spec.md's Verification corners section and the
+# installed PDK both give three). sf/fs fall back to hbt_typ there, the
+# same convention sg13g2-bandgap's own map already uses. This bench is
+# HBT-only (no cornerMOShv.lib in its decks), hence sim_grid_desc
+# --hbt-only for the record.
 #
 # Every axis is overridable from the environment (space-separated) so an
 # earlier record's narrower grid stays reproducible without editing this
-# file -- see "GRID HISTORY" in the header.
+# file -- see "GRID HISTORY" in the header. A narrowed CORNER_LABELS needs
+# no map change: every lookup is keyed on a label, never an iteration over
+# the map's keys, and the record below states the sections that THIS run
+# resolved (sim_grid_desc).
 read -r -a CORNER_LABELS <<< "${HBT_CORNERS:-typ bcs wcs sf fs}"
 read -r -a TEMPS         <<< "${HBT_TEMPS:--40 27 125}"
 read -r -a VCES          <<< "${HBT_VCES:-0.6 0.8 1.0 1.2 1.4}"
 read -r -a NX_LIST       <<< "${HBT_NX_LIST:-1 8}"
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
+RESOLVED_SECTIONS="$(sim_grid_desc --hbt-only)"
 VBE_START="0.55"
 VBE_STEP="0.02"
 N_POINTS=26
@@ -228,7 +234,7 @@ run_one() {
 # --- Main grid: every Nx across the full corner x temp x Vce grid ---
 for nx in "${NX_LIST[@]}"; do
   for corner_label in "${CORNER_LABELS[@]}"; do
-    hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+    hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
     for temp in "${TEMPS[@]}"; do
       for vce in "${VCES[@]}"; do
         run_one "${corner_label}" "${hbt_section}" "${temp}" "${nx}" "${vce}"
@@ -455,6 +461,11 @@ n_cells=$((${#NX_LIST[@]} * ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VCES[@]}))
   echo "  {${CORNER_LABELS_STR}} x temp {${TEMPS_STR}} x Vce {${VCES_STR}}"
   echo "  x ${N_POINTS} base-voltage points (${VBE_START}V + i*${VBE_STEP}V)"
   echo "  = ${n_cells} grid cells, ${N_POINTS} points each."
+  echo "- **Resolved corner -> section map (as run)**: \`${RESOLVED_SECTIONS}\`"
+  echo "  -- emitted by \`sim_grid_desc --hbt-only\` from the canonical map"
+  echo "  in \`sim/env.sh\` (this bench is HBT-only), so this record states"
+  echo "  the sections the run actually resolved rather than a restated"
+  echo "  copy of the map."
   echo "- **Result**: ${n_data_rows} data rows parsed from ${total} ngspice"
   echo "  invocations (one per nx x corner_label x temp x Vce cell,"
   echo "  internally sweeping all ${N_POINTS} base-voltage points via"

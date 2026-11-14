@@ -69,6 +69,8 @@ scaffolding lives once, in `env.sh`, and each runner calls it:
 | `sim_pool_init <jobs>` / `sim_pool_spawn <fn> <args…>` | The bash-4.3 `wait -n` job pool. `SIM_POOL_SPAWNED` counts what was scheduled (what a record quotes as "N ngspice invocations"). |
 | `sim_render <tmpl> <out> <sed-args…>` | Applies the caller's own substitutions, then `@@MODELS_LIB@@`/`@@MOS_LIB@@`/`@@OSDI_DIR@@`; if `SIM_DUT_SUBCKT` is set, splices that file in at `@@LNA_SUBCKT@@`. |
 | `sim_check_log <point-id> <log> <rc>` | Per-point gate: non-zero `rc`, any pattern the runner put in `SIM_LOG_FAIL_PATTERNS`, or a missing `BENCH_COMPLETE` marker fails the point and appends its id to `${FAILED_LIST}`. |
+| `SIM_HBT_SECTION_OF` / `SIM_MOS_SECTION_OF` | The canonical corner-label -> PDK-section maps (issue #283): the fleet's five labels onto `cornerHBT.lib`'s three real sections (`sf`/`fs` -> `hbt_typ`) and onto `cornerMOShv.lib`'s five, straight through. Keyed on `{typ,bcs,wcs,sf,fs}`. Every consumer is a keyed lookup on a `CORNER_LABELS` entry, never an iteration over these keys, so a narrower grid (`biasref-topology`'s three labels, a `HBT_CORNERS` override, a `*_SMOKE` run) resolves against them unchanged. |
+| `sim_grid_desc [--hbt-only]` | Emits this run's **resolved** map, in `CORNER_LABELS` order, as `;`-joined `<label>=<hbt_section>,<mos_section>` entries -- or `<label>=<hbt_section>` with `--hbt-only`, for the HBT-only benches whose decks never load `cornerMOShv.lib`. Each runner writes it into its record header, so a record states the sections the run actually resolved instead of the reader trusting that the runner's copy of the map was current. Reproduces `run_core_envelope.sh`'s former inline `GRID_DESC` line byte-for-byte, so that record's resume fingerprint is unchanged. A label with no entry in the maps exits **2** with a message on stderr, which aborts the runner under its `set -e` before any record is written. |
 
 **Record-id collisions.** The `<record-id>` has one-second resolution, so two
 runs of the same experiment in the same second (same commit) would mint the
@@ -82,15 +84,35 @@ they are append-only evidence. Tests: `sim/tests/test-sim-record-paths.sh`
 (PDK-free, run by the `sim-record-paths-tests` CI job and
 `.github/scripts/run-local-checks.sh`).
 
-**What deliberately does NOT move into `env.sh`**: sweep grids,
-`HBT_SECTION_OF`/`MOS_SECTION_OF` maps, per-experiment template
-substitutions, `*_SMOKE` overrides, `python3` requirements, and the
-bespoke failure criteria of `hbt-characterization` and
+**What deliberately does NOT move into `env.sh`**: the sweep grids
+themselves — including each runner's own `CORNER_LABELS` — per-experiment
+template substitutions, `*_SMOKE` overrides, `python3` requirements, and
+the bespoke failure criteria of `hbt-characterization` and
 `breakdown-extraction` (both count emitted `PT ` lines against an expected
 `N_POINTS`, and both are deliberately serial, so neither uses
 `sim_pool_spawn` or `sim_check_log`). Those are **bench definitions** — per
 "Bench definitions carry with every number" below, they stay visible in
 the runner that owns them.
+
+**The corner-label -> section maps did move (issue #283), and the grids did
+not.** The distinction is that a label -> section map is not a bench
+choice: it is one PDK fact — which sections `cornerHBT.lib` and
+`cornerMOShv.lib` actually ship — and it is the same fact for every bench
+in this tree. It had six byte-identical copies and nothing that failed if a
+correction landed in five of them, which is not hypothetical: issue #41 was
+exactly such a correction (`cornerHBT.lib` ships three HBT sections, not
+five) arriving from a consumer repo. Which labels a bench runs *is* a bench
+choice, so `CORNER_LABELS` stays per-runner —
+`biasref-topology/run_biasref_sweep.sh` deliberately runs three labels, and
+`hbt-characterization/run_hbt_sweep.sh` makes the axis env-overridable
+(`HBT_CORNERS`) so an earlier record's narrower grid stays reproducible.
+Self-describing evidence is preserved by `sim_grid_desc`, which writes the
+**resolved** sections into every runner's record header: a record now
+states the map the run actually used, which is strictly more than an inline
+copy of the map established. Tests:
+`sim/tests/test-corner-section-maps.sh` (PDK-free; pins the maps, asserts no
+runner restates one, and holds `sim_grid_desc` byte-identical to the former
+inline `GRID_DESC`).
 
 **OSDI device models: needed as of `sim/biasref-topology/` and — since the
 DR-0003 Stage-2 core swap put `sg13_hv_pmos`/`sg13_hv_nmos` into the
