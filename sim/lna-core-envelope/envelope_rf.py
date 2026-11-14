@@ -201,6 +201,23 @@ def y_to_s(y11, y12, y21, y22, y0=1 / 50.0):
     )
 
 
+def gain_in_match_db(s11, s21) -> float:
+    """|S21| with the ideal-conjugate-INPUT-match uplift, output left at 50 Ohm.
+
+    The "available-gain basis" figure issue #52's discussion quotes:
+    `|S21|_dB - 10*log10(1 - |S11|^2)`. It applies an ideal conjugate match at
+    the INPUT only and leaves the OUTPUT terminated in the bare 50 Ohm port, so
+    it is NOT "the gain after matching" -- it is the gain after input matching
+    alone, and therefore a LOWER bound on a matched design's gain (#27's scope
+    is both networks; the RATIFIED S22 row requires the output one to exist).
+    See README.md "Three gain metrics, and which one binds what".
+
+    Takes only the two S-parameters it actually uses, unlike the both-ports
+    `ga_max_db` below -- the output port is untouched by construction.
+    """
+    return db20(abs(s21)) - 10 * math.log10(1 - abs(s11) ** 2)
+
+
 def ga_max_db(s11, s12, s21, s22) -> float:
     """Unilateral maximum available gain, both ports conjugate matched."""
     return (db20(abs(s21))
