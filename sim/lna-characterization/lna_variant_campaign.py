@@ -144,6 +144,13 @@ OP_MEASUREMENTS = [
     ("pdc", "v(vdd)*(-i(vdd))", "W"),
 ]
 
+# Bias-attribution bound (README "Bias confound"): if a variant's I_C1 is
+# within +/- this many percent of `ideal` at every cell, its RF deltas are
+# attributable to inductor loss alone; beyond it they are not. Single-sourced
+# here so the threshold comparison and the headline text that quotes it
+# cannot drift apart. Changing the value is a spec change (README).
+IC1_ATTRIB_PCT = 0.05
+
 LE_LINE = "Le e1 vss 1n m=1"
 LC_LINE = "Lc vdd outn 5n m=1"
 
@@ -788,8 +795,8 @@ def cmd_summarize(a):
                         pcts.append((100.0 * (val - b) / b, k))
                 if pcts:
                     worst = max(pcts, key=lambda t: abs(t[0]))
-                    if abs(worst[0]) < 0.05:
-                        lines.append("- Bias attribution: I_C1 within +/-0.05 % of `ideal` at every cell "
+                    if abs(worst[0]) < IC1_ATTRIB_PCT:
+                        lines.append(f"- Bias attribution: I_C1 within +/-{IC1_ATTRIB_PCT} % of `ideal` at every cell "
                                      "-- the deltas above are inductor loss, not a bias shift.")
                     else:
                         lines.append(
@@ -800,6 +807,9 @@ def cmd_summarize(a):
                             "degeneration. See README 'Bias confound'.")
                 elif base_ic1:
                     lines.append("- Bias attribution: no per-cell `ideal` I_C1 to compare against.")
+                else:
+                    lines.append("- Bias attribution: I_C1 not computed -- no `ideal` `op` I_C1 "
+                                 "to attribute against; the RF deltas above are unattributed.")
         lines.append("")
     complete = not issues
     banner = []
