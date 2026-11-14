@@ -831,10 +831,15 @@ gives at 2.44175 GHz Z = 9.96 + j84.7 ohm, i.e. Im(Z)/(2 pi f) = 5.52 nH and
 rest). That is the number a matching network may assume for `Lc`: Q ~ 8.5 at
 2.44 GHz, typical process, 27 C, one-port to ground.
 
-`Le` (1 nH) is a geometry the EM extraction did **not** cover, and no `klt` with
-klayout-tools#2729 (`klt mom` series-winding static solve) is available on
-this worker (installed `klt 0.7.0+g4cbdfa769875` predates it), so per the issue
+`Le` (1 nH) is a geometry the EM extraction did **not** cover, so per the issue
 the stated fallback is used: a **resistance sweep bracketing Q = 5 to 20**.
+(Re-checked 2026-11-14: the worker's `klt` is now `0.9.2.dev1022+g2a9c52b27ce7`,
+so klayout-tools#2729/#2730 *are* available and the earlier
+"no `klt` with #2729" reason has lapsed. The bracket is kept for a different
+reason: `klt mom` solves a **drawn layout**, and this repo has no drawn 1 nH
+candidate to solve -- `layout/lna_core/lna_core.gds` contains no inductor cell.
+Drawing one is layout work outside this issue; until it exists there is no
+geometry for a `mom` solve to act on.)
 `Le e1 vss 1n` becomes `Le e1 le_x 1n` + `Rle le_x vss R` with R = 2 pi f L / Q
 at f = 2.44175 GHz: 0.767 ohm (Q=20), 1.534 ohm (Q=10), 3.068 ohm (Q=5). A
 constant R is a DC-resistance model: it has no skin effect, no substrate loss
@@ -844,8 +849,9 @@ and no self-resonance, and its Q rises linearly with frequency.
 |---|---|---|
 | `ideal` | ideal 5 nH | ideal 1 nH |
 | `lc_em` | EM 5-turn model | ideal |
-| `le_q20` / `le_q10` / `le_q5` | ideal | 1 nH + series R, Q = 20 / 10 / 5 |
-| `lc_em_le_q10` | EM 5-turn model | 1 nH + series R, Q = 10 |
+| `le_q20` / `le_q10` / `le_q5` | ideal | 1 nH + series R, Q = 20 / 10 / 5 (shifts bias -- see "Bias confound") |
+| `lc_em_le_q10` | EM 5-turn model | 1 nH + series R, Q = 10 (shifts bias) |
+| `matched` | the committed `design/netlist/lna.spice`, verbatim, no variant edit | |
 
 ### How the campaign runs (and why it is not `run_lna_sweep.sh`)
 
@@ -855,28 +861,72 @@ label -> `cornerHBT`/`cornerMOShv` section map, `gmin = 1e-10`) as `klt sim`
 **corners requests**, because on the Loom dispatch workers a multi-corner grid
 goes to the Spot batch fleet (`KLT_SIM_BACKEND=batch`) rather than being
 hand-launched on the shared host. `klt sim` owns the single `.control` block
-and runs **one analysis per request**, so each variant is three requests:
+and runs **one analysis per request**, so each variant is four requests:
 
 | Request | Analysis (50 ohm ports) | Measurements |
 |---|---|---|
+| `<v>_op` | `op` | DC operating point: `ic1`, `ic2`, `ib1`, `ve1`, `vbe1`, `vce1`, `vce2`, `idd`, `pdc`. Added so a variant's gain/NF delta can be attributed -- see "Bias confound" below |
 | `<v>_sp_band` | `sp lin 11 2.4e9 2.4835e9 1` | |S21|, |S11|, |S22| mid-band and worst-in-band; mu, k in-band; ngspice two-port NF and NFmin |
 | `<v>_sp_stab` | `sp dec 40 1e7 3e10` | mu min and #points mu < 1 and the lowest/highest such frequency; k min; max |S11|, max |S22|; #points |S22| > 1 + 1e-6 |
 | `<v>_noise` | `noise v(nfout) vin lin 11 2.4e9 2.4835e9` (`--nf-npts`/`LNA_NF_NPTS` for a denser odd grid) | NF at T0 = 290 K at every grid point (`nf290_db_f00`..), lo/mid/hi cross-checks, and the sampled maximum; the reducer adds the worst sample's frequency (Rs, RL noiseless, source noise re-added analytically, as in "Noise figure" above) |
 
 Differences from `run_lna_sweep.sh` to keep in mind: one DUT copy per netlist
-(the original runs two copies in one deck); the DC operating point is **not**
-re-recorded (so the extra DC drop across the EM `Lc`'s series resistance,
-~4 mA x ~7 ohm, is not quantified); the stability sweep does not report
+(the original runs two copies in one deck); the stability sweep does not report
 |Delta|; and the NF at 290 K is the 11-point in-band grid (issue #134; was
 three-point lo/mid/hi before), with the "worst" taken over the sampled points
--- a sampled maximum, not a continuous-band bound.
+-- a sampled maximum, not a continuous-band bound. The DC operating point **is**
+re-recorded, by the `<v>_op` request above (it was not before this record).
+
+**Submission.** On the batch backend the whole set goes out in one
+`klt sim --batch-set` invocation (`--max-in-flight`, default 7, bounds how many
+run on the fleet at once; `LNA_VARIANT_MAX_IN_FLIGHT` overrides it), with
+`--wait-for-capacity 600` and `--capacity-retries 3` so a vCPU-budget refusal
+backs off instead of failing the step. Submitting one request at a time instead
+serialises the fleet's ~2 min per-job launch behind all 28 requests. Each
+member's own `report.json` is copied to the same
+`corners/<record-id>/<variant>_<analysis>.report.json` path the serial loop
+writes, so the reducer, the coverage validator and the record provenance cannot
+tell the two submission paths apart. Set mode forces backend `batch` and never
+falls back to local ngspice; a non-zero member exit is reported as a failed
+request even when the set as a whole returns 0.
 
 At the nominal cell the `ideal` variant through this harness reproduces
 the existing record `20260926-122301-088c734` (ngspice-47 local probe):
 |S21|max 11.5657 dB (same), |S11| worst -3.0657 dB (same), k in-band min
 3.824708 (3.82470763), mu in-band min 1.000353, NF(290 K, band lo) 2.6559 dB
-(same). The 45-cell ideal-vs-lossy record is **not yet committed** -- see
-"Status of the 45-cell run" below.
+(same). The 45-cell ideal-vs-lossy record is committed -- see
+"The 45-cell record" below.
+
+### Bias confound in the `le_q*` variants (read before quoting their deltas)
+
+The `le_q*` variants model `Le`'s loss as a **series** resistor, `Le e1 le_x 1n`
++ `Rle le_x vss R`. An ideal inductor is a DC short, so that resistor carries
+Q1's DC emitter current (~3.9 mA): it adds real emitter degeneration that the
+mirror reference Q3 does not see, and so it **moves the bias point as well as
+adding RF loss**. The shift is not small -- at the nominal cell `le_q10` runs
+I_C1 about 12 % below `ideal` -- and it is invisible in the S-parameter and
+noise reports, which carry no OP measurement.
+
+This is why each variant now also has an `<v>_op` request. The record's
+`-compare.csv` carries `d_ic1_a`, `ic1_pct`, `d_ve1_v`, `d_vce1_v` and `d_idd_a`
+beside the RF deltas, and the generated headlines print an explicit **bias
+attribution** line per variant: either "I_C1 within +/-0.05 % of `ideal` at
+every cell -- the deltas above are inductor loss" or "I_C1 shifts up to X % vs
+`ideal` ... the RF deltas above are NOT inductor loss alone".
+
+**Consequence for reading this record**: `lc_em` changes `Lc`, which sits in the
+collector branch, and its loss resistance costs collector-branch DC headroom
+rather than emitter degeneration; the `le_q*` deltas, by contrast, are the sum
+of an inductor-loss effect and a bias-point effect and must not be quoted as
+"the cost of finite Le Q" without the `ic1_pct` column beside them.
+
+A bench that wants RF loss **without** the bias shift should put the loss
+resistor in **parallel** with `Le` (R = Q*omega*L = 153 ohm for Q = 10 at
+2.44175 GHz), which carries no DC current; that is the approach the #186 bench
+takes, and it holds I_C1 at 3.938-3.943 mA across its candidates. Adding a
+parallel-loss variant here is deliberately left to a separate issue -- this
+record's job is to characterise the committed topology and quantify the
+confound, not to redesign the degeneration bench.
 
 ### Limits of the EM model (restated from its own header)
 
@@ -897,25 +947,88 @@ the existing record `20260926-122301-088c734` (ngspice-47 local probe):
    The sibling's own accuracy note: fit residual 0.18 % (1 turn) to 0.9 %
    (4 turns) rms on the series impedance.
 
-### Status of the 45-cell run
+### The 45-cell record (executed 2026-11-14, record `20261114-025351-7a54cc2`)
 
-As of the commit that introduced this section the 45-cell campaign has **not
-been executed**: the Spot batch fleet could not run the request. Evidence (see
-the PR for issue #56): with the worker's client `klt 0.7.0+g4cbdfa769875`,
-job `klt-sim-5399fab90206` failed in 4 s with `batch_runner_version_mismatch`
-(runner image `klt 0.5.0`); with `batch.runner_version_check: "warn"` job
-`klt-sim-e36e3be948d9` failed with `each request.measurements[] entry requires
-'name' and 'spice'` -- the 0.5.0 runner image predates `expr` measurements,
-`options.osdi_preload` and `options.stage_model_inputs`, all of which this
-DUT needs (PSP103 OSDI MOS devices). The worker-local `/usr/bin/ngspice` is
-42, which cannot load the PDK's OSDI v0.4 binaries, so no local fallback is
-available either (and a local 45-cell grid is out of bounds on the shared
-dispatch host regardless). Once the fleet image carries a current `klt`, run
+The campaign ran on the Spot batch fleet and is committed:
+`records/20261114-025351-7a54cc2{.md,-summary.csv,-compare.csv,.pdk-provenance.json}`
+plus the netlist/request snapshots in
+`netlist-snapshots/20261114-025351-7a54cc2/`. Coverage is **COMPLETE**: 6
+variants x 4 analyses x 45 cells, 45/45 valid cells in all 24
+(variant, analysis) pairs, 0 validation issues, 270 summary rows. Reproduce with
 
-    sim/lna-characterization/run_lna_variant.sh        # full 6-variant x 45-cell campaign
+    LNA_VARIANTS=ideal,lc_em,le_q20,le_q10,le_q5,lc_em_le_q10 \
+      sim/lna-characterization/run_lna_variant.sh
 
-which mints a new append-only record and writes the per-cell
-ideal-versus-lossy table (`-compare.csv`).
+**What is committed, and what is not.** The record proper (`.md`, both CSVs,
+`.pdk-provenance.json`), every generated netlist and `klt sim` request under
+`netlist-snapshots/<id>/`, and from `corners/<id>/` the three small reduction
+and provenance files (`set-report.json` -- the `--batch-set` envelope, which
+carries all 24 job ids -- plus `headlines.md` and `coverage.json`). The 24
+per-request `*.report.json` (6.1 MB) and the per-corner decks/logs under
+`corners/<id>/set/` are **retained on the runner host but not committed**, the
+same convention `sim/lna-core-envelope/` follows for its full campaign (only
+its 1-cell gate record is committed). Nothing in the record depends on them:
+the record `.md` quotes each request's job id, instance type, runner `klt`
+version, state, status and corner count, and the CSVs carry every
+variant x cell x measurement. Re-running the command above regenerates them.
+
+Runner provenance (per request, in the record `.md`): client
+`klt 0.9.2.dev1022+g2a9c52b27ce7`, runner `klt 0.9.0`,
+`runner_compatibility: match`, every job `state: done` / `exit_code: 0` on
+`aws-batch-fleet` (`m7i.4xlarge`/`c7i.4xlarge` spot), runner ngspice-47. The
+earlier `batch_runner_version_mismatch` block (runner image `klt 0.5.0`,
+2026-10-08, klayout-tools#2851/#3676) is cleared.
+
+**What finite Q costs, and where mu < 1 remains.** Only `lc_em` is quoted as a
+loss cost: its I_C1 is within 0.01 % of `ideal` at every cell, so its deltas are
+inductor loss. The `le_q*` deltas are **not** quoted as loss, because the series
+loss resistor also moves the bias point (see "Bias confound" above).
+
+| Variant | I_C1 vs ideal | d mag(S21) mid [dB] | d NF290 mid [dB] | mu_min | max mag(S22) | cells with any mu < 1 point |
+|---|---|---|---|---|---|---|
+| `ideal` | -- | -- | -- | 1.00000 | 1.00000 | **45 / 45** (2644 of 6300 swept points) |
+| `lc_em` | -0.01 % | **-0.117 to -0.286** | **+0.022 to +0.058** | 1.01335 | 0.98574 | **0 / 45** |
+| `le_q20` | -4.4 to -9.0 % | -0.303 to -0.366 (confounded) | +0.053 to +0.087 (confounded) | 1.00000 | 1.00000 | 45 / 45 |
+| `le_q10` | -8.4 to -16.1 % | -0.610 to -0.729 (confounded) | +0.105 to +0.171 (confounded) | 1.00000 | 1.00000 | 45 / 45 |
+| `le_q5` | -15.2 to -26.9 % | -1.222 to -1.439 (confounded) | +0.205 to +0.331 (confounded) | 1.00000 | 1.00000 | 45 / 45 |
+| `lc_em_le_q10` | -8.4 to -16.1 % | -0.728 to -1.013 (confounded) | +0.130 to +0.234 (confounded) | 1.01334 | 0.98575 | 0 / 45 |
+
+Worst cell for the `lc_em` gain and NF cost is `wcs/125C/1.62V`; for the
+`le_q*` deltas it is `bcs/125C/1.98V`. `mu_min` / `max |S22|` are over
+10 MHz-30 GHz at 140 swept points per cell, reduced over all 45 cells.
+
+**The answer #27 was waiting for.** With `Le` and `Lc` ideal, every one of the
+45 cells has mu < 1 somewhere in 10 MHz-30 GHz and `max |S22|` is 1.00000 --
+the degenerate on-the-unit-circle condition that makes k ill-conditioned.
+Replacing **`Lc`** with the EM-extracted 5-turn model removes it completely:
+0 of 45 cells retain any mu < 1 point, `mu_min` rises to 1.01335 and
+`max |S22|` falls to 0.98574 (mid-band `|S22|` -0.0035 -> -0.7465 dB). Making
+**`Le`** lossy does not: `le_q5` still shows mu < 1 at all 45 cells. The
+ill-conditioning lives in the collector/output branch, so it is `Lc`'s Q that
+resolves it and `Le`'s Q is irrelevant to it. Cost of that resolution, at the
+worst cell: 0.286 dB of gain and 0.058 dB of NF.
+
+Two precision notes. (1) `n_s22_gt1` is **0 for every variant**, including
+`ideal`: with the 1e-6 tolerance this bench uses, ideal-`Lc` `|S22|` reaches
+1.000000 but is not strictly greater, so the #27 observation is reproduced here
+as *marginal / on-circle*, not as a true `|S22| > 1`. (2) mu < 1 point counts
+are raw swept frequency points (140 per cell, `sp dec 40 1e7 3e10`), as the
+issue asks; they are a count of sampled points, not a bandwidth.
+
+### The `matched` variant does not converge (reported to #27, not fixed here)
+
+`VARIANTS` also carries `matched`, the committed `design/netlist/lna.spice`
+(the #27 matching network) inlined verbatim. It is **not** part of this record:
+a first run of the full 7-variant set (2026-11-14, discarded) failed all four
+`matched` requests with the DUT's **DC operating point not converging at 18 of
+the 45 cells** -- `singular matrix: check node xa.xout` (`xb.xout` in the noise
+netlist), then `Dynamic gmin stepping failed` and an aborted transient op. The
+18 cells are a physical pattern, not noise: every 125 C cell (5 labels x 3
+supplies) plus all three `bcs`/27 C supplies. It fails identically in the `op`
+request, so it is a bias-solution failure, not an analysis artifact. That is a
+property of the matched netlist, which this issue must not change (#56 "Out of
+scope": designing the matching network is #27), so it is reported there rather
+than worked around here. Running `LNA_VARIANTS=matched` reproduces it.
 
 ### Report reduction, coverage validation and the ideal-baseline row summary (issue #87)
 
@@ -952,29 +1065,30 @@ valid/expected cell counts:
 | NF (T0 = 290 K) | `noise.nf290_db_worst` | max over cells | < 1.5 dB |
 
 Equality fails a strict target. A row with fewer valid cells than expected is
-`NOT EVALUATED`, never pass/fail. Disclosed limits: NF290 is sampled at only
-three frequencies (lo/mid/hi), not the continuous band; ngspice sp NF/NFmin
-are distinct from the T0 = 290 K value; DC bias/power and two-tone IIP3 are
-not measured by these three requests; supply and band are configured
+`NOT EVALUATED`, never pass/fail. Disclosed limits: NF290 is sampled on a
+finite in-band grid (11 points by default since #134), not the continuous
+band; ngspice sp NF/NFmin are distinct from the T0 = 290 K value; two-tone
+IIP3 is not measured by these requests (the DC operating point now is, by the
+`op` request); supply and band are configured
 conditions, not measured compliance; numeric agreement on sampled cells is
 not matched physical performance, complete spec compliance, signoff or T1
 item 5.
 
 The unit tests use synthetic reports labelled as fixtures; they are not
-circuit evidence. Producing a real 45-cell record is still the fleet-execution
-work of #56 (see "Status of the 45-cell run": the fleet runner must support
-`measurements[].expr`, `options.osdi_preload` and `options.stage_model_inputs`,
-with job/result evidence retained).
+circuit evidence. The real 45-cell record now exists and is committed -- see
+"The 45-cell record" above for its id, coverage and runner provenance.
 
 ### Nominal-cell probe (not a PVT record)
 
-`LNA_VARIANT_SMOKE=1 LNA_VARIANT_BACKEND=local KLT_NGSPICE_BINARY=<ngspice>=46
-sim/lna-characterization/run_lna_variant.sh` runs every variant at the nominal
-cell only (typ / 27 C / 1.80 V). It is a plumbing check and **not** a PVT
-campaign; its output is deliberately not committed as a record. The numbers it
-gave on 2026-10-08 (ngspice-47, local, 50 ohm ports, band mid = 2.44175 GHz) are
-in the PR description for issue #56; read them as one operating point of one
-process, with all the limits above.
+`LNA_VARIANT_SMOKE=1 sim/lna-characterization/run_lna_variant.sh` runs every
+variant at the nominal cell only (typ / 27 C / 1.80 V). It is a plumbing check
+and **not** a PVT campaign; its output is deliberately not committed as a
+record. It goes to the fleet like any other run; add
+`LNA_VARIANT_BACKEND=local KLT_NGSPICE_BINARY=<ngspice>=46` to force it local
+instead (the PDK's PSP103 OSDI builds target OSDI v0.4, so a local run needs
+ngspice >= 46; this worker now has ngspice-47 on `PATH`). Read its numbers as
+one operating point of one process, with all the limits above. For a real
+result use the committed 45-cell record instead.
 
 ## What these numbers do and do not license
 
