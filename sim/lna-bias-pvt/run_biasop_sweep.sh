@@ -101,17 +101,20 @@ python3 -I "${SCRIPT_DIR}/hbt_audit.py" probes "${DESIGN_NETLIST}" > "${HBT_PROB
   exit 3
 }
 
-# --- PVT grid (identical to sim/lna-characterization) -------------------
+# --- PVT grid (the same five labels as sim/lna-characterization) --------
+# The label -> PDK-section maps are canonical in sim/env.sh
+# (SIM_HBT_SECTION_OF / SIM_MOS_SECTION_OF, issue #283), so this bench and
+# sim/lna-characterization describe the same 45 cells by construction
+# rather than by two copies agreeing. DR-0003 Stage-2 is why both sides
+# apply: the DUT instantiates sg13_hv_pmos/sg13_hv_nmos, so every cell
+# maps onto a cornerMOShv.lib section as well as a cornerHBT.lib one --
+# cornerMOShv ships all five real MOS sections so those map straight
+# through, while sf/fs re-use hbt_typ because no skewed HBT section ships
+# (sim/README.md "Corner-label convention"). The resolved sections this
+# run actually used are recorded verbatim in the record below
+# (sim_grid_desc).
 CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
-# DR-0003 Stage-2: the DUT instantiates sg13_hv_pmos/sg13_hv_nmos, so
-# the 45-cell grid also maps onto cornerMOShv.lib's sections. cornerMOShv
-# ships all five real MOS sections, so the five labels map straight
-# through (typ->mos_tt, bcs->mos_ff, wcs->mos_ss, sf->mos_sf,
-# fs->mos_fs) per sim/README.md "Corner-label convention" -- only the
-# HBT side duplicates (sf/fs have no skewed HBT section and re-use
-# hbt_typ).
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
+RESOLVED_SECTIONS="$(sim_grid_desc)"
 TEMPS=(-40 27 125)
 VDDS=(1.62 1.80 1.98)
 
@@ -146,8 +149,8 @@ trap 'rm -f "${SIM_DUT_SUBCKT}" "${HBT_PROBES}" "${FAILED_LIST}"' EXIT
 
 run_op_cell() {
   local corner_label="$1" temp="$2" vdd="$3"
-  local hbt_section="${HBT_SECTION_OF[${corner_label}]}"
-  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
+  local hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
+  local mos_section="${SIM_MOS_SECTION_OF[${corner_label}]}"
   local point_id="op_${corner_label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
@@ -165,8 +168,8 @@ run_op_cell() {
 
 run_startup_cell() {
   local corner_label="$1" temp="$2" vdd="$3"
-  local hbt_section="${HBT_SECTION_OF[${corner_label}]}"
-  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
+  local hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
+  local mos_section="${SIM_MOS_SECTION_OF[${corner_label}]}"
   local point_id="startup_${corner_label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
@@ -301,6 +304,10 @@ relaxes any row.
   \`cornerMOShv.lib\` sections mapped straight through by the five labels
   (\`mos_tt\`/\`mos_ff\`/\`mos_ss\`/\`mos_sf\`/\`mos_fs\`), with the OSDI
   models preloaded (\`pre_osdi\`).
+- Resolved corner -> section map (as run): \`${RESOLVED_SECTIONS}\` --
+  emitted by \`sim_grid_desc\` from the canonical maps in \`sim/env.sh\`,
+  so this record states the sections the run actually resolved rather
+  than a restated copy of the map.
 - Analysis: ngspice \`op\` per cell; probes named in
   \`testbench/tb_lna_biasop.spice.tmpl\`.
 - Failed cells: none (simulator gate); reduction validated every log (required keys, finite values, one result per point, full inventory, op/startup pairs).

@@ -216,6 +216,9 @@ jobs:
       - name: core-envelope record lifecycle tests
         run: sim/tests/test-core-envelope-lifecycle.sh
 
+      - name: canonical corner-label -> PDK-section map tests
+        run: sim/tests/test-corner-section-maps.sh
+
       - name: shared reducer helper tests
         run: python3 -I -m unittest discover -s sim/tools/tests -v
 
