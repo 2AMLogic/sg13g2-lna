@@ -22,11 +22,23 @@ Exit status: 0 ok, 1 failure, 2 usage.
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
-import subprocess
 import sys
+
+# Shared signoff-checker helpers, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path). Issue #274.
+# dont_write_bytecode first: this check is read-only, including of its own
+# directory.
+sys.dont_write_bytecode = True
+_spec = importlib.util.spec_from_file_location(
+    "signoff_common",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "signoff_common.py"))
+_sc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sc)
+tracked = _sc.tracked
 
 DIR = "manifests/artifacts/"
 REQUIRED = {"sha256", "size", "kind", "producer", "uri"}
@@ -36,11 +48,6 @@ KINDS = {"evidence", "transcript", "log", "pdk"}
 SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 URI_RE = re.compile(r"^artifact:([^/\s]\S*)$")
 LOCATION_RE = re.compile(r"s3://|arn:aws:")
-
-
-def tracked(root):
-    out = subprocess.run(["git", "-C", root, "ls-files", "-z"], check=True, capture_output=True).stdout.decode()
-    return sorted(p for p in out.split("\0") if p)
 
 
 def entry_problems(e):
@@ -84,7 +91,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
     root = os.path.abspath(ap.parse_args(argv).root)
-    files = tracked(root)
+    files = sorted(tracked(root))
     mine = [f for f in files if f.startswith("manifests/")]
     manifests = [f for f in mine if f.startswith(DIR) and f.endswith(".manifest.json")]
     summaries = [f for f in mine if f.startswith(DIR) and f.endswith(".summary.md")]
