@@ -1178,7 +1178,7 @@
       "classification": "variant-exploration",
       "cold_start": [
         {
-          "command": "sim/lna-characterization/run_lna_variant.sh",
+          "command": "LNA_VARIANTS=ideal,lc_em,le_q20,le_q10,le_q5,lc_em_le_q10 sim/lna-characterization/run_lna_variant.sh",
           "doc": "sim/lna-characterization/README.md",
           "kind": "run",
           "needs": [
@@ -1194,13 +1194,31 @@
       ],
       "dut": "present",
       "family": "lna-characterization",
-      "id": "lna-char-variant-campaign-unrun",
-      "limitations": "No committed record: the fleet runner image could not execute it. Attests that the campaign bench ships, not that it has produced a result.",
-      "records": [],
+      "id": "lna-char-variant-campaign-20261114-025351-7a54cc2",
+      "limitations": "Coverage complete (45/45 valid cells in all 24 variant-analysis pairs). Bench results only, not spec conformance. The EM inductor model is one process point, one temperature and three extracted geometries, with corner/temperature scaling inherited from the analytic model, not silicon; mc_rsh/mc_rsub are held at 1.0 in every cell, so passive-process corners are not exercised. Le has no EM model: its loss is a series-R bracket for Q = 5/10/20, and that resistor carries Q1's DC emitter current, so the le_q* gain/NF deltas are confounded by a bias shift (up to -26.9 % I_C1) and are not quoted as loss costs -- only lc_em is (I_C1 within 0.01 % of ideal). NF290 is a sampled 11-point in-band grid, not a continuous-band bound. The 'matched' variant is excluded: its DC operating point does not converge at 18 of the 45 cells (reported to #27).",
+      "records": [
+        {
+          "corners": {
+            "files": 3,
+            "git_blob_digest": "sha256:dd606ece793e213354a8d96986345ee64f7a15706c7efcfc7e7cf0cf76972117"
+          },
+          "id": "20261114-025351-7a54cc2",
+          "netlist_snapshots": {
+            "files": 48,
+            "git_blob_digest": "sha256:d9c49eeacbc45ca4d34126a310a17bf656388d149615b46efc6e8f72ad279548"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261114-025351-7a54cc2-compare.csv",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2.md",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json"
+          ]
+        }
+      ],
       "replay_checks": [
         "sim/lna-characterization/tests/test_lna_variant_campaign.py"
       ],
-      "result_status": "none-blocked",
+      "result_status": "published",
       "runners": [
         "sim/lna-characterization/run_lna_variant.sh"
       ],
@@ -1211,7 +1229,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Inductor-loss variant campaign (issue #56): 6 variants x 45 cells through klt sim.",
+      "summary": "Inductor-loss variant campaign (issue #56): 6 variants x 4 analyses (op, sp_band, sp_stab, noise) x 45 PVT cells through klt sim on the Spot batch fleet.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
@@ -2228,8 +2246,8 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:66ab269999a7377d62513e95368cba943604f0412433af7486c8e83520f007ba",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:96234f8b0eed30e27a94ac3e98aa7ec389c5e4c258d4ec67d3bfc4184f9fab2f",
+    "sim/lna-characterization/README.md": "sha256:574e5ea0554c99e8c4a7f95e4ada416adfc01dfa1a0295b210b10d1ce1f02269",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:d1a95ad31992a10a58ddeada4ebd98a69e70750499bcb79c3841705a1f2f9eb5",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
@@ -2259,9 +2277,13 @@
     "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv": "sha256:a33934c2334885794af0e500eceddb9ffe8d8c293e2aefaf2912c913fa8dcda9",
     "sim/lna-characterization/records/20261101-023246-5bbb70c.md": "sha256:cc21576f4511209afc5fc7e6248da1fa77dfd56fd16541698170e58992fd6bfb",
     "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2-compare.csv": "sha256:86caed8d98f31672f72d3506c49b692fa6a5cc8022c578952edaaf4bb1116697",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv": "sha256:14e7dcc7f1b62c882d340919fb918a360e90f4c77feb6419897568ebe41dc556",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2.md": "sha256:798350acf6fd0e64f42a292aabc02490b5aa12f24870c8f9f4683aec90a31bda",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:d1c984551ddb0c52b147f4bf7d6b070f3125d9d431c38a7e456880b2629f049b",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:0cf4b54af1b0ef4c90703e2b0663d3ddad1f267dfe3bab4397bb3dc69869d24e",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:5e5c0399c067f433aa15e3ad62706e73c813595d7c7d7d151430e0e4a23baa73",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",

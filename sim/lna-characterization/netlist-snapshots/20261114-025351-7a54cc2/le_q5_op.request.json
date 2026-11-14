@@ -1,0 +1,151 @@
+{
+  "netlist": "le_q5_op.spice",
+  "models": {
+    "pdk": "ihp-sg13g2"
+  },
+  "corners": {
+    "process": [
+      {
+        "name": "typ",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_tt"
+          }
+        ]
+      },
+      {
+        "name": "bcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_bcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ff"
+          }
+        ]
+      },
+      {
+        "name": "wcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_wcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ss"
+          }
+        ]
+      },
+      {
+        "name": "sf",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_sf"
+          }
+        ]
+      },
+      {
+        "name": "fs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_fs"
+          }
+        ]
+      }
+    ],
+    "supply_v": {
+      "vdd": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "op",
+    "args": ""
+  },
+  "measurements": [
+    {
+      "name": "ic1",
+      "expr": "@q.xa.xq1.qnpn13g2[ic]",
+      "unit": "A"
+    },
+    {
+      "name": "ic2",
+      "expr": "@q.xa.xq2.qnpn13g2[ic]",
+      "unit": "A"
+    },
+    {
+      "name": "ib1",
+      "expr": "@q.xa.xq1.qnpn13g2[ib]",
+      "unit": "A"
+    },
+    {
+      "name": "ve1",
+      "expr": "v(xa.e1)",
+      "unit": "V"
+    },
+    {
+      "name": "vbe1",
+      "expr": "v(xa.b1) - v(xa.e1)",
+      "unit": "V"
+    },
+    {
+      "name": "vce1",
+      "expr": "v(xa.casc) - v(xa.e1)",
+      "unit": "V"
+    },
+    {
+      "name": "vce2",
+      "expr": "v(xa.outn) - v(xa.casc)",
+      "unit": "V"
+    },
+    {
+      "name": "idd",
+      "expr": "-i(vdd)",
+      "unit": "A"
+    },
+    {
+      "name": "pdc",
+      "expr": "v(vdd)*(-i(vdd))",
+      "unit": "W"
+    }
+  ],
+  "options": {
+    "timeout_s": 900,
+    "keep_artifacts": true,
+    "osdi_preload": [
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi"
+    ],
+    "stage_model_inputs": true,
+    "ngspice_init": [
+      "set numdgt=8"
+    ]
+  }
+}
