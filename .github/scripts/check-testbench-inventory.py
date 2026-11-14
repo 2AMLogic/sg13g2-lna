@@ -30,18 +30,30 @@ Exit status: 0 ok, 1 audit/freshness failure, 2 usage error.
 import argparse
 import fnmatch
 import hashlib
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
 
+# Shared signoff-checker helpers, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path). Issue #274.
+# dont_write_bytecode first: a __pycache__/ write would break this checker's
+# own "check mode writes nothing" guarantee.
+sys.dont_write_bytecode = True
+_spec = importlib.util.spec_from_file_location(
+    "signoff_common",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "signoff_common.py"))
+_sc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sc)
+Audit, check_bindings, read_bytes, render, sha256_bytes = (
+    _sc.Audit, _sc.check_bindings, _sc.read_bytes, _sc.render, _sc.sha256_bytes)
+
 ITEM = 9
 INDEX = "signoff/testbench-coverage.json"
 INVENTORY = "signoff/testbench-inventory.json"
 ENVELOPE = "signoff/testbench-inventory.envelope.json"
-MANIFEST = "signoff/manifest.json"
-REPORT = "signoff/t1-report.json"
 WORKFLOW = ".github/workflows/signoff.yml"
 PDK_JSON = "sim/pdk.json"
 
@@ -87,26 +99,11 @@ MECHANICAL_CHECKS = [
 ]
 
 
-class Audit:
-    def __init__(self, root):
-        self.root = root
-        self.errors = []
-
-    def err(self, msg):
-        self.errors.append(msg)
-
-
-def sha256_bytes(data):
-    return "sha256:" + hashlib.sha256(data).hexdigest()
-
-
-def read_bytes(root, rel):
-    with open(os.path.join(root, rel), "rb") as fh:
-        return fh.read()
-
-
 def read_text(root, rel):
-    return read_bytes(root, rel).decode("utf-8", errors="replace")
+    """Lenient decode: this audit scans prose documents for their documented
+    invocations, so one undecodable byte must not abort it. The shared helper
+    defaults to strict."""
+    return _sc.read_text(root, rel, errors="replace")
 
 
 def git_ls_files(root):
@@ -555,10 +552,6 @@ def build(root, audit):
     }
 
 
-def render(obj):
-    return (json.dumps(obj, indent=2, sort_keys=True) + "\n").encode()
-
-
 def envelope_for(inv_hash):
     return {
         "schema_version": 1,
@@ -574,29 +567,6 @@ def envelope_for(inv_hash):
         "source": "signoff/testbench-inventory.json via .github/scripts/check-testbench-inventory.py",
         "provenance": {"input": {"path": INVENTORY, "content_hash": inv_hash}},
     }
-
-
-def check_bindings(audit, inv_bytes, require_envelope=True):
-    root = audit.root
-    inv_hash = sha256_bytes(inv_bytes)
-    try:
-        env = json.loads(read_text(root, ENVELOPE))
-    except FileNotFoundError:
-        if require_envelope:
-            audit.err("envelope %s is missing" % ENVELOPE)
-        env = None
-    except ValueError as exc:
-        audit.err("envelope %s is not valid JSON (%s)" % (ENVELOPE, exc))
-        env = None
-    if env is not None:
-        exp = envelope_for(inv_hash)
-        if env != exp:
-            for k in sorted(set(env) | set(exp)):
-                if env.get(k) != exp.get(k):
-                    audit.err(
-                        "stale envelope: field %r differs from what the current inventory "
-                        "requires (regenerate with --write)" % k
-                    )
 
 
 def main(argv):
@@ -649,7 +619,7 @@ def main(argv):
               "`python3 -I .github/scripts/check-testbench-inventory.py --write`" % (INVENTORY, INDEX),
               file=sys.stderr)
         return 1
-    check_bindings(audit, committed)
+    check_bindings(audit, root, ENVELOPE, committed, envelope_for)
     if audit.errors:
         for e in audit.errors:
             print("BINDING: %s" % e, file=sys.stderr)

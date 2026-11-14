@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 12164,
+      "bytes": 11841,
       "role": "script of a declared CI command",
-      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
+      "sha256": "sha256:4d1ac5c167a399694221afceb2ebf840e22d066ca0e70c2506e77a2996443991"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -49,14 +49,14 @@
       "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
     },
     ".github/scripts/check-testbench-inventory.py": {
-      "bytes": 28193,
+      "bytes": 27761,
       "role": "script of a declared CI command",
-      "sha256": "sha256:fc7f3fcc5fbfa9a67b8eaa081234cf7096e2e1f8f9f804efed7d00c21bb28c8e"
+      "sha256": "sha256:6fe734378eec31137ce92b46a93ce0c1fdc4357feecb859b1a8fb7da7291a0b8"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 7288,
+      "bytes": 8223,
       "role": "script of a declared CI command",
-      "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
+      "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/scripts/test-check-signoff.sh": {
       "bytes": 9959,
@@ -144,14 +144,19 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 12164,
+      "bytes": 11841,
       "role": "this audit",
-      "sha256": "sha256:0ce4237a3e5f101dc66516ed6ff48ded4f4bc359b42ab7c360c7aa9ca8b86997"
+      "sha256": "sha256:4d1ac5c167a399694221afceb2ebf840e22d066ca0e70c2506e77a2996443991"
+    },
+    ".github/scripts/signoff_common.py": {
+      "bytes": 4285,
+      "role": "shared helpers this audit and the item-9 audit load",
+      "sha256": "sha256:17795f2485bb2cb2d09d2e053b74ce7c9fd3f1a1850d8b222c02bf58ea39a3f8"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 7288,
+      "bytes": 8223,
       "role": "this audit's self-test",
-      "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
+      "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/workflows/signoff.yml": {
       "bytes": 26458,
