@@ -117,6 +117,12 @@ def main() -> int:
     ap.add_argument("--stab-grid", default=None, metavar="LO,HI,NDEC",
                     help="declared stability `sp dec NDEC LO HI` grid; when "
                          "given, every stability table must cover it")
+    ap.add_argument("--resolved-sections", default=None, metavar="DESC",
+                    help="the run's RESOLVED corner -> PDK-section map, as "
+                         "emitted by sim_grid_desc (sim/env.sh, issue #283): "
+                         "`label=hbt_section,mos_section` entries joined by "
+                         "`;`. Recorded verbatim in the record header so the "
+                         "record states the sections the run actually used")
     ap.add_argument("--require-all-points", action="store_true",
                     help="strict mode (used by run_core_envelope.sh): exit 5 "
                          "BEFORE staging or publishing anything if any "
@@ -442,6 +448,15 @@ def main() -> int:
         "  x VDD {1.62,1.80,1.98} V = 45 cells per variant. `sf`/`fs` are",
         "  documented DUPLICATES of `typ` (`cornerHBT.lib` ships three real HBT",
         "  sections -- see #41), so the HBT axis is three real corners, not five.",
+    ]
+    if args.resolved_sections:
+        md += [
+            f"- **Resolved corner -> section map (as run)**: "
+            f"`{args.resolved_sections}` -- emitted by `sim_grid_desc` from the",
+            "  canonical maps in `sim/env.sh`, so this record states the sections",
+            "  the run actually resolved rather than a restated copy of the map.",
+        ]
+    md += [
         f"- **Result**: {len(rows)} points across {len(variants)} variants"
         + (f"; {len(failed)} failed" if failed else "; no failed points") + ".",
         "",

@@ -13,10 +13,14 @@
 # and used to copy-paste: sim_require_pdk (the preflight and its exit-3
 # contract), sim_record_paths (mint a <record-id>, create its append-only
 # output dirs), sim_jobs / sim_pool_init / sim_pool_spawn (the ngspice job
-# pool), sim_render (deck rendering) and sim_check_log (the per-point
-# pass/fail gate). See sim/README.md "Shared runner surface (sim/env.sh)"
-# for what each one contracts to do. Bench definitions -- sweep grids,
-# corner-section maps, per-experiment template substitutions, SMOKE
+# pool), sim_render (deck rendering), sim_check_log (the per-point
+# pass/fail gate) and the canonical corner-label -> PDK-section maps
+# SIM_HBT_SECTION_OF / SIM_MOS_SECTION_OF with their sim_grid_desc
+# formatter (issue #283: that is one PDK fact, not a per-bench choice, and
+# it has already taken one cross-repo correction). See sim/README.md
+# "Shared runner surface (sim/env.sh)" for what each one contracts to do.
+# Bench definitions -- the sweep grids themselves, including each runner's
+# own CORNER_LABELS, per-experiment template substitutions, SMOKE
 # overrides, bespoke failure criteria -- deliberately stay in each runner.
 #
 # Safe to source from any directory; does not require `klt` to be
@@ -72,6 +76,75 @@ SIM_PDK_PROVENANCE_JSON="" # set by sim_require_pdk: verified PDK identity + mod
 SIM_PDK_RELEASE=""        # set by sim_require_pdk: verified installed release (raw)
 SIM_PDK_PROVENANCE_FILE="" # set by sim_record_paths: records/<id>.pdk-provenance.json
 SIM_PDK_ID_ROUTE=""       # set by sim_require_pdk: tarball-marker | source-checkout
+
+# --- Corner label -> PDK section maps ------------------------------------
+# One PDK fact, stated once (issue #283). `cornerHBT.lib` ships three REAL
+# HBT sections -- `hbt_typ`, `hbt_bcs`, `hbt_wcs` -- so the fleet's
+# five-label PVT grid maps its two skewed labels (`sf`, `fs`) back onto
+# `hbt_typ`: no skewed HBT section exists in this PDK. `cornerMOShv.lib`
+# does ship all five real MOS sections, so the MOS side maps straight
+# through. See sim/README.md "Corner-label convention: `cornerHBT.lib` has
+# three sections, not five" for the verification behind that, and
+# WORK_LOG.md's issue #41 entry for the cross-repo correction that is
+# exactly why the fact now lives in one place instead of six.
+#
+# These are the resolved-section maps ONLY. Each runner still owns its own
+# CORNER_LABELS, which is a bench definition and differs per experiment
+# (`biasref-topology` deliberately runs three labels;
+# `hbt-characterization` makes the axis env-overridable so an earlier
+# record's narrower grid stays reproducible). Every consumer is a keyed
+# lookup on a CORNER_LABELS entry, never an iteration over these keys, so
+# the five-key maps serve a three-label grid unchanged.
+declare -A SIM_HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
+declare -A SIM_MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
+
+sim_grid_desc() {
+  # sim_grid_desc [--hbt-only]
+  #
+  # Emits this run's RESOLVED corner -> PDK section map, in CORNER_LABELS
+  # order, as a `;`-joined list of `<label>=<hbt_section>,<mos_section>`
+  # -- or of `<label>=<hbt_section>` with --hbt-only, for the HBT-only
+  # benches (`hbt-characterization`, `breakdown-extraction`) whose decks
+  # never load `cornerMOShv.lib`. No leading or trailing separator.
+  #
+  # This is what keeps a record self-describing now that the maps are
+  # shared rather than restated in each runner: the record states the
+  # sections the run ACTUALLY resolved, instead of the reader having to
+  # trust that the runner's inline copy of the map was the current one.
+  # Generalized from `run_core_envelope.sh`'s own GRID_DESC line, whose
+  # output it reproduces byte-for-byte (issue #283).
+  #
+  # Reads CORNER_LABELS from the caller's scope. A label with no entry in
+  # the canonical maps is an unresolvable grid, so it fails loudly (exit
+  # status 2, message on stderr) rather than emitting an empty section --
+  # under the runners' `set -e` that aborts the run before any record is
+  # written.
+  local __sgd_hbt_only=0
+  case "${1:-}" in
+    --hbt-only) __sgd_hbt_only=1 ;;
+    "") ;;
+    *)
+      echo "${SIM_SCRIPT_NAME:+${SIM_SCRIPT_NAME}: }sim_grid_desc: unknown argument '$1' (expected --hbt-only or no argument)" >&2
+      return 2 ;;
+  esac
+
+  local __sgd_out="" __sgd_c
+  for __sgd_c in "${CORNER_LABELS[@]}"; do
+    if [[ -z "${SIM_HBT_SECTION_OF[${__sgd_c}]:-}" ]]; then
+      echo "${SIM_SCRIPT_NAME:+${SIM_SCRIPT_NAME}: }sim_grid_desc: corner label '${__sgd_c}' has no cornerHBT.lib section in SIM_HBT_SECTION_OF (sim/env.sh)" >&2
+      return 2
+    fi
+    __sgd_out+="${__sgd_out:+;}${__sgd_c}=${SIM_HBT_SECTION_OF[${__sgd_c}]}"
+    if [[ "${__sgd_hbt_only}" -eq 0 ]]; then
+      if [[ -z "${SIM_MOS_SECTION_OF[${__sgd_c}]:-}" ]]; then
+        echo "${SIM_SCRIPT_NAME:+${SIM_SCRIPT_NAME}: }sim_grid_desc: corner label '${__sgd_c}' has no cornerMOShv.lib section in SIM_MOS_SECTION_OF (sim/env.sh)" >&2
+        return 2
+      fi
+      __sgd_out+=",${SIM_MOS_SECTION_OF[${__sgd_c}]}"
+    fi
+  done
+  printf '%s\n' "${__sgd_out}"
+}
 
 sim_require_pdk() {
   # sim_require_pdk <script-name> [--osdi]

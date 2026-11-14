@@ -93,13 +93,18 @@ MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
 
 # --- Sweep grid ----------------------------------------------------------
 # Corner labels mirror cornerMOShv.lib's five-label convention (for
-# fleet-wide consistency), mapped onto cornerHBT.lib's three REAL sections
-# -- see sim/README.md "Corner-label convention" for the discrepancy this
-# resolves. sf/fs fall back to hbt_typ, so their rows are numerically
-# identical to typ by construction; they are run and recorded anyway so
-# the grid is literally the one spec/target-spec.md names.
+# fleet-wide consistency); they resolve against the canonical
+# cornerHBT.lib section map in sim/env.sh (SIM_HBT_SECTION_OF, issue
+# #283), which has three REAL sections -- see sim/README.md "Corner-label
+# convention" for the discrepancy this resolves. sf/fs fall back to
+# hbt_typ there, so their rows are numerically identical to typ by
+# construction; they are run and recorded anyway so the grid is literally
+# the one spec/target-spec.md names. This bench is HBT-only (no
+# cornerMOShv.lib in its decks), hence sim_grid_desc --hbt-only for the
+# record. The resolved sections this run actually used are recorded
+# verbatim in the record below.
 CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
+RESOLVED_SECTIONS="$(sim_grid_desc --hbt-only)"
 TEMPS=(-40 27 125)
 NXS=(1 8)
 
@@ -283,7 +288,7 @@ run_bench_b() {
 echo "run_breakdown_sweep.sh: record ${RECORD_ID}; Bench A (open base) ..."
 # --- Bench A: BVCEO (open base), self-heating ON and OFF -----------------
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for nx in "${NXS[@]}"; do
       for selft in 1 0; do
@@ -302,7 +307,7 @@ echo "run_breakdown_sweep.sh: Bench A (finite base termination) ..."
 # is reached, and the open-base cells above already bound the
 # self-heating sensitivity.
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for nx in "${NXS[@]}"; do
       for rb_label in 14k 1p4k; do
@@ -328,7 +333,7 @@ done
 echo "run_breakdown_sweep.sh: Bench B (held-base leakage + controls) ..."
 # --- Bench B: the naive voltage-driven control at a quasi-open base ------
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for nx in "${NXS[@]}"; do
       run_bench_b "${corner_label}" "${hbt_section}" "${temp}" "${nx}" 1 1g \
@@ -342,7 +347,7 @@ done
 # single-valued over the whole swept range (asserted per cell in the
 # summary's ic_monotone_in_vce column, not assumed).
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for nx in "${NXS[@]}"; do
       for rb_label in 1p4k short; do
@@ -358,7 +363,7 @@ done
 # the branch-following failure is not unique to an open base, and so
 # Bench A's answer for the same cells can be cross-checked against it.
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for nx in "${NXS[@]}"; do
       run_bench_b "${corner_label}" "${hbt_section}" "${temp}" "${nx}" 1 14k \
@@ -369,7 +374,7 @@ done
 
 # --- Bench B: extended-ceiling probe (12 V), OUTSIDE model validity ------
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     run_bench_b "${corner_label}" "${hbt_section}" "${temp}" 8 1 1p4k \
       extended-probe "${V_STOP_EXT}" "${N_POINTS_B_EXT}" bx
@@ -601,6 +606,11 @@ rm -f "${HEADLINE}"
   echo "  RB=1e9 Ohm over the full grid (naive-method control), RB=1.4e4"
   echo "  Ohm over the full grid (snapback control), and a ${V_STOP_EXT} V"
   echo "  extended-ceiling probe at RB=1.4e3 Ohm, Nx=8."
+  echo "- **Resolved corner -> section map (as run)**: \`${RESOLVED_SECTIONS}\`"
+  echo "  -- emitted by \`sim_grid_desc --hbt-only\` from the canonical map"
+  echo "  in \`sim/env.sh\` (this bench is HBT-only), so this record states"
+  echo "  the sections the run actually resolved rather than a restated"
+  echo "  copy of the map."
   echo "- **Self-heating**: the open-base (BVCEO) cells are run **both"
   echo "  ways** -- \`selft=1\` (the PDK default, thermal node active, rth ="
   echo "  \`selft*3.26e3*(4/Nx)**0.9\` K/W) and \`selft=0\` (rth forced to 0)."
