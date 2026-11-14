@@ -104,21 +104,20 @@ grep -q '^\.subckt lna ' "${SIM_DUT_SUBCKT}" || {
 }
 
 # --- PVT grid -----------------------------------------------------------
-# Corner labels mirror the five-label fleet convention, mapped onto
-# cornerHBT.lib's three REAL sections -- see sim/README.md "Corner label
-# convention": sf/fs fall back to hbt_typ because no skewed HBT section
-# exists in this PDK. Read `wcs` as this repo's `ss`-equivalent wherever
+# Corner labels mirror the five-label fleet convention. The label ->
+# PDK-section maps they resolve against are canonical in sim/env.sh
+# (SIM_HBT_SECTION_OF / SIM_MOS_SECTION_OF, issue #283): sf/fs fall back to
+# hbt_typ because cornerHBT.lib has no skewed HBT section, while
+# cornerMOShv.lib ships all five so the MOS side maps straight through --
+# see sim/README.md "Corner-label convention". DR-0003 Stage-2 is why both
+# sides apply here: the DUT instantiates sg13_hv_pmos/sg13_hv_nmos as well
+# as npn13G2. Read `wcs` as this repo's `ss`-equivalent wherever
 # spec/target-spec.md names an `ss`-corner binding condition.
+# sim/lna-bias-pvt/run_biasop_sweep.sh resolves the same five labels
+# against the same maps, so the two benches describe the same 45 cells.
+# The resolved sections this run actually used are recorded verbatim in the
+# record below (sim_grid_desc).
 CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
-# DR-0003 Stage-2: the DUT also instantiates sg13_hv_pmos/sg13_hv_nmos, so
-# every cell maps onto a cornerMOShv.lib section as well. cornerMOShv ships
-# all five real MOS sections, so the five labels map straight through
-# (typ->mos_tt, bcs->mos_ff, wcs->mos_ss, sf->mos_sf, fs->mos_fs) -- only
-# the HBT side duplicates. Identical mapping to
-# sim/lna-bias-pvt/run_biasop_sweep.sh, so the two benches describe the same
-# 45 cells.
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
 TEMPS=(-40 27 125)
 # DR-1's proposed nominal rail is 1.8 V; spec/target-spec.md's "Verification
 # corners" asks for +/-10% around whatever the Supply row eventually ratifies.
@@ -192,6 +191,11 @@ if [[ -n "${LNA_SWEEP_SMOKE:-}" ]]; then
   echo "run_lna_sweep.sh: LNA_SWEEP_SMOKE set -- single-cell smoke run, NOT a PVT campaign"
 fi
 
+# The resolved `label=hbt_section,mos_section` list for the record header
+# below (sim_grid_desc, sim/env.sh). Computed AFTER any SMOKE narrowing, so
+# a record states the sections that run actually resolved.
+RESOLVED_SECTIONS="$(sim_grid_desc)"
+
 # --- Concurrency -------------------------------------------------------
 # Each scheduled point is an independent `ngspice -b` on its own generated
 # deck, writing only files named after that point, so the pool below is a
@@ -213,7 +217,7 @@ trap 'rm -f "${SIM_DUT_SUBCKT}" "${FAILED_LIST}"' EXIT
 
 run_sparam_cell() {
   local corner_label="$1" hbt_section="$2" temp="$3" vdd="$4"
-  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
+  local mos_section="${SIM_MOS_SECTION_OF[${corner_label}]}"
   local point_id="sp_${corner_label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
@@ -247,7 +251,7 @@ run_sparam_cell() {
 
 run_iip3_point() {
   local corner_label="$1" hbt_section="$2" temp="$3" vdd="$4" amp="$5" amp_label="$6"
-  local mos_section="${MOS_SECTION_OF[${corner_label}]}"
+  local mos_section="${SIM_MOS_SECTION_OF[${corner_label}]}"
   local point_id="iip3_${corner_label}_${temp}c_vdd${vdd}v_${amp_label}"
   local netlist="${SNAPSHOTS_OUT}/${point_id}.spice"
   local log="${CORNERS_OUT}/${point_id}.log"
@@ -322,7 +326,7 @@ MANIFEST="${RECORDS_DIR}/${RECORD_ID}-expected-points.txt"
 echo "run_lna_sweep.sh: record ${RECORD_ID} (${LNA_SWEEP_JOBS} concurrent ngspice job(s))"
 echo "run_lna_sweep.sh: phase 1/2 -- S-parameters, NF, stability ($(( ${#CORNER_LABELS[@]} * ${#TEMPS[@]} * ${#VDDS[@]} )) cells)"
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
       sim_pool_spawn run_sparam_cell "${corner_label}" "${hbt_section}" "${temp}" "${vdd}"
@@ -333,7 +337,7 @@ wait
 
 echo "run_lna_sweep.sh: phase 2/2 -- two-tone IIP3"
 for corner_label in "${CORNER_LABELS[@]}"; do
-  hbt_section="${HBT_SECTION_OF[${corner_label}]}"
+  hbt_section="${SIM_HBT_SECTION_OF[${corner_label}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
       for amp in "${AMPS_GRID[@]}"; do
@@ -344,7 +348,7 @@ for corner_label in "${CORNER_LABELS[@]}"; do
   done
 done
 for amp in "${AMPS_NOMINAL_ONLY[@]}"; do
-  sim_pool_spawn run_iip3_point "${NOMINAL_CORNER}" "${HBT_SECTION_OF[${NOMINAL_CORNER}]}" \
+  sim_pool_spawn run_iip3_point "${NOMINAL_CORNER}" "${SIM_HBT_SECTION_OF[${NOMINAL_CORNER}]}" \
     "${NOMINAL_TEMP}" "${NOMINAL_VDD}" "${amp}" "$(amp_label_of "${amp}")"
 done
 wait
@@ -416,6 +420,10 @@ HEADLINES="$(python3 "${EXPERIMENT_DIR}/parse_lna_sweep.py" --headlines \
   echo "  PSP103.6 OSDI models preloaded (\`pre_osdi\`). Identical mapping to"
   echo "  \`sim/lna-bias-pvt/run_biasop_sweep.sh\`, so both benches describe"
   echo "  the same 45 cells."
+  echo "- **Resolved corner -> section map (as run)**: \`${RESOLVED_SECTIONS}\`"
+  echo "  -- emitted by \`sim_grid_desc\` from the canonical maps in"
+  echo "  \`sim/env.sh\`, so this record states the sections the run"
+  echo "  actually resolved rather than a restated copy of the map."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`, with"
   echo "  \`.options gmin=1e-10\` in every deck. That is 100x ngspice-46's"
   echo "  own 1e-12 default and is NOT what the two pre-DR-0003 records ran"
