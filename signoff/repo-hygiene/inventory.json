@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11841,
+      "bytes": 10047,
       "role": "script of a declared CI command",
-      "sha256": "sha256:8bed73769798e510915f6b6694818aa2690dc3969ac88278fdf5e8521eabb9a7"
+      "sha256": "sha256:f934d3ed3e706ccd908d1b5474af31b408a8a0c6838c7188b3ba0a23f25f5067"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -49,9 +49,9 @@
       "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
     },
     ".github/scripts/check-testbench-inventory.py": {
-      "bytes": 27761,
+      "bytes": 26428,
       "role": "script of a declared CI command",
-      "sha256": "sha256:6fe734378eec31137ce92b46a93ce0c1fdc4357feecb859b1a8fb7da7291a0b8"
+      "sha256": "sha256:6964f00f28c4fb57307d2364a4c645369ed2805147ee50e3a35b53778af21f62"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
       "bytes": 8223,
@@ -144,14 +144,14 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11841,
+      "bytes": 10047,
       "role": "this audit",
-      "sha256": "sha256:8bed73769798e510915f6b6694818aa2690dc3969ac88278fdf5e8521eabb9a7"
+      "sha256": "sha256:f934d3ed3e706ccd908d1b5474af31b408a8a0c6838c7188b3ba0a23f25f5067"
     },
     ".github/scripts/signoff_common.py": {
-      "bytes": 4285,
+      "bytes": 10623,
       "role": "shared helpers this audit and the item-9 audit load",
-      "sha256": "sha256:17795f2485bb2cb2d09d2e053b74ce7c9fd3f1a1850d8b222c02bf58ea39a3f8"
+      "sha256": "sha256:3d94ddeb0278f6db024ee4cdd659eda2cf7a92ccabcec0e54c1b5ffea52efdaf"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
       "bytes": 8223,
