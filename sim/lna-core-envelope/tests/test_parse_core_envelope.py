@@ -141,6 +141,24 @@ class EndToEnd(ParserCase):
         self.assertEqual(self.rows()[0]["model_card_flags"],
                          "vbe1=0.5000_outside_0.65-0.96")
 
+    def test_resolved_sections_recorded_verbatim(self):
+        # Issue #287: the record header must state the run's resolved
+        # corner -> section map (sim_grid_desc output) exactly as given.
+        desc = "typ=hbt_typ,mos_tt;bcs=hbt_bcs,mos_ff;wcs=hbt_wcs,mos_ss"
+        p = self.run_parser("--resolved-sections", desc)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        md = (self.records / "rec.md").read_text()
+        self.assertIn("Resolved corner -> section map (as run)", md)
+        self.assertIn(f"`{desc}`", md)
+
+    def test_resolved_sections_absent_omits_bullet(self):
+        # ...and with no flag the bullet is absent entirely, not empty.
+        p = self.run_parser()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        md = (self.records / "rec.md").read_text()
+        self.assertNotIn("Resolved corner -> section map", md)
+        self.assertNotIn("sim_grid_desc", md)
+
 
 class ExclusivePublication(ParserCase):
     """Issue #126: published summaries are never overwritten."""
