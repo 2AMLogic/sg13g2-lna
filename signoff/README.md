@@ -37,14 +37,20 @@ record"), a characterization report in `measurements/`, a partially
 ratified `spec/target-spec.md`, and (since issue #63) a partial layout
 with `klt` DRC/extract/LVS envelopes in `layout/`.
 
-The engineering evidence for the current DUT (the DR-0003 flat-reference
-bias core on `main`, issue #33 / PR #40) is already re-baselined:
+The engineering evidence for the DR-0003 flat-reference bias core
+(issue #33 / PR #40) was re-baselined on the **pre-match** netlist —
+the `design/netlist/lna.spice` of the time, since frozen as
+`sim/pre-match-dut/lna.pre27.spice`. The matched netlist now on `main`
+(#27) has a committed 45-cell record only through the inductor-loss
+variant campaign (`run_lna_variant.sh`,
+`sim/lna-characterization/README.md` §"The 45-cell record") plus a
+nominal-cell smoke run; no DC or statistical campaign has run on it:
 
 - **RF**: `sim/lna-characterization/` record `20260926-122301-088c734`
-  (issue #49), the full 45-cell PVT grid. `measurements/README.md` reads
-  only this record.
-- **DC**: `sim/lna-bias-pvt/` record `20260921-173552-2aeafef`, whose DUT
-  sha256 matches today's `design/netlist/lna.spice`.
+  (issue #49), the full 45-cell PVT grid, **pre-match**.
+  `measurements/README.md` reads only this record.
+- **DC**: `sim/lna-bias-pvt/` record `20260921-173552-2aeafef`,
+  **pre-match** as well.
 
 The earlier DUT campaigns stay committed as append-only history and
 describe circuits that no longer exist: RF records
@@ -82,24 +88,35 @@ down as follows:
 - **Item 5 accepts only a `klt sim` envelope** for this analog block, and
   none exists for the current DUT. The current RF and DC records above
   are ngspice + bash + CSV/Markdown records, not `klt` JSON envelopes, so
-  the grader cannot read them even though they run against today's
-  netlist. The one `klt sim` campaign in the repo, the issue-#56
-  inductor-loss variant run (`sim/lna-characterization/run_lna_variant.sh`),
-  has no committed record: the batch fleet's runner image could not
-  execute it (`sim/lna-characterization/README.md` §"Status of the 45-cell
-  run"). A native envelope would still not render `met` today. The
-  current record misses the ratified gain, NF, S11, S22 and broadband μ
-  rows at every one of the 45 cells (`measurements/README.md`
-  §"Results against the ratified target table"). The IIP3 numeric target
-  is still DRAFT. All passives are ideal, so the RF figures are
-  optimistic and the "fs/sf (L/C mismatch)" binding corner is not
-  exercised. The matching-network gap is #27.
-- **Item 6 accepts only a `klt yield` envelope**, and no statistical
-  evidence exists at all. Every committed campaign uses the
-  `hbt_typ`/`hbt_bcs`/`hbt_wcs` corner sections, not the
-  `*_mismatch`/`*_stat` sections, and `spec/target-spec.md` lists
-  mismatch/Monte-Carlo as not covered. A corner matrix cannot stand in
-  for it. Disclosing which rows are statistical is tracked in #89.
+  the grader cannot read them. The one committed `klt sim` campaign, the
+  issue-#56 inductor-loss variant run (record `20261114-025351-7a54cc2`,
+  on the matched DUT), kept its 24 per-request result envelopes on the
+  fleet runner (`sim/lna-characterization/README.md` §"The 45-cell
+  record"); only its record, CSVs and `--batch-set` envelope are
+  committed. A native envelope would still not render `met` today. The
+  committed PVT record (`20260926-122301-088c734`, pre-match) misses the
+  ratified gain, NF, S11, S22 and broadband μ rows at every one of the
+  45 cells (`measurements/README.md` §"Results against the ratified
+  target table"). The IIP3 numeric target is still DRAFT. That record's
+  DUT has all-ideal passives, so its RF figures are optimistic and the
+  "fs/sf (L/C mismatch)" binding corner is not exercised; the matched
+  DUT adds the `lp_noise` network with explicit inductor loss, and its
+  remaining gaps are tracked in #27.
+- **Item 6 accepts only a `klt yield` envelope**, and the committed
+  statistical evidence does not satisfy it. The full-DUT DC mismatch
+  campaign has run and is committed —
+  `lna-bias-pvt-mc-campaign-20261105-080636-5383b49`
+  (`sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md`:
+  200-sample mismatch distribution with nominal negative control) — but
+  it leaves the row `unmet` for two reasons: it is a ngspice Monte Carlo
+  summary, not a `klt yield` envelope, and it ran the **pre-match**
+  netlist (frozen as `sim/pre-match-dut/lna.pre27.spice`), not the
+  matched DUT now on `main`, so it cannot grade the current design. The
+  PVT campaigns remain corner matrices (`hbt_typ`/`hbt_bcs`/`hbt_wcs`
+  sections), which cannot stand in for a mismatch/Monte-Carlo row, and
+  `spec/target-spec.md` still lists mismatch/Monte-Carlo
+  (`*_mismatch`/`*_stat`) as not covered. Disclosing which rows are
+  statistical is tracked in #89.
 - **Item 8 is the only item a bare generic envelope may satisfy.** Its
   natural artifact, `measurements/README.md`, is current: it reads only
   the DR-0003 record `20260926-122301-088c734` and compares it against
@@ -348,10 +365,17 @@ a result:
   simulation. This includes the `measurements/` results table, which is a
   summary view and not a new simulated measurement.
 
-Blocked or unrun campaigns (the full-DUT mismatch campaign, the
-inductor-loss variant campaign, the emitter-array campaign) are listed
-with `result_status` `none-blocked` or `none-unrun`. The inventory then
-attests that their bench ships, not that it produced a result.
+Campaigns that have not produced a result are listed with `result_status`
+`none-blocked` or `none-unrun`; when one later runs, its `published`
+entry is added and the placeholder is retained as history. The full-DUT
+mismatch campaign, for example, is inventoried both as the retained
+`none-blocked` `lna-bias-pvt-mc-campaign-blocked` and as the
+`published` `lna-bias-pvt-mc-campaign-20261105-080636-5383b49`, and the
+inductor-loss variant campaign has its `published`
+`lna-char-variant-campaign-20261114-025351-7a54cc2`. Still waiting on a
+result: the emitter-array and cascode-split campaign
+(`core-envelope-campaign-unrun`, `none-unrun`). The inventory then
+attests that a bench ships, not that it produced a result.
 
 **Checked mechanically** (`check-testbench-inventory.py`, no PDK,
 ngspice, klt or network, and no writes): the index parses; every listed

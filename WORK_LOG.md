@@ -6,6 +6,13 @@
 
 ### 2026-11-15
 
+- **PR #292**: sim: validate core-envelope base-netlist anchors up front and print per-variant substitution evidence
+- **PR #291**: refactor: dedupe startup verdict rule and require across the sim reducers
+- **PR #284**: refactor(signoff): consolidate inventory/envelope scaffolding into signoff_common.py
+- **Issue #289** (closed): check-klt-pin.sh does not gate KLAYOUT_PIN, so the engine pin can skew between run_flow.sh and run_native_drc.py
+- **Issue #280** (closed): Finish #160: dedupe the startup verdict rule and its thresholds across the two sim reducers
+- **Issue #277** (closed): sim-core-envelope-lifecycle-tests fails intermittently: XQ1 geometry substitution did not match scratch netlist
+- **Issue #274** (closed): Consolidate the duplicated signoff inventory/envelope scaffolding in .github/scripts
 - **PR #285**: chore: bump pinned klayout-tools to 0.9.2 and regenerate layout and signoff evidence
 - **Issue #272** (closed): Bump the klayout-tools pin 0.8.0 -> current release and regenerate layout and signoff evidence
 
