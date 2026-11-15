@@ -62,13 +62,14 @@ _spec = importlib.util.spec_from_file_location(
                  "tools", "reducer_common.py"))
 _rc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_rc)
-ReductionError, parse_kv_line, read_text, write_exclusive = (
-    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive)
+(ReductionError, parse_kv_line, read_text, write_exclusive, require,
+ startup_id, startup_verdict, SPREAD_LIMIT_PCT, OP_MISMATCH_LIMIT_PCT) = (
+    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive,
+    _rc.require, _rc.startup_id, _rc.startup_verdict, _rc.SPREAD_LIMIT_PCT,
+    _rc.OP_MISMATCH_LIMIT_PCT)
 
 IC1_LIMIT_A = 4.5e-3
 PDC_LIMIT_W = 10e-3
-SPREAD_LIMIT_PCT = 2.0
-OP_MISMATCH_LIMIT_PCT = 5.0
 
 # Waveform-based startup settling audit (issue #154). Physical-time window,
 # independent of the simulator step. The deck ramps VDD over RAMP_S and runs
@@ -129,10 +130,6 @@ def op_id(cell):
     return "op_%s_%sc_vdd%sv" % cell
 
 
-def startup_id(cell):
-    return "startup_%s_%sc_vdd%sv" % cell
-
-
 def op_cells(smoke=False):
     if smoke:
         return [NOMINAL_CELL]
@@ -157,14 +154,6 @@ def finite(raw, key, source):
     return val
 
 
-def require(kv, keys, tag, source):
-    missing = [k for k in keys if k not in kv]
-    if missing:
-        raise ReductionError("%s: %s line missing required key(s): %s"
-                             % (source, tag, ", ".join(missing)))
-    return {k: finite(kv[k], k, source) for k in keys}
-
-
 def check_inventory(corners_dir, op_list, su_list):
     try:
         names = set(os.listdir(corners_dir))
@@ -187,7 +176,7 @@ def reduce_op(corners_dir, cell, require_audit):
     pid = op_id(cell)
     src = os.path.join(corners_dir, pid + ".log")
     kv = parse_kv_line(read_text(src), "BIASOP", src)
-    vals = require(kv, OP_REQUIRED, "BIASOP", src)
+    vals = require(kv, OP_REQUIRED, "BIASOP", src, finite)
     present = [k for k in OP_AUDIT if k in kv]
     if present and len(present) != len(OP_AUDIT):
         raise ReductionError("%s: partial audit keys (have %s, need all of "
@@ -207,26 +196,11 @@ def reduce_op(corners_dir, cell, require_audit):
     }
 
 
-def startup_verdict(end, s2, s3, opic):
-    mx, mn = max(end, s2, s3), min(end, s2, s3)
-    mean = (end + s2 + s3) / 3.0
-    spread = 100.0 * (mx - mn) / mean if mean > 0 else 999
-    dvsop = 100.0 * (end - opic) / opic if opic > 0 else 999
-    verdict = "PASS"
-    if spread > SPREAD_LIMIT_PCT:
-        verdict = "NO-RINGING-FAIL"
-    if dvsop > OP_MISMATCH_LIMIT_PCT or dvsop < -OP_MISMATCH_LIMIT_PCT:
-        verdict = "OP-MISMATCH-FAIL"
-    if end <= 0:
-        verdict = "LATCHED-ZERO"
-    return spread, dvsop, verdict
-
-
 def reduce_startup(corners_dir, cell, op_rows):
     pid = startup_id(cell)
     src = os.path.join(corners_dir, pid + ".log")
     kv = parse_kv_line(read_text(src), "STARTUP", src)
-    v = require(kv, STARTUP_REQUIRED, "STARTUP", src)
+    v = require(kv, STARTUP_REQUIRED, "STARTUP", src, finite)
     partner = op_id(cell)
     if partner not in op_rows:
         raise ReductionError("%s: no matching op point %s in the inventory"

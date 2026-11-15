@@ -1,10 +1,21 @@
 # Work Log
 
+## Archives
+
+- [2026-09](work_log/WORK_LOG_2026-09.md)
+
+### 2026-11-15
+
+- **PR #285**: chore: bump pinned klayout-tools to 0.9.2 and regenerate layout and signoff evidence
+- **Issue #272** (closed): Bump the klayout-tools pin 0.8.0 -> current release and regenerate layout and signoff evidence
+
 ### 2026-11-14
 
+- **PR #286**: sim: move the corner-label -> PDK-section maps into sim/env.sh
 - **PR #278**: chore: replace exit-0 npm script stubs with the real check runner
 - **PR #275**: sim: run the inductor-loss variant campaign on the fleet and record 45 cells
 - **PR #270**: docs: roadmap as of 2026-11-13
+- **Issue #283** (closed): sim: the corner-label -> PDK-section maps are copy-pasted byte-identical across six run_*.sh runners — finish #50 and move them into sim/env.sh
 - **Issue #273** (closed): Remove package.json placeholder scripts: npm test/check:ci/check:all/lint exit 0 without verifying anything
 - **Issue #56** (closed): sim: replace the ideal inductors with EM-extracted lossy models from sg13g2-vco (removes the blocker on #27, T1 item 5 match and stability rows)
 
@@ -280,17 +291,3 @@
 - **PR #22**: docs(spec): propose a 1.8 V cascode bias/supply topology in decision record 0001
 - **Issue #16** (closed): Decision record: LNA bias/supply topology (cascode vs. single-stage) and supply voltage
 
-### 2026-09-11
-
-- **PR #15**: chore: remove dead _sg13g2_env_self variable in sim/env.sh
-- **PR #12**: chore: remove dead _sg13g2_sim_dir variable in sim/env.sh
-- **PR #10**: Remove dead _sg13g2_repo_root variable in sim/env.sh
-- **Issue #14** (closed): Remove dead _sg13g2_env_self variable in sim/env.sh
-- **Issue #13** (closed): Remove dead _sg13g2_sim_dir variable in sim/env.sh
-- **Issue #11** (closed): Remove dead _sg13g2_sim_dir variable in sim/env.sh
-- **Issue #9** (closed): Remove dead _sg13g2_repo_root variable in sim/env.sh
-
-### 2026-09-10
-
-- **PR #8**: sim: npn13G2 noise-optimum device characterization (fT, NF@50Ω, gain vs J_C/V_CE, HBT corner grid)
-- **Issue #7** (closed): sim: `npn13g2` noise-optimum device characterization (fT, NF@50 Ω, gain vs J_C and V_CE at 2.4 GHz) across the HBT corner grid — the device-level input the bias/supply-topology decision record needs
