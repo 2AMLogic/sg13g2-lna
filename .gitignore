@@ -101,6 +101,9 @@ flow/build/
 
 # layout/: PyCell submodule shims fetched by layout/tools/fetch-pcell-deps.sh
 layout/build/
+# pinned PDK fetched locally (CI's PDK_ROOT: the v0.3.0 tarball, sha256-
+# verified; never committed)
+.pdk/
 # layout/run_flow.sh scratch: unpublished klt output / lvs_inputs.json left
 # behind by a failed or interrupted run (never evidence)
 layout/*/*.tmp

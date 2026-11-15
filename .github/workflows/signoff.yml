@@ -79,7 +79,7 @@ jobs:
   # in signoff/attest/ and wrote the envelopes the manifest cites (issue #238).
   # `--check` re-attests and fails on drift in an inventoried file, a check's
   # outcome or the committed envelope. Item 1's freshness check
-  # (check-netlist-regen) needs xschem 3.4.4 and the SG13G2 PDK, so it is
+  # (check-netlist-regen) needs xschem 3.4.7 and the SG13G2 PDK, so it is
   # `local_only`: this job carries its committed outcome and lists it as
   # skipped, and the netlist-regen job below is what re-runs it on every
   # commit. Runs before the signoff gate, which grades the cited envelopes.
@@ -361,9 +361,18 @@ jobs:
       - name: Committed netlist device inventory matches the schematic
         run: python3 -I .github/scripts/check-netlist-freshness
 
+      - name: Floating-node guard self-test
+        run: .github/scripts/test-check-floating-nodes.sh
+
+      - name: Every net in the committed netlist has a DC path
+        run: python3 -I .github/scripts/check-floating-nodes
+
   # Netlist regeneration (issue #138): the authoritative complement to
-  # netlist-freshness. Provisions xschem (Ubuntu 24.04 package, 3.4.4 -- the
-  # version check-netlist-regen pins) and the SG13G2 PDK release pinned in
+  # netlist-freshness. Provisions xschem (source build of the fleet-pinned
+  # 3.4.7 -- the noble apt package is 3.4.4 and the pin is XSCHEM_VERSION in
+  # check-netlist-regen; .github/scripts/install-xschem is credential-free:
+  # upstream tag, tag-to-commit asserted, issue #259 / 2am#7275) and the
+  # SG13G2 PDK release pinned in
   # sim/pdk.json (v0.3.0 tarball, sha256-verified, same recipe as
   # klayout-tools scripts/fetch-ihp-sg13g2.sh), runs the documented headless
   # `xschem -n` in a scratch copy of design/ and diffs the result with the
@@ -383,9 +392,16 @@ jobs:
       - name: Install xschem
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xschem
-          xschem --version
+          .github/scripts/install-xschem
+
+      # install-xschem exports the bin dir via GITHUB_PATH, which only takes
+      # effect for steps after the one that appends it -- verify in a
+      # follow-up step, not in-step.
+      - name: Pinned xschem is on PATH
+        run: |
+          set -euo pipefail
+          command -v xschem
+          .github/scripts/install-xschem --check
 
       - name: Fetch pinned IHP-Open-PDK v0.3.0
         run: |

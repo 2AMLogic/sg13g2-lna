@@ -58,7 +58,7 @@ grep -o '^C {sg13g2_pr/[^}]*}' "$ROOT/design/lna.sch" | sed 's/^C {//; s/}$//' |
 STUB="$TMP/xschem-stub"
 cat > "$STUB" <<'STUBEOF'
 #!/usr/bin/env bash
-if [ "${1:-}" = "--version" ]; then echo "XSCHEM V3.4.4"; exit 0; fi
+if [ "${1:-}" = "--version" ]; then echo "XSCHEM V3.4.7"; exit 0; fi
 case "$STUB_MODE" in
   fail)     echo "boom" >&2; exit 1 ;;
   nooutput) exit 0 ;;
