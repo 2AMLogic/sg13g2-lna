@@ -5,8 +5,8 @@
     "pdk_release_tag": "v0.3.0",
     "pdk_variant": "ihp-sg13g2",
     "regen_check": ".github/scripts/check-netlist-regen",
-    "regen_check_sha256": "sha256:e57feb392f6eb77285979262b35ad330a25235d39b3498124bb110001e851ea1",
-    "xschem_version": "3.4.4"
+    "regen_check_sha256": "sha256:8311131488612e7a34a4175dba97e062cc7b2bf9dafac9972f3da94e036a9843",
+    "xschem_version": "3.4.7"
   },
   "kind": "design-source-inventory",
   "schema_version": 1,

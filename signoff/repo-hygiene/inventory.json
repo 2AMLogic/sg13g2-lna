@@ -61,7 +61,7 @@
     ".github/scripts/test-check-signoff.sh": {
       "bytes": 9959,
       "role": "script of a declared CI command",
-      "sha256": "sha256:49bac4e96421d1d27dd2b2c4dba220c23b0a9bd63b4b59b5a395dc70ee3df6d0"
+      "sha256": "sha256:c5d666b181e70c074180cd86ec61129cfcf30398bfe1756f680f8d060156bca4"
     },
     ".github/scripts/test-run-local-checks.sh": {
       "bytes": 7952,
@@ -154,9 +154,9 @@
       "sha256": "sha256:1d682eeaabaaecfdcf0d526530ee51fe56d4e509c55cbad78444bc495932c19a"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 26686,
+      "bytes": 26842,
       "role": "CI workflow",
-      "sha256": "sha256:8fc6fe428679a34aa0e74604f6685cc1fe87988bc51df0b90230fa41dcdfa6ab"
+      "sha256": "sha256:0f77d28a359fae8bee10d038e144e7ed25eae375f55ee1253ebae1e7deabac09"
     },
     "LICENSE": {
       "bytes": 11358,

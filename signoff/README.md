@@ -60,7 +60,7 @@ down as follows:
 - **Item 4 cites failing evidence** and item 3 is uncited. Both come from
   issue #63's layout bring-up.
   That layout (`layout/lna_core/`) draws the cascode core and the DR-0003
-  bias island, 6 of the netlist's 30 instances, from the PDK's own PyCells.
+  bias island and #258's xout DC bleed, 7 of the netlist's 31 instances, from the PDK's own PyCells.
   Item 3 cited `layout/lna_core/drc_report.json` while it was
   `status: "violations"` (36 `cont.width.1`, klayout-tools#2943). Under klt
   0.8.0 that report is `clean` for the partial cell, so the citation was
@@ -126,7 +126,7 @@ down as follows:
   cited it until issue #238; it now cites the `--attest` envelope, see
   "Attested items 1, 9 and 10"). The inventory lists the schematic, symbol,
   `xschemrc` and the derived netlist by sha256 and records the generation
-  identity (xschem 3.4.4, SG13G2 PDK v0.3.0, sha256 of
+  identity (xschem 3.4.7, SG13G2 PDK v0.3.0, sha256 of
   `check-netlist-regen`). The pinned grader renders the row `met` with an
   `artifact_binding` block only while the inventory still re-hashes to the
   pinned value. `.github/scripts/design-source-audit check` (PDK-free, job
@@ -289,13 +289,13 @@ checks that ran; the manifest pins the attest inventory's hash.
 **Limits.** Item 9's `cold_start` is the PDK-free replay
 `python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py`. The
 `ngspice` runs themselves need ngspice and the PDK and are not re-run by the
-attestation. Item 1's freshness check needs xschem 3.4.4 and the SG13G2 PDK
+attestation. Item 1's freshness check needs xschem 3.4.7 and the SG13G2 PDK
 (`local_only`), so `--check` in the `attest` CI job carries its committed
 outcome and lists it as skipped; the `netlist-regen` job is what re-runs it
 on every commit. Item 10 lists only audits CI already runs in their own jobs.
 
 **Regenerate** after any change to an inventoried file (a hygiene file, a
-bench template, a source, or a command's script). Item 1 needs xschem 3.4.4
+bench template, a source, or a command's script). Item 1 needs xschem 3.4.7
 and the PDK on the host:
 
 ```bash
