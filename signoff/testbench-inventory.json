@@ -2162,7 +2162,7 @@
     }
   },
   "files": {
-    "README.md": "sha256:6331aab8f270c1b3e44023a0452ed38f02aff53694c2b97aff415acaa2314bb0",
+    "README.md": "sha256:623c8e8b439ae370ade8a27958e932bec8760a13a101d9cc53df615e42240e8e",
     "design/netlist/lna.spice": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
