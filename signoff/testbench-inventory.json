@@ -2162,7 +2162,7 @@
     }
   },
   "files": {
-    "README.md": "sha256:ef15a177f4654fee05b655d6bc1def6e1697ccf49e9c2feb0274916319aa2a9e",
+    "README.md": "sha256:6331aab8f270c1b3e44023a0452ed38f02aff53694c2b97aff415acaa2314bb0",
     "design/netlist/lna.spice": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
@@ -2181,7 +2181,7 @@
     "sim/biasref-topology/records/20261010-100000-424d385-2aeafef-core-minigrid-corrected.csv": "sha256:c4148b35cd22fbae00e8fbbe497f86aa8f0c5440438c215d0d7d7697a3145296",
     "sim/biasref-topology/records/20261010-100000-424d385-a46ed37-core-minigrid-corrected.csv": "sha256:c4148b35cd22fbae00e8fbbe497f86aa8f0c5440438c215d0d7d7697a3145296",
     "sim/biasref-topology/records/20261010-100000-424d385.md": "sha256:ee000d6867b3ce9b3e5d04d9f8f4a50fea7bf58e97ecefd6e2ef230d0dbceb73",
-    "sim/biasref-topology/reduce_biasref.py": "sha256:d24427159075736ee3f5bf3056ca517920e4ed1e96fcd9862f145c1122d63383",
+    "sim/biasref-topology/reduce_biasref.py": "sha256:91e55abeefc63cb97f9ce1e63af4f1cc4f9b51d916db0dfdb132cf63d76d7858",
     "sim/biasref-topology/run_biasref_sweep.sh": "sha256:7a2c5576cc79acd3b07491b37782eee11523e104dd5c10ea750857e0178a51ad",
     "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl": "sha256:f8d8c4c5f022fca99b6ac94b422d80d818861aa0865eabfef18ef3debd825bd3",
     "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl": "sha256:47385354d4a7f0dc92c8935b06602457d56b3a4fa2d5d58dd23cdd7db513777b",
@@ -2237,7 +2237,7 @@
     "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.json": "sha256:14e0aed79f5b2a00bf09c56f4b64f1d51c14a065a4924c485bff2847893033a0",
     "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md": "sha256:dc006d98eee5e66011529a2f34b66c54612a65a413740e81af64b45163118fee",
     "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
-    "sim/lna-bias-pvt/reduce_biasop.py": "sha256:16fdfea8af2ea47d42c3a6c1e56b61033165002ea8a444a6f54496f34899e754",
+    "sim/lna-bias-pvt/reduce_biasop.py": "sha256:7c6fb5dfd3b74990bcc13042650db7e93d1b48b9b5d5f6dccb67d66ce100c6fe",
     "sim/lna-bias-pvt/run_biasop_sweep.sh": "sha256:68035f4c2169269806505640f6be3dbf4b25d84018fc7afcf200ad736394e6dc",
     "sim/lna-bias-pvt/run_mc_campaign.sh": "sha256:6d7b2bff6bf52f81acc4b8d3812137426d27d4342f5e4ff273b3b3f736df14a4",
     "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl": "sha256:30c97647bab717ef457c0e5487cdd71acb032441cc09bb47d2ed9d4b90e9e8ea",
@@ -2378,11 +2378,11 @@
     "sim/models/SOURCE.md": "sha256:8f9877a436b43bb493c748817761043ff587d4ee3b11910c94f2c6ce85f9b39e",
     "sim/models/check_sources.sh": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729",
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
-    "sim/pdk.json": "sha256:52e6ad7405957b30ea4749fe66895bd12a689f9c356bf128c5308e18662b1cc7",
+    "sim/pdk.json": "sha256:d485b20e5040c061087b6b20b62c5f22d65ed15744175e5075b7a67964bf8175",
     "sim/tests/test-core-envelope-lifecycle.sh": "sha256:b139a5f884c60f32c2a8ab022992831c470a4638214d8799bc7e8396efe9be0f",
     "sim/tools/build-osdi.sh": "sha256:0afd6b491ca988739591a1cf93928e9c9c1a17d23df0dc26c3434c87edb49949",
     "sim/tools/pdk_identity.py": "sha256:49e8ecc6b88970eb8b0ced39d8f7b302e0455d7e4cffe162a8536d8b2416a67b",
-    "sim/tools/reducer_common.py": "sha256:706853d02c589fb9a4b83472925c8fcdac74cf66c8995b0907b20ebb015494b2",
+    "sim/tools/reducer_common.py": "sha256:3e4a2ba7f79c70bf22544c17ddf76dfefdc08c137b84d79d02601a1f79cc119a",
     "spec/ratified-rows.json": "sha256:b36eb0219c9a23fc450d592c18712ee70457842a94ecf157b56786a9f689eb36"
   },
   "kind": "testbench-inventory",
@@ -2390,7 +2390,7 @@
     "grader": {
       "source": ".github/workflows/signoff.yml",
       "tool": "klayout-tools",
-      "version": "0.8.0"
+      "version": "0.9.2"
     },
     "pdk": {
       "file": "sim/pdk.json",

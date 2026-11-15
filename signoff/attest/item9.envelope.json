@@ -192,7 +192,7 @@
         "role": "tools",
         "passed": true,
         "value": {
-          "klt": "0.8.0",
+          "klt": "0.9.2",
           "ngspice": "46",
           "xschem": "3.4.4"
         }
@@ -200,7 +200,7 @@
     ]
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.2",
     "klayout_version": null,
     "pdk": null,
     "deck": null,
@@ -209,7 +209,7 @@
         "path": "signoff/attest/item9.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:66b524e4637380d8c0b443b519fc0590f120a944a913e803742d3bc518fac57b"
+      "content_hash": "sha256:45a6e2e9553f3e9505f0ebed9181470babef03a31eb931573150719872544a76"
     }
   }
 }

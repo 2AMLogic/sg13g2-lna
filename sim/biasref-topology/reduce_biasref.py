@@ -67,11 +67,10 @@ _spec = importlib.util.spec_from_file_location(
                  "tools", "reducer_common.py"))
 _rc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_rc)
-ReductionError, parse_kv_line, read_text, write_exclusive = (
-    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive)
-
-SPREAD_LIMIT_PCT = 2.0
-OP_MISMATCH_LIMIT_PCT = 5.0
+(ReductionError, parse_kv_line, read_text, write_exclusive,
+ require, startup_id, startup_verdict) = (
+    _rc.ReductionError, _rc.parse_kv_line, _rc.read_text, _rc.write_exclusive,
+    _rc.require, _rc.startup_id, _rc.startup_verdict)
 
 CORNER_LABELS = ("typ", "bcs", "wcs")
 # Checked mirror of sim/env.sh's SIM_MOS_SECTION_OF restricted to these three
@@ -123,10 +122,6 @@ def core_id(cell):
     return "core_%s_%sc_vdd%sv" % cell
 
 
-def startup_id(cell):
-    return "startup_%s_%sc_vdd%sv" % cell
-
-
 def servo_id(cell):
     return "servo_%s_%sc_vdd%sv" % cell
 
@@ -154,18 +149,10 @@ def finite(raw, key, source):
     return val
 
 
-def require(kv, keys, tag, source):
-    missing = [k for k in keys if k not in kv]
-    if missing:
-        raise ReductionError("%s: %s line missing required key(s): %s"
-                             % (source, tag, ", ".join(missing)))
-    return {k: finite(kv[k], k, source) for k in keys}
-
-
 def read_row(corners_dir, pid, tag, keys):
     src = os.path.join(corners_dir, pid + ".log")
     kv = parse_kv_line(read_text(src), tag, src)
-    require(kv, keys, tag, src)
+    require(kv, keys, tag, src, finite)
     return {k: kv[k] for k in keys}
 
 
@@ -201,28 +188,13 @@ def check_inventory(corners_dir, phases, smoke):
                              "inventory: " + ", ".join(extra))
 
 
-def startup_verdict(end, s2, s3, opic):
-    mx, mn = max(end, s2, s3), min(end, s2, s3)
-    mean = (end + s2 + s3) / 3.0
-    spread = 100.0 * (mx - mn) / mean if mean > 0 else 999
-    dvsop = 100.0 * (end - opic) / opic if opic > 0 else 999
-    verdict = "PASS"
-    if spread > SPREAD_LIMIT_PCT:
-        verdict = "NO-RINGING-FAIL"
-    if dvsop > OP_MISMATCH_LIMIT_PCT or dvsop < -OP_MISMATCH_LIMIT_PCT:
-        verdict = "OP-MISMATCH-FAIL"
-    if end <= 0:
-        verdict = "LATCHED-ZERO"
-    return spread, dvsop, verdict
-
-
 def startup_rows(corners_dir, su_cells, sid, op_rows, op_idf, op_name):
     rows = []
     for cell in su_cells:
         pid = sid(cell)
         src = os.path.join(corners_dir, pid + ".log")
         kv = parse_kv_line(read_text(src), "STARTUP", src)
-        v = require(kv, STARTUP_KEYS, "STARTUP", src)
+        v = require(kv, STARTUP_KEYS, "STARTUP", src, finite)
         partner = op_idf(cell)
         if partner not in op_rows:
             raise ReductionError("%s: no matching %s point %s in the "
