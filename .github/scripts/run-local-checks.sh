@@ -83,6 +83,7 @@ fi
 
 # --- job: signoff
 step "signoff: check-klt-pin.sh" .github/scripts/check-klt-pin.sh
+step "signoff: test-check-klt-pin.sh" .github/scripts/test-check-klt-pin.sh
 klt_pin="$(grep -Eo 'klayout-tools==[0-9][0-9.]*' .github/workflows/signoff.yml | head -n 1 | cut -d= -f3)"
 klt_have="$(command -v klt >/dev/null 2>&1 && klt --version 2>/dev/null | head -n 1)"
 if [ -n "$klt_pin" ] && [ "$klt_have" = "klt $klt_pin" ]; then
