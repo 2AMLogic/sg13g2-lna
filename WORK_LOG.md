@@ -4,6 +4,11 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-15
+
+- **PR #285**: chore: bump pinned klayout-tools to 0.9.2 and regenerate layout and signoff evidence
+- **Issue #272** (closed): Bump the klayout-tools pin 0.8.0 -> current release and regenerate layout and signoff evidence
+
 ### 2026-11-14
 
 - **PR #286**: sim: move the corner-label -> PDK-section maps into sim/env.sh
