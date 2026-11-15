@@ -13,8 +13,11 @@
 #      block name; spec has no table; LICENSE empty      -> FAILS, --write refuses
 #   5. declared command no longer run by its CI job      -> FAILS, --write refuses
 #   6. hygiene file changed without refreshing           -> FAILS (stale hash)
-#   7. stale envelope                                    -> FAILS
+#   7. stale envelope (named field), missing envelope,
+#      unparsable envelope                               -> FAILS
 #   8. --write on a pristine fixture then check          -> passes after rebind
+#   9. the shared helper module is inventoried and
+#      stale-checked like any other hygiene file         -> FAILS when changed
 
 set -u
 
@@ -63,8 +66,9 @@ commit_all() { (cd "$1" && git add -A && git -c user.email=t@t -c user.name=t co
 build_base() {
   BASE="$(mktemp -d)"
   local f
-  # Every tracked file the checker reads or hashes: the hygiene files, every
-  # declared-command script, and the three outer bindings.
+  # Every tracked file the checker reads or hashes: the hygiene files (which
+  # include the shared helper module), every declared-command script, and the
+  # inventory plus its envelope.
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     mkdir -p "$BASE/$(dirname "$f")"
@@ -75,7 +79,7 @@ import importlib.util, sys
 spec = importlib.util.spec_from_file_location("h", sys.argv[1] + "/.github/scripts/check-repo-hygiene.py")
 h = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(h)
-paths = set(h.HYGIENE_FILES) | {h.MANIFEST, h.REPORT, h.INVENTORY, h.ENVELOPE}
+paths = set(h.HYGIENE_FILES) | {h.INVENTORY, h.ENVELOPE}
 for _, cmd, _ in h.DECLARED_COMMANDS:
     paths.update(t for t in cmd.split() if t.startswith((".github/", "sim/")))
 print("\n".join(sorted(paths)))
@@ -159,7 +163,14 @@ expect "changed workflow without refresh is stale" 1 "$T" "STALE: .github/workfl
 
 # 7. outer bindings
 T="$(case_tree)"; edit "$T" signoff/repo-hygiene/envelope.json 's.replace("\"pass\"", "\"fail\"")'
-expect "stale envelope fails" 1 "$T" "does not equal the envelope"
+expect "stale envelope fails" 1 "$T" "stale envelope: field 'status' differs"
+
+T="$(case_tree)"; (cd "$T" && git rm -q signoff/repo-hygiene/envelope.json \
+  && git -c user.email=t@t -c user.name=t commit -q -m rm)
+expect "missing envelope fails" 1 "$T" "envelope .* is missing"
+
+T="$(case_tree)"; edit "$T" signoff/repo-hygiene/envelope.json '"{nope"'
+expect "unparsable envelope fails" 1 "$T" "is not valid JSON"
 
 # 8. --write rebinds after a legitimate change
 T="$(case_tree)"; edit "$T" README.md 's + "\n"'
@@ -168,6 +179,11 @@ if [ "$RC" -eq 0 ]; then ok "--write regenerates after a change"; else bad "--wr
 run_check "$T"
 if [ "$RC" -eq 0 ]; then ok "after --write the check passes"; else bad "check fails after --write (rc=$RC)"; printf '%s\n' "$OUT" | head -5 >&2; fi
 
+# 9. the shared helper module is hashed like any other hygiene file (issue #274):
+#    if it ever leaves HYGIENE_FILES, logic moves out of the self-hashed set.
+T="$(case_tree)"; edit "$T" .github/scripts/signoff_common.py 's + "\n# touched\n"'
+expect "changed shared helper module without refresh is stale" 1 "$T" \
+  "STALE: .github/scripts/signoff_common.py" "is stale"
 echo
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

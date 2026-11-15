@@ -67,10 +67,71 @@ fresh_tree() {
   # graded (and re-hashed) by the render, so a pristine copy must carry
   # them too -- otherwise every cited row renders unreadable_evidence and
   # the pristine case fails for a reason that is not drift (issue #63).
-  python3 - "$ROOT" "$tree" <<'PY'
+  #
+  # Every artifact a cited envelope BINDS must be carried as well, not just
+  # the envelope. klt 0.9.x re-hashes each bound artifact and publishes the
+  # result as `citation.artifact_binding.members[].status`; an absent file is
+  # `unverifiable`, which renders the whole row
+  # `unmet` / `unverifiable_provenance` (issue #272). Under 0.8.0 the
+  # self-report was not re-checked against the artifacts, so copying the
+  # envelopes alone was enough and items 9/10 rendered `met` here.
+  #
+  # Two places name those artifacts, and both are copied:
+  #   * `provenance.input` -- the pre-0.9 single {path, content_hash} form
+  #     and the 0.9+ multi-path {paths: [...], content_hash} form;
+  #   * `attestation.checks[].path` -- the inventoried files the attestation
+  #     hashed (item 9's testbenches, item 10's hygiene files).
+  # Missing sources are skipped rather than fatal: a tampering fixture may
+  # legitimately have removed one, and the case asserts the checker's verdict,
+  # not this helper's.
+  python3 -I - "$ROOT" "$tree" <<'PY'
 import json, os, shutil, sys
 
 root, tree = sys.argv[1], sys.argv[2]
+
+
+def copy_rel(rel):
+    """Copy a repo-relative path into the scratch tree, if it exists."""
+    if not rel or os.path.isabs(rel):
+        return
+    src = os.path.join(root, rel)
+    if not os.path.isfile(src):
+        return
+    dst = os.path.join(tree, rel)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copy2(src, dst)
+
+
+def rel_of(path_field):
+    """A provenance path is either a bare string or {path, scope}."""
+    if isinstance(path_field, str):
+        return path_field
+    if isinstance(path_field, dict):
+        return path_field.get("path")
+    return None
+
+
+def copy_envelope_inputs(rel):
+    """Copy every artifact the envelope at `rel` names or binds."""
+    try:
+        with open(os.path.join(root, rel)) as f:
+            env = json.load(f)
+    except (OSError, ValueError):
+        return
+    inp = (env.get("provenance") or {}).get("input")
+    for e in inp if isinstance(inp, list) else [inp]:
+        if not isinstance(e, dict):
+            continue
+        copy_rel(rel_of(e.get("path")))                 # pre-0.9 single path
+        for sub in e.get("paths") or []:                # 0.9+ multi-path
+            if isinstance(sub, dict):
+                copy_rel(rel_of(sub.get("path")))
+    # Inventoried artifacts the attestation hashed and the render re-hashes.
+    for chk in (env.get("attestation") or {}).get("checks") or []:
+        if isinstance(chk, dict):
+            copy_rel(rel_of(chk.get("path")))
+
+
 with open(os.path.join(root, "signoff", "manifest.json")) as f:
     evidence = json.load(f).get("evidence", {})
 for entry in evidence.values():
@@ -78,10 +139,8 @@ for entry in evidence.values():
         rel = e.get("file") if isinstance(e, dict) else None
         if not rel:
             continue
-        src = os.path.join(root, rel)
-        dst = os.path.join(tree, rel)
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copy2(src, dst)
+        copy_rel(rel)
+        copy_envelope_inputs(rel)
 PY
   # Scope metadata the guard binds citations to (issue #80): realization,
   # provenance, the extraction and DRC envelopes (the DRC one is uncited in
@@ -133,7 +192,7 @@ exec(code)
      > signoff/t1-report.json 2>/dev/null; true)
 }
 
-# The committed manifest leaves item 3 uncited (klt 0.8.0 grades the partial
+# The committed manifest leaves item 3 uncited (klt 0.9.2 grades the partial
 # cell's DRC clean); CITE_DRC re-cites it so the fixtures below can exercise
 # the scope guard on a met DRC row.
 CITE_DRC='m = rd(t + "/signoff/manifest.json"); m["evidence"]["3"] = {"file": "layout/lna_core/drc_report.json", "content_hash": m["evidence"]["4"]["content_hash"]}; wr(t + "/signoff/manifest.json", m)'
