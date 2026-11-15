@@ -393,8 +393,15 @@ jobs:
         run: |
           set -euo pipefail
           .github/scripts/install-xschem
+
+      # install-xschem exports the bin dir via GITHUB_PATH, which only takes
+      # effect for steps after the one that appends it -- verify in a
+      # follow-up step, not in-step.
+      - name: Pinned xschem is on PATH
+        run: |
+          set -euo pipefail
           command -v xschem
-          xschem --version
+          .github/scripts/install-xschem --check
 
       - name: Fetch pinned IHP-Open-PDK v0.3.0
         run: |
