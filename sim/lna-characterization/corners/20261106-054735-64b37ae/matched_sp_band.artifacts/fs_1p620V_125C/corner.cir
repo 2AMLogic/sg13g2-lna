@@ -1,0 +1,41 @@
+* klt sim -- generated corner deck, do not edit
+.lib /var/tmp/eda-job-klt-sim-268bf7f63976/inputs/cornerHBT.lib hbt_typ
+.lib /var/tmp/eda-job-klt-sim-268bf7f63976/inputs/cornerMOShv.lib mos_fs
+.include /var/tmp/eda-job-klt-sim-268bf7f63976/inputs/netlist.cir
+.temp 125
+.control
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save all
+alter vdd=1.62
+sp lin 11 2.4e+09 2.4835e+09 1
+let s21_db_mid = db(s_2_1)[5]
+print s21_db_mid
+let s21_db_min = vecmin(db(s_2_1))
+print s21_db_min
+let s21_db_max = vecmax(db(s_2_1))
+print s21_db_max
+let s11_db_mid = db(s_1_1)[5]
+print s11_db_mid
+let s11_db_worst = vecmax(db(s_1_1))
+print s11_db_worst
+let s22_db_mid = db(s_2_2)[5]
+print s22_db_mid
+let s22_db_worst = vecmax(db(s_2_2))
+print s22_db_worst
+let s12_db_mid = db(s_1_2)[5]
+print s12_db_mid
+let mu_band_min = vecmin(((1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*(s_1_1*s_2_2 - s_1_2*s_2_1)) + mag(s_1_2*s_2_1))))
+print mu_band_min
+let k_band_min = vecmin(((1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag((s_1_1*s_2_2 - s_1_2*s_2_1))^2)/(2*mag(s_1_2*s_2_1))))
+print k_band_min
+let nf_sp_db_mid = real(NF[5])
+print nf_sp_db_mid
+let nf_sp_db_worst = vecmax(real(NF))
+print nf_sp_db_worst
+let nfmin_sp_db_mid = real(NFmin[5])
+print nfmin_sp_db_mid
+quit
+.endc
+.end
