@@ -5,3 +5,5 @@
 20260910-153000-7da7038 illustrative format example at sim/README.md (not a real record)
 
 20260921-154716-f718094 intentional historical citation: ratified DR-0003 text (kept verbatim, corrected by its 2026-10-10 erratum) and the root README mismatch disclosure; the real Stage-1 record is 20260921-160018-a46ed37 (#70)
+
+20261101-104711-4d7f140 id quoted from issue #258 / the #27 note as the 27 C converged-cell baseline; no evidence for it is committed under sim/, so the record at sim/lna-characterization/records/issue-258-xout-bleed-convergence.md leaves the nominal match delta unclaimed (#258)

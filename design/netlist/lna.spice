@@ -1,4 +1,4 @@
-** sch_path: /Users/rwalters/GitHub/sg13g2-lna/.loom/worktrees/issue-33/design/lna.sch
+** sch_path: /home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/design/lna.sch
 **.subckt lna vdd vss rfin rfout
 
 *.iopin vdd
@@ -18,6 +18,7 @@ Rlb xin lb_x 7.00168 m=1
 Cpin xin vss 0.625995p m=1
 Cpout xout vss 0.504268p m=1
 Csout rfout xout 0.346489p m=1
+Rbleed xout vss 100k m=1
 Cbyp2 vb2 vss 100p m=1
 Cvdd vdd vss 100p m=1
 R2a vdd vb2 1k m=1

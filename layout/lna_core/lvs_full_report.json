@@ -107,7 +107,7 @@
       "class": "RES",
       "device_kind": "resistor",
       "layout_devices": 0,
-      "reference_devices": 11,
+      "reference_devices": 12,
       "compared": [
         "R"
       ],
@@ -133,7 +133,7 @@
     {
       "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 1,
+      "layout_devices": 2,
       "reference_devices": 0,
       "compared": [
         "R"
@@ -173,17 +173,17 @@
   },
   "counts": {
     "nets": {
-      "layout": 9,
+      "layout": 10,
       "reference": 23,
       "matched": 0
     },
     "devices": {
-      "layout": 3,
-      "reference": 31,
+      "layout": 4,
+      "reference": 32,
       "matched": 0
     },
     "pins": {
-      "layout": 9,
+      "layout": 10,
       "reference": 0,
       "matched": 0
     }
@@ -203,8 +203,8 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
-    "reference_sha256": "2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
+    "layout_sha256": "ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+    "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "extracted_netlist": null
   },
   "provenance": {
@@ -219,7 +219,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -329,7 +329,7 @@
           "W"
         ],
         "layout_devices": 0,
-        "reference_devices": 11
+        "reference_devices": 12
       },
       "circuit": null,
       "instance": null,
@@ -358,7 +358,7 @@
           "P",
           "W"
         ],
-        "layout_devices": 1,
+        "layout_devices": 2,
         "reference_devices": 0
       },
       "circuit": null,

@@ -1,0 +1,37 @@
+* klt sim -- generated corner deck, do not edit
+.lib /var/tmp/eda-job-klt-sim-97444dec1ec2/inputs/cornerHBT.lib hbt_bcs
+.lib /var/tmp/eda-job-klt-sim-97444dec1ec2/inputs/cornerMOShv.lib mos_ff
+.include /var/tmp/eda-job-klt-sim-97444dec1ec2/inputs/netlist.cir
+.temp 125
+.control
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save all
+alter vdd=1.62
+sp dec 40 1e+07 3e+10
+let mu_min = vecmin(((1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*(s_1_1*s_2_2 - s_1_2*s_2_1)) + mag(s_1_2*s_2_1))))
+print mu_min
+let n_mu_lt1 = mean(((1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*(s_1_1*s_2_2 - s_1_2*s_2_1)) + mag(s_1_2*s_2_1))) lt 1)*length(frequency)
+print n_mu_lt1
+let f_mu_lt1_lo_hz = vecmin(mag(frequency) + 1e12*(((1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*(s_1_1*s_2_2 - s_1_2*s_2_1)) + mag(s_1_2*s_2_1))) ge 1))
+print f_mu_lt1_lo_hz
+let f_mu_lt1_hi_hz = vecmax(mag(frequency)*(((1 - mag(s_1_1)^2)/(mag(s_2_2 - conj(s_1_1)*(s_1_1*s_2_2 - s_1_2*s_2_1)) + mag(s_1_2*s_2_1))) lt 1))
+print f_mu_lt1_hi_hz
+let k_min = vecmin(((1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag((s_1_1*s_2_2 - s_1_2*s_2_1))^2)/(2*mag(s_1_2*s_2_1))))
+print k_min
+let n_k_lt1 = mean(((1 - mag(s_1_1)^2 - mag(s_2_2)^2 + mag((s_1_1*s_2_2 - s_1_2*s_2_1))^2)/(2*mag(s_1_2*s_2_1))) lt 1)*length(frequency)
+print n_k_lt1
+let s11_mag_max = vecmax(mag(s_1_1))
+print s11_mag_max
+let s22_mag_max = vecmax(mag(s_2_2))
+print s22_mag_max
+let n_s22_gt1 = mean(mag(s_2_2) gt 1.000001)*length(frequency)
+print n_s22_gt1
+let s11_mag_gt1_n = mean(mag(s_1_1) gt 1.000001)*length(frequency)
+print s11_mag_gt1_n
+let n_pts = length(frequency)
+print n_pts
+quit
+.endc
+.end

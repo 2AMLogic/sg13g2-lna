@@ -82,8 +82,8 @@
     {
       "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 1,
-      "reference_devices": 1,
+      "layout_devices": 2,
+      "reference_devices": 2,
       "compared": [
         "R"
       ],
@@ -107,39 +107,39 @@
       ]
     }
   ],
-  "mismatch_count": 24,
-  "error_count": 20,
+  "mismatch_count": 28,
+  "error_count": 24,
   "category_counts": {
     "device.combine_parameter_corrected": 1,
     "device.geometry_not_compared": 2,
-    "device.unmatched": 7,
-    "net.merged": 6,
-    "net.split": 2,
+    "device.unmatched": 9,
+    "net.merged": 7,
+    "net.split": 3,
     "net.unmatched": 4,
     "topology": 2
   },
   "category_error_counts": {
-    "device.unmatched": 7,
-    "net.merged": 6,
-    "net.split": 2,
+    "device.unmatched": 9,
+    "net.merged": 7,
+    "net.split": 3,
     "net.unmatched": 4,
     "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 9,
-      "reference": 9,
+      "layout": 10,
+      "reference": 10,
       "matched": 2
     },
     "devices": {
-      "layout": 3,
-      "reference": 6,
+      "layout": 4,
+      "reference": 7,
       "matched": 1
     },
     "pins": {
-      "layout": 9,
+      "layout": 10,
       "reference": 0,
-      "matched": 9
+      "matched": 10
     }
   },
   "device_classes": [
@@ -157,8 +157,8 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
-    "reference_sha256": "0adb75dc45d0707a0dc9eb51f4fc937c48fd9ddc2acabd70cfd21bdfc97de8a5",
+    "layout_sha256": "ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+    "reference_sha256": "0d4b7636dad968126bc0c12ed8009ee2761112b551a206c6bbefc12c56d9c524",
     "extracted_netlist": null
   },
   "provenance": {
@@ -173,7 +173,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -254,8 +254,8 @@
           "P",
           "W"
         ],
-        "layout_devices": 1,
-        "reference_devices": 1
+        "layout_devices": 2,
+        "reference_devices": 2
       },
       "circuit": null,
       "instance": null,
@@ -286,6 +286,23 @@
       "net": null,
       "device": {
         "layout": "\\$49",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$50",
         "reference": null,
         "class": "rppd"
       },
@@ -372,6 +389,23 @@
       "device": {
         "layout": null,
         "reference": "R3B",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RBLEED",
         "class": "RPPD"
       },
       "property": null,
@@ -477,6 +511,22 @@
       "subcircuit": null
     },
     {
+      "category": "net.merged",
+      "severity": "error",
+      "description": "multiple reference nets were collapsed into one layout net",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "XOUT"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
       "category": "net.split",
       "severity": "error",
       "description": "a reference net's role is divided across multiple layout nets",
@@ -499,6 +549,22 @@
       "side": "layout",
       "net": {
         "layout": "vss",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "xout",
         "reference": null
       },
       "device": null,
