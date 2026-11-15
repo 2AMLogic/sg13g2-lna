@@ -1,5 +1,13 @@
 # Work Log
 
+### 2026-11-14
+
+- **PR #278**: chore: replace exit-0 npm script stubs with the real check runner
+- **PR #275**: sim: run the inductor-loss variant campaign on the fleet and record 45 cells
+- **PR #270**: docs: roadmap as of 2026-11-13
+- **Issue #273** (closed): Remove package.json placeholder scripts: npm test/check:ci/check:all/lint exit 0 without verifying anything
+- **Issue #56** (closed): sim: replace the ideal inductors with EM-extracted lossy models from sg13g2-vco (removes the blocker on #27, T1 item 5 match and stability rows)
+
 ### 2026-11-08
 
 - **PR #263**: sim: wait for batch capacity in core-envelope runner; record passing fleet gate (#58)

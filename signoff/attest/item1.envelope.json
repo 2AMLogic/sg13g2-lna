@@ -56,16 +56,49 @@
     ]
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.2",
     "klayout_version": null,
     "pdk": null,
     "deck": null,
     "input": {
-      "path": {
-        "path": "signoff/attest/item1.json",
-        "scope": "repo"
-      },
-      "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787"
+      "paths": [
+        {
+          "path": {
+            "path": "design/lna.sch",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:8a747194ea7d995e540c0da81c824f01b7c28283334ad2cee0530d6146d40be0"
+        },
+        {
+          "path": {
+            "path": "design/lna.sym",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:b022bb2b6b9a127788f6acb13bb08dd29cbb262423da8c785961e3c6daad0b5f"
+        },
+        {
+          "path": {
+            "path": "design/netlist/lna.spice",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae"
+        },
+        {
+          "path": {
+            "path": "design/xschemrc",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:8d7df6fcc99d833c372066ae8e83816b434edf912b817a58ad09fca3d5cbfad0"
+        },
+        {
+          "path": {
+            "path": "signoff/attest/item1.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787"
+        }
+      ],
+      "content_hash": "sha256:1b4d4b3080f37c1e7cd9099552f4413ae135007618ab08f3945d2fe1f20f4a4e"
     }
   }
 }
