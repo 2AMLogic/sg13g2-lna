@@ -307,7 +307,7 @@
   },
   "provenance": {
     "klt_version": "0.8.0",
-    "klayout_version": "0.30.12",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
@@ -315,9 +315,9 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "content_hash": "sha256:200d3880d13ac9482c63d6ed0ee0e89d19494cf3816037ae3b5735068207cd33",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   }
 }

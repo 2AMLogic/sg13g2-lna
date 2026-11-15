@@ -8,6 +8,6 @@
   "is_release": true,
   "reinstall_spec": "klayout-tools==0.8.0",
   "grading_ruleset_id": "sha256:46c446d84423b7399ee1cf957b3d49801ae4f42a0bda53da92f435776cf977c4",
-  "klayout_version": "0.30.12",
+  "klayout_version": "0.30.13",
   "klayout_version_expected": "0.30.12"
 }

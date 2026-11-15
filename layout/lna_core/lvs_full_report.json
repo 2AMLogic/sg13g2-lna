@@ -102,7 +102,7 @@
       "class": "RES",
       "device_kind": "resistor",
       "layout_devices": 0,
-      "reference_devices": 11,
+      "reference_devices": 12,
       "compared": [
         "R"
       ],
@@ -128,7 +128,7 @@
     {
       "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 1,
+      "layout_devices": 2,
       "reference_devices": 0,
       "compared": [
         "R"
@@ -153,9 +153,10 @@
       ]
     }
   ],
-  "mismatch_count": 20,
+  "mismatch_count": 21,
   "error_count": 14,
   "category_counts": {
+    "device.combine_parameter_corrected": 1,
     "device.geometry_not_compared": 4,
     "reference.unresolved_subckt_call": 6,
     "topology": 10
@@ -166,17 +167,17 @@
   },
   "counts": {
     "nets": {
-      "layout": 9,
+      "layout": 10,
       "reference": 23,
       "matched": 0
     },
     "devices": {
-      "layout": 3,
-      "reference": 31,
+      "layout": 4,
+      "reference": 32,
       "matched": 0
     },
     "pins": {
-      "layout": 9,
+      "layout": 10,
       "reference": 0,
       "matched": 0
     }
@@ -194,15 +195,15 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
+    "engine_version": "0.30.13",
     "netgen_binary": null,
-    "layout_sha256": "e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
-    "reference_sha256": "2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
+    "layout_sha256": "200d3880d13ac9482c63d6ed0ee0e89d19494cf3816037ae3b5735068207cd33",
+    "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.8.0",
-    "klayout_version": "0.30.12",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
@@ -210,12 +211,36 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "content_hash": "sha256:200d3880d13ac9482c63d6ed0ee0e89d19494cf3816037ae3b5735068207cd33",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   },
   "mismatches": [
+    {
+      "category": "device.combine_parameter_corrected",
+      "severity": "warning",
+      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
+      "side": "layout",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "corrected": [
+          {
+            "circuit": "lna_core",
+            "device": null,
+            "class": "cap_cmim",
+            "parameter": "C",
+            "before": 6.250695e-12,
+            "after": 1.0001111999999999e-10
+          }
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
@@ -296,7 +321,7 @@
           "W"
         ],
         "layout_devices": 0,
-        "reference_devices": 11
+        "reference_devices": 12
       },
       "circuit": null,
       "instance": null,
@@ -325,7 +350,7 @@
           "P",
           "W"
         ],
-        "layout_devices": 1,
+        "layout_devices": 2,
         "reference_devices": 0
       },
       "circuit": null,
