@@ -79,9 +79,15 @@ sim_require_pdk run_biasref_sweep.sh --osdi
 sim_record_paths
 
 # --- PVT grids ------------------------------------------------------------
+# Three labels DELIBERATELY: this bench runs the three real cornerHBT.lib
+# sections only, with no sf/fs rows that would duplicate typ. The label ->
+# PDK-section maps are canonical in sim/env.sh (SIM_HBT_SECTION_OF /
+# SIM_MOS_SECTION_OF, issue #283); they carry all five fleet labels, and a
+# narrower CORNER_LABELS needs no map change because every lookup is keyed
+# on a label, never an iteration over the map's keys. The record below
+# states the sections THIS run resolved -- three entries, not five
+# (sim_grid_desc).
 CORNER_LABELS=(typ bcs wcs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs )
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss )
 TEMPS=(-40 27 125)
 VDDS=(1.62 1.80 1.98)
 MPA_FEEDS=(0.52m 100u 20u)
@@ -91,6 +97,11 @@ if [[ -n "${BIASREF_SMOKE:-}" ]]; then
   CORNER_LABELS=(typ); TEMPS=(27); VDDS=(1.80); MPA_FEEDS=(0.52m)
   STARTUP_CELLS=("typ 27 1.80")
 fi
+
+# The resolved `label=hbt_section,mos_section` list for the record header
+# below (sim_grid_desc, sim/env.sh). Computed AFTER any SMOKE narrowing, so
+# a record states the sections that run actually resolved.
+RESOLVED_SECTIONS="$(sim_grid_desc)"
 
 # Deck rendering (sim_render), the ngspice job pool (sim_jobs /
 # sim_pool_init / sim_pool_spawn) and the per-point pass/fail gate
@@ -104,7 +115,7 @@ trap 'rm -f "${FAILED_LIST}"' EXIT
 
 run_mpa_cell() {
   local label="$1" temp="$2" ifeed="$3"
-  local hbt="${HBT_SECTION_OF[${label}]}"
+  local hbt="${SIM_HBT_SECTION_OF[${label}]}"
   local pid="mpa_${label}_${temp}c_i${ifeed}"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
@@ -119,8 +130,8 @@ run_mpa_cell() {
 
 run_core_cell() {
   local label="$1" temp="$2" vdd="$3"
-  local hbt="${HBT_SECTION_OF[${label}]}"
-  local mos="${MOS_SECTION_OF[${label}]}"
+  local hbt="${SIM_HBT_SECTION_OF[${label}]}"
+  local mos="${SIM_MOS_SECTION_OF[${label}]}"
   local pid="core_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
@@ -136,8 +147,8 @@ run_core_cell() {
 
 run_startup_cell() {
   local label="$1" temp="$2" vdd="$3"
-  local hbt="${HBT_SECTION_OF[${label}]}"
-  local mos="${MOS_SECTION_OF[${label}]}"
+  local hbt="${SIM_HBT_SECTION_OF[${label}]}"
+  local mos="${SIM_MOS_SECTION_OF[${label}]}"
   local pid="startup_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
@@ -155,8 +166,8 @@ run_startup_cell() {
 
 run_servo_cell() {
   local label="$1" temp="$2" vdd="$3"
-  local hbt="${HBT_SECTION_OF[${label}]}"
-  local mos="${MOS_SECTION_OF[${label}]}"
+  local hbt="${SIM_HBT_SECTION_OF[${label}]}"
+  local mos="${SIM_MOS_SECTION_OF[${label}]}"
   local pid="servo_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
@@ -168,8 +179,8 @@ run_servo_cell() {
 
 run_servo_startup_cell() {
   local label="$1" temp="$2" vdd="$3"
-  local hbt="${HBT_SECTION_OF[${label}]}"
-  local mos="${MOS_SECTION_OF[${label}]}"
+  local hbt="${SIM_HBT_SECTION_OF[${label}]}"
+  local mos="${SIM_MOS_SECTION_OF[${label}]}"
   local pid="servo_startup_${label}_${temp}c_vdd${vdd}v"
   local netlist="${SNAPSHOTS_OUT}/${pid}.spice"
   local log="${CORNERS_OUT}/${pid}.log"
@@ -362,6 +373,10 @@ This is design-space input to DR-0003, the same class of evidence
 - ngspice: \`${NGSPICE_VERSION}\`
 - OSDI models: \`${OSDI_DIR}\` (present + loadable per
   \`sim/tools/build-osdi.sh --check\`; \`sg13_hv_pmos\` = PSP103.6)
+- Resolved corner -> section map (as run): \`${RESOLVED_SECTIONS}\` --
+  emitted by \`sim_grid_desc\` from the canonical maps in \`sim/env.sh\`,
+  so this record states the sections the run actually resolved rather
+  than a restated copy of the map.
 
 ## DUT inventories
 

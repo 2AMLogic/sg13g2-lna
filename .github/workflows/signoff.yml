@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.8.0"
+        run: python3 -m pip install "klayout-tools==0.9.2"
 
       - name: T1 item 1 attestation reproduces
         run: klt signoff --attest 1 --inventory signoff/attest/item1.json --check signoff/attest/item1.envelope.json
@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.8.0"
+        run: python3 -m pip install "klayout-tools==0.9.2"
 
       - name: Grader pin matches the layout flow's klt release
         run: .github/scripts/check-klt-pin.sh
@@ -215,6 +215,9 @@ jobs:
 
       - name: core-envelope record lifecycle tests
         run: sim/tests/test-core-envelope-lifecycle.sh
+
+      - name: canonical corner-label -> PDK-section map tests
+        run: sim/tests/test-corner-section-maps.sh
 
       - name: shared reducer helper tests
         run: python3 -I -m unittest discover -s sim/tools/tests -v
@@ -425,7 +428,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pinned klt
-        run: python3 -m pip install "klayout-tools==0.8.0"
+        run: python3 -m pip install "klayout-tools==0.9.2"
 
       - name: Design-source audit self-test
         run: .github/scripts/test-design-source-audit.sh
