@@ -21,9 +21,9 @@
     },
     "Rbleed": {
       "pcell": "rppd",
-      "params": {"w": "1u", "l": "386.652u"},
+      "params": {"w": "1u", "l": "386.650u"},
       "role": "DC bleed of the output-match node: xout -> vss (issue #258; keeps check-floating-nodes green now that xout only feeds out-of-scope caps)",
-      "realization_note": "Schematic value is an ideal 100 kOhm. Realized as rppd w=1u l=386.652u; the PyCell's own model-formula readout for that geometry is r=100.000 kOhm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, with Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um). xout is outside this cell's drawn scope (it is Cout's match-node side), so the resistor's lower pad carries the cell's xout port label; the upper pad lands on the vss rail, extended west over it."
+      "realization_note": "Schematic value is an ideal 100 kOhm. Realized as rppd w=1u l=386.650u (length on the 0.005 um manufacturing grid, so the PyCell's end-pad Cont vertices pass the klt 0.9.2 deck's cont.ongrid.1 rule; the 2 nm shortening is ~0.5 ohm, 0.0005 % of the value); the PyCell's own model-formula readout for that geometry is r=100.000 kOhm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, with Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um). xout is outside this cell's drawn scope (it is Cout's match-node side), so the resistor's lower pad carries the cell's xout port label; the upper pad lands on the vss rail, extended west over it."
     },
     "Cbref": {
       "pcell": "cmim",

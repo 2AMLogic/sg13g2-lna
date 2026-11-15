@@ -5,7 +5,7 @@
 * schematic's own; drawn geometry (rppd L/W) is the realization's.
 QQ2 outn vb2 casc vss npn13G2 NE=8
 QQ1 casc b1 e1 vss npn13G2 NE=8
-RRbleed xout vss 100k rppd L=386.652U W=1U
+RRbleed xout vss 100k rppd L=386.650U W=1U
 MMis bref gsvo vdd vdd pfet L=1U W=512U
 RR3b bref b1 330 rppd L=1.005U W=1U
 QQ3 bref bref vss vss npn13G2 NE=1

@@ -28,6 +28,17 @@
 # non-zero on a successful -x run -- the verdict is the output file, and
 # proving that once per runner beats debugging it inside
 # check-netlist-regen. Bounded by `timeout` either way.
+#
+# The smoke passes an explicit --rcfile: xschem resolves the stock
+# `devices/*.sym` symbols through XSCHEM_LIBRARY_PATH, whose default is
+# baked in at configure time (the fleet artifact carries /opt/eda/xschem;
+# the env var of the same name is not consulted by the headless run), so a
+# relocated build finds no symbols without one. This is the same route the
+# repo's own netlisting takes (design/xschemrc, passed by
+# check-netlist-regen as --rcfile). The rc lists both resolution forms:
+# the library root for `devices/res.sym`-style stock references, and the
+# devices dir for plain `res.sym`-style references (design/xschemrc's
+# baseline).
 set -euo pipefail
 
 XSCHEM_REPO="https://github.com/StefanSchippers/xschem"
@@ -80,12 +91,17 @@ got="$(version_of "${PREFIX}/bin/xschem")" || die "built xschem reports no versi
 smoke="$work/smoke"
 mkdir -p "$smoke/netlist"
 printf '%s\n' \
+  'set XSCHEM_LIBRARY_PATH {}' \
+  'append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library' \
+  'append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library/devices' \
+  > "$smoke/rc"
+printf '%s\n' \
   'v {xschem version=3.4.7 file_version=1.2}' \
   'C {devices/res.sym} 0 0 0 0 {name=R1 value=1k}' \
   'C {devices/lab_pin.sym} 0 -30 0 0 {name=p1 lab=a}' \
   'C {devices/lab_pin.sym} 0 30 0 0 {name=p2 lab=0}' > "$smoke/t.sch"
 HOME="$smoke" timeout -k 5 60 "${PREFIX}/bin/xschem" -n -s -q -x -r \
-  -o "$smoke/netlist" "$smoke/t.sch" >"$smoke/log" 2>&1 || true
+  --rcfile "$smoke/rc" -o "$smoke/netlist" "$smoke/t.sch" >"$smoke/log" 2>&1 || true
 grep -qE '^R1 ' "$smoke/netlist/t.spice" \
   || die "headless netlist smoke failed ($(tail -n 5 "$smoke/log" "$smoke/netlist/t.spice" 2>/dev/null | tr '\n' ' '))"
 

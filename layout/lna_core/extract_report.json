@@ -8,8 +8,8 @@
   "top": "lna_core",
   "dbu_um": 0.001,
   "netlist_path": "lna_core.extracted.spice",
-  "netlist_sha256": "626a591437bc260312c7b75bed7f8fc83c0bc5e52fd5e28582874152bc195fae",
-  "netlist_normalized_sha256": "19370b52393ff9a23a31d226716216e8fdf85282a0a66fc510024a37f6aaaa16",
+  "netlist_sha256": "85879543917a457ddbffe390ee98e3f5c49c1137db99e99e95059ea96e4ef43f",
+  "netlist_normalized_sha256": "304381613fa19acc0a401d40bb71219d0f33600ec181c352818888ea4f5da695",
   "status": "extracted",
   "device_count": 50,
   "net_count": 10,
@@ -1092,11 +1092,11 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 99999.940358,
-        "l_um": 386.652,
+        "r_ohm": 99999.423459,
+        "l_um": 386.65,
         "w_um": 1.0,
-        "area_um2": 386.652,
-        "perimeter_um": 775.304
+        "area_um2": 386.65,
+        "perimeter_um": 775.3
       },
       "instance_path": [
         {
@@ -1418,19 +1418,22 @@
   "declared_pins": null,
   "def_pins": null,
   "label_layers": null,
+  "device_models": null,
   "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.8.0",
-    "klayout_version": "0.30.13",
+    "klt_version": "0.9.2",
+    "klt_git_commit": "046ba74652fc096bd97071fc3237f7159dd40183",
+    "klt_reinstall_spec": "klayout-tools==0.9.2",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "content_hash": "sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9",
       "released": true
     },
     "input": {
-      "content_hash": "sha256:200d3880d13ac9482c63d6ed0ee0e89d19494cf3816037ae3b5735068207cd33",
+      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
       "role": "layout"
     }
   },
@@ -1444,14 +1447,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.001,
-      "device_extraction": 0.25,
+      "read_layout": 0.002,
+      "device_extraction": 0.319,
       "diagnostics": 0.0,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.001
     },
-    "total_seconds": 0.344,
-    "unattributed_seconds": 0.091
+    "total_seconds": 0.335,
+    "unattributed_seconds": 0.012
   }
 }

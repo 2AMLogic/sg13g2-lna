@@ -182,7 +182,7 @@ def draw(pya, nx: int, realization: dict) -> Canvas:
 
     # ------------------------------------------------------------------ Rbleed
     # rppd rot=0 at (-160.5, -395.5), PyCell-relative like R3b: body
-    # x[-160.5,-159.5] y[-395.5,-8.848]; end pads Metal1 x[-160.48,-159.52]
+    # x[-160.5,-159.5] y[-395.5,-8.850]; end pads Metal1 x[-160.48,-159.52]
     # at y[-395.93,-395.63] (xout, below) and y[-8.718,-8.418] (vss, above).
     cv.pcell("rppd", dict(rz["Rbleed"]["params"]), -160.5, -395.5, rot=0)
     cv.box(METAL1, -165.0, -8.50, -60.0, -7.50)  # vss rail extended west, over the pad

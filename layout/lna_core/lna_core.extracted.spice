@@ -108,8 +108,8 @@ C$46 vss bref 6.250695e-12
 C$47 vss bref 6.250695e-12
 * device instance $48 r0 *1 91.75,-46.25 cap_cmim
 C$48 vss bref 6.250695e-12
-* device instance $49 r0 *1 -160,-202.174 rppd
-X$49 xout vss vss rppd r=99999.9403579 L=386.652U W=1U
+* device instance $49 r0 *1 -160,-202.175 rppd
+X$49 xout vss vss rppd r=99999.4234592 L=386.65U W=1U
 * device instance $50 r0 *1 -12.503,-1.14 rppd
 X$50 bref b1 vss rppd r=329.741550696 L=1.005U W=1U
 .ENDS lna_core
