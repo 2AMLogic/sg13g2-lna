@@ -1382,15 +1382,18 @@
   "declared_pins": null,
   "def_pins": null,
   "label_layers": null,
+  "device_models": null,
   "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.2",
+    "klt_git_commit": "046ba74652fc096bd97071fc3237f7159dd40183",
+    "klt_reinstall_spec": "klayout-tools==0.9.2",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "content_hash": "sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9",
       "released": true
     },
     "input": {
@@ -1408,14 +1411,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.001,
-      "device_extraction": 0.206,
+      "read_layout": 0.002,
+      "device_extraction": 0.287,
       "diagnostics": 0.0,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.001
     },
-    "total_seconds": 0.292,
-    "unattributed_seconds": 0.084
+    "total_seconds": 0.31,
+    "unattributed_seconds": 0.019
   }
 }
