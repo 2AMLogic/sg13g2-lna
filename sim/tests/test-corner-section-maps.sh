@@ -164,11 +164,14 @@ if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
 else bad "unknown argument: rc=$rc out='$out'"; fi
 
 # 7. the Python copies agree with the canonical across the language boundary
-#    (issue #287). The maps are read from the modules by import under
-#    `python3 -I` -- the same explicit-path load reduce_biasref.py itself
-#    uses for reducer_common.py -- not grep-parsed, so a reformat cannot
-#    silently unpin them; the comparison itself stays here in bash against
-#    the maps sourced from env.sh, so the test never restates the fact.
+#    (issue #287). The maps are read from the modules' real source with the
+#    Python interpreter under `python3 -I` -- exec'd, not grep-parsed, so a
+#    reformat cannot silently unpin them -- and compiled fresh from the file
+#    bytes rather than through the import system, whose __pycache__ could
+#    otherwise serve a pre-edit map when a same-second, same-size edit/revert
+#    collides on mtime+size (exactly what an automated mutation check does);
+#    the comparison itself stays here in bash against the maps sourced from
+#    env.sh, so the test never restates the fact.
 canon="$(
   # shellcheck disable=SC1090
   source "$ENV_SH" >/dev/null 2>&1
@@ -184,25 +187,28 @@ while IFS=$'\t' read -r k h m; do
 done <<< "$canon"
 
 py_rows="$(python3 -I - "$SIM_DIR_T" <<'PYEOF'
-import importlib.util
 import pathlib
 import sys
 
 sim = pathlib.Path(sys.argv[1])
 
 def load(name, path):
-    spec = importlib.util.spec_from_file_location(name, str(path))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    # Compile from the file's own bytes, bypassing the import system's
+    # __pycache__: a cached .pyc whose stored mtime+size still match (a
+    # same-second, same-size edit/revert) would serve a pre-mutation map
+    # and hide -- or phantom-report -- a divergence. compile() always
+    # sees the true source.
+    ns = {"__name__": name, "__file__": str(path)}
+    exec(compile(path.read_text(), str(path), "exec"), ns)
+    return ns
 
 rb = load("reduce_biasref", sim / "biasref-topology" / "reduce_biasref.py")
 lvc = load("lna_variant_campaign",
            sim / "lna-characterization" / "lna_variant_campaign.py")
 for module, dictname, m in (
-    ("reduce_biasref.py", "MOS_SECTION_OF", rb.MOS_SECTION_OF),
-    ("lna_variant_campaign.py", "HBT", lvc.HBT),
-    ("lna_variant_campaign.py", "MOS", lvc.MOS),
+    ("reduce_biasref.py", "MOS_SECTION_OF", rb["MOS_SECTION_OF"]),
+    ("lna_variant_campaign.py", "HBT", lvc["HBT"]),
+    ("lna_variant_campaign.py", "MOS", lvc["MOS"]),
 ):
     for k in sorted(m):
         print(f"{module}\t{dictname}\t{k}\t{m[k]}")
