@@ -121,6 +121,40 @@ run t1 rec1
 if [[ $RC -eq 3 ]] && errhas PDK_IDENTITY_MISMATCH && [[ ! -e "$TMP/t1/sim/lna-core-envelope/corners" && ! -e "$TMP/t1/sim/lna-core-envelope/netlist-snapshots" && ! -e "$TMP/t1/sim/lna-core-envelope/records" ]] && [[ "$(nsim t1)" == 0 ]]; then
   ok "wrong PDK identity: exit 3, nothing allocated, no simulator call"; else bad "pdk mismatch rc=$RC"; fi
 
+# 1b. doctored XQ1 anchor in the base netlist: exit 3 up front (issue #277),
+# naming the netlist path, sha256 and expected-vs-found -- NOT a per-variant
+# exit 4 blaming the first variant in the table
+mktree t13
+sed -i 's/^XQ1 \(.*\) Nx=8/XQ1 \1 Nx=4/' "$TMP/t13/design/netlist/lna.spice"
+run t13 rec13
+sha13="$(shasum -a 256 "$TMP/t13/design/netlist/lna.spice" | awk '{print $1}')"
+if [[ $RC -eq 3 ]] && errhas "sha256 ${sha13}" && errhas 'anchor line' \
+   && errhas 'expected (XQ1)' && errhas 'found   (XQ1)' && errhas 'Nx=4' \
+   && ! errhas 'variant s_fixj_a2' && ! errhas 'geometry substitution did not match' \
+   && [[ ! -e "$TMP/t13/sim/lna-core-envelope/corners/rec13" && "$(nsim t13)" == 0 ]]; then
+  ok "doctored XQ1 anchor: exit 3 naming netlist+sha+expected vs found, no simulation, no variant blamed"
+else bad "doctored XQ1 anchor rc=$RC: $(cat "$TMP/err")"; fi
+
+# 1c. missing XQ2 anchor only: reported by name, other anchors still accepted
+mktree t14
+sed -i 's/^XQ2 outn vb2 casc vss npn13G2 Nx=8$/XQ2 outn vb2 casc vss npn13G2 Nx=6/' "$TMP/t14/design/netlist/lna.spice"
+run t14 rec14
+if [[ $RC -eq 3 ]] && errhas 'expected (XQ2)' && errhas 'Nx=6' \
+   && ! errhas 'expected (XQ1)' && ! errhas 'expected (XMis)' \
+   && [[ ! -e "$TMP/t14/sim/lna-core-envelope/corners/rec14" && "$(nsim t14)" == 0 ]]; then
+  ok "doctored XQ2 anchor: exit 3 reported by name"
+else bad "doctored XQ2 anchor rc=$RC: $(cat "$TMP/err")"; fi
+
+# 1d. missing XMis anchor only: reported by name
+mktree t15
+sed -i 's/^XMis bref gsvo vdd vdd sg13_hv_pmos w=512u /XMis bref gsvo vdd vdd sg13_hv_pmos w=256u /' "$TMP/t15/design/netlist/lna.spice"
+run t15 rec15
+if [[ $RC -eq 3 ]] && errhas 'expected (XMis)' && errhas 'w=256u' \
+   && ! errhas 'expected (XQ1)' && ! errhas 'expected (XQ2)' \
+   && [[ ! -e "$TMP/t15/sim/lna-core-envelope/corners/rec15" && "$(nsim t15)" == 0 ]]; then
+  ok "doctored XMis anchor: exit 3 reported by name"
+else bad "doctored XMis anchor rc=$RC: $(cat "$TMP/err")"; fi
+
 # 2. fresh run completes, publishes, finalizes, cites provenance
 mktree t2
 run t2 rec2
