@@ -73,6 +73,12 @@ _spec.loader.exec_module(_rc)
     _rc.require, _rc.startup_id, _rc.startup_verdict)
 
 CORNER_LABELS = ("typ", "bcs", "wcs")
+# Checked mirror of sim/env.sh's SIM_MOS_SECTION_OF restricted to these three
+# labels -- a PDK fact (which sections cornerMOShv.lib ships), not a bench
+# choice. It is restated here because the module must replay standalone with
+# no shell/PDK (see the docstring), so the copy cannot be deleted; it is kept
+# honest by the cross-language pin in sim/tests/test-corner-section-maps.sh
+# (case 7), which fails if this dict and the canonical diverge.
 MOS_SECTION_OF = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss"}
 TEMPS = ("-40", "27", "125")
 VDDS = ("1.62", "1.80", "1.98")
