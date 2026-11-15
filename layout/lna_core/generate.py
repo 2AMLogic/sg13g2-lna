@@ -26,6 +26,10 @@ Floorplan (um, global coordinates; XR = 1.85*(nx-1), the HBT stripe span):
   its right, net ``bref``); emitter Metal2 to the ``vss`` rail.
 * R3b rotated 90 deg on the y=-1.14 line between Q3 and Q1: ``bref`` enters
   its left pad, ``b1`` (Q1's base bar, extended left) its right pad.
+* Rbleed (issue #258's xout -> vss DC bleed): a 386.7 um rppd strip at
+  x=-160.5 running south from the vss rail (Metal1 extended west over its
+  upper pad) to an ``xout`` pad below the Cbref bank. ``xout`` is a port
+  label only: the node itself belongs to out-of-scope matching devices.
 * XMis at (-70, 10): drains bussed on Metal1 below the device into the
   ``bref`` riser, sources + n-well tap bussed above (``vdd``), gate bus on
   GatPoly below the device, contacted at its right end (``gsvo``).
@@ -35,7 +39,8 @@ Floorplan (um, global coordinates; XR = 1.85*(nx-1), the HBT stripe span):
   into one ``bref`` grid (via stack down to Metal1, joined to Q3's riser).
 
 Ports (labels only -- this cell has no pin shapes): vdd, vss, b1, e1, outn,
-vb2, gsvo. b1/e1/outn/vb2 connect to out-of-scope devices (realization.json).
+vb2, gsvo, xout. b1/e1/outn/vb2/xout connect to out-of-scope devices
+(realization.json).
 """
 
 from __future__ import annotations
@@ -174,6 +179,16 @@ def draw(pya, nx: int, realization: dict) -> Canvas:
     # x[-13.435,-13.135] (bref), both y[-1.62,-0.66].
     cv.pcell("rppd", dict(rz["R3b"]["params"]), -12.0, -1.64, rot=90)
     cv.box(METAL1, -23.40, -1.26, -13.20, -1.02)  # bref -> R3b left pad
+
+    # ------------------------------------------------------------------ Rbleed
+    # rppd rot=0 at (-160.5, -395.5), PyCell-relative like R3b: body
+    # x[-160.5,-159.5] y[-395.5,-8.850]; end pads Metal1 x[-160.48,-159.52]
+    # at y[-395.93,-395.63] (xout, below) and y[-8.718,-8.418] (vss, above).
+    cv.pcell("rppd", dict(rz["Rbleed"]["params"]), -160.5, -395.5, rot=0)
+    cv.box(METAL1, -165.0, -8.50, -60.0, -7.50)  # vss rail extended west, over the pad
+    cv.box(METAL1, -161.2, -8.75, -158.8, -7.50)  # upper pad -> rail tie
+    cv.box(METAL1, -161.2, -396.60, -158.8, -395.40)  # lower pad extension
+    cv.label(METAL1_TEXT, "xout", -160.0, -396.20)
 
     # ------------------------------------------------------------------ vss rail
     rail_x0, rail_x1 = -60.0, xr + 10.0

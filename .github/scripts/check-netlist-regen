@@ -40,9 +40,12 @@ import subprocess
 import sys
 import tempfile
 
-# xschem release the committed flow was verified with (Ubuntu 24.04 `xschem`
-# package, 3.4.4-1). Recorded here and in design/README.md.
-XSCHEM_VERSION = "3.4.4"
+# xschem release the committed flow is verified against: the fleet's 3.4.7
+# (2am#6535; issue #259 moves this repo's pin from the noble apt 3.4.4).
+# The noble archive package is 3.4.4, so CI builds the pinned tag from
+# source: .github/scripts/install-xschem (credential-free, tag-to-commit
+# asserted). Recorded here and in design/README.md.
+XSCHEM_VERSION = "3.4.7"
 PDK_VARIANT = "ihp-sg13g2"
 CANDIDATE_ROOTS = ["/usr/share/pdk", "/usr/local/share/pdk"]
 HEADER_RE = re.compile(r"^\*\*\s*sch_path:")

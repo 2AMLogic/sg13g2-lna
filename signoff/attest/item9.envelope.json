@@ -194,7 +194,7 @@
         "value": {
           "klt": "0.9.2",
           "ngspice": "46",
-          "xschem": "3.4.4"
+          "xschem": "3.4.7"
         }
       }
     ]
@@ -209,7 +209,7 @@
         "path": "signoff/attest/item9.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:45a6e2e9553f3e9505f0ebed9181470babef03a31eb931573150719872544a76"
+      "content_hash": "sha256:df155c62a37ddef70fcbc38ca429de73014d77fef737f9084f841e114ae8e031"
     }
   }
 }
