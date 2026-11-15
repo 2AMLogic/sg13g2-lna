@@ -45,279 +45,6 @@
   "claims": [
     {
       "bench_templates": [
-        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
-      ],
-      "classification": "device-characterization",
-      "cold_start": [
-        {
-          "command": "HBT_VCES=\"0.8 1.0 1.2 1.4\" HBT_NX_LIST=\"1\" sim/hbt-characterization/run_hbt_sweep.sh",
-          "doc": "sim/hbt-characterization/README.md",
-          "kind": "run",
-          "needs": [
-            "ngspice on PATH",
-            "PDK_ROOT/PDK per sim/env.sh",
-            "python3"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/hbt-characterization/README.md"
-      ],
-      "dut": "none",
-      "family": "hbt-characterization",
-      "id": "hbt-char-20260910-200059-7da7038",
-      "limitations": "Superseded record; off-27 C NF cells are ambient-referenced and corrected by 20260921-124900-d6da30a. Device-level model-card study, not an LNA result.",
-      "records": [
-        {
-          "corners": {
-            "files": 61,
-            "git_blob_digest": "sha256:f57011267ef2604934db9ef4f49e32c8b760debc1416d10c84fce2fd9c379b86"
-          },
-          "id": "20260910-200059-7da7038",
-          "netlist_snapshots": {
-            "files": 61,
-            "git_blob_digest": "sha256:6f6516b0e6affd261b2e36b3a9ed0803dec0478505c3b7ffeaea3fa6a8378a8e"
-          },
-          "published_files": [
-            "sim/hbt-characterization/records/20260910-200059-7da7038-summary.csv",
-            "sim/hbt-characterization/records/20260910-200059-7da7038.csv",
-            "sim/hbt-characterization/records/20260910-200059-7da7038.md"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/hbt-characterization/hbt_parse.sh",
-        "sim/hbt-characterization/parse_hbt_log.awk"
-      ],
-      "replay_checks": [
-        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
-      ],
-      "result_status": "superseded",
-      "revision_note": "Superseded by 20260918-203652-4293920. Produced at commit 7da7038; the narrower grid is reproducible from the current runner through the documented HBT_VCES/HBT_NX_LIST overrides.",
-      "runners": [
-        "sim/hbt-characterization/run_hbt_sweep.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin"
-      ],
-      "summary": "npn13G2 fT/NF/gain device sweep, first (narrower) grid: Nx=1 with V_CE >= 0.8 V plus one Nx=8 spot check.",
-      "tool_pins": {
-        "ngspice": "ngspice (native VBIC; no OSDI)",
-        "osdi_models": false,
-        "other": "",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_templates": [
-        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
-      ],
-      "classification": "device-characterization",
-      "cold_start": [
-        {
-          "command": "sim/hbt-characterization/run_hbt_sweep.sh",
-          "doc": "sim/hbt-characterization/README.md",
-          "kind": "run",
-          "needs": [
-            "ngspice on PATH",
-            "PDK_ROOT/PDK per sim/env.sh",
-            "python3"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/hbt-characterization/README.md"
-      ],
-      "dut": "none",
-      "family": "hbt-characterization",
-      "id": "hbt-char-20260918-203652-4293920",
-      "limitations": "Model-card study of one device; off-27 C NF cells are ambient-referenced (see the correction claim). Not a claim against any target-spec row.",
-      "records": [
-        {
-          "corners": {
-            "files": 150,
-            "git_blob_digest": "sha256:0f1a932e4340e48a0591794ebe362f8ce9873117382d4c138869716cd2bb619b"
-          },
-          "id": "20260918-203652-4293920",
-          "netlist_snapshots": {
-            "files": 150,
-            "git_blob_digest": "sha256:23db13e218022d116af116760a85f4255546558ee28064df9aa8a849c3034c78"
-          },
-          "published_files": [
-            "sim/hbt-characterization/records/20260918-203652-4293920-summary.csv",
-            "sim/hbt-characterization/records/20260918-203652-4293920.csv",
-            "sim/hbt-characterization/records/20260918-203652-4293920.md"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/hbt-characterization/hbt_parse.sh",
-        "sim/hbt-characterization/parse_hbt_log.awk"
-      ],
-      "replay_checks": [
-        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/hbt-characterization/run_hbt_sweep.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin"
-      ],
-      "summary": "npn13G2 fT, 50 ohm NF and transducer gain over the full {typ,bcs,wcs,sf,fs} x {-40,27,125 C} x V_CE x Nx in {1,8} grid.",
-      "tool_pins": {
-        "ngspice": "ngspice (native VBIC; no OSDI)",
-        "osdi_models": false,
-        "other": "",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_templates": [
-        "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice"
-      ],
-      "classification": "data-only-derivation",
-      "cold_start": [
-        {
-          "command": "sim/hbt-characterization/rederive_nf_fixed_t0.py",
-          "doc": "sim/hbt-characterization/records/20260921-124900-d6da30a.md",
-          "kind": "replay",
-          "needs": [
-            "python3 stdlib",
-            "no PDK, no ngspice"
-          ]
-        }
-      ],
-      "derivations": [
-        "sim/hbt-characterization/rederive_nf_fixed_t0.py"
-      ],
-      "derives_from": [
-        "hbt-char-20260910-200059-7da7038",
-        "hbt-char-20260918-203652-4293920"
-      ],
-      "docs": [
-        "sim/hbt-characterization/README.md",
-        "sim/hbt-characterization/records/20260921-124900-d6da30a.md"
-      ],
-      "dut": "none",
-      "family": "hbt-characterization",
-      "id": "hbt-char-20260921-124900-d6da30a-correction",
-      "limitations": "The derivation is only as good as the committed source CSVs; the probe bench justifying the convention is a separate ngspice run documented in the record.",
-      "records": [
-        {
-          "corners": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "id": "20260921-124900-d6da30a",
-          "netlist_snapshots": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "published_files": [
-            "sim/hbt-characterization/records/20260921-124900-d6da30a-corrected.csv",
-            "sim/hbt-characterization/records/20260921-124900-d6da30a-summary.csv",
-            "sim/hbt-characterization/records/20260921-124900-d6da30a.md"
-          ]
-        }
-      ],
-      "replay_checks": [
-        "sim/hbt-characterization/tests/test_rederive_nf_fixed_t0.py"
-      ],
-      "result_status": "published",
-      "shared": [
-        "runner-common",
-        "pdk-pin"
-      ],
-      "summary": "Fixed-T0 re-referencing of the -40/125 C NF cells of both HBT records. Algebra on committed CSVs plus the resistor noise-temperature probe bench; no new device simulation of the sweep.",
-      "tool_pins": {
-        "ngspice": "none",
-        "osdi_models": false,
-        "other": "python3 stdlib; the probe bench needs ngspice only if re-run",
-        "pdk": "none (PDK-free)"
-      }
-    },
-    {
-      "bench_templates": [
-        "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl",
-        "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl"
-      ],
-      "classification": "device-characterization",
-      "cold_start": [
-        {
-          "command": "sim/breakdown-extraction/run_breakdown_sweep.sh",
-          "doc": "sim/breakdown-extraction/README.md",
-          "kind": "run",
-          "needs": [
-            "ngspice on PATH",
-            "python3",
-            "PDK_ROOT/PDK per sim/env.sh"
-          ]
-        },
-        {
-          "command": "python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py",
-          "doc": "sim/breakdown-extraction/README.md",
-          "kind": "replay",
-          "needs": [
-            "python3 stdlib",
-            "no PDK, no ngspice"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/breakdown-extraction/README.md"
-      ],
-      "dut": "none",
-      "family": "breakdown-extraction",
-      "id": "breakdown-20260918-212948-013274f",
-      "limitations": "DC-only model-card extraction; no RF port. Evidence for DR-0001's breakdown budget, not a target-spec claim.",
-      "records": [
-        {
-          "corners": {
-            "files": 518,
-            "git_blob_digest": "sha256:2f2e9e4bd9533f4cbdbdc594c7c6f76cbe23f2ca8b8a1b342d6e4af1e66050f0"
-          },
-          "id": "20260918-212948-013274f",
-          "netlist_snapshots": {
-            "files": 259,
-            "git_blob_digest": "sha256:4cca77059ea48670cf40e5ae2d8b57a0c64bbe169be90880f23d418d03b39522"
-          },
-          "published_files": [
-            "sim/breakdown-extraction/records/20260918-212948-013274f-bvceo-locus.csv",
-            "sim/breakdown-extraction/records/20260918-212948-013274f-bvceo-summary.csv",
-            "sim/breakdown-extraction/records/20260918-212948-013274f-heldbase-summary.csv",
-            "sim/breakdown-extraction/records/20260918-212948-013274f-heldbase-sweep.csv",
-            "sim/breakdown-extraction/records/20260918-212948-013274f.md"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/breakdown-extraction/reduce_breakdown.py"
-      ],
-      "replay_checks": [
-        "sim/breakdown-extraction/tests/check_breakdown_replay.py",
-        "sim/breakdown-extraction/tests/test_reduce_breakdown.py"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/breakdown-extraction/run_breakdown_sweep.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin"
-      ],
-      "summary": "npn13G2 BVCEO/BVCER/BVCES extracted from the model card by current-driven continuation, plus the voltage-driven control bench.",
-      "tool_pins": {
-        "ngspice": "ngspice (native VBIC; no OSDI)",
-        "osdi_models": false,
-        "other": "",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_templates": [
         "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl",
         "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl",
         "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl"
@@ -531,6 +258,474 @@
     },
     {
       "bench_templates": [
+        "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl",
+        "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "sim/breakdown-extraction/run_breakdown_sweep.sh",
+          "doc": "sim/breakdown-extraction/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "python3",
+            "PDK_ROOT/PDK per sim/env.sh"
+          ]
+        },
+        {
+          "command": "python3 -I sim/breakdown-extraction/tests/check_breakdown_replay.py",
+          "doc": "sim/breakdown-extraction/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/breakdown-extraction/README.md"
+      ],
+      "dut": "none",
+      "family": "breakdown-extraction",
+      "id": "breakdown-20260918-212948-013274f",
+      "limitations": "DC-only model-card extraction; no RF port. Evidence for DR-0001's breakdown budget, not a target-spec claim.",
+      "records": [
+        {
+          "corners": {
+            "files": 518,
+            "git_blob_digest": "sha256:2f2e9e4bd9533f4cbdbdc594c7c6f76cbe23f2ca8b8a1b342d6e4af1e66050f0"
+          },
+          "id": "20260918-212948-013274f",
+          "netlist_snapshots": {
+            "files": 259,
+            "git_blob_digest": "sha256:4cca77059ea48670cf40e5ae2d8b57a0c64bbe169be90880f23d418d03b39522"
+          },
+          "published_files": [
+            "sim/breakdown-extraction/records/20260918-212948-013274f-bvceo-locus.csv",
+            "sim/breakdown-extraction/records/20260918-212948-013274f-bvceo-summary.csv",
+            "sim/breakdown-extraction/records/20260918-212948-013274f-heldbase-summary.csv",
+            "sim/breakdown-extraction/records/20260918-212948-013274f-heldbase-sweep.csv",
+            "sim/breakdown-extraction/records/20260918-212948-013274f.md"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/breakdown-extraction/reduce_breakdown.py"
+      ],
+      "replay_checks": [
+        "sim/breakdown-extraction/tests/check_breakdown_replay.py",
+        "sim/breakdown-extraction/tests/test_reduce_breakdown.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/breakdown-extraction/run_breakdown_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 BVCEO/BVCER/BVCES extracted from the model card by current-driven continuation, plus the voltage-driven control bench.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl",
+        "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-core-envelope/run_core_envelope.sh",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-20260926-180931-90b07a0",
+      "limitations": "Every variant except the control is a probe: nothing under design/ changes because of it. Not a target-spec conformance claim.",
+      "records": [
+        {
+          "corners": {
+            "files": 2026,
+            "git_blob_digest": "sha256:0f4aa69ece339ad493f2b26d22f416a0a168b603e49c67dc2b92f49192e1cb9d"
+          },
+          "id": "20260926-180931-90b07a0",
+          "netlist_snapshots": {
+            "files": 675,
+            "git_blob_digest": "sha256:63ff905d83a4bd0b9ddef666267de73ef1f72475bc4e878bbefa63d93b10b4c8"
+          },
+          "published_files": [
+            "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv",
+            "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv",
+            "sim/lna-core-envelope/records/20260926-180931-90b07a0.md"
+          ]
+        },
+        {
+          "corners": {
+            "files": 31,
+            "git_blob_digest": "sha256:2ab8b27061ec7af0e31412764249e606ca3b9b8d756b3b736ab64f18f90d5c5d"
+          },
+          "id": "gate-20261108-220949-9b6c868",
+          "netlist_snapshots": {
+            "files": 11,
+            "git_blob_digest": "sha256:df7a5ce43d2dd2dee308efeec6adcd12a6308baeccf2003e7574750462815fd6"
+          },
+          "published_files": []
+        }
+      ],
+      "reducers": [
+        "sim/lna-core-envelope/parse_core_envelope.py",
+        "sim/lna-core-envelope/envelope_rf.py",
+        "sim/lna-core-envelope/core_envelope_lifecycle.py"
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/test_parse_core_envelope.py",
+        "sim/tests/test-core-envelope-lifecycle.sh"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-core-envelope/run_core_envelope.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "15 DUT variants x 45 PVT cells re-running the lna-characterization bench; the committed netlist runs as the control variant and must reproduce 088c734.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-core-envelope/core_envelope_campaign.py"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
+          "command": "sim/lna-core-envelope/run_core_envelope_campaign.sh gate",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "run",
+          "needs": [
+            "klt with the batch backend",
+            "a fleet runner image that supports it"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-campaign-unrun",
+      "limitations": "No campaign has run and no record exists. Attests that the bench generator ships, not that it has produced a result.",
+      "records": [],
+      "reducers": [
+        "sim/lna-core-envelope/reduce_core_envelope_campaign.py"
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/test_core_envelope_campaign.py",
+        "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py",
+        "sim/lna-core-envelope/tests/synthetic_reports.py"
+      ],
+      "result_status": "none-unrun",
+      "runners": [
+        "sim/lna-core-envelope/run_core_envelope_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Emitter-array and cascode-split campaign (issue #58): offline preparation of the fleet requests and reducer.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet",
+        "osdi_models": true,
+        "other": "klt (batch backend only)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py",
+          "doc": "sim/lna-core-envelope/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/lna-core-envelope/derive_committed_record_envelope.py",
+        "sim/lna-core-envelope/envelope_rf.py"
+      ],
+      "derives_from": [
+        "lna-char-20260926-122301-088c734"
+      ],
+      "docs": [
+        "sim/lna-core-envelope/README.md"
+      ],
+      "dut": "none",
+      "family": "lna-core-envelope",
+      "id": "core-envelope-derived-envelope",
+      "limitations": "Replay consistency only, not correctness of the underlying assumptions.",
+      "records": [
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "20260926-122301-088c734-derived-envelope",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv"
+          ]
+        }
+      ],
+      "replay_checks": [
+        "sim/lna-core-envelope/tests/check_envelope_replay.py",
+        "sim/lna-core-envelope/tests/test_check_envelope_replay.py",
+        "sim/lna-core-envelope/tests/test_derive_append_only.py",
+        "sim/lna-core-envelope/tests/test_envelope_rf.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "NFmin at T0 = 290 K and the available-gain envelope vs inductor Q, derived from the committed raw tables of record 088c734.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "HBT_VCES=\"0.8 1.0 1.2 1.4\" HBT_NX_LIST=\"1\" sim/hbt-characterization/run_hbt_sweep.sh",
+          "doc": "sim/hbt-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK per sim/env.sh",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260910-200059-7da7038",
+      "limitations": "Superseded record; off-27 C NF cells are ambient-referenced and corrected by 20260921-124900-d6da30a. Device-level model-card study, not an LNA result.",
+      "records": [
+        {
+          "corners": {
+            "files": 61,
+            "git_blob_digest": "sha256:f57011267ef2604934db9ef4f49e32c8b760debc1416d10c84fce2fd9c379b86"
+          },
+          "id": "20260910-200059-7da7038",
+          "netlist_snapshots": {
+            "files": 61,
+            "git_blob_digest": "sha256:6f6516b0e6affd261b2e36b3a9ed0803dec0478505c3b7ffeaea3fa6a8378a8e"
+          },
+          "published_files": [
+            "sim/hbt-characterization/records/20260910-200059-7da7038-summary.csv",
+            "sim/hbt-characterization/records/20260910-200059-7da7038.csv",
+            "sim/hbt-characterization/records/20260910-200059-7da7038.md"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/hbt-characterization/hbt_parse.sh",
+        "sim/hbt-characterization/parse_hbt_log.awk"
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
+      ],
+      "result_status": "superseded",
+      "revision_note": "Superseded by 20260918-203652-4293920. Produced at commit 7da7038; the narrower grid is reproducible from the current runner through the documented HBT_VCES/HBT_NX_LIST overrides.",
+      "runners": [
+        "sim/hbt-characterization/run_hbt_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 fT/NF/gain device sweep, first (narrower) grid: Nx=1 with V_CE >= 0.8 V plus one Nx=8 spot check.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl"
+      ],
+      "classification": "device-characterization",
+      "cold_start": [
+        {
+          "command": "sim/hbt-characterization/run_hbt_sweep.sh",
+          "doc": "sim/hbt-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice on PATH",
+            "PDK_ROOT/PDK per sim/env.sh",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260918-203652-4293920",
+      "limitations": "Model-card study of one device; off-27 C NF cells are ambient-referenced (see the correction claim). Not a claim against any target-spec row.",
+      "records": [
+        {
+          "corners": {
+            "files": 150,
+            "git_blob_digest": "sha256:0f1a932e4340e48a0591794ebe362f8ce9873117382d4c138869716cd2bb619b"
+          },
+          "id": "20260918-203652-4293920",
+          "netlist_snapshots": {
+            "files": 150,
+            "git_blob_digest": "sha256:23db13e218022d116af116760a85f4255546558ee28064df9aa8a849c3034c78"
+          },
+          "published_files": [
+            "sim/hbt-characterization/records/20260918-203652-4293920-summary.csv",
+            "sim/hbt-characterization/records/20260918-203652-4293920.csv",
+            "sim/hbt-characterization/records/20260918-203652-4293920.md"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/hbt-characterization/hbt_parse.sh",
+        "sim/hbt-characterization/parse_hbt_log.awk"
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_parse_hbt_log.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/hbt-characterization/run_hbt_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "npn13G2 fT, 50 ohm NF and transducer gain over the full {typ,bcs,wcs,sf,fs} x {-40,27,125 C} x V_CE x Nx in {1,8} grid.",
+      "tool_pins": {
+        "ngspice": "ngspice (native VBIC; no OSDI)",
+        "osdi_models": false,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice"
+      ],
+      "classification": "data-only-derivation",
+      "cold_start": [
+        {
+          "command": "sim/hbt-characterization/rederive_nf_fixed_t0.py",
+          "doc": "sim/hbt-characterization/records/20260921-124900-d6da30a.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "derivations": [
+        "sim/hbt-characterization/rederive_nf_fixed_t0.py"
+      ],
+      "derives_from": [
+        "hbt-char-20260910-200059-7da7038",
+        "hbt-char-20260918-203652-4293920"
+      ],
+      "docs": [
+        "sim/hbt-characterization/README.md",
+        "sim/hbt-characterization/records/20260921-124900-d6da30a.md"
+      ],
+      "dut": "none",
+      "family": "hbt-characterization",
+      "id": "hbt-char-20260921-124900-d6da30a-correction",
+      "limitations": "The derivation is only as good as the committed source CSVs; the probe bench justifying the convention is a separate ngspice run documented in the record.",
+      "records": [
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "20260921-124900-d6da30a",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/hbt-characterization/records/20260921-124900-d6da30a-corrected.csv",
+            "sim/hbt-characterization/records/20260921-124900-d6da30a-summary.csv",
+            "sim/hbt-characterization/records/20260921-124900-d6da30a.md"
+          ]
+        }
+      ],
+      "replay_checks": [
+        "sim/hbt-characterization/tests/test_rederive_nf_fixed_t0.py"
+      ],
+      "result_status": "published",
+      "shared": [
+        "runner-common",
+        "pdk-pin"
+      ],
+      "summary": "Fixed-T0 re-referencing of the -40/125 C NF cells of both HBT records. Algebra on committed CSVs plus the resistor noise-temperature probe bench; no new device simulation of the sweep.",
+      "tool_pins": {
+        "ngspice": "none",
+        "osdi_models": false,
+        "other": "python3 stdlib; the probe bench needs ngspice only if re-run",
+        "pdk": "none (PDK-free)"
+      }
+    },
+    {
+      "bench_templates": [
         "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl",
         "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl"
       ],
@@ -705,6 +900,76 @@
       ],
       "dut": "present",
       "family": "lna-bias-pvt",
+      "id": "lna-bias-pvt-mc-campaign-20261105-080636-5383b49",
+      "limitations": "Full-DUT DC mismatch at one operating point (27 C, VDD 1.8 V, DC op only); 200 samples, nominal process sections plus per-instance mismatch. No RF behaviour. The two mc_mismatch fleet jobs report state 'failed' with 200/200 samples ok; see the record's mc-summary.md.",
+      "records": [
+        {
+          "corners": {
+            "files": 10,
+            "git_blob_digest": "sha256:4a45a6e37f12d2f01227f795b2346554675da30413baa10aa7dd115c33d300dc"
+          },
+          "id": "20261105-080636-5383b49",
+          "netlist_snapshots": {
+            "files": 5,
+            "git_blob_digest": "sha256:5ffbab047cbeaeec22e3692972748503f84f23a8a0495c3cd1227be2487afaae"
+          },
+          "published_files": [
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-samples.csv",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.json",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md",
+            "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-bias-pvt/hbt_audit.py"
+      ],
+      "replay_checks": [
+        "sim/lna-bias-pvt/tests/test_mc_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-bias-pvt/run_mc_campaign.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Full-DUT DC mismatch campaign (issue #90) run on the klt 0.9.0 fleet runner: 200-sample mismatch distribution with nominal negative control.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim batch fleet (never local)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-bias-pvt/mc_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-bias-pvt/run_mc_campaign.sh",
+          "doc": "sim/lna-bias-pvt/README.md",
+          "kind": "run",
+          "needs": [
+            "KLT_SIM_BACKEND=batch (the runner refuses any other backend)",
+            "klt >= 0.7.0 client and a fleet runner image that supports it",
+            "PDK_ROOT/PDK"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-bias-pvt/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-bias-pvt",
       "id": "lna-bias-pvt-mc-campaign-blocked",
       "limitations": "Earlier fleet submissions (2026-10) and the 20261105-080303 attempt failed before producing a distribution; their committed records hold redacted reports only. The published distribution is claim lna-bias-pvt-mc-campaign-20261105-080636-5383b49.",
       "records": [
@@ -780,76 +1045,6 @@
         "dut-netlist"
       ],
       "summary": "Full-DUT DC mismatch campaign (issue #90): bench, request generation and reduction ship; both fleet submissions failed before producing a distribution.",
-      "tool_pins": {
-        "ngspice": "ngspice via klt sim batch fleet (never local)",
-        "osdi_models": true,
-        "other": "klt >= 0.7.0",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_generators": [
-        "sim/lna-bias-pvt/mc_campaign.py"
-      ],
-      "bench_templates": [
-        "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
-      ],
-      "classification": "present-dut",
-      "cold_start": [
-        {
-          "command": "sim/lna-bias-pvt/run_mc_campaign.sh",
-          "doc": "sim/lna-bias-pvt/README.md",
-          "kind": "run",
-          "needs": [
-            "KLT_SIM_BACKEND=batch (the runner refuses any other backend)",
-            "klt >= 0.7.0 client and a fleet runner image that supports it",
-            "PDK_ROOT/PDK"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/lna-bias-pvt/README.md"
-      ],
-      "dut": "present",
-      "family": "lna-bias-pvt",
-      "id": "lna-bias-pvt-mc-campaign-20261105-080636-5383b49",
-      "limitations": "Full-DUT DC mismatch at one operating point (27 C, VDD 1.8 V, DC op only); 200 samples, nominal process sections plus per-instance mismatch. No RF behaviour. The two mc_mismatch fleet jobs report state 'failed' with 200/200 samples ok; see the record's mc-summary.md.",
-      "records": [
-        {
-          "corners": {
-            "files": 10,
-            "git_blob_digest": "sha256:4a45a6e37f12d2f01227f795b2346554675da30413baa10aa7dd115c33d300dc"
-          },
-          "id": "20261105-080636-5383b49",
-          "netlist_snapshots": {
-            "files": 5,
-            "git_blob_digest": "sha256:5ffbab047cbeaeec22e3692972748503f84f23a8a0495c3cd1227be2487afaae"
-          },
-          "published_files": [
-            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-samples.csv",
-            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.json",
-            "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md",
-            "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/lna-bias-pvt/hbt_audit.py"
-      ],
-      "replay_checks": [
-        "sim/lna-bias-pvt/tests/test_mc_campaign.py"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/lna-bias-pvt/run_mc_campaign.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin",
-        "osdi-build",
-        "dut-netlist"
-      ],
-      "summary": "Full-DUT DC mismatch campaign (issue #90) run on the klt 0.9.0 fleet runner: 200-sample mismatch distribution with nominal negative control.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim batch fleet (never local)",
         "osdi_models": true,
@@ -1066,6 +1261,100 @@
       }
     },
     {
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_sweep.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models (sim/tools/build-osdi.sh)",
+            "python3"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-matched-smoke-20261101",
+      "limitations": "ONE PVT cell (typ/27 C/1.80 V); not a PVT result and not a stability sign-off: the 45-cell gate has not been run on the matched DUT. Inductors are ideal L plus explicit loss resistors. NF row not met. Descriptive, not a conformance verdict.",
+      "records": [
+        {
+          "corners": {
+            "files": 6,
+            "git_blob_digest": "sha256:1a4477e5ea6f3291834c430adcc3dec8536bdff049c360eb32bc54dde6ee2e1c"
+          },
+          "id": "20261101-023117-5bbb70c",
+          "netlist_snapshots": {
+            "files": 3,
+            "git_blob_digest": "sha256:5034ba404462ca60c8d90d1bba5e9380db69c5341402a10c1612f06a7ebdf366"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-coverage.json",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-expected-points.txt",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-iip3.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-nf290.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-sparam.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c-summary.csv",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c.md",
+            "sim/lna-characterization/records/20261101-023117-5bbb70c.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 6,
+            "git_blob_digest": "sha256:22d047783fa50bc91cc6f8c8591a93d063ce83bbc407ad5312f993ce0360e026"
+          },
+          "id": "20261101-023246-5bbb70c",
+          "netlist_snapshots": {
+            "files": 3,
+            "git_blob_digest": "sha256:3a16e722c9310fa54b3bc914ba1d7e58c3cdd2ca38efe542a92096c2fe669f89"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-coverage.json",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-expected-points.txt",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-iip3.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-nf290.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-sparam.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c.md",
+            "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_sweep.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Single nominal-cell (LNA_SWEEP_SMOKE) S-parameters, NF, stability and IIP3 of the DUT with the #27 lp_noise matching network: 20261101-023117-5bbb70c without Lc/Le loss (S22 -0.09 dB, negative result), 20261101-023246-5bbb70c with the Q = 10 loss the match was synthesized for.",
+      "tool_pins": {
+        "ngspice": "ngspice >= 46 (OSDI v0.4)",
+        "osdi_models": true,
+        "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
       "classification": "data-only-derivation",
       "cold_start": [
         {
@@ -1178,6 +1467,72 @@
       "classification": "variant-exploration",
       "cold_start": [
         {
+          "command": "LNA_VARIANTS=ideal,lc_em,le_q20,le_q10,le_q5,lc_em_le_q10 sim/lna-characterization/run_lna_variant.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "a fleet runner image that supports it, or a local ngspice >= 46",
+            "PDK_ROOT/PDK",
+            "OSDI models"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-variant-campaign-20261114-025351-7a54cc2",
+      "limitations": "Coverage complete (45/45 valid cells in all 24 variant-analysis pairs). Bench results only, not spec conformance. The EM inductor model is one process point, one temperature and three extracted geometries, with corner/temperature scaling inherited from the analytic model, not silicon; mc_rsh/mc_rsub are held at 1.0 in every cell, so passive-process corners are not exercised. Le has no EM model: its loss is a series-R bracket for Q = 5/10/20, and that resistor carries Q1's DC emitter current, so the le_q* gain/NF deltas are confounded by a bias shift (up to -26.9 % I_C1) and are not quoted as loss costs -- only lc_em is (I_C1 within 0.01 % of ideal). NF290 is a sampled 11-point in-band grid, not a continuous-band bound. The 'matched' variant is excluded: its DC operating point does not converge at 18 of the 45 cells (reported to #27).",
+      "records": [
+        {
+          "corners": {
+            "files": 3,
+            "git_blob_digest": "sha256:dd606ece793e213354a8d96986345ee64f7a15706c7efcfc7e7cf0cf76972117"
+          },
+          "id": "20261114-025351-7a54cc2",
+          "netlist_snapshots": {
+            "files": 48,
+            "git_blob_digest": "sha256:d9c49eeacbc45ca4d34126a310a17bf656388d149615b46efc6e8f72ad279548"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261114-025351-7a54cc2-compare.csv",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2.md",
+            "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json"
+          ]
+        }
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_variant.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist",
+        "em-model"
+      ],
+      "summary": "Inductor-loss variant campaign (issue #56): 6 variants x 4 analyses (op, sp_band, sp_stab, noise) x 45 PVT cells through klt sim on the Spot batch fleet.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "classification": "variant-exploration",
+      "cold_start": [
+        {
           "command": "sim/lna-characterization/run_lna_variant.sh",
           "doc": "sim/lna-characterization/README.md",
           "kind": "run",
@@ -1194,13 +1549,77 @@
       ],
       "dut": "present",
       "family": "lna-characterization",
-      "id": "lna-char-variant-campaign-unrun",
-      "limitations": "No committed record: the fleet runner image could not execute it. Attests that the campaign bench ships, not that it has produced a result.",
-      "records": [],
+      "id": "lna-char-xout-bleed-20261106",
+      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "records": [
+        {
+          "corners": {
+            "files": 146,
+            "git_blob_digest": "sha256:daa0c862cb39a5ad952604bb76e3131254c557176ae3048cc4820e080b280074"
+          },
+          "id": "20261106-054735-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:700413ccf966d95e9077adb06af21b7a174adf6ca6b3b142f5ab25434c19be30"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-054735-64b37ae-compare.csv",
+            "sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv",
+            "sim/lna-characterization/records/20261106-054735-64b37ae.md",
+            "sim/lna-characterization/records/20261106-054735-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 97,
+            "git_blob_digest": "sha256:c6657ee4aa40885391cb804b9f6def56eb165f5979706a08d1dd3ddcc4d30297"
+          },
+          "id": "20261106-055142-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:1b69855bf215a2b556a36b52f9f9efeab06ff0af32756a8b3393b7ecb5fe08a3"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-055142-64b37ae-compare.csv",
+            "sim/lna-characterization/records/20261106-055142-64b37ae-summary.csv",
+            "sim/lna-characterization/records/20261106-055142-64b37ae.md",
+            "sim/lna-characterization/records/20261106-055142-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 2,
+            "git_blob_digest": "sha256:bde93d1a194e1d7625510aff9eeefa194d162cbb27859e6dcd8343efffd95b14"
+          },
+          "id": "20261106-055453-64b37ae",
+          "netlist_snapshots": {
+            "files": 6,
+            "git_blob_digest": "sha256:98dde66047550ed41d5771718bbe57958e2e99f23b47dab3cef777d0a352e455"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261106-055453-64b37ae.md",
+            "sim/lna-characterization/records/20261106-055453-64b37ae.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-258-xout-bleed-convergence",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md"
+          ]
+        }
+      ],
       "replay_checks": [
         "sim/lna-characterization/tests/test_lna_variant_campaign.py"
       ],
-      "result_status": "none-blocked",
+      "result_status": "published",
       "runners": [
         "sim/lna-characterization/run_lna_variant.sh"
       ],
@@ -1211,194 +1630,11 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Inductor-loss variant campaign (issue #56): 6 variants x 45 cells through klt sim.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
         "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_templates": [
-        "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl",
-        "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl"
-      ],
-      "classification": "variant-exploration",
-      "cold_start": [
-        {
-          "command": "sim/lna-core-envelope/run_core_envelope.sh",
-          "doc": "sim/lna-core-envelope/README.md",
-          "kind": "run",
-          "needs": [
-            "ngspice >= 46",
-            "PDK_ROOT/PDK",
-            "OSDI models (sim/tools/build-osdi.sh)",
-            "python3"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/lna-core-envelope/README.md"
-      ],
-      "dut": "present",
-      "family": "lna-core-envelope",
-      "id": "core-envelope-20260926-180931-90b07a0",
-      "limitations": "Every variant except the control is a probe: nothing under design/ changes because of it. Not a target-spec conformance claim.",
-      "records": [
-        {
-          "corners": {
-            "files": 2026,
-            "git_blob_digest": "sha256:0f4aa69ece339ad493f2b26d22f416a0a168b603e49c67dc2b92f49192e1cb9d"
-          },
-          "id": "20260926-180931-90b07a0",
-          "netlist_snapshots": {
-            "files": 675,
-            "git_blob_digest": "sha256:63ff905d83a4bd0b9ddef666267de73ef1f72475bc4e878bbefa63d93b10b4c8"
-          },
-          "published_files": [
-            "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv",
-            "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv",
-            "sim/lna-core-envelope/records/20260926-180931-90b07a0.md"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/lna-core-envelope/parse_core_envelope.py",
-        "sim/lna-core-envelope/envelope_rf.py",
-        "sim/lna-core-envelope/core_envelope_lifecycle.py"
-      ],
-      "replay_checks": [
-        "sim/lna-core-envelope/tests/test_parse_core_envelope.py",
-        "sim/tests/test-core-envelope-lifecycle.sh"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/lna-core-envelope/run_core_envelope.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin",
-        "osdi-build",
-        "dut-netlist"
-      ],
-      "summary": "15 DUT variants x 45 PVT cells re-running the lna-characterization bench; the committed netlist runs as the control variant and must reproduce 088c734.",
-      "tool_pins": {
-        "ngspice": "ngspice >= 46 (OSDI)",
-        "osdi_models": true,
-        "other": "",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "classification": "data-only-derivation",
-      "cold_start": [
-        {
-          "command": "python3 -I sim/lna-core-envelope/tests/check_envelope_replay.py",
-          "doc": "sim/lna-core-envelope/README.md",
-          "kind": "replay",
-          "needs": [
-            "python3 stdlib",
-            "no PDK, no ngspice"
-          ]
-        }
-      ],
-      "derivations": [
-        "sim/lna-core-envelope/derive_committed_record_envelope.py",
-        "sim/lna-core-envelope/envelope_rf.py"
-      ],
-      "derives_from": [
-        "lna-char-20260926-122301-088c734"
-      ],
-      "docs": [
-        "sim/lna-core-envelope/README.md"
-      ],
-      "dut": "none",
-      "family": "lna-core-envelope",
-      "id": "core-envelope-derived-envelope",
-      "limitations": "Replay consistency only, not correctness of the underlying assumptions.",
-      "records": [
-        {
-          "corners": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "id": "20260926-122301-088c734-derived-envelope",
-          "netlist_snapshots": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "published_files": [
-            "sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv"
-          ]
-        }
-      ],
-      "replay_checks": [
-        "sim/lna-core-envelope/tests/check_envelope_replay.py",
-        "sim/lna-core-envelope/tests/test_check_envelope_replay.py",
-        "sim/lna-core-envelope/tests/test_derive_append_only.py",
-        "sim/lna-core-envelope/tests/test_envelope_rf.py"
-      ],
-      "result_status": "published",
-      "shared": [
-        "runner-common",
-        "pdk-pin"
-      ],
-      "summary": "NFmin at T0 = 290 K and the available-gain envelope vs inductor Q, derived from the committed raw tables of record 088c734.",
-      "tool_pins": {
-        "ngspice": "none",
-        "osdi_models": false,
-        "other": "python3 stdlib",
-        "pdk": "none (PDK-free)"
-      }
-    },
-    {
-      "bench_generators": [
-        "sim/lna-core-envelope/core_envelope_campaign.py"
-      ],
-      "classification": "variant-exploration",
-      "cold_start": [
-        {
-          "command": "sim/lna-core-envelope/run_core_envelope_campaign.sh gate",
-          "doc": "sim/lna-core-envelope/README.md",
-          "kind": "run",
-          "needs": [
-            "klt with the batch backend",
-            "a fleet runner image that supports it"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/lna-core-envelope/README.md"
-      ],
-      "dut": "present",
-      "family": "lna-core-envelope",
-      "id": "core-envelope-campaign-unrun",
-      "limitations": "No campaign has run and no record exists. Attests that the bench generator ships, not that it has produced a result.",
-      "records": [],
-      "reducers": [
-        "sim/lna-core-envelope/reduce_core_envelope_campaign.py"
-      ],
-      "replay_checks": [
-        "sim/lna-core-envelope/tests/test_core_envelope_campaign.py",
-        "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py",
-        "sim/lna-core-envelope/tests/synthetic_reports.py"
-      ],
-      "result_status": "none-unrun",
-      "runners": [
-        "sim/lna-core-envelope/run_core_envelope_campaign.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin",
-        "osdi-build",
-        "dut-netlist"
-      ],
-      "summary": "Emitter-array and cascode-split campaign (issue #58): offline preparation of the fleet requests and reducer.",
-      "tool_pins": {
-        "ngspice": "ngspice via klt sim batch fleet",
-        "osdi_models": true,
-        "other": "klt (batch backend only)",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
     },
@@ -1966,212 +2202,6 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
-    },
-    {
-      "bench_templates": [
-        "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl",
-        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
-      ],
-      "classification": "present-dut",
-      "cold_start": [
-        {
-          "command": "sim/lna-characterization/run_lna_sweep.sh",
-          "doc": "sim/lna-characterization/README.md",
-          "kind": "run",
-          "needs": [
-            "ngspice >= 46",
-            "PDK_ROOT/PDK",
-            "OSDI models (sim/tools/build-osdi.sh)",
-            "python3"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/lna-characterization/README.md"
-      ],
-      "dut": "present",
-      "family": "lna-characterization",
-      "id": "lna-char-matched-smoke-20261101",
-      "limitations": "ONE PVT cell (typ/27 C/1.80 V); not a PVT result and not a stability sign-off: the 45-cell gate has not been run on the matched DUT. Inductors are ideal L plus explicit loss resistors. NF row not met. Descriptive, not a conformance verdict.",
-      "records": [
-        {
-          "corners": {
-            "files": 6,
-            "git_blob_digest": "sha256:1a4477e5ea6f3291834c430adcc3dec8536bdff049c360eb32bc54dde6ee2e1c"
-          },
-          "id": "20261101-023117-5bbb70c",
-          "netlist_snapshots": {
-            "files": 3,
-            "git_blob_digest": "sha256:5034ba404462ca60c8d90d1bba5e9380db69c5341402a10c1612f06a7ebdf366"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-coverage.json",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-expected-points.txt",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-iip3.csv",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-nf290.csv",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-sparam.csv",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c-summary.csv",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c.md",
-            "sim/lna-characterization/records/20261101-023117-5bbb70c.pdk-provenance.json"
-          ]
-        },
-        {
-          "corners": {
-            "files": 6,
-            "git_blob_digest": "sha256:22d047783fa50bc91cc6f8c8591a93d063ce83bbc407ad5312f993ce0360e026"
-          },
-          "id": "20261101-023246-5bbb70c",
-          "netlist_snapshots": {
-            "files": 3,
-            "git_blob_digest": "sha256:3a16e722c9310fa54b3bc914ba1d7e58c3cdd2ca38efe542a92096c2fe669f89"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-coverage.json",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-expected-points.txt",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-iip3.csv",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-nf290.csv",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-sparam.csv",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c-summary.csv",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c.md",
-            "sim/lna-characterization/records/20261101-023246-5bbb70c.pdk-provenance.json"
-          ]
-        }
-      ],
-      "reducers": [
-        "sim/lna-characterization/parse_lna_sweep.py"
-      ],
-      "replay_checks": [
-        "sim/lna-characterization/tests/test_parse_lna_sweep.py"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/lna-characterization/run_lna_sweep.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin",
-        "osdi-build",
-        "dut-netlist"
-      ],
-      "summary": "Single nominal-cell (LNA_SWEEP_SMOKE) S-parameters, NF, stability and IIP3 of the DUT with the #27 lp_noise matching network: 20261101-023117-5bbb70c without Lc/Le loss (S22 -0.09 dB, negative result), 20261101-023246-5bbb70c with the Q = 10 loss the match was synthesized for.",
-      "tool_pins": {
-        "ngspice": "ngspice >= 46 (OSDI v0.4)",
-        "osdi_models": true,
-        "other": "",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
-    },
-    {
-      "bench_generators": [
-        "sim/lna-characterization/lna_variant_campaign.py"
-      ],
-      "classification": "variant-exploration",
-      "cold_start": [
-        {
-          "command": "sim/lna-characterization/run_lna_variant.sh",
-          "doc": "sim/lna-characterization/README.md",
-          "kind": "run",
-          "needs": [
-            "klt >= 0.7.0",
-            "a fleet runner image that supports it, or a local ngspice >= 46",
-            "PDK_ROOT/PDK",
-            "OSDI models"
-          ]
-        }
-      ],
-      "docs": [
-        "sim/lna-characterization/README.md"
-      ],
-      "dut": "present",
-      "family": "lna-characterization",
-      "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
-      "records": [
-        {
-          "corners": {
-            "files": 146,
-            "git_blob_digest": "sha256:daa0c862cb39a5ad952604bb76e3131254c557176ae3048cc4820e080b280074"
-          },
-          "id": "20261106-054735-64b37ae",
-          "netlist_snapshots": {
-            "files": 6,
-            "git_blob_digest": "sha256:700413ccf966d95e9077adb06af21b7a174adf6ca6b3b142f5ab25434c19be30"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/20261106-054735-64b37ae-compare.csv",
-            "sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv",
-            "sim/lna-characterization/records/20261106-054735-64b37ae.md",
-            "sim/lna-characterization/records/20261106-054735-64b37ae.pdk-provenance.json"
-          ]
-        },
-        {
-          "corners": {
-            "files": 97,
-            "git_blob_digest": "sha256:c6657ee4aa40885391cb804b9f6def56eb165f5979706a08d1dd3ddcc4d30297"
-          },
-          "id": "20261106-055142-64b37ae",
-          "netlist_snapshots": {
-            "files": 6,
-            "git_blob_digest": "sha256:1b69855bf215a2b556a36b52f9f9efeab06ff0af32756a8b3393b7ecb5fe08a3"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/20261106-055142-64b37ae-compare.csv",
-            "sim/lna-characterization/records/20261106-055142-64b37ae-summary.csv",
-            "sim/lna-characterization/records/20261106-055142-64b37ae.md",
-            "sim/lna-characterization/records/20261106-055142-64b37ae.pdk-provenance.json"
-          ]
-        },
-        {
-          "corners": {
-            "files": 2,
-            "git_blob_digest": "sha256:bde93d1a194e1d7625510aff9eeefa194d162cbb27859e6dcd8343efffd95b14"
-          },
-          "id": "20261106-055453-64b37ae",
-          "netlist_snapshots": {
-            "files": 6,
-            "git_blob_digest": "sha256:98dde66047550ed41d5771718bbe57958e2e99f23b47dab3cef777d0a352e455"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/20261106-055453-64b37ae.md",
-            "sim/lna-characterization/records/20261106-055453-64b37ae.pdk-provenance.json"
-          ]
-        },
-        {
-          "corners": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "id": "issue-258-xout-bleed-convergence",
-          "netlist_snapshots": {
-            "files": 0,
-            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "published_files": [
-            "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md"
-          ]
-        }
-      ],
-      "replay_checks": [
-        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
-      ],
-      "result_status": "published",
-      "runners": [
-        "sim/lna-characterization/run_lna_variant.sh"
-      ],
-      "shared": [
-        "runner-common",
-        "pdk-pin",
-        "osdi-build",
-        "dut-netlist",
-        "em-model"
-      ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
-      "tool_pins": {
-        "ngspice": "ngspice via klt sim",
-        "osdi_models": true,
-        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
-        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
-      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -2248,7 +2278,7 @@
     "design/netlist/lna.spice": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
-    "sim/README.md": "sha256:5b4701705b3a901e7da5b9f7293e80a55ff5bbef3f72ef377b3a9326707dc0d7",
+    "sim/README.md": "sha256:b2d9f710117177e35ce344b2ef35d7c84bbe28e9044a5439758753ac1ce40d1f",
     "sim/biasref-topology/README.md": "sha256:d63baef67a7f0af6a9a7738a2eea5eef680aaffc1ee4b3cf3e57dcddb9f8ef7a",
     "sim/biasref-topology/records/20260921-160018-a46ed37-core-minigrid.csv": "sha256:f357b4d1b6b093e52799905b2ac6d569483dc1329be9c81733af4307e1dbb82d",
     "sim/biasref-topology/records/20260921-160018-a46ed37-core-startup.csv": "sha256:b9969ffaae6da283edb659ffecea489ebd0aa0b39e4fb9529f18353e35eb6dec",
@@ -2264,7 +2294,7 @@
     "sim/biasref-topology/records/20261010-100000-424d385-a46ed37-core-minigrid-corrected.csv": "sha256:c4148b35cd22fbae00e8fbbe497f86aa8f0c5440438c215d0d7d7697a3145296",
     "sim/biasref-topology/records/20261010-100000-424d385.md": "sha256:ee000d6867b3ce9b3e5d04d9f8f4a50fea7bf58e97ecefd6e2ef230d0dbceb73",
     "sim/biasref-topology/reduce_biasref.py": "sha256:61f8fdc37d4e418e1524a7b5513c2d62475005893b926ac5c1fdf44cd5281a63",
-    "sim/biasref-topology/run_biasref_sweep.sh": "sha256:a82786245836e2ba29a69914bff6120b33e6eb8875119bca8c25080f38eb4eba",
+    "sim/biasref-topology/run_biasref_sweep.sh": "sha256:7a2c5576cc79acd3b07491b37782eee11523e104dd5c10ea750857e0178a51ad",
     "sim/biasref-topology/testbench/tb_core_minigrid.spice.tmpl": "sha256:f8d8c4c5f022fca99b6ac94b422d80d818861aa0865eabfef18ef3debd825bd3",
     "sim/biasref-topology/testbench/tb_core_startup.spice.tmpl": "sha256:47385354d4a7f0dc92c8935b06602457d56b3a4fa2d5d58dd23cdd7db513777b",
     "sim/biasref-topology/testbench/tb_mpa_diode.spice.tmpl": "sha256:a472fc3aeeb7cf2e238147e94c27bc72c0335c419e25c8e022fff212d48126f4",
@@ -2278,12 +2308,12 @@
     "sim/breakdown-extraction/records/20260918-212948-013274f-heldbase-sweep.csv": "sha256:6fe15c35ac07bc0fc475b8bfe73184e3e71df2fad1121a3aaab0b782f24ae185",
     "sim/breakdown-extraction/records/20260918-212948-013274f.md": "sha256:0ecf80ea6801030e4bfdd8027afb0b8f13d5e119022bf44b5400abf96d40446d",
     "sim/breakdown-extraction/reduce_breakdown.py": "sha256:4cf98fddd3870127ee0da6893f3eca4b076b2d0268b2f4d49ad6172f9c8b67ab",
-    "sim/breakdown-extraction/run_breakdown_sweep.sh": "sha256:31348affd25d37b999ebff60f4f74c0bb49d518d46cc0b7d7f325d791a03a7dc",
+    "sim/breakdown-extraction/run_breakdown_sweep.sh": "sha256:c6b108f171673ccb029cc82e2b58db7795e9a8828f68ddeb6267cd0e766abd63",
     "sim/breakdown-extraction/testbench/tb_bvceo_iforce.spice.tmpl": "sha256:a420e674418ce5c48057da31f868a61246cac539d56fa16ff8deb35df14e56b4",
     "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl": "sha256:955a56ad5cb24325d85805eb619413c1639d3f7fe529821f0601f060cf7caa80",
     "sim/breakdown-extraction/tests/check_breakdown_replay.py": "sha256:41a031f7a0dc1e8b1d59b85e08ce1aa7df32a7b6e7b07b24c1800a401bfe40b7",
     "sim/breakdown-extraction/tests/test_reduce_breakdown.py": "sha256:e4dac7fde75c0aa8c2e68b377e2c86dd5da95643a77018211dcd5274154aaed1",
-    "sim/env.sh": "sha256:358ed78082210c5741908aee8c6c06692a25ab1b2c28b317bf1ce5b3cf4246be",
+    "sim/env.sh": "sha256:62b360c9e322319b79479402b78df2c45daabd0ea58359b8b52ea2e03331257f",
     "sim/hbt-characterization/README.md": "sha256:0d5d367ed0800bfead07d0de1abc1a890b92d1a48d2c371151a37e281ec9d1ac",
     "sim/hbt-characterization/hbt_parse.sh": "sha256:2684ddc28b3e81a324a265b13f32a0d40185509ce583e8891cf5c8a5ed19d250",
     "sim/hbt-characterization/parse_hbt_log.awk": "sha256:f065330b74438fb2052a3033951d1dfc131cb9ee2824d0e03b262fcbf0b318a9",
@@ -2297,7 +2327,7 @@
     "sim/hbt-characterization/records/20260921-124900-d6da30a-summary.csv": "sha256:99f8027fcb9a5aa822b39d3d65f18e93eae0f58694c069108b2d9f67dc389399",
     "sim/hbt-characterization/records/20260921-124900-d6da30a.md": "sha256:450333f0fe70b6d5d501613d5d9246c037011c1a9a10abd5535e77ac946556da",
     "sim/hbt-characterization/rederive_nf_fixed_t0.py": "sha256:c336ede04625a5928d5457684c65b31d6b95f2e5c66c4893e71fa8a333614ee9",
-    "sim/hbt-characterization/run_hbt_sweep.sh": "sha256:b4fbc09f3db3115e97092502dde1afb7b9641f1ac5e5733c803d9b4753be4f0b",
+    "sim/hbt-characterization/run_hbt_sweep.sh": "sha256:c735244262613eb42c7a3f10885e06982536775c4502ce12340b7d8040a12e90",
     "sim/hbt-characterization/testbench/tb_hbt_sweep.spice.tmpl": "sha256:a5f332c8c85d5274d1459f7e7a186ac0e3cce218cc6f96ba42af6a323ee1ddeb",
     "sim/hbt-characterization/tests/test_parse_hbt_log.py": "sha256:fc8f69be6e6c2e96ae4934aa9fc10b7c446fb417b570b9512a928992c156ac3c",
     "sim/hbt-characterization/tests/test_rederive_nf_fixed_t0.py": "sha256:a0789e1868b103ece2d70d5c2ee3321dc91468d57acd556be62a45f41f2e373f",
@@ -2320,7 +2350,7 @@
     "sim/lna-bias-pvt/records/20261105-080636-5383b49-mc-summary.md": "sha256:dc006d98eee5e66011529a2f34b66c54612a65a413740e81af64b45163118fee",
     "sim/lna-bias-pvt/records/20261105-080636-5383b49.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-bias-pvt/reduce_biasop.py": "sha256:16fdfea8af2ea47d42c3a6c1e56b61033165002ea8a444a6f54496f34899e754",
-    "sim/lna-bias-pvt/run_biasop_sweep.sh": "sha256:9f6be5290745b41f728720d9e814d8693e743c84aced377cb3e3432d605a0712",
+    "sim/lna-bias-pvt/run_biasop_sweep.sh": "sha256:68035f4c2169269806505640f6be3dbf4b25d84018fc7afcf200ad736394e6dc",
     "sim/lna-bias-pvt/run_mc_campaign.sh": "sha256:6d7b2bff6bf52f81acc4b8d3812137426d27d4342f5e4ff273b3b3f736df14a4",
     "sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl": "sha256:30c97647bab717ef457c0e5487cdd71acb032441cc09bb47d2ed9d4b90e9e8ea",
     "sim/lna-bias-pvt/testbench/tb_lna_startup.spice.tmpl": "sha256:770ce0be22bc7cc96bbcadee200d5f138b7fea21821825a741738c108fcc5a3d",
@@ -2328,8 +2358,8 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:66ab269999a7377d62513e95368cba943604f0412433af7486c8e83520f007ba",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:8cdf6a3ba8382c669a31ae94ccebd946c6fae4f4a67987e77a449e1d2bff2e91",
+    "sim/lna-characterization/README.md": "sha256:574e5ea0554c99e8c4a7f95e4ada416adfc01dfa1a0295b210b10d1ce1f02269",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:f8c822d786b0d2bdf5ee514dd4fc9c0f1a90122253ca8ae40d4c64e29fcc0cd1",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
@@ -2369,10 +2399,14 @@
     "sim/lna-characterization/records/20261106-055142-64b37ae.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-characterization/records/20261106-055453-64b37ae.md": "sha256:16ea84b6644f5b0728db1220f0bbd32a415a31d60f5fa0c51d55ad9d9fb68353",
     "sim/lna-characterization/records/20261106-055453-64b37ae.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2-compare.csv": "sha256:86caed8d98f31672f72d3506c49b692fa6a5cc8022c578952edaaf4bb1116697",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv": "sha256:14e7dcc7f1b62c882d340919fb918a360e90f4c77feb6419897568ebe41dc556",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2.md": "sha256:798350acf6fd0e64f42a292aabc02490b5aa12f24870c8f9f4683aec90a31bda",
+    "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
-    "sim/lna-characterization/run_lna_sweep.sh": "sha256:d1c984551ddb0c52b147f4bf7d6b070f3125d9d431c38a7e456880b2629f049b",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:bf9fc14c140e3074f3f74a45eec4ef7cf26ab557f263b9db3ecef921e3c2123d",
+    "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:ef7f699cd5c6d14e640b505e4f57d0f10c82b102d2c232834aa7f7eaae7c80ab",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
@@ -2386,14 +2420,14 @@
     "sim/lna-core-envelope/derive_committed_record_envelope.py": "sha256:6888979f7121a808161b8b63d30c4a35176c1afa4e823af46e06dc69dba9a646",
     "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl": "sha256:8e7f6abe62cb725bf2308461a5481e75e7e6c53c4892aff068d0f4c61696f59e",
     "sim/lna-core-envelope/envelope_rf.py": "sha256:0f024753777662c74267322d5719ab8a0a6b1f2c8c644804e32c20d81d878f6a",
-    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:1373ed8527e273d2a16abe4398552591309cbef5b6a1d16cc14b3820d797fb96",
+    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:f9027cf6156bb72e692ddf14e2c80118cdcecc89146ec8ff5deb33bc04a5c208",
     "sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv": "sha256:dead1d4b3415c5909de6e25602698bd6d390aa0b18380a3d77e745dc02d2ddd1",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv": "sha256:9c9280605a7f7e89a7fd8c4a53d376a1ba2e3e88883cb9783660d0faf3d523f4",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv": "sha256:c3fbeac7243324b42a7bd1c03fe434e7de8c2b480e6ea58ef04bc430c2238d62",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.md": "sha256:7dba629237229d55e65f75c6d0aa4498105bb35f44842e21d83660b745e67984",
     "sim/lna-core-envelope/reduce_core_envelope_campaign.py": "sha256:06f81970f09d5fe6e90a25ae2f4186b4fc6ff54a1efcbf236def6ef52d7e2b10",
-    "sim/lna-core-envelope/run_core_envelope.sh": "sha256:3eb1f42fa2b1b4b88110b3e680a8821d6fddb27c1b383c6263cb0514e2fba9af",
-    "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:aa26d36ee3fb0e490055379b1bf4dfce47de7d3e5dd4ca662e4fa02914b6f484",
+    "sim/lna-core-envelope/run_core_envelope.sh": "sha256:c39560a298ad32c5a61c8fb475f5583f1d31116b9b9d145155904c382de39170",
+    "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:efadc0f1fba50b5504859055bc454ed69b73d52a045eb1dd712ee982ab961c9c",
     "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl": "sha256:f789ab2988ff9c305a9a2d7e4d1aefd2c28061ad13e3b821b720b65f007579f7",
     "sim/lna-core-envelope/tests/check_envelope_replay.py": "sha256:58e1bb2a2ec5881d40bce9866c68ff5f7bd7152f15012f5561dfff53ffe652e9",
     "sim/lna-core-envelope/tests/synthetic_reports.py": "sha256:3659ece5d83a95a4834ec08ee5b03b03a292bc27b0b8b0cd99f29ba0c3035427",
@@ -2468,7 +2502,7 @@
     "sim/models/check_sources.sh": "sha256:5f57da9fc99f5a1c0fcd0633c9ca670e312f204d07b9272a0e134de27ba14729",
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
     "sim/pdk.json": "sha256:52e6ad7405957b30ea4749fe66895bd12a689f9c356bf128c5308e18662b1cc7",
-    "sim/tests/test-core-envelope-lifecycle.sh": "sha256:45f705bde6b98f669e559d83ebea0b515ba5e24bb23084b344c371d5773f4f00",
+    "sim/tests/test-core-envelope-lifecycle.sh": "sha256:b139a5f884c60f32c2a8ab022992831c470a4638214d8799bc7e8396efe9be0f",
     "sim/tools/build-osdi.sh": "sha256:0afd6b491ca988739591a1cf93928e9c9c1a17d23df0dc26c3434c87edb49949",
     "sim/tools/pdk_identity.py": "sha256:49e8ecc6b88970eb8b0ced39d8f7b302e0455d7e4cffe162a8536d8b2416a67b",
     "sim/tools/reducer_common.py": "sha256:706853d02c589fb9a4b83472925c8fcdac74cf66c8995b0907b20ebb015494b2",

@@ -1,0 +1,790 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "sim/lna-core-envelope/netlist-snapshots/gate-20261108-220949-9b6c868/gate__s_fixi_a80__ideal__sp_band.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 1,
+  "passed": 1,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 1,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "ngspice_binary": "/usr/local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-46 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2025, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Thu Oct  1 23:51:59 UTC 2026\n******",
+      "binary_sha256": "dc859418bedd0478ff439a2d3e2e09f4386a7f4d5e3f17671953e101a000cc60",
+      "probe": "ok",
+      "reason": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "absent"
+    },
+    "models_lib_sha256": null,
+    "models_lib_sha256_scope": "client",
+    "netlist_sha256": "bbf5da0ff94c254250a54baa7ef3c939caf55f8d5523bc28b8b493aab67e2ae0",
+    "netlist_closure": [
+      {
+        "path": "sim/lna-core-envelope/netlist-snapshots/gate-20261108-220949-9b6c868/gate__s_fixi_a80__ideal__sp_band.spice",
+        "scope": "repo",
+        "sha256": "bbf5da0ff94c254250a54baa7ef3c939caf55f8d5523bc28b8b493aab67e2ae0"
+      }
+    ],
+    "netlist_identity": "sha256:f6c52707e99bb106b68280c22c1411d8f33b439c66181493cc8e200b0e7306ed",
+    "corner_section_libs": [
+      {
+        "name": "cornerHBT.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+      },
+      {
+        "name": "cornerMOShv.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+      }
+    ],
+    "osdi_preload_runner_resolved": [
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+        "reason": "env_var"
+      },
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+        "reason": "env_var"
+      },
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi",
+        "reason": "env_var"
+      }
+    ],
+    "staged_model_inputs": [
+      {
+        "name": "cornerHBT.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "library",
+        "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278",
+        "rewritten": true,
+        "source_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+      },
+      {
+        "name": "cornerMOShv.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "library",
+        "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62",
+        "rewritten": true,
+        "source_sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+      },
+      {
+        "name": "sg13g2_hbt_mod.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79",
+        "rewritten": false,
+        "source_sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+      },
+      {
+        "name": "sg13g2_hbt_mod_mismatch.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2",
+        "rewritten": false,
+        "source_sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+      },
+      {
+        "name": "sg13g2_hbt_stat.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db",
+        "rewritten": false,
+        "source_sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+      },
+      {
+        "name": "sg13g2_moshv_mod.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9",
+        "rewritten": true,
+        "source_sha256": "d4b348b494998d7057bdde6fb111c60153d8b86175fafcfc6de461737e7a644b"
+      },
+      {
+        "name": "sg13g2_svaricaphv_mod.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a",
+        "rewritten": false,
+        "source_sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+      },
+      {
+        "name": "sg13g2_moshv_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09",
+        "rewritten": false,
+        "source_sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+      },
+      {
+        "name": "sg13g2_moshv_mod_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e",
+        "rewritten": true,
+        "source_sha256": "be170c9619bed19215f7f7b55141e0869344874e3fcf7f30b2d2aa37659b1a0e"
+      },
+      {
+        "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50",
+        "rewritten": false,
+        "source_sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+      },
+      {
+        "name": "sg13g2_moshv_stat.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903",
+        "rewritten": false,
+        "source_sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+      },
+      {
+        "name": "sg13g2_moshv_parm.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35",
+        "rewritten": false,
+        "source_sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+      }
+    ],
+    "remote": {
+      "provider": "aws-batch-fleet",
+      "job_id": "klt-sim-cf58480bc1dc",
+      "region": "us-east-1",
+      "instance_id": "i-05a2507e1104739f6",
+      "instance_type": "m7i.4xlarge",
+      "availability_zone": "us-east-1d",
+      "ami_id": "ami-095c25ae241a4d360",
+      "lifecycle": "spot",
+      "spot": true,
+      "state": "done",
+      "exit_code": "0",
+      "concurrency": "1",
+      "physical_cores": "8",
+      "elapsed_seconds": 8,
+      "client_submitted_at": "2026-11-08T22:13:58.893043Z",
+      "client_launched_at": "2026-11-08T22:14:23.084078Z",
+      "client_status_terminal_at": "2026-11-08T22:14:54.592169Z",
+      "client_collected_at": "2026-11-08T22:14:55.615201Z",
+      "runner_klt_version": "0.9.0",
+      "client_klt_version": "0.9.0",
+      "runner_compatibility": "match",
+      "runner_request_features": {
+        "required": [
+          "measurements[].expr",
+          "corners.process[].sections[]",
+          "options.ngspice_init",
+          "options.osdi_preload",
+          "options.stage_model_inputs"
+        ],
+        "missing": [],
+        "status": "supported"
+      },
+      "worker_environment": {
+        "capture": "ok",
+        "simulator": {
+          "requested_binary": "ngspice",
+          "binary_source": "PATH",
+          "selected_path": "/usr/local/bin/ngspice",
+          "version_banner": "******\n** ngspice-46 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2025, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Thu Oct  1 23:51:59 UTC 2026\n******\n",
+          "version_probe": "ok"
+        },
+        "pdk": {
+          "variant": "ihp-sg13g2",
+          "root": "/opt/pdk",
+          "stamp_scheme": null,
+          "stamp_sha256": null,
+          "stamp_text": null,
+          "models_staged": true,
+          "stamp_scope": "image"
+        },
+        "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+        "omp_num_threads": null,
+        "image_manifest": null,
+        "model_inputs": [
+          {
+            "name": "cornerHBT.lib",
+            "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278"
+          },
+          {
+            "name": "cornerMOShv.lib",
+            "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62"
+          },
+          {
+            "name": "sg13g2_hbt_mod.lib",
+            "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+          },
+          {
+            "name": "sg13g2_hbt_mod_mismatch.lib",
+            "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+          },
+          {
+            "name": "sg13g2_hbt_stat.lib",
+            "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+          },
+          {
+            "name": "sg13g2_moshv_mod.lib",
+            "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9"
+          },
+          {
+            "name": "sg13g2_svaricaphv_mod.lib",
+            "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+          },
+          {
+            "name": "sg13g2_moshv_mismatch.lib",
+            "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+          },
+          {
+            "name": "sg13g2_moshv_mod_mismatch.lib",
+            "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e"
+          },
+          {
+            "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+            "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+          },
+          {
+            "name": "sg13g2_moshv_stat.lib",
+            "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+          },
+          {
+            "name": "sg13g2_moshv_parm.lib",
+            "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+          }
+        ],
+        "diagnostics": [
+          "pdk stamp unreadable: FileNotFoundError"
+        ],
+        "pdk_stamp_comparison": {
+          "basis": "staged_model_inputs",
+          "status": "match"
+        },
+        "engine_build_comparison": {
+          "status": "match"
+        }
+      },
+      "runner_model_inputs": [
+        {
+          "name": "cornerHBT.lib",
+          "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62"
+        },
+        {
+          "name": "sg13g2_hbt_mod.lib",
+          "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+        },
+        {
+          "name": "sg13g2_hbt_mod_mismatch.lib",
+          "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+        },
+        {
+          "name": "sg13g2_hbt_stat.lib",
+          "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+        },
+        {
+          "name": "sg13g2_moshv_mod.lib",
+          "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9"
+        },
+        {
+          "name": "sg13g2_svaricaphv_mod.lib",
+          "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+        },
+        {
+          "name": "sg13g2_moshv_mismatch.lib",
+          "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+        },
+        {
+          "name": "sg13g2_moshv_mod_mismatch.lib",
+          "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e"
+        },
+        {
+          "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+          "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+        },
+        {
+          "name": "sg13g2_moshv_stat.lib",
+          "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+        },
+        {
+          "name": "sg13g2_moshv_parm.lib",
+          "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+        }
+      ],
+      "job_ceiling": {
+        "basis": "conservative_serial_bound",
+        "unit_count": 1,
+        "per_unit_timeout_s": 900,
+        "overhead_s": 120.0,
+        "job_bound_s": 1020.0,
+        "max_job_seconds": 3600.0,
+        "max_job_seconds_source": "fleet_config",
+        "exceeds_ceiling": false,
+        "check": "warn",
+        "max_units_per_job": 3,
+        "recommended_hosts": 1
+      }
+    },
+    "engine_host": "worker",
+    "client_ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "backend": {
+      "resolved": "batch",
+      "source": "flag",
+      "requested": "batch"
+    }
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 16,
+    "measurements_with_limits": 0,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "measurement:[0,\"typ/1.800V/27C\",\"cin_ff_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"k_band_min\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"mu_band_min\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"nf_sp_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"nf_sp_db_worst\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_lo\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_worst\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s11_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s11_db_worst\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s12_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s21_db_max\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s21_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s21_db_min\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s22_db_mid\"]/observation",
+      "measurement:[0,\"typ/1.800V/27C\",\"s22_db_worst\"]/observation"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"cin_ff_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"k_band_min\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"mu_band_min\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"nf_sp_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"nf_sp_db_worst\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_lo\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"nfmin_sp_db_worst\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s11_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s11_db_worst\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s12_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s21_db_max\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s21_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s21_db_min\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s22_db_mid\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.800V/27C\",\"s22_db_worst\"]/limits",
+        "reason": "characterization_without_limits"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.0",
+    "klt_git_commit": "5dbbad05ff42265c92a6f3d2f20d1bbcd2957d49",
+    "klt_reinstall_spec": "klayout-tools==0.9.0",
+    "klayout_version": "0.30.13",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "PDK_ROOT environment variable",
+      "version": "fetched:0.3.0"
+    },
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:bbf5da0ff94c254250a54baa7ef3c939caf55f8d5523bc28b8b493aab67e2ae0",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "s21_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 12.3846766,
+        "margin": null
+      }
+    },
+    {
+      "name": "s21_db_min",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 12.3141053,
+        "margin": null
+      }
+    },
+    {
+      "name": "s21_db_max",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 12.4546483,
+        "margin": null
+      }
+    },
+    {
+      "name": "s11_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": -4.8541821,
+        "margin": null
+      }
+    },
+    {
+      "name": "s11_db_worst",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": -4.8386554,
+        "margin": null
+      }
+    },
+    {
+      "name": "s22_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": -0.075581139,
+        "margin": null
+      }
+    },
+    {
+      "name": "s22_db_worst",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": -0.072520297,
+        "margin": null
+      }
+    },
+    {
+      "name": "s12_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": -70.73747,
+        "margin": null
+      }
+    },
+    {
+      "name": "mu_band_min",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.00712809,
+        "margin": null
+      }
+    },
+    {
+      "name": "k_band_min",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 4.98518685,
+        "margin": null
+      }
+    },
+    {
+      "name": "nf_sp_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.18402194,
+        "margin": null
+      }
+    },
+    {
+      "name": "nf_sp_db_worst",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.18444125,
+        "margin": null
+      }
+    },
+    {
+      "name": "nfmin_sp_db_mid",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.1482854,
+        "margin": null
+      }
+    },
+    {
+      "name": "nfmin_sp_db_lo",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.14946703,
+        "margin": null
+      }
+    },
+    {
+      "name": "nfmin_sp_db_worst",
+      "unit": "dB",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 1.14946703,
+        "margin": null
+      }
+    },
+    {
+      "name": "cin_ff_mid",
+      "unit": "fF",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.800V/27C",
+        "value": 219.676166,
+        "margin": null
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "typ/1.800V/27C",
+      "process": "typ",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.225,
+      "peak_rss_bytes": 50286592,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "s21_db_mid",
+          "value": 12.3846766,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s21_db_min",
+          "value": 12.3141053,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s21_db_max",
+          "value": 12.4546483,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s11_db_mid",
+          "value": -4.8541821,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s11_db_worst",
+          "value": -4.8386554,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s22_db_mid",
+          "value": -0.075581139,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s22_db_worst",
+          "value": -0.072520297,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "s12_db_mid",
+          "value": -70.73747,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "mu_band_min",
+          "value": 1.00712809,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "k_band_min",
+          "value": 4.98518685,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nf_sp_db_mid",
+          "value": 1.18402194,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nf_sp_db_worst",
+          "value": 1.18444125,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nfmin_sp_db_mid",
+          "value": 1.1482854,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nfmin_sp_db_lo",
+          "value": 1.14946703,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nfmin_sp_db_worst",
+          "value": 1.14946703,
+          "unit": "dB",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "cin_ff_mid",
+          "value": 219.676166,
+          "unit": "fF",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-58/sim/lna-core-envelope/corners/gate-20261108-220949-9b6c868/gate__s_fixi_a80__ideal__sp_band.artifacts/typ_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-58/sim/lna-core-envelope/corners/gate-20261108-220949-9b6c868/gate__s_fixi_a80__ideal__sp_band.artifacts/typ_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    }
+  ]
+}

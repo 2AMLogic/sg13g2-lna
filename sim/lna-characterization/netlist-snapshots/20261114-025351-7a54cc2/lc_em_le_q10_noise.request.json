@@ -1,0 +1,181 @@
+{
+  "netlist": "lc_em_le_q10_noise.spice",
+  "models": {
+    "pdk": "ihp-sg13g2"
+  },
+  "corners": {
+    "process": [
+      {
+        "name": "typ",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_tt"
+          }
+        ]
+      },
+      {
+        "name": "bcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_bcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ff"
+          }
+        ]
+      },
+      {
+        "name": "wcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_wcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ss"
+          }
+        ]
+      },
+      {
+        "name": "sf",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_sf"
+          }
+        ]
+      },
+      {
+        "name": "fs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_fs"
+          }
+        ]
+      }
+    ],
+    "supply_v": {
+      "vdd": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "noise",
+    "args": "v(nfout) vin lin 11 2.4e+09 2.4835e+09"
+  },
+  "measurements": [
+    {
+      "name": "nf290_db_lo",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[0]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_mid",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[5]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_hi",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[10]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_worst",
+      "expr": "vecmax(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f00",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[0]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f01",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[1]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f02",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[2]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f03",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[3]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f04",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[4]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f05",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[5]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f06",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[6]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f07",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[7]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f08",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[8]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f09",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[9]",
+      "unit": "dB"
+    },
+    {
+      "name": "nf290_db_f10",
+      "expr": "(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[10]",
+      "unit": "dB"
+    }
+  ],
+  "options": {
+    "timeout_s": 900,
+    "keep_artifacts": true,
+    "osdi_preload": [
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi"
+    ],
+    "stage_model_inputs": true,
+    "ngspice_init": [
+      "set numdgt=8"
+    ]
+  }
+}

@@ -124,6 +124,8 @@ step "sim-pdk-identity-tests: installed-PDK identity preflight tests" \
   sim/tests/test-pdk-identity.sh
 step "sim-core-envelope-lifecycle-tests: core-envelope record lifecycle tests" \
   sim/tests/test-core-envelope-lifecycle.sh
+step "sim-corner-section-map-tests: canonical corner-label -> PDK-section map tests" \
+  sim/tests/test-corner-section-maps.sh
 step "sim-reducer-common-tests: shared reducer helper tests" \
   python3 -I -m unittest discover -s sim/tools/tests -v
 
