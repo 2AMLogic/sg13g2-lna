@@ -202,7 +202,7 @@ class RequireTests(unittest.TestCase):
     def test_missing_key_names_source_tag_and_key(self):
         with self.assertRaisesRegex(rc.ReductionError,
                                     "src: TAG line missing required "
-                                    "key\(s\): b, a"):
+                                    r"key\(s\): b, a"):
             rc.require({"c": "1"}, ("b", "a", "c"), "TAG", "src",
                        self.strict_finite)
 
