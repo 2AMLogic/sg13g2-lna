@@ -26,18 +26,29 @@ Exit status: 0 ok, 1 audit/freshness failure, 2 usage error.
 """
 
 import argparse
-import hashlib
+import importlib.util
 import json
 import os
 import re
-import subprocess
 import sys
+
+# Shared signoff-checker helpers, loaded by explicit path so `python3 -I` works
+# (isolated mode does not put the script directory on sys.path). Issue #274.
+# dont_write_bytecode first: a __pycache__/ write would break this checker's
+# own "check mode leaves the tree unchanged" guarantee.
+sys.dont_write_bytecode = True
+_spec = importlib.util.spec_from_file_location(
+    "signoff_common",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "signoff_common.py"))
+_sc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sc)
+Audit, check_bindings, read_bytes, read_text, render, sha256_bytes, tracked = (
+    _sc.Audit, _sc.check_bindings, _sc.read_bytes, _sc.read_text, _sc.render,
+    _sc.sha256_bytes, _sc.tracked)
 
 ITEM = 10
 INVENTORY = "signoff/repo-hygiene/inventory.json"
 ENVELOPE = "signoff/repo-hygiene/envelope.json"
-MANIFEST = "signoff/manifest.json"
-REPORT = "signoff/t1-report.json"
 WORKFLOW = ".github/workflows/signoff.yml"
 README = "README.md"
 SPEC = "spec/target-spec.md"
@@ -50,6 +61,7 @@ HYGIENE_FILES = {
     SPEC: "source of the spec table the README points to",
     WORKFLOW: "CI workflow",
     ".github/scripts/check-repo-hygiene.py": "this audit",
+    ".github/scripts/signoff_common.py": "shared helpers this audit and the item-9 audit load",
     ".github/scripts/test-check-repo-hygiene.sh": "this audit's self-test",
 }
 
@@ -86,25 +98,6 @@ NOT_CHECKED = [
 ]
 
 
-def sha256_bytes(b):
-    return "sha256:" + hashlib.sha256(b).hexdigest()
-
-
-def read_bytes(root, rel):
-    with open(os.path.join(root, rel), "rb") as fh:
-        return fh.read()
-
-
-def read_text(root, rel):
-    return read_bytes(root, rel).decode("utf-8")
-
-
-def tracked(root):
-    out = subprocess.run(["git", "-C", root, "ls-files", "-z"], check=True,
-                         capture_output=True).stdout.decode()
-    return set(p for p in out.split("\0") if p)
-
-
 def workflow_runs(text):
     """Map job id -> list of single-line `run:` commands (block scalars are skipped)."""
     jobs, cur, in_jobs = {}, None, False
@@ -123,14 +116,6 @@ def workflow_runs(text):
         if m and cur and m.group(1) not in ("|", ">", "|-", ">-"):
             jobs[cur].append(m.group(1))
     return jobs
-
-
-class Audit:
-    def __init__(self):
-        self.errors = []
-
-    def err(self, msg):
-        self.errors.append(msg)
 
 
 def has_spec_table(text):
@@ -205,10 +190,6 @@ def build(root, audit):
     }
 
 
-def render(inv):
-    return (json.dumps(inv, indent=2, sort_keys=True) + "\n").encode()
-
-
 def envelope_for(inv_hash):
     return {
         "kind": "generic",
@@ -222,17 +203,6 @@ def envelope_for(inv_hash):
                     "and wiring only: not that any command exits 0, not RF compliance, not overall T1."),
         "t1_item": ITEM,
     }
-
-
-def check_bindings(root, audit, inv_bytes):
-    inv_hash = sha256_bytes(inv_bytes)
-    try:
-        env = json.loads(read_text(root, ENVELOPE))
-    except (OSError, ValueError):
-        audit.err("%s is missing or unparsable" % ENVELOPE)
-        env = None
-    if env is not None and env != envelope_for(inv_hash):
-        audit.err("%s does not equal the envelope derived from the inventory (hash %s)" % (ENVELOPE, inv_hash))
 
 
 def main(argv):
@@ -281,7 +251,7 @@ def main(argv):
         print("FAIL: %s is stale against the tracked tree; regenerate with "
               "`python3 -I .github/scripts/check-repo-hygiene.py --write`" % INVENTORY, file=sys.stderr)
         return 1
-    check_bindings(root, audit, committed)
+    check_bindings(audit, root, ENVELOPE, committed, envelope_for)
     if audit.errors:
         for e in audit.errors:
             print("BINDING: %s" % e, file=sys.stderr)
