@@ -1,11 +1,14 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "engine": "klayout",
   "layout": {
     "path": "layout/lna_core/lna_core.gds",
     "scope": "repo"
   },
-  "reference": "lna_core.lvs_reference.spice",
+  "reference": {
+    "path": "layout/lna_core/lna_core.lvs_reference.spice",
+    "scope": "repo"
+  },
   "top": "lna_core",
   "reference_top": ".TOP",
   "parameter_tolerance": null,
@@ -22,6 +25,7 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
+    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -43,6 +47,7 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
+    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -102,9 +107,10 @@
       ]
     }
   ],
-  "mismatch_count": 23,
+  "mismatch_count": 24,
   "error_count": 20,
   "category_counts": {
+    "device.combine_parameter_corrected": 1,
     "device.geometry_not_compared": 2,
     "device.unmatched": 7,
     "net.merged": 6,
@@ -156,12 +162,14 @@
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.2",
+    "klt_git_commit": "046ba74652fc096bd97071fc3237f7159dd40183",
+    "klt_reinstall_spec": "klayout-tools==0.9.2",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "content_hash": "sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9",
       "released": true
     },
     "input": {
@@ -171,6 +179,30 @@
     "klayout_version_mismatch": false
   },
   "mismatches": [
+    {
+      "category": "device.combine_parameter_corrected",
+      "severity": "warning",
+      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
+      "side": "layout",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": {
+        "corrected": [
+          {
+            "circuit": "lna_core",
+            "device": null,
+            "class": "cap_cmim",
+            "parameter": "C",
+            "before": 6.250695e-12,
+            "after": 1.0001111999999999e-10
+          }
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
