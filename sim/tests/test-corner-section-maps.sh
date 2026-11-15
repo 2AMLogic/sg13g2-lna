@@ -21,6 +21,12 @@
 #      HBT_CORNERS override) resolves against the five-key maps unchanged
 #   6. an unresolvable label and a bad argument fail loudly, non-zero,
 #      with nothing on stdout
+#   7. the Python-side copies of the same PDK fact (reduce_biasref.py's
+#      MOS_SECTION_OF, lna_variant_campaign.py's HBT/MOS) agree with the
+#      canonical on every key they hold -- the cross-language pin of #287.
+#      A copy may hold a subset of the five labels (biasref's bench is
+#      deliberately three), but a held key must match and no copy may hold
+#      a key the canonical lacks.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SIM_DIR_T="$(cd "$HERE/.." && pwd)"
@@ -157,5 +163,89 @@ if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
   ok "an unknown argument fails non-zero with nothing on stdout (rc=$rc)"
 else bad "unknown argument: rc=$rc out='$out'"; fi
 
+# 7. the Python copies agree with the canonical across the language boundary
+#    (issue #287). The maps are read from the modules' real source with the
+#    Python interpreter under `python3 -I` -- exec'd, not grep-parsed, so a
+#    reformat cannot silently unpin them -- and compiled fresh from the file
+#    bytes rather than through the import system, whose __pycache__ could
+#    otherwise serve a pre-edit map when a same-second, same-size edit/revert
+#    collides on mtime+size (exactly what an automated mutation check does);
+#    the comparison itself stays here in bash against the maps sourced from
+#    env.sh, so the test never restates the fact.
+canon="$(
+  # shellcheck disable=SC1090
+  source "$ENV_SH" >/dev/null 2>&1
+  for c in typ bcs wcs sf fs; do
+    printf '%s\t%s\t%s\n' "$c" "${SIM_HBT_SECTION_OF[$c]}" "${SIM_MOS_SECTION_OF[$c]}"
+  done
+)"
+declare -A CANON_HBT=() CANON_MOS=()
+while IFS=$'\t' read -r k h m; do
+  [ -n "$k" ] || continue
+  CANON_HBT["$k"]="$h"
+  CANON_MOS["$k"]="$m"
+done <<< "$canon"
+
+py_rows="$(python3 -I - "$SIM_DIR_T" <<'PYEOF'
+import pathlib
+import sys
+
+sim = pathlib.Path(sys.argv[1])
+
+def load(name, path):
+    # Compile from the file's own bytes, bypassing the import system's
+    # __pycache__: a cached .pyc whose stored mtime+size still match (a
+    # same-second, same-size edit/revert) would serve a pre-mutation map
+    # and hide -- or phantom-report -- a divergence. compile() always
+    # sees the true source.
+    ns = {"__name__": name, "__file__": str(path)}
+    exec(compile(path.read_text(), str(path), "exec"), ns)
+    return ns
+
+rb = load("reduce_biasref", sim / "biasref-topology" / "reduce_biasref.py")
+lvc = load("lna_variant_campaign",
+           sim / "lna-characterization" / "lna_variant_campaign.py")
+for module, dictname, m in (
+    ("reduce_biasref.py", "MOS_SECTION_OF", rb["MOS_SECTION_OF"]),
+    ("lna_variant_campaign.py", "HBT", lvc["HBT"]),
+    ("lna_variant_campaign.py", "MOS", lvc["MOS"]),
+):
+    for k in sorted(m):
+        print(f"{module}\t{dictname}\t{k}\t{m[k]}")
+PYEOF
+)" || bad "importing the Python maps failed"
+
+# py_check_one <dictname-in-rows>: every key the named dict holds must map to
+# the same section as the canonical, and the canonical must actually have
+# that key (the subset rule: narrow is fine, divergent is not).
+py_check_one() {
+  local dictname="$1" cname want module k v n=0 bad_n=0
+  case "$dictname" in
+    HBT)  cname="SIM_HBT_SECTION_OF" ;;
+    MOS*) cname="SIM_MOS_SECTION_OF" ;;
+  esac
+  while IFS=$'\t' read -r module k v; do
+    [ -n "$module" ] || continue
+    n=$((n+1))
+    want="${CANON_HBT[$k]:-}"
+    [ "$cname" = "SIM_MOS_SECTION_OF" ] && want="${CANON_MOS[$k]:-}"
+    if [ -z "$want" ]; then
+      bad "$module: $dictname holds key '$k', which $cname (sim/env.sh) does not have"
+      bad_n=$((bad_n+1))
+    elif [ "$v" != "$want" ]; then
+      bad "$module: ${dictname}[${k}]='$v' diverges from ${cname}[${k}]='${want}' (sim/env.sh is canonical)"
+      bad_n=$((bad_n+1))
+    fi
+  done < <(printf '%s\n' "$py_rows" | awk -F'\t' -v d="$dictname" '$2==d {print $1 "\t" $3 "\t" $4}')
+  if [ "$n" -eq 0 ]; then
+    bad "no $dictname rows could be read from the Python modules"
+  elif [ "$bad_n" -eq 0 ]; then
+    ok "$dictname agrees with sim/env.sh's $cname on every key it holds ($n keys)"
+  fi
+}
+py_check_one MOS_SECTION_OF
+py_check_one HBT
+py_check_one MOS
+
 echo "pass=$pass fail=$fail"
-[ "$fail" -eq 0 ] && [ "$pass" -ge 14 ]
+[ "$fail" -eq 0 ] && [ "$pass" -ge 17 ]
