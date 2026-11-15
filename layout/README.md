@@ -229,7 +229,8 @@ reproducible entry point that produces one, kept separate from
 pair beside the curated evidence:
 
 - `lna_core/native_drc_report.json` — the `klt drc --engine klayout --pdk
-  ihp-sg13g2` envelope, verbatim (clean, violations, or `coverage_unknown`);
+  ihp-sg13g2` envelope, verbatim (`clean`, `clean_partial`, `violations`,
+  `coverage_unknown` or `not_checked`);
 - `lna_core/native_drc_inputs.json` — written by
   `layout/native_drc_identity.py` only after a completed run, binding the
   report's exact bytes to the GDS, to the PDK/deck identity the report
@@ -268,12 +269,17 @@ Prerequisites, all explicit:
   the native deck for `--pdk ihp-sg13g2`.
 
 Completed-run semantics (per the klt 0.9.2 release docs): `klt drc --engine
-klayout` exits 0 for clean, 3 for violations, and 4 for
-`coverage_unknown` — zero findings without a caller-vouched rule-category
-assertion, which is how a genuinely clean layout looks until a reviewed
-`--expect-rule-categories-file` is supplied. The runner publishes all
-three verbatim with the report's own status, so a `clean` native claim
-always traces to an explicit recorded assertion in the binding's `argv`.
+klayout` exits 0 for clean and `clean_partial` (every rule that ran passed,
+but the deck's requested rule coverage was partial), 3 for violations, and
+4 for `coverage_unknown` — zero findings without a caller-vouched
+rule-category assertion, which is how a genuinely clean layout looks until
+a reviewed `--expect-rule-categories-file` is supplied — and `not_checked`
+(the deck checked nothing). The runner publishes all five verbatim with
+the report's own status, so a `clean` native claim always traces to an
+explicit recorded assertion in the binding's `argv`. **Honest-status
+caveat**: a published `clean_partial`, `coverage_unknown` or `not_checked`
+run is evidence, not a pass — none of them is full-scope DRC signoff, and
+the runner says so in its completion output.
 Any other exit is a failed run: nothing is published, the raw output is
 kept in gitignored `native_drc_report.json.tmp`, and a previously
 published pair is moved to `native_drc_stale/<utc-timestamp>/` first — a
@@ -478,8 +484,9 @@ evidence (the partial-scope guard above still applies);
    no native verdict exists in this tree until issue #201 supplies one — but
    a one-sided pair fails, and a present pair must: bind the report's exact
    bytes (`report_sha256`) and the committed GDS (`gds`/`gds_sha256`); agree
-   with the report's own `status` (one of clean / violations /
-   coverage_unknown) and with the deck and PDK identity in the report's
+   with the report's own `status` (one of clean / clean_partial /
+   violations / coverage_unknown / not_checked) and with the deck and PDK
+   identity in the report's
    provenance (`deck_binding`/`pdk_binding`); record a non-empty klt identity
    and argv; and record a standalone executable version (`klayout_exe_version`)
    at or above the recorded `min_klayout_version`. The gate never runs the

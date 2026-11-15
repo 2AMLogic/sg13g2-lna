@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 15272,
+      "bytes": 15685,
       "role": "script of a declared CI command",
-      "sha256": "sha256:7a6e13cfd86200879443c33b317ba82d3334845230d0c4f9db8668c18e9d95b4"
+      "sha256": "sha256:398f39ccaee0f551dbd7f3cc967834aba7feaa7f35a5620d61c21a1f783f5e87"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
