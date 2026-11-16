@@ -6,6 +6,7 @@
 
 ### 2026-11-16
 
+- **PR #317**: chore(loom): resync installed Loom to v0.19.1302
 - **PR #319**: lna_variant_campaign: make a --temps slice disclose itself and unit-test the option
 - **Issue #306** (closed): lna_variant_campaign: --temps slicing has no unit test; a narrower summarize slice under-checks coverage silently
 - **PR #326**: docs(sim): index all 11 lna-characterization records by DUT and retire the stale 'current' labels
