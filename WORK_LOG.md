@@ -6,6 +6,8 @@
 
 ### 2026-11-16
 
+- **PR #326**: docs(sim): index all 11 lna-characterization records by DUT and retire the stale 'current' labels
+- **Issue #318** (closed): sim/lna-characterization/README.md's "Which DUT each record describes" table is stale: 3 of 9 records, and the one it calls "current main" is superseded
 - **PR #323**: ci: fail audit suite on absent klt under CI
 - **Issue #307** (closed): test-design-source-audit.sh still SKIPs green in CI when klt is absent from PATH (not just wrong-version)
 - **PR #296**: fix(layout): accept clean_partial and not_checked native DRC verdicts across all three gates
