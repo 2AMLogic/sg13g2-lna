@@ -6,6 +6,15 @@
 
 ### 2026-11-15
 
+- **PR #293**: test: pin the variant campaign's bias-attribution claim generator
+- **PR #259**: design: add DC bleed on xout, floating-node guard, 125 C batch record
+- **PR #298**: docs: correct the pre-match/matched DUT claims in the status prose
+- **PR #297**: test: pin Python corner-section map copies to sim/env.sh (#287)
+- **Issue #279** (closed): sim: unit-test the variant campaign's bias-attribution claim generator (ic1_pct, span_scaled, the ±0.05 % branch)
+- **Issue #260** (closed): PR #259 follow-up: add Rbleed to layout, rerun LVS, re-attest T1 items 1/10
+- **Issue #271** (closed): docs: refresh status prose that still describes the pre-match DUT (README, signoff/README, lna-characterization README)
+- **Issue #287** (closed): sim: reduce_biasref.py still holds a private copy of the corner-label -> MOS-section map that #283 consolidated on the shell side
+
 - **PR #292**: sim: validate core-envelope base-netlist anchors up front and print per-variant substitution evidence
 - **PR #291**: refactor: dedupe startup verdict rule and require across the sim reducers
 - **PR #284**: refactor(signoff): consolidate inventory/envelope scaffolding into signoff_common.py
