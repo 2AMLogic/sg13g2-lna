@@ -85,7 +85,7 @@ KLT_RELEASE = "0.9.2"  # keep in sync with layout/run_flow.sh (check-klt-pin.sh)
 # klayout: pinned for the same reason as run_flow.sh's KLAYOUT_PIN -- klt does
 # not bound its own `klayout` dependency, so a bare uvx resolve drifts off the
 # version klt declares as klayout_version_expected (klayout-tools#5601). Keep
-# the two in sync.
+# the two in sync (check-klt-pin.sh).
 KLAYOUT_PIN = "0.30.12"
 REPORT_NAME = "native_drc_report.json"
 SIDE_NAME = "native_drc_inputs.json"
