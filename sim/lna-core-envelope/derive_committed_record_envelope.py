@@ -48,7 +48,6 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
-import math
 import os
 import sys
 from pathlib import Path
@@ -59,8 +58,9 @@ _spec = importlib.util.spec_from_file_location(
     "envelope_rf", Path(__file__).resolve().with_name("envelope_rf.py"))
 _rf = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_rf)
-parse_table, nf_reref, ga_max_db, ga_max_with_tank_q = (
-    _rf.parse_table, _rf.nf_reref, _rf.ga_max_db, _rf.ga_max_with_tank_q)
+parse_table, nf_reref, gain_in_match_db, ga_max_db, ga_max_with_tank_q = (
+    _rf.parse_table, _rf.nf_reref, _rf.gain_in_match_db, _rf.ga_max_db,
+    _rf.ga_max_with_tank_q)
 
 T0_IEEE = 290.0
 
@@ -138,8 +138,7 @@ def main() -> int:
         }
 
         # In-band worst (minimum) of each gain metric.
-        gin = min(20 * math.log10(abs(p["s21"]))
-                  - 10 * math.log10(1 - abs(p["s11"]) ** 2) for p in ib)
+        gin = min(gain_in_match_db(p["s11"], p["s21"]) for p in ib)
         row["gain_in_match_only_db"] = f"{gin:.4f}"
         row["ga_max_ideal_db"] = f"{min(ga_max_db(p['s11'], p['s12'], p['s21'], p['s22']) for p in ib):.4f}"
         for q in Q_GRID:
