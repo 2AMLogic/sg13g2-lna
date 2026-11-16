@@ -1,4 +1,5 @@
 """Unit tests for the pure helpers in lna_variant_campaign.py (stdlib only)."""
+import csv
 import importlib.util
 import io
 import json
@@ -489,6 +490,148 @@ class NoiseGrid(unittest.TestCase):
         for n in (3, 10, 12, 0, -11):
             with self.assertRaises(SystemExit):
                 V.check_nf_npts(n)
+
+
+class BiasAttribution(unittest.TestCase):
+    """The bias-attribution claim generator in cmd_summarize: pct() (the
+    `ic1_pct` compare-CSV column), span_scaled() (the `I_C1 [mA]` and
+    `DC emitter lift v(e1) [mV]` headline rows) and the attribution branch
+    whose ±0.05 % bound decides whether a variant's gain/NF delta may be
+    quoted as a loss cost at all. The bound is `V.IC1_ATTRIB_PCT`, the value
+    documented in README "Bias confound" -- cited, not re-invented here.
+    label: synthetic-fixture -- every number below is a reducer input invented
+    by this module, never circuit evidence."""
+
+    def ic1_hook(self, factors, bumps=None):
+        """write_reports mutate hook: in `op` reports, per canonical cell i,
+        ic1 = factors[v] * (1 + i*1e-6) * (1 + bumps.get(v, {}).get(i, 0)) and
+        ve1 = 1 + i*1e-6. The i-spread makes span_scaled()'s min/max cells
+        unique and identifiable (i==0 the minimum, i==44 the maximum); a bump
+        at one cell makes the worst-pct cell unique."""
+        if not factors:
+            return None
+        bumps = bumps or {}
+
+        def mut(v, a, corners):
+            if a != "op" or v not in factors:
+                return
+            vb = bumps.get(v, {})
+            for i, c in enumerate(corners):
+                for m in c["measurements"]:
+                    if m["name"] == "ic1":
+                        m["value"] = factors[v] * (1.0 + i * 1e-6) * (1.0 + vb.get(i, 0.0))
+                    elif m["name"] == "ve1":
+                        m["value"] = 1.0 + i * 1e-6
+        return mut
+
+    @staticmethod
+    def section(md, variant):
+        i = md.index(f"### Variant `{variant}`")
+        j = md.find("### Variant `", i + 1)
+        return md[i: j if j != -1 else len(md)]
+
+    def run_case(self, factors=None, bumps=None, variants=("ideal", "le_q10"), mutate=None):
+        with tempfile.TemporaryDirectory() as d:
+            write_reports(d, variants=variants, mutate=mutate or self.ic1_hook(factors, bumps))
+            rc, cov, _ = run_summ(d)
+            md = (Path(d) / "h.md").read_text()
+            with open(Path(d) / "c.csv") as f:
+                rows = list(csv.reader(f))
+            return rc, cov, md, rows
+
+    def test_equal_ic1_takes_within_branch_and_zero_pct(self):
+        # untouched fixtures: ic1 == ideal at every cell -> the "within" line
+        rc, _, md, rows = self.run_case(variants=("ideal", "le_q20"))
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q20")
+        self.assertIn(f"- Bias attribution: I_C1 within +/-{V.IC1_ATTRIB_PCT} % of `ideal` "
+                      "at every cell -- the deltas above are inductor loss, not a bias shift.", sec)
+        head, data = rows[0], rows[1:]
+        j = head.index("ic1_pct")
+        self.assertEqual(data[0][0], "le_q20")  # first compare row: le_q20 typ/-40C/1.62V
+        self.assertEqual(data[0][j], "+0.00")
+
+    def test_negative_shift_takes_not_inductor_loss_branch(self):
+        # ic1 = 0.88 x ideal (-12 %) everywhere, one cell (idx 44) pushed to
+        # -13.76 % so the worst cell is unique and named in the emitted line.
+        rc, _, md, rows = self.run_case({"ideal": 1.0, "le_q10": 0.88},
+                                        bumps={"le_q10": {44: -0.02}})
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q10")
+        self.assertIn("**I_C1 shifts up to -13.76 % vs `ideal`**", sec)
+        self.assertIn("NOT inductor loss alone", sec)
+        self.assertIn("worst fs/125C/1.98V", sec)
+        head, data = rows[0], rows[1:]
+        jp, jd = head.index("ic1_pct"), head.index("d_ic1_a")
+        first = next(r for r in data if r[0] == "le_q10")
+        # variant below ideal: d_ic1_a and ic1_pct both negative, signs agree
+        self.assertEqual(first[jd], "-0.12000")
+        self.assertEqual(first[jp], "-12.00")
+
+    def test_threshold_boundary_pinned_from_both_sides(self):
+        # worst-cell shift +0.04 % (< the bound) stays "within"; +0.06 %
+        # crosses it and must warn. Positive shifts on purpose: a sign
+        # inversion must not hide behind an all-negative fixture set.
+        rc, _, md, _ = self.run_case({"ideal": 1.0, "le_q5": 1.0},
+                                     bumps={"le_q5": {10: 4e-4}},
+                                     variants=("ideal", "le_q5"))
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q5")
+        self.assertIn(f"- Bias attribution: I_C1 within +/-{V.IC1_ATTRIB_PCT} % of `ideal`", sec)
+        self.assertNotIn("NOT inductor loss alone", sec)
+        rc, _, md, _ = self.run_case({"ideal": 1.0, "le_q5": 1.0},
+                                     bumps={"le_q5": {10: 6e-4}},
+                                     variants=("ideal", "le_q5"))
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q5")
+        self.assertIn("**I_C1 shifts up to +0.06 % vs `ideal`**", sec)
+        self.assertIn("NOT inductor loss alone", sec)
+        self.assertNotIn("inductor loss, not a bias shift", sec)
+
+    def test_span_scaled_units_and_min_max_cell_identities(self):
+        # ic1 is measured in A, reported in mA (1e3x, 4 dp); ve1 in V reported
+        # in mV (1e3x, 3 dp). The min/max cells must name the cells that
+        # actually hold the extremes, not each other's.
+        rc, _, md, _ = self.run_case({"ideal": 1.0, "le_q10": 1.0})
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q10")
+        lo = V.cell_text(V.expected_grid()[0])
+        hi = V.cell_text(V.expected_grid()[44])
+        self.assertIn(f"- I_C1 [mA]: min 1000.0000 @ {lo}, max 1000.0440 @ {hi}", sec)
+        self.assertIn(f"- DC emitter lift v(e1) [mV]: min 1000.000 @ {lo}, max 1000.044 @ {hi}", sec)
+
+    def test_no_ideal_ic1_emits_explicit_not_computed_line(self):
+        # ic1 removed from the ideal op reports only: pcts empty AND base_ic1
+        # empty. Coverage validation fails the run (missing_measurement), but
+        # headlines.md is still written -- the attribution row must say so
+        # explicitly instead of being silently omitted from the artifact.
+        def mut(v, a, corners):
+            if v == "ideal" and a == "op":
+                for c in corners:
+                    c["measurements"] = [m for m in c["measurements"] if m["name"] != "ic1"]
+        rc, cov, md, _ = self.run_case(mutate=mut)
+        self.assertNotEqual(rc, 0)
+        self.assertIn("missing_measurement", kinds(cov))
+        sec = self.section(md, "le_q10")
+        self.assertIn("- Bias attribution: I_C1 not computed", sec)
+        self.assertNotIn("within +/-", sec)
+        self.assertNotIn("NOT inductor loss alone", sec)
+
+    def test_zero_ideal_ic1_reports_no_per_cell_comparison(self):
+        # ideal ic1 present (0.0 at every cell) but falsy, so no per-cell
+        # comparison happens: the existing "no per-cell" line is emitted, not
+        # the "not computed" one -- base_ic1 is non-empty in this branch.
+        def mut(v, a, corners):
+            if v == "ideal" and a == "op":
+                for c in corners:
+                    for m in c["measurements"]:
+                        if m["name"] == "ic1":
+                            m["value"] = 0.0
+        rc, _, md, _ = self.run_case(mutate=mut)
+        self.assertEqual(rc, 0)
+        sec = self.section(md, "le_q10")
+        self.assertIn("- Bias attribution: no per-cell `ideal` I_C1 to compare against.", sec)
+        self.assertNotIn("I_C1 not computed", sec)
 
 
 

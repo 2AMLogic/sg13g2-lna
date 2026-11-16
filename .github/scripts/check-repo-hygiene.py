@@ -25,26 +25,24 @@ tracked, and run by CI.
 Exit status: 0 ok, 1 audit/freshness failure, 2 usage error.
 """
 
-import argparse
 import importlib.util
-import json
 import os
 import re
 import sys
 
 # Shared signoff-checker helpers, loaded by explicit path so `python3 -I` works
-# (isolated mode does not put the script directory on sys.path). Issue #274.
-# dont_write_bytecode first: a __pycache__/ write would break this checker's
-# own "check mode leaves the tree unchanged" guarantee.
+# (isolated mode does not put the script directory on sys.path). Issues #274
+# and #302: check_bindings and the whole main() protocol live in the shared
+# module. dont_write_bytecode first: a __pycache__/ write would break this
+# checker's own "check mode leaves the tree unchanged" guarantee.
 sys.dont_write_bytecode = True
 _spec = importlib.util.spec_from_file_location(
     "signoff_common",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "signoff_common.py"))
 _sc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_sc)
-Audit, check_bindings, read_bytes, read_text, render, sha256_bytes, tracked = (
-    _sc.Audit, _sc.check_bindings, _sc.read_bytes, _sc.read_text, _sc.render,
-    _sc.sha256_bytes, _sc.tracked)
+run_item_check, read_bytes, read_text, sha256_bytes, tracked = (
+    _sc.run_item_check, _sc.read_bytes, _sc.read_text, _sc.sha256_bytes, _sc.tracked)
 
 ITEM = 10
 INVENTORY = "signoff/repo-hygiene/inventory.json"
@@ -206,59 +204,18 @@ def envelope_for(inv_hash):
 
 
 def main(argv):
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--root", default=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope)")
-    args = ap.parse_args(argv)
-    root = os.path.abspath(args.root)
-
-    audit = Audit()
-    inv = build(root, audit)
-    if inv is None:
-        for e in audit.errors:
-            print("AUDIT: %s" % e, file=sys.stderr)
-        print("FAIL: repo-hygiene audit is incomplete (%d finding(s)); nothing written/passed"
-              % len(audit.errors), file=sys.stderr)
-        return 1
-    data = render(inv)
-
-    if args.write:
-        os.makedirs(os.path.join(root, os.path.dirname(INVENTORY)), exist_ok=True)
-        with open(os.path.join(root, INVENTORY), "wb") as fh:
-            fh.write(data)
-        inv_hash = sha256_bytes(data)
-        with open(os.path.join(root, ENVELOPE), "w") as fh:
-            fh.write(json.dumps(envelope_for(inv_hash), indent=2, sort_keys=True) + "\n")
-        print("wrote %s (%s) and %s" % (INVENTORY, inv_hash, ENVELOPE))
-        print("re-attest item 10 (signoff/README.md) and refresh the rolling report")
-        return 0
-
-    try:
-        committed = read_bytes(root, INVENTORY)
-    except FileNotFoundError:
-        print("FAIL: %s is missing; run with --write" % INVENTORY, file=sys.stderr)
-        return 1
-    if committed != data:
-        try:
-            old = json.loads(committed.decode())
-        except ValueError:
-            old = {}
-        for sect in ("files", "command_scripts"):
-            oldf, newf = old.get(sect, {}), inv[sect]
-            for p in sorted(set(oldf) | set(newf)):
-                if oldf.get(p) != newf.get(p):
-                    print("STALE: %s: inventory has %s, tree has %s" % (p, oldf.get(p), newf.get(p)), file=sys.stderr)
-        print("FAIL: %s is stale against the tracked tree; regenerate with "
-              "`python3 -I .github/scripts/check-repo-hygiene.py --write`" % INVENTORY, file=sys.stderr)
-        return 1
-    check_bindings(audit, root, ENVELOPE, committed, envelope_for)
-    if audit.errors:
-        for e in audit.errors:
-            print("BINDING: %s" % e, file=sys.stderr)
-        print("FAIL: item %d outer bindings are stale" % ITEM, file=sys.stderr)
-        return 1
-    print("OK: repo-hygiene inventory is fresh and bound to item %d (%s)" % (ITEM, sha256_bytes(committed)))
-    return 0
+    # Per-item parts only (issue #302): the audit-freshness-binding protocol
+    # is run_item_check in signoff_common.py. Item 10's build converts every
+    # late finding into a None return, so it needs no verdict gate of its own.
+    return run_item_check(
+        argv, item=ITEM, inventory=INVENTORY, envelope=ENVELOPE,
+        build=build, envelope_for=envelope_for,
+        sections=("files", "command_scripts"),
+        audit_label="repo-hygiene",
+        ok_line=lambda inv, committed: (
+            "OK: repo-hygiene inventory is fresh and bound to item %d (%s)"
+            % (ITEM, sha256_bytes(committed))),
+        description=__doc__.split("\n")[0])
 
 
 if __name__ == "__main__":
