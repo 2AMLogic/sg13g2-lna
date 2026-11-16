@@ -86,14 +86,25 @@ down as follows:
   Item 7 needs a `klt pex` run, and item 11 a supply spec, of a complete
   layout.
 - **Item 5 accepts only a `klt sim` envelope** for this analog block, and
-  none exists for the current DUT. The current RF and DC records above
-  are ngspice + bash + CSV/Markdown records, not `klt` JSON envelopes, so
-  the grader cannot read them. The one committed `klt sim` campaign, the
-  issue-#56 inductor-loss variant run (record `20261114-025351-7a54cc2`,
-  on the matched DUT), kept its 24 per-request result envelopes on the
-  fleet runner (`sim/lna-characterization/README.md` §"The 45-cell
-  record"); only its record, CSVs and `--batch-set` envelope are
-  committed. A native envelope would still not render `met` today. The
+  no committed envelope carries the per-row pass/fail it needs. The
+  current RF and DC records above are ngspice + bash + CSV/Markdown
+  records, not `klt` JSON envelopes, so the grader cannot read them. Four
+  issue-#56 `klt sim` campaigns are committed. Three ran on the DUT
+  committed today (`20261106-054735-64b37ae`, `-055142-`, `-055453-`) and
+  their per-request result envelopes **are** committed under
+  `sim/lna-characterization/corners/`; the fourth
+  (`20261114-025351-7a54cc2`) ran on a superseded netlist and is
+  `historical-dut`, so it cannot be cited for the current design — only
+  its record, CSVs and `--batch-set` envelope are committed, and its 24
+  per-request envelopes stayed on the fleet runner
+  (`sim/lna-characterization/README.md` §"The 45-cell record"). The
+  current-DUT envelopes are limits-free —
+  `coverage.measurements_with_limits` is `0` and every measurement's
+  `limits` and worst-case `margin` are `null` — so their `status: "pass"`
+  marks completed runs, not spec verdicts; each record's `**Claim**` says
+  the same ("Not a conformance claim against any `spec/target-spec.md`
+  row"), and `signoff/manifest.json` registers no item-5 evidence for the
+  grader. A native envelope would still not render `met` today. The
   committed PVT record (`20260926-122301-088c734`, pre-match) misses the
   ratified gain, NF, S11, S22 and broadband μ rows at every one of the
   45 cells (`measurements/README.md` §"Results against the ratified
