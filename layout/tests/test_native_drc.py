@@ -4,7 +4,8 @@
 Pins the runner's contract end to end with stub executables — no klayout,
 klt or PDK: preflight version classes (missing executable, unparseable
 `-v` output, below-minimum version), completed-run publication (klt exits
-0/3/4 -> clean/violations/coverage_unknown), deck-crash refusal, refusal to
+0/3/4 -> clean/clean_partial/violations/coverage_unknown/not_checked),
+deck-crash refusal, refusal to
 publish a report that does not pin the committed GDS, segregation of a
 previous pair on every failure path, atomic pair publication and the
 binding/validator's mutation classes. Stdlib only.
@@ -24,6 +25,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -100,6 +102,22 @@ class VersionHelpersTest(unittest.TestCase):
             with self.subTest(sample=s):
                 self.assertEqual(native_drc_identity.version_tuple(s),
                                  run_native_drc.version_tuple(s))
+
+    def test_statuses_copies_agree(self):
+        """All three STATUSES copies move together (issue #290): the
+        runner, the identity module, and NATIVE_STATUSES in the freshness
+        gate .github/scripts/check-layout-freshness."""
+        self.assertEqual(native_drc_identity.STATUSES,
+                         run_native_drc.STATUSES)
+        gate = (LAYOUT.parent / ".github" / "scripts"
+                / "check-layout-freshness").read_text()
+        m = re.search(r"^NATIVE_STATUSES\s*=\s*\(([^)]*)\)", gate, re.M)
+        self.assertIsNotNone(
+            m, "NATIVE_STATUSES not found in "
+               ".github/scripts/check-layout-freshness")
+        tokens = tuple(t.strip().strip("'\"")
+                       for t in m.group(1).split(","))
+        self.assertEqual(native_drc_identity.STATUSES, tokens)
 
     def test_tuple(self):
         self.assertEqual(native_drc_identity.version_tuple(
@@ -512,7 +530,8 @@ class RunnerTest(IdentityFixtureTest):
         self.assertFalse((self.cd / "native_drc_report.json.tmp").exists())
 
     def test_publishes_clean_and_coverage_unknown_runs(self):
-        for rc, status in (("0", "clean"), ("4", "coverage_unknown")):
+        for rc, status in (("0", "clean"), ("0", "clean_partial"),
+                           ("4", "coverage_unknown"), ("4", "not_checked")):
             with self.subTest(rc=rc, status=status):
                 for p in ("native_drc_report.json", native_drc_identity.NAME):
                     (self.cd / p).unlink(missing_ok=True)
@@ -597,6 +616,21 @@ class RunnerTest(IdentityFixtureTest):
         self.assertIn("does not pin this GDS", r.stderr)
         self.assertEqual(self.pair_exists(), (False, False))
         self.assertTrue((self.cd / "native_drc_report.json.tmp").is_file())
+
+    def test_unknown_status_is_class_6_and_segregates(self):
+        # An out-of-vocabulary status with a completed-run exit code is
+        # refused before publication (issue #290's negative case), nothing
+        # is published, and a previously published pair is segregated.
+        self.seed_pair()
+        r = self.run_runner(env_extra={"STUB_RC": "0",
+                                       "STUB_STATUS": "banana"})
+        self.assertEqual(r.returncode, 6)
+        self.assertIn("'banana'", r.stderr)
+        self.assertIn("not a completed-run token", r.stderr)
+        self.assertEqual(self.pair_exists(), (False, False))
+        self.assertEqual(self.seg(),
+                         ["native_drc_inputs.json",
+                          "native_drc_report.json"])
 
     def seg(self):
         stale = self.cd / "native_drc_stale"

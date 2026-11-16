@@ -34,7 +34,18 @@ from pathlib import Path
 SCHEMA = "sg13g2-lna.native-drc/1"
 NAME = "native_drc_inputs.json"
 REPORT = "native_drc_report.json"
-STATUSES = ("clean", "violations", "coverage_unknown")
+# The completed-run status tokens these gates accept from klt's rollup
+# vocabulary (run_native_drc.py's rationale records which of them
+# --engine klayout emits today — issue #312). Duplicated
+# from run_native_drc.py on purpose (which carries the rationale): `python3
+# -I` does not put this script's directory on sys.path, so this script
+# cannot import its sibling. The vocabulary exists in three places that
+# must move together — here, the runner, and NATIVE_STATUSES in the
+# freshness gate .github/scripts/check-layout-freshness; test_native_drc.py
+# pins all three equal. Widening one copy alone strands a published-but-
+# rejected pair.
+STATUSES = ("clean", "clean_partial", "violations",
+            "coverage_unknown", "not_checked")
 
 _VERSION_RE = re.compile(r"\d+(?:\.\d+)+")
 

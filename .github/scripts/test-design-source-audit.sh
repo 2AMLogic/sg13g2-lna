@@ -15,7 +15,10 @@
 # `write` cases (regeneration gate, stub check-netlist-regen):
 #   9. gate exits non-zero -> refuses to write (exit 3); gate exits 0 -> writes
 #      files that then pass `check`
-# klt cases (only when the pinned release klt is on PATH, else SKIP):
+# klt cases (expected release derived from layout/run_flow.sh KLT_RELEASE;
+# SKIP when that release is not on PATH — a wrong-version klt FAILs when
+# CI/GITHUB_ACTIONS is set, because the design-source-audit job pip-installs
+# the pin immediately before this suite, so there it is skew; issue #294):
 #  10. fresh tree renders item 1 met from the klt signoff --attest
 #      envelope (issue #238), with artifact_binding         -> met
 #  11. attest inventory bytes mutated, citation not updated -> item 1 NOT met
@@ -103,8 +106,16 @@ expect "write succeeds when the gate passes" 0 "$TMP/wok" write
 repin "$TMP/wok"
 expect "written audit passes check once cited" 0 "$TMP/wok" check
 
-# klt: the pinned grader itself
-if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)" = "klt 0.9.2" ]; then
+# klt: the pinned grader itself. The expected release is derived from
+# layout/run_flow.sh's KLT_RELEASE — the source .github/scripts/check-klt-pin.sh
+# already treats as authoritative, and the pin the CI job actually installs —
+# so a bump needs no edit here (issue #294). An unreadable derivation fails
+# the suite rather than skipping (fail closed).
+klt_expected="$(sed -n 's/^KLT_RELEASE="\([0-9][0-9.]*\)"$/\1/p' "$ROOT/layout/run_flow.sh")"
+klt_found="$(command -v klt >/dev/null 2>&1 && klt --version 2>/dev/null | head -n 1 || true)"
+if [ -z "$klt_expected" ]; then
+  echo "FAIL: klt cases: cannot derive the expected release from layout/run_flow.sh (no KLT_RELEASE=\"<digits>\")"; fail=$((fail+1))
+elif [ "$klt_found" = "klt $klt_expected" ]; then
   item1() { (cd "$1" && klt signoff --manifest signoff/manifest.json --tiers-doc signoff/design-evidence-tiers.md --format json 2>/dev/null) \
     | python3 -I -c 'import json,sys; r=json.load(sys.stdin); i=[x for x in r["items"] if x["id"]==1][0]; print(i["status"], bool((i.get("citation") or {}).get("artifact_binding")))'; }
   mk kok
@@ -113,8 +124,32 @@ if command -v klt >/dev/null 2>&1 && [ "$(klt --version 2>/dev/null | head -n 1)
   mk kmut; printf ' ' >> "$TMP/kmut/signoff/attest/item1.json"
   case "$(item1 "$TMP/kmut")" in met*) echo "FAIL: mutated inventory still renders item 1 met"; fail=$((fail+1)) ;;
     *) echo "PASS: mutated inventory cannot render item 1 met"; pass=$((pass+1)) ;; esac
+elif [ -z "$klt_found" ] && { [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; }; then
+  echo "FAIL: klt cases: no klt on PATH (or --version unreadable), expected 'klt $klt_expected' — skew (the design-source-audit job installs the pin before this suite)"; fail=$((fail+1))
+elif [ -z "$klt_found" ]; then
+  echo "SKIP: klt cases (need release klt $klt_expected on PATH; CI pip-installs it)"; skip=$((skip+1))
+elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+  echo "FAIL: klt cases: klt on PATH reports '${klt_found}', expected 'klt $klt_expected' — skew (the design-source-audit job installs the pin before this suite)"; fail=$((fail+1))
 else
-  echo "SKIP: klt cases (release klt 0.9.2 not on PATH)"; skip=$((skip+1))
+  echo "SKIP: klt cases (release klt $klt_expected not on PATH, have: ${klt_found:-none}; CI pip-installs it)"; skip=$((skip+1))
+fi
+
+
+# meta-case: an ABSENT klt must be fatal under CI and a SKIP locally. Re-runs
+# this suite as a child with klt stripped from PATH; LNA_AUDIT_SELFTEST_CHILD
+# stops the child from recursing into this case.
+if [ -z "${LNA_AUDIT_SELFTEST_CHILD:-}" ]; then
+  nokltpath=""; IFS=:
+  for p in $PATH; do [ -x "$p/klt" ] || nokltpath="${nokltpath:+$nokltpath:}$p"; done
+  unset IFS
+  out="$(env -u GITHUB_ACTIONS LNA_AUDIT_SELFTEST_CHILD=1 CI=1 PATH="$nokltpath" "$0" 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'FAIL: klt cases:'; then
+    echo "PASS: absent klt is fatal under CI"; pass=$((pass+1))
+  else echo "FAIL: absent klt under CI (rc=$rc): $out"; fail=$((fail+1)); fi
+  out="$(env -u CI -u GITHUB_ACTIONS LNA_AUDIT_SELFTEST_CHILD=1 PATH="$nokltpath" "$0" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ] && printf '%s\n' "$out" | grep -q 'SKIP: klt cases'; then
+    echo "PASS: absent klt skips locally"; pass=$((pass+1))
+  else echo "FAIL: absent klt locally (rc=$rc): $out"; fail=$((fail+1)); fi
 fi
 
 echo "$pass passed, $fail failed, $skip skipped"

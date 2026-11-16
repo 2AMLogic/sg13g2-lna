@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 15272,
+      "bytes": 15685,
       "role": "script of a declared CI command",
-      "sha256": "sha256:7a6e13cfd86200879443c33b317ba82d3334845230d0c4f9db8668c18e9d95b4"
+      "sha256": "sha256:398f39ccaee0f551dbd7f3cc967834aba7feaa7f35a5620d61c21a1f783f5e87"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -159,9 +159,9 @@
       "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 27245,
+      "bytes": 27330,
       "role": "CI workflow",
-      "sha256": "sha256:1c18b794c92ea5c070274eb9fab5f4cf41208031a23958afeb92e4d0a4a3dca4"
+      "sha256": "sha256:2cc45ef7e5d54acef031f69418f9ceb38a49fe72fadb82f0dd3639e72066be00"
     },
     "LICENSE": {
       "bytes": 11358,

@@ -1,0 +1,2549 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_op.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 15,
+  "passed": 15,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 15,
+    "sim__corner__passed_count": 15,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/usr/local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "39ca1adb826660324c3626f72bd946ec40704f0f3fc8e243c623f76e24b3eee2",
+      "probe": "ok",
+      "reason": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "absent"
+    },
+    "models_lib_sha256": null,
+    "models_lib_sha256_scope": "client",
+    "netlist_sha256": "ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+    "netlist_closure": [
+      {
+        "path": "sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_op.spice",
+        "scope": "repo",
+        "sha256": "ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9"
+      }
+    ],
+    "netlist_identity": "sha256:74d149839d8b0826f3a141094438b3230e6097ec1ee17f1c2f294bfd7ed03be7",
+    "corner_section_libs": [
+      {
+        "name": "cornerHBT.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462"
+      },
+      {
+        "name": "cornerMOShv.lib",
+        "path": null,
+        "scope": "external",
+        "sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a"
+      }
+    ],
+    "osdi_preload_runner_resolved": [
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+        "reason": "env_var"
+      },
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+        "reason": "env_var"
+      },
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi",
+        "reason": "env_var"
+      }
+    ],
+    "staged_model_inputs": [
+      {
+        "name": "cornerHBT.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "library",
+        "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278",
+        "rewritten": true,
+        "source_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+        "transform": "include-path-rewrite"
+      },
+      {
+        "name": "cornerMOShv.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "library",
+        "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62",
+        "rewritten": true,
+        "source_sha256": "5a1f862dc304fdfe2fb9758b15d54809a688d83c3ce981dad2e8473b3e93481a",
+        "transform": "include-path-rewrite"
+      },
+      {
+        "name": "sg13g2_hbt_mod.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79",
+        "rewritten": false,
+        "source_sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+      },
+      {
+        "name": "sg13g2_hbt_mod_mismatch.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2",
+        "rewritten": false,
+        "source_sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+      },
+      {
+        "name": "sg13g2_hbt_stat.lib",
+        "field": "corners.process[0].sections[0].lib",
+        "kind": "dependency",
+        "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db",
+        "rewritten": false,
+        "source_sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+      },
+      {
+        "name": "sg13g2_moshv_mod.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9",
+        "rewritten": true,
+        "source_sha256": "d4b348b494998d7057bdde6fb111c60153d8b86175fafcfc6de461737e7a644b",
+        "transform": "include-path-rewrite"
+      },
+      {
+        "name": "sg13g2_svaricaphv_mod.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a",
+        "rewritten": false,
+        "source_sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+      },
+      {
+        "name": "sg13g2_moshv_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09",
+        "rewritten": false,
+        "source_sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+      },
+      {
+        "name": "sg13g2_moshv_mod_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e",
+        "rewritten": true,
+        "source_sha256": "be170c9619bed19215f7f7b55141e0869344874e3fcf7f30b2d2aa37659b1a0e",
+        "transform": "include-path-rewrite"
+      },
+      {
+        "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50",
+        "rewritten": false,
+        "source_sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+      },
+      {
+        "name": "sg13g2_moshv_stat.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903",
+        "rewritten": false,
+        "source_sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+      },
+      {
+        "name": "sg13g2_moshv_parm.lib",
+        "field": "corners.process[0].sections[1].lib",
+        "kind": "dependency",
+        "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35",
+        "rewritten": false,
+        "source_sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+      }
+    ],
+    "remote": {
+      "provider": "aws-batch-fleet",
+      "job_id": "klt-sim-315d960c58b5",
+      "region": "us-east-1",
+      "instance_id": "i-0c9edc75a1c33bbb4",
+      "instance_type": "m7i.4xlarge",
+      "availability_zone": "us-east-1c",
+      "ami_id": "ami-09c14f55df4958cbd",
+      "lifecycle": "spot",
+      "spot": true,
+      "state": "done",
+      "exit_code": "0",
+      "concurrency": "1",
+      "physical_cores": "8",
+      "elapsed_seconds": 8,
+      "client_submitted_at": "2026-11-16T02:26:49.265512Z",
+      "client_launched_at": "2026-11-16T02:27:13.894165Z",
+      "client_status_terminal_at": "2026-11-16T02:27:45.225877Z",
+      "client_collected_at": "2026-11-16T02:27:46.087275Z",
+      "runner_klt_version": "0.9.0",
+      "client_klt_version": "0.9.3.dev16+gdcf18e2e0c03",
+      "runner_compatibility": "match",
+      "runner_request_features": {
+        "required": [
+          "measurements[].expr",
+          "corners.process[].sections[]",
+          "options.ngspice_init",
+          "options.osdi_preload",
+          "options.stage_model_inputs"
+        ],
+        "missing": [],
+        "status": "supported"
+      },
+      "worker_environment": {
+        "capture": "ok",
+        "simulator": {
+          "requested_binary": "ngspice",
+          "binary_source": "PATH",
+          "selected_path": "/usr/local/bin/ngspice",
+          "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+          "version_probe": "ok"
+        },
+        "pdk": {
+          "variant": "ihp-sg13g2",
+          "root": "/opt/pdk",
+          "stamp_scheme": null,
+          "stamp_sha256": null,
+          "stamp_text": null,
+          "models_staged": true,
+          "stamp_scope": "image"
+        },
+        "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+        "omp_num_threads": null,
+        "image_manifest": null,
+        "model_inputs": [
+          {
+            "name": "cornerHBT.lib",
+            "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278"
+          },
+          {
+            "name": "cornerMOShv.lib",
+            "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62"
+          },
+          {
+            "name": "sg13g2_hbt_mod.lib",
+            "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+          },
+          {
+            "name": "sg13g2_hbt_mod_mismatch.lib",
+            "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+          },
+          {
+            "name": "sg13g2_hbt_stat.lib",
+            "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+          },
+          {
+            "name": "sg13g2_moshv_mod.lib",
+            "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9"
+          },
+          {
+            "name": "sg13g2_svaricaphv_mod.lib",
+            "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+          },
+          {
+            "name": "sg13g2_moshv_mismatch.lib",
+            "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+          },
+          {
+            "name": "sg13g2_moshv_mod_mismatch.lib",
+            "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e"
+          },
+          {
+            "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+            "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+          },
+          {
+            "name": "sg13g2_moshv_stat.lib",
+            "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+          },
+          {
+            "name": "sg13g2_moshv_parm.lib",
+            "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+          }
+        ],
+        "diagnostics": [
+          "pdk stamp unreadable: FileNotFoundError"
+        ],
+        "pdk_stamp_comparison": {
+          "basis": "staged_model_inputs",
+          "status": "match"
+        },
+        "engine_build_comparison": {
+          "status": "match"
+        }
+      },
+      "runner_model_inputs": [
+        {
+          "name": "cornerHBT.lib",
+          "sha256": "347635434f475a17ec4fe1d9cf904b4d4a98d4a35bb8b4a0cbd8cdfd1b4e5278"
+        },
+        {
+          "name": "cornerMOShv.lib",
+          "sha256": "40c4140415a2a2e92d2f42fd64e026d1c04d800708b7a5b663ef083206ddfd62"
+        },
+        {
+          "name": "sg13g2_hbt_mod.lib",
+          "sha256": "ae9288f885dd30fab24b07ed1e7e02e69eac9154022a0a6da576985183b0bd79"
+        },
+        {
+          "name": "sg13g2_hbt_mod_mismatch.lib",
+          "sha256": "1e493f25150b25b64985acd3f1e7ed2eb2e6ca4b712adf45b2de2ce2ba1a0eb2"
+        },
+        {
+          "name": "sg13g2_hbt_stat.lib",
+          "sha256": "80d1893eb06a3417d05400335d8e58c8309b9c80061ca96ceff8f8fd68c9a7db"
+        },
+        {
+          "name": "sg13g2_moshv_mod.lib",
+          "sha256": "a2800206343e9adfb4758e9cca40d50dae05fb42a33da3cde4fca8e0780e1bf9"
+        },
+        {
+          "name": "sg13g2_svaricaphv_mod.lib",
+          "sha256": "1462f67e80da7f5fa6f6b51efb0eb0e4dc7ef2da28d8bfde95a19ce2a780580a"
+        },
+        {
+          "name": "sg13g2_moshv_mismatch.lib",
+          "sha256": "2e9612bdb8252c281f422511039dc9b3ea983892aec89f8ef3361592e68fed09"
+        },
+        {
+          "name": "sg13g2_moshv_mod_mismatch.lib",
+          "sha256": "52d45aec4c933d78bf9309a8d6ab53d16fd3ef97251a9a293f2c9764e586e54e"
+        },
+        {
+          "name": "sg13g2_svaricaphv_mod_mismatch.lib",
+          "sha256": "16da7669ee7e963645a604f64770d2f8d871fa8483c34e3dddaa9fcf01c51f50"
+        },
+        {
+          "name": "sg13g2_moshv_stat.lib",
+          "sha256": "cd30f22637e41fdbbaba506ebe0f17746b8438027e4651a7a87b241a39d68903"
+        },
+        {
+          "name": "sg13g2_moshv_parm.lib",
+          "sha256": "eea5bbed39184cb1e2654ae29425a9ed6ee2f2341d6cb76c472591c75237bd35"
+        }
+      ],
+      "runner_models_lib_sha256": null,
+      "job_ceiling": {
+        "basis": "conservative_serial_bound",
+        "unit_count": 15,
+        "per_unit_timeout_s": 900,
+        "overhead_s": 120.0,
+        "job_bound_s": 13620.0,
+        "max_job_seconds": 3600.0,
+        "max_job_seconds_source": "fleet_config",
+        "exceeds_ceiling": true,
+        "check": "warn",
+        "max_units_per_job": 3,
+        "recommended_hosts": 5,
+        "warning": "batch job bound 13620s (options.timeout_s 900s x 15 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 3 units, each within the ceiling"
+      },
+      "models_lib_comparison": {
+        "status": "not_comparable",
+        "reason": "runner_hash_unavailable"
+      }
+    },
+    "engine_host": "worker",
+    "client_ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "backend": {
+      "resolved": "batch",
+      "source": "flag",
+      "requested": "batch"
+    }
+  },
+  "coverage": {
+    "corners_simulated": 15,
+    "measurements_declared": 9,
+    "measurements_with_limits": 0,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "measurement:[0,\"typ/1.620V/27C\",\"ib1\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"ic1\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"ic2\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"idd\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"pdc\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"vbe1\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"vce1\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"vce2\"]/observation",
+      "measurement:[0,\"typ/1.620V/27C\",\"ve1\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"ib1\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"ic1\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"ic2\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"idd\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"pdc\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"vbe1\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"vce1\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"vce2\"]/observation",
+      "measurement:[1,\"typ/1.800V/27C\",\"ve1\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"ib1\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"ic1\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"ic2\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"idd\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"pdc\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"vbe1\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"vce1\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"vce2\"]/observation",
+      "measurement:[10,\"sf/1.800V/27C\",\"ve1\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"ib1\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"ic1\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"ic2\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"idd\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"pdc\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"vbe1\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"vce1\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"vce2\"]/observation",
+      "measurement:[11,\"sf/1.980V/27C\",\"ve1\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"ib1\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"ic1\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"ic2\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"idd\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"pdc\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"vbe1\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"vce1\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"vce2\"]/observation",
+      "measurement:[12,\"fs/1.620V/27C\",\"ve1\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"ib1\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"ic1\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"ic2\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"idd\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"pdc\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"vbe1\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"vce1\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"vce2\"]/observation",
+      "measurement:[13,\"fs/1.800V/27C\",\"ve1\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"ib1\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"ic1\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"ic2\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"idd\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"pdc\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"vbe1\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"vce1\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"vce2\"]/observation",
+      "measurement:[14,\"fs/1.980V/27C\",\"ve1\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"ib1\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"ic1\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"ic2\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"idd\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"pdc\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"vbe1\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"vce1\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"vce2\"]/observation",
+      "measurement:[2,\"typ/1.980V/27C\",\"ve1\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"ib1\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"ic1\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"ic2\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"idd\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"pdc\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"vbe1\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"vce1\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"vce2\"]/observation",
+      "measurement:[3,\"bcs/1.620V/27C\",\"ve1\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"ib1\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"ic1\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"ic2\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"idd\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"pdc\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"vbe1\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"vce1\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"vce2\"]/observation",
+      "measurement:[4,\"bcs/1.800V/27C\",\"ve1\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"ib1\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"ic1\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"ic2\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"idd\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"pdc\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"vbe1\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"vce1\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"vce2\"]/observation",
+      "measurement:[5,\"bcs/1.980V/27C\",\"ve1\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"ib1\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"ic1\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"ic2\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"idd\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"pdc\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"vbe1\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"vce1\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"vce2\"]/observation",
+      "measurement:[6,\"wcs/1.620V/27C\",\"ve1\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"ib1\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"ic1\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"ic2\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"idd\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"pdc\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"vbe1\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"vce1\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"vce2\"]/observation",
+      "measurement:[7,\"wcs/1.800V/27C\",\"ve1\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"ib1\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"ic1\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"ic2\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"idd\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"pdc\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"vbe1\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"vce1\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"vce2\"]/observation",
+      "measurement:[8,\"wcs/1.980V/27C\",\"ve1\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"ib1\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"ic1\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"ic2\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"idd\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"pdc\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"vbe1\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"vce1\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"vce2\"]/observation",
+      "measurement:[9,\"sf/1.620V/27C\",\"ve1\"]/observation"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/1.620V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[1,\"typ/1.800V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[10,\"sf/1.800V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[11,\"sf/1.980V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[12,\"fs/1.620V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[13,\"fs/1.800V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[14,\"fs/1.980V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[2,\"typ/1.980V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[3,\"bcs/1.620V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[4,\"bcs/1.800V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[5,\"bcs/1.980V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[6,\"wcs/1.620V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[7,\"wcs/1.800V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[8,\"wcs/1.980V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"ib1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"ic1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"ic2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"idd\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"pdc\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"vbe1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"vce1\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"vce2\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[9,\"sf/1.620V/27C\",\"ve1\"]/limits",
+        "reason": "characterization_without_limits"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev16+gdcf18e2e0c03",
+    "klt_git_commit": "dcf18e2e0c0330742eb46cd7b54059612f627cca",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@dcf18e2e0c0330742eb46cd7b54059612f627cca",
+    "klayout_version": "0.30.13",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "PDK_ROOT environment variable",
+      "version": "fetched:0.3.0"
+    },
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "ic1",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.00385216825,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.0037479774
+      },
+      "max": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.00413989814
+      }
+    },
+    {
+      "name": "ic2",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.0038468504,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.00373883556
+      },
+      "max": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.00413678831
+      }
+    },
+    {
+      "name": "ib1",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 5.251916e-06,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "bcs/1.620V/27C",
+        "value": 2.88177391e-06
+      },
+      "max": {
+        "corner_id": "wcs/1.980V/27C",
+        "value": 9.57677967e-06
+      }
+    },
+    {
+      "name": "ve1",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.0,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "sf/1.980V/27C",
+        "value": -4.0380646e-13
+      },
+      "max": {
+        "corner_id": "fs/1.800V/27C",
+        "value": 2.73648535e-17
+      }
+    },
+    {
+      "name": "vbe1",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.843527373,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.834181828
+      },
+      "max": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.854230382
+      }
+    },
+    {
+      "name": "vce1",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.638462201,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.624371526
+      },
+      "max": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.977946817
+      }
+    },
+    {
+      "name": "vce2",
+      "unit": "V",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.952028686,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "bcs/1.620V/27C",
+        "value": 0.940048422
+      },
+      "max": {
+        "corner_id": "wcs/1.980V/27C",
+        "value": 0.9976999
+      }
+    },
+    {
+      "name": "idd",
+      "unit": "A",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.00461028417,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.00450720214
+      },
+      "max": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.00492983954
+      }
+    },
+    {
+      "name": "pdc",
+      "unit": "W",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/1.620V/27C",
+        "value": 0.00746866036,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "wcs/1.620V/27C",
+        "value": 0.00730166747
+      },
+      "max": {
+        "corner_id": "bcs/1.980V/27C",
+        "value": 0.0097610823
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "typ/1.620V/27C",
+      "process": "typ",
+      "supply_v": {
+        "vdd": 1.62
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00385216825,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.0038468504,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.251916e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 0.0,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843527373,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.638462201,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.952028686,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00461028417,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00746866036,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p620V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p620V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/1.800V/27C",
+      "process": "typ",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00394020888,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00393474662,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.43021485e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 1.19262239e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843494516,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.80252382,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.967292816,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00471433318,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00848579972,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/1.980V/27C",
+      "process": "typ",
+      "supply_v": {
+        "vdd": 1.98
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.217,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00403299692,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00402738125,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.6208705e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 3.46944695e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843457114,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.966547099,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.982558938,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00482305398,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00954964688,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p980V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/typ_1p980V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/1.620V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "vdd": 1.62
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00392268533,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00391976798,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 2.88177391e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 1.92445886e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.834203865,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.649883115,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.940048422,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00468070551,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00758274292,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p620V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p620V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/1.800V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00402772917,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00402471919,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 2.99330576e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -1.7347235e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.834193938,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.813938297,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.955188162,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00480173896,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00864313012,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/1.980V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "vdd": 1.98
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00413989814,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00413678831,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 3.11364813e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 1.73472348e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.834181828,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.977946817,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.970319961,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00492983954,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.0097610823,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p980V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/bcs_1p980V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/1.620V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "vdd": 1.62
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.0037479774,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00373883556,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 9.03049533e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -3.469447e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.854230382,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.624371526,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.96694794,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00450720214,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00730166747,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p620V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p620V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/1.800V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.219,
+      "peak_rss_bytes": 50409472,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00381982527,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00381047503,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 9.29600515e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -9.0801932e-19,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.854165524,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.788449618,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.982320303,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00459508012,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00827114421,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/1.980V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "vdd": 1.98
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.067,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00389463133,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00388506264,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 9.57677967e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 2.41234983e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.854093836,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.952497861,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.9976999,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00468582272,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00927792898,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p980V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/wcs_1p980V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/1.620V/27C",
+      "process": "sf",
+      "supply_v": {
+        "vdd": 1.62
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.066,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00385142949,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00384611281,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.25077135e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -8.1315163e-19,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843519421,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.638470876,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.952025668,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00460796752,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00746490738,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p620V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p620V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/1.800V/27C",
+      "process": "sf",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.066,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00393955143,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00393409023,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.42917385e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 1.43656788e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843487696,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.802531397,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.967290274,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00471210212,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00848178382,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/1.980V/27C",
+      "process": "sf",
+      "supply_v": {
+        "vdd": 1.98
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.065,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00403244455,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00402683019,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.6200292e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -4.0380646e-13,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843450495,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.966554132,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.982556127,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.0048209514,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00954548378,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p980V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/sf_1p980V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/1.620V/27C",
+      "process": "fs",
+      "supply_v": {
+        "vdd": 1.62
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.068,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00385306107,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.0038477418,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.25330004e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": -1.7347235e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843536969,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.638451752,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.952032296,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00461287824,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00747286275,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p620V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p620V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/1.800V/27C",
+      "process": "fs",
+      "supply_v": {
+        "vdd": 1.8
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.065,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00394095543,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00393549198,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.43139759e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 2.73648535e-17,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843502247,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.802515247,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.967295671,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.0047167686,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00849018348,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p800V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p800V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/1.980V/27C",
+      "process": "fs",
+      "supply_v": {
+        "vdd": 1.98
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 0.067,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "ic1",
+          "value": 0.00403367804,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ic2",
+          "value": 0.00402806126,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ib1",
+          "value": 5.62197198e-06,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "ve1",
+          "value": 1.73472348e-18,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbe1",
+          "value": 0.843463949,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce1",
+          "value": 0.966539338,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vce2",
+          "value": 0.982561483,
+          "unit": "V",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "idd",
+          "value": 0.00482541912,
+          "unit": "A",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "pdc",
+          "value": 0.00955432985,
+          "unit": "W",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p980V_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request/fs_1p980V_27C/corner.cir"
+      },
+      "monte_carlo": null
+    }
+  ],
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "model_bin_range_preflight",
+      "message": "preflight: instance 'XMis' (sg13_hv_pmos) has w=512u, at/above the ~100 um per-instance width bin range some PDKs enforce (keyed on w as written; nf= does not widen it); ngspice may abort with \"could not find a valid modelname\". Use m= to parallel smaller-width instances (see issue #4976)",
+      "instance": "XMis",
+      "model": "sg13_hv_pmos",
+      "w_um": 512.0,
+      "nf": 1.0
+    }
+  ]
+}
