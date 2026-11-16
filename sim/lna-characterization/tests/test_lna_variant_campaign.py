@@ -139,6 +139,68 @@ class ExpectedGrid(unittest.TestCase):
         self.assertEqual(len(c["process"]) * len(c["supply_v"]["vdd"]) * len(c["temperature_c"]), 45)
 
 
+class TemperatureSlice(unittest.TestCase):
+    """--temps / LNA_TEMPS slicing (issue #306). apply_temps mutates the module
+    global TEMPS, so every test restores the full list in tearDown: a leaked
+    slice would silently shrink ExpectedGrid.test_grid_size_and_smoke's
+    45-cell assertion depending on test order."""
+
+    def tearDown(self):
+        V.TEMPS = list(V.TEMPS_ALL)
+
+    def test_slice_noop_and_validation(self):
+        V.apply_temps("125")
+        self.assertEqual(V.TEMPS, [125])
+        V.apply_temps("")
+        self.assertEqual(V.TEMPS, [125])  # empty spec is a no-op
+        for bad in ("25", ","):
+            with self.assertRaises(SystemExit):
+                V.apply_temps(bad)
+        self.assertEqual(V.TEMPS, [125])  # a rejected spec leaves the slice untouched
+
+    def test_rejected_value_exits_nonzero_with_existing_message(self):
+        with self.assertRaises(SystemExit) as cm:
+            V.apply_temps("25")
+        self.assertIn("--temps must be a comma list drawn from", str(cm.exception))
+
+    def test_canonical_order_not_input_order(self):
+        V.apply_temps("27,-40")
+        self.assertEqual(V.TEMPS, [-40, 27])
+
+    def test_slice_equal_to_full_set_is_not_a_slice(self):
+        V.apply_temps("125,-40,27")
+        self.assertEqual(V.TEMPS, V.TEMPS_ALL)
+        md = V.coverage_markdown([], V.GRID_FULL, True, [])
+        self.assertFalse(any("TEMPERATURE SLICE" in line for line in md))
+
+    def test_expected_grid_shrinks_to_the_slice(self):
+        V.apply_temps("125")
+        grid = V.expected_grid()
+        self.assertEqual(len(grid), len(V.LABELS) * 1 * len(V.VDDS))
+        self.assertEqual(len(grid), 15)
+        self.assertEqual({t for _, t, _ in grid}, {125})
+
+    def test_summarize_names_slice_and_full_grid_does_not(self):
+        # Sliced run: disclosure line in headlines.md + machine-readable temps in
+        # coverage.json. Full-grid run: neither appears (the disclosure must not
+        # silently fire on every record).
+        with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
+            V.apply_temps("125")
+            write_reports(d1)
+            rc1, cov1, _ = run_summ(d1)
+            V.TEMPS = list(V.TEMPS_ALL)
+            write_reports(d2)
+            rc2, cov2, _ = run_summ(d2)
+            self.assertEqual((rc1, rc2), (0, 0))
+            self.assertEqual(cov1["temps"], [125])
+            self.assertEqual(cov2["temps"], V.TEMPS_ALL)
+            md1 = (Path(d1) / "h.md").read_text()
+            md2 = (Path(d2) / "h.md").read_text()
+            self.assertIn("TEMPERATURE SLICE", md1)
+            self.assertIn(f"only {[125]} of {V.TEMPS_ALL}", md1)
+            self.assertNotIn("TEMPERATURE SLICE", md2)
+
+
 class Reduction(unittest.TestCase):
     def test_complete_grid_summary_and_order_independence(self):
         with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
@@ -357,6 +419,18 @@ class WrapperPropagation(unittest.TestCase):
         self.assertNotIn("|| true", text[i:i + 400])
         self.assertIn("SUMMARIZE_RC", text)
         self.assertIn("exit 1", text[text.rindex("SUMMARIZE_RC != 0"):])
+
+    def test_wrapper_passes_same_temps_to_gen_and_summarize(self):
+        # issue #306: LNA_TEMPS is read once and handed to BOTH subcommands (so
+        # they cannot diverge through the wrapper), and the slice must disclose
+        # itself in the run log and the generated record.
+        text = (LNA / "run_lna_variant.sh").read_text()
+        gen_call = text.index("lna_variant_campaign.py\" gen")
+        summ_call = text.index("lna_variant_campaign.py\" summarize")
+        self.assertIn('GEN_ARGS+=("--temps=${LNA_TEMPS}")', text[:gen_call])
+        self.assertIn('SUMMARIZE_ARGS+=("--temps=${LNA_TEMPS}")', text[gen_call:summ_call])
+        self.assertIn("LNA_TEMPS set", text[:gen_call])
+        self.assertIn("TEMPERATURE SLICE", text[summ_call:])
 
     def test_cli_exit_code_and_artifacts_retained(self):
         with tempfile.TemporaryDirectory() as d:

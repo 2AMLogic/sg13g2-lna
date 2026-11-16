@@ -63,6 +63,7 @@ LABELS = ["typ", "bcs", "wcs", "sf", "fs"]
 HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs", "sf": "hbt_typ", "fs": "hbt_typ"}
 MOS = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss", "sf": "mos_sf", "fs": "mos_fs"}
 TEMPS = [-40, 27, 125]
+TEMPS_ALL = list(TEMPS)  # frozen full list; apply_temps filters from it so a slice can always recognize itself (issue #306)
 VDDS = [1.62, 1.80, 1.98]
 NOMINAL = ("typ", 27, 1.80)
 
@@ -633,6 +634,10 @@ def coverage_markdown(rows, grid, complete, issues, title="Ideal-baseline"):
                f"{len(issues)} validation issue(s))")
     if grid == GRID_SMOKE:
         out.append("- SMOKE grid (single nominal cell): not a PVT campaign, not a corner-box result.")
+    if TEMPS != TEMPS_ALL:
+        out.append(f"- TEMPERATURE SLICE: expected grid covers only {TEMPS} of {TEMPS_ALL} "
+                   f"({len(expected_grid(grid))} of {len(LABELS) * len(TEMPS_ALL) * len(VDDS)} cells); "
+                   "a partial PVT grid, not a full corner-box result.")
     out.append("")
     for r in rows:
         w = "n/a" if r["worst_value"] is None else f"{r['worst_value']:.6g} @ {r['worst_cell']}"
@@ -839,6 +844,7 @@ def cmd_summarize(a):
     if cj:
         doc = {"coverage": "complete" if complete else "incomplete", "grid": grid,
                "expected_cells_per_analysis": len(expected_grid(grid)),
+               "temps": list(TEMPS),
                "requested_variants": req, "nf290_grid": nf_grid_text(nf_npts),
                "nf290_npts": nf_npts,
                "counts": {f"{v}/{an}": c for (v, an), c in sorted(counts.items())},
@@ -867,15 +873,17 @@ def _issue_text(i):
 def apply_temps(spec: str) -> None:
     """Restrict the campaign to a temperature slice (issue #258): request() and
     expected_grid() both read TEMPS, so gen and summarize stay in agreement as
-    long as they are given the same --temps. Empty spec = all of TEMPS."""
+    long as they are given the same --temps. Empty spec = all of TEMPS.
+    Validation and filtering run against the frozen TEMPS_ALL (issue #306), so
+    the valid set does not shrink under an already-applied slice."""
     global TEMPS
     if not spec:
         return
     want = [int(t) for t in spec.split(",") if t]
-    bad = [t for t in want if t not in TEMPS]
+    bad = [t for t in want if t not in TEMPS_ALL]
     if bad or not want:
-        raise SystemExit(f"--temps must be a comma list drawn from {TEMPS} (got {spec!r})")
-    TEMPS = [t for t in TEMPS if t in want]
+        raise SystemExit(f"--temps must be a comma list drawn from {TEMPS_ALL} (got {spec!r})")
+    TEMPS = [t for t in TEMPS_ALL if t in want]
 
 
 def main():
