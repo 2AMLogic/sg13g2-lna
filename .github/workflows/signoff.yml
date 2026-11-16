@@ -114,6 +114,9 @@ jobs:
       - name: Grader pin matches the layout flow's klt release
         run: .github/scripts/check-klt-pin.sh
 
+      - name: Pin-gate self-test
+        run: .github/scripts/test-check-klt-pin.sh
+
       - name: Drift-checker self-test
         run: .github/scripts/test-check-signoff.sh
 

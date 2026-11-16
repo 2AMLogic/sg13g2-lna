@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "requests": [
+    {
+      "index": 0,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_noise.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_noise.request",
+      "status": "pass",
+      "job_id": "klt-sim-541914b4f7b9",
+      "job_ids": [
+        "klt-sim-541914b4f7b9"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 1,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_op.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_op.request",
+      "status": "pass",
+      "job_id": "klt-sim-5f2fe2b54c06",
+      "job_ids": [
+        "klt-sim-5f2fe2b54c06"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 2,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_band.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_sp_band.request",
+      "status": "pass",
+      "job_id": "klt-sim-2ce19a9153d2",
+      "job_ids": [
+        "klt-sim-2ce19a9153d2"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 3,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_stab.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_sp_stab.request",
+      "status": "pass",
+      "job_id": "klt-sim-827f2fc4112b",
+      "job_ids": [
+        "klt-sim-827f2fc4112b"
+      ],
+      "attempts": 1
+    }
+  ]
+}

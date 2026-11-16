@@ -159,9 +159,9 @@
       "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 27245,
+      "bytes": 27330,
       "role": "CI workflow",
-      "sha256": "sha256:1c18b794c92ea5c070274eb9fab5f4cf41208031a23958afeb92e4d0a4a3dca4"
+      "sha256": "sha256:2cc45ef7e5d54acef031f69418f9ceb38a49fe72fadb82f0dd3639e72066be00"
     },
     "LICENSE": {
       "bytes": 11358,

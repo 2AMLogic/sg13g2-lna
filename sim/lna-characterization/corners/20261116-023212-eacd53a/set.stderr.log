@@ -1,0 +1,26 @@
+klt sim: warning: batch job bound 13620s (options.timeout_s 900s x 15 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 3 units, each within the ceiling
+klt sim: warning: batch job bound 13620s (options.timeout_s 900s x 15 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 3 units, each within the ceiling
+klt sim: warning: batch job bound 13620s (options.timeout_s 900s x 15 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 3 units, each within the ceiling
+klt sim: warning: batch job bound 13620s (options.timeout_s 900s x 15 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 3 units, each within the ceiling
+klt: batch job klt-sim-541914b4f7b9 submitting to s3://<bucket>/jobs/klt-sim-541914b4f7b9
+klt: batch job klt-sim-827f2fc4112b submitting to s3://<bucket>/jobs/klt-sim-827f2fc4112b
+klt: batch job klt-sim-5f2fe2b54c06 submitting to s3://<bucket>/jobs/klt-sim-5f2fe2b54c06
+klt: batch job klt-sim-2ce19a9153d2 submitting to s3://<bucket>/jobs/klt-sim-2ce19a9153d2
+klt sim: batch job klt-sim-2ce19a9153d2 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_band.request.json): submitted
+klt sim: batch job klt-sim-827f2fc4112b (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_stab.request.json): submitted
+klt sim: batch job klt-sim-541914b4f7b9 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_noise.request.json): submitted
+klt sim: batch job klt-sim-5f2fe2b54c06 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_op.request.json): submitted
+klt sim: batch job klt-sim-2ce19a9153d2 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-2ce19a9153d2`
+klt sim: batch job klt-sim-827f2fc4112b launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-827f2fc4112b`
+klt sim: batch job klt-sim-541914b4f7b9 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-541914b4f7b9`
+klt sim: batch job klt-sim-5f2fe2b54c06 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-5f2fe2b54c06`
+klt sim: batch job klt-sim-2ce19a9153d2 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-827f2fc4112b state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-541914b4f7b9 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-5f2fe2b54c06 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-2ce19a9153d2 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_band.request.json): done
+klt sim: batch job klt-sim-827f2fc4112b (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_stab.request.json): done
+klt sim: batch job klt-sim-541914b4f7b9 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_noise.request.json): done
+klt sim: batch job klt-sim-5f2fe2b54c06 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_op.request.json): running
+klt sim: batch job klt-sim-5f2fe2b54c06 state=running elapsed=31s
+klt sim: batch job klt-sim-5f2fe2b54c06 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_op.request.json): done

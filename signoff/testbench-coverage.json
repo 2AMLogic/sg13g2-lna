@@ -1148,11 +1148,13 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). No NF or stability pass/fail claim: mu_min/max|S22| sit at the 1.0000 sweep edge at every temperature, the |S22| > 1 anomaly stays with #27. No spec row change.",
       "record_ids": [
         "20261106-054735-64b37ae",
         "20261106-055142-64b37ae",
         "20261106-055453-64b37ae",
+        "20261116-022647-eacd53a",
+        "20261116-023212-eacd53a",
         "issue-258-xout-bleed-convergence"
       ],
       "replay_checks": [
@@ -1169,7 +1171,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30 (20261106-055142-64b37ae); its sp_band/sp_stab gap closed 2026-11-16 by the 27 C slice (20261116-022647-eacd53a, 15/15, all analyses pass) and the -40 C slice (20261116-023212-eacd53a, 15/15, all analyses pass); nominal-cell match delta vs pre-bleed record 20261101-023246-5bbb70c: in-band worst S11 +0.0039 dB, S22 +0.0076 dB — a cross-engine delta (pre-bleed side run_lna_sweep.sh on local ngspice-46; post-bleed side the matched variant on ngspice-47/KLU on the fleet), read as an upper bound on the bleed's effect, not a same-harness measurement. Convergence write-up: issue-258-xout-bleed-convergence, updated additively by issue-258-xout-bleed-convergence-20261116.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
