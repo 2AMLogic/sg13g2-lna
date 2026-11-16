@@ -213,7 +213,13 @@ if side is not None:
 #    issue #201 supplies one. One-sided or inconsistent: fails, naming it.
 NATIVE_REPORT = "native_drc_report.json"
 NATIVE_SIDE = "native_drc_inputs.json"
-NATIVE_STATUSES = ("clean", "violations", "coverage_unknown")
+# Same completed-run vocabulary as STATUSES in layout/run_native_drc.py and
+# layout/native_drc_identity.py, kept in sync on purpose (test_native_drc.py
+# pins all three equal): a token the runner publishes and the identity binds
+# must not fail this gate, or a partial/no-verdict native run would be
+# discarded one gate later than the defect issue #290 fixes.
+NATIVE_STATUSES = ("clean", "clean_partial", "violations",
+                   "coverage_unknown", "not_checked")
 
 def vtuple(s):
     m = re.search(r"\d+(?:\.\d+)+", s)
