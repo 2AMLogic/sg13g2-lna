@@ -22,19 +22,35 @@ runner's `--batch-set` path with `--wait-for-capacity 600` / `--capacity-retries
 landed in `aba06ed` (2026-11-14), eight days **after** the two `batch_no_capacity` rejections above, which
 is why this attempt was made rather than slicing the grid further. Both slices completed with every job
 `state done` / `status pass` and no capacity rejection. No local ngspice run replaced any failed submit.
+The `op` request on both 2026-11-16 slices (`klt-sim-315d960c58b5`, `klt-sim-5f2fe2b54c06`) arrived with
+the runner's `--batch-set` path as additive operating-point evidence: the issue's "Post-#259 remaining
+scope" listed the `matched` variant's `op` request as out of scope, and these runs do not widen the
+campaign past the 30 named cells (15 + 15; no 45-cell `matched` run was added).
 
 ## Nominal-cell match delta (bleed vs. pre-bleed)
 
 Post-bleed minus pre-bleed, in-band **worst** S11 / S22 (the only S-parameter summary the pre-bleed
 record carries: max |S| dB over the 11-point 2.4-2.4835 GHz grid), at the nominal cell typ / 27 C /
-VDD = 1.80 V, both sides through the same `matched` variant of `lna_variant_campaign.py`:
+VDD = 1.80 V. The two sides are **not** the same harness run twice: the pre-bleed side is
+`run_lna_sweep.sh` from `testbench/tb_lna_sparam.spice.tmpl`, run locally on **ngspice-46** (3
+invocations, one at a time); the post-bleed side is `lna_variant_campaign.py`'s `matched` variant on
+the Spot batch fleet under **ngspice-47 (KLU direct solver)**. What *is* identical, and what makes
+the subtraction meaningful, is the measured quantity's definition: 50 Ohm `portnum`/`z0` port sources
+at both ports (`Vp1 pin 0 dc 0 ac 1 portnum 1 z0 50` / `Vp2 pout 0 dc 0 ac 0 portnum 2 z0 50` in
+both decks), `sp lin 11 2.4e9 2.4835e9 1`, in-band worst taken as `vecmax(db(s_1_1))` /
+`vecmax(db(s_2_2))` (the pre-bleed record's "max |S| dB over the 11-point grid" is that same
+quantity), `.options gmin=1e-10`, DUT inlined verbatim. The engine difference (ngspice 46 -> 47,
+local -> fleet, different linear solver) is therefore folded into the delta below and is not
+separately bounded; the ~4 mdB / ~8 mdB result should be read as an **upper bound** on the bleed's
+effect — consistent with the 0.05 % shunt-admittance estimate below — rather than as a measurement
+of the bleed alone.
 
 | Quantity | Pre-bleed (`20261101-023246-5bbb70c`, DUT sha256 `2575cbbc0045...`) | Post-bleed (`20261116-022647-eacd53a`, DUT sha256 `151aec66ade8...`) | Delta |
 |---|---|---|---|
 | In-band worst S11 [dB] | -11.5509 | -11.5470 | **+0.0039 dB** |
 | In-band worst S22 [dB] | -15.6090 | -15.6014 | **+0.0076 dB** |
 
-The bleed moves nominal in-band matching by ~4 mdB / ~8 mdB — negligible, as designed: 100 kOhm is
+The ~4 mdB / ~8 mdB delta is negligible, as designed: 100 kOhm is
 10 uS against the 50 Ohm port's 20 mS (about 0.05 % shunt admittance at any in-band frequency). The
 baseline is the committed single-cell record `20261101-023246-5bbb70c`, **not** `20261101-104711-4d7f140`
 (that run was a `noise` request stopped before any `sp` analysis, so it has no S11/S22; see the issue's
