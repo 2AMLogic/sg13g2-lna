@@ -35,19 +35,27 @@ taxonomy. The DUT committed on `main` today is
 DR-0003 flat-reference core + `lp_noise` matching network + DC bleed on
 xout); only the records listing that sha are `present-dut`.
 
-| Record | DUT sha256 (first 16) | The circuit it characterizes | Standing |
-|---|---|---|---|
-| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23, commit `988b474`) | **historical-dut** |
-| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34, commit `f718094`) | **historical-dut** |
-| `20260926-122301-088c734` | `23f9445b01dbec99` | **DR-0003 flat-reference bias core**, pre-match (issue #33 / PR #40, commit `e25df3b`) | **historical-dut** |
-| `20261101-023117-5bbb70c` | `f58b6a1a37baf31c` | DR-0003 core + hand-rounded matching-network draft — **no commit of `design/netlist/lna.spice` on `main` hashes to this sha** (see below) | **historical-dut** |
-| `20261101-023246-5bbb70c` | `2575cbbc00459b60` | DR-0003 core + `lp_noise` matching network, **pre-bleed** (commit `b8ad5d3`) | **historical-dut** |
-| `20261106-054735-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim, no inductor edit (`dd6c5be`) | **present-dut** |
-| `20261106-055142-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
-| `20261106-055453-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
-| `20261114-025351-7a54cc2` | `2575cbbc00459b60` | issue #56 inductor-loss variant campaign (6 variants incl. `ideal`) on the **pre-bleed** DUT (`b8ad5d3`) — a variant study of a superseded circuit; both facts hold | **variant-exploration** |
-| `20261116-022647-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
-| `20261116-023212-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
+| Record | DUT sha256 (first 16) | The circuit it characterizes | Coverage | Standing |
+|---|---|---|---|---|
+| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23, commit `988b474`) | full grid (45/45 cells) | **historical-dut** |
+| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34, commit `f718094`) | full grid (45/45 cells) | **historical-dut** |
+| `20260926-122301-088c734` | `23f9445b01dbec99` | **DR-0003 flat-reference bias core**, pre-match (issue #33 / PR #40, commit `e25df3b`) | full grid (45/45 cells) | **historical-dut** |
+| `20261101-023117-5bbb70c` | `f58b6a1a37baf31c` | DR-0003 core + hand-rounded matching-network draft — **no commit of `design/netlist/lna.spice` on `main` hashes to this sha** (see below) | smoke — plumbing check, **not** a PVT campaign (3/3 points) | **historical-dut** |
+| `20261101-023246-5bbb70c` | `2575cbbc00459b60` | DR-0003 core + `lp_noise` matching network, **pre-bleed** (commit `b8ad5d3`) | smoke — plumbing check, **not** a PVT campaign (3/3 points) | **historical-dut** |
+| `20261106-054735-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim, no inductor edit (`dd6c5be`) | single-temperature slice (125 °C, 15/45 cells) | **present-dut** |
+| `20261106-055142-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **coverage incomplete** (−40/27 °C, 30 cells; 32 validation issues) — quote nothing from it | **present-dut** |
+| `20261106-055453-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **failed** — reduction failed, no reports, no summary — quote nothing from it | **present-dut** |
+| `20261114-025351-7a54cc2` | `2575cbbc00459b60` | issue #56 inductor-loss variant campaign (6 variants incl. `ideal`) on the **pre-bleed** DUT (`b8ad5d3`) — a variant study of a superseded circuit; both facts hold | full grid per variant (6 × 45 cells) | **variant-exploration** |
+| `20261116-022647-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (27 °C, 15/45 cells) | **present-dut** |
+| `20261116-023212-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (−40 °C, 15/45 cells) | **present-dut** |
+
+The `Coverage` column is run status, not DUT taxonomy (taxonomy is the
+`Standing` column alone): a `full grid` record spans all 45 PVT cells of
+§PVT grid and corner scope, a `single-temperature slice` is 15 of those 45
+cells at one temperature — three such slices on the same DUT only assemble a
+full grid as a *set* — a `smoke` record is the plumbing check of §Regenerating
+(not a campaign), and a `coverage incomplete` / `failed` record
+carries no quotable PVT evidence at all.
 
 The headline numbers, findings narrative and every figure quoted below are
 from record `20260926-122301-088c734` — the DR-0003 re-baseline under issue
@@ -67,7 +75,7 @@ commit on `main`** — its provenance is not traced. The circuit it ran is
 still inspectable in the record's committed decks
 (`netlist-snapshots/20261101-023117-5bbb70c/`): content-wise it is the
 DR-0003 core plus an intermediate, hand-rounded matching-network draft —
-the `Lb`/`Rlb`/`Cpin`/`Cpout`/`Csout` values are 3-significant-digit
+the `Lb`/`Rlb`/`Cpin`/`Cpout`/`Csout` values are 3–4-significant-digit
 roundings of `b8ad5d3`'s, without `b8ad5d3`'s `Rle`/`Rlc` loss resistors.
 Do not cite it for any committed circuit.
 
@@ -1129,9 +1137,17 @@ result use the committed 45-cell record instead.
 
 ## What these numbers do and do not license
 
-**Do**: treat the `present-dut` records (`20261106-*-64b37ae`,
-`20261116-*-eacd53a`) as the evidence base for any statement about the DUT
-committed on `main`, and treat record `20260926-122301-088c734` as what it
+**Do**: treat the three complete `present-dut` slices — `20261106-054735-64b37ae`
+(125 °C), `20261116-022647-eacd53a` (27 °C) and `20261116-023212-eacd53a`
+(−40 °C) — as the evidence base for any statement about the DUT committed on
+`main`. Each is a one-temperature 15/45-cell slice of the same harness on the
+same committed DUT; only the three *together* span the full PVT grid, so a
+full-grid claim must cite all three, and a claim drawn from any one of them
+alone is a single-temperature claim. The other two `64b37ae` runs are **not**
+evidence and nothing may be quoted from either: `20261106-055142-64b37ae`
+ended coverage incomplete (32 validation issues, no complete-grid claim) and
+`20261106-055453-64b37ae` failed before producing any report. Also treat
+record `20260926-122301-088c734` as what it
 is — the pre-match baseline; use `NFmin` and the measured operating point to
 size the *missing* input matching network — and to argue about whether the
 ratified NF row is reachable at this bias point at all (it is not, see
