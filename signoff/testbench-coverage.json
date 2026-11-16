@@ -1153,7 +1153,8 @@
         "20261106-054735-64b37ae",
         "20261106-055142-64b37ae",
         "20261106-055453-64b37ae",
-        "issue-258-xout-bleed-convergence"
+        "issue-258-xout-bleed-convergence",
+        "20261116-190440-9cd8cdc"
       ],
       "replay_checks": [
         "sim/lna-characterization/tests/test_lna_variant_campaign.py"
@@ -1169,7 +1170,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence. Erratum 20261116-190440-9cd8cdc withdraws the unqualified full-grid reading of 20261106-054735-64b37ae (it is the 125 C slice only).",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
