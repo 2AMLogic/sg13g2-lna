@@ -6,6 +6,8 @@
 
 ### 2026-11-16
 
+- **PR #323**: ci: fail audit suite on absent klt under CI
+- **Issue #307** (closed): test-design-source-audit.sh still SKIPs green in CI when klt is absent from PATH (not just wrong-version)
 - **PR #296**: fix(layout): accept clean_partial and not_checked native DRC verdicts across all three gates
 - **PR #304**: ci: gate KLAYOUT_PIN and derive the audit suite's expected klt release
 - **PR #314**: sim: land the matched DUT's -40/27 C PVT slices and the bleed match delta
