@@ -49,6 +49,32 @@ class EnvelopeRfTests(unittest.TestCase):
         for a, b in zip(s, back):
             self.assertAlmostEqual(abs(a - b), 0.0, places=12)
 
+    def test_gain_in_match_db(self):
+        # Matched input (|s11| = 0) adds nothing: the figure is just |S21|_dB.
+        self.assertAlmostEqual(rf.gain_in_match_db(0, 10), 20.0, places=12)
+        self.assertAlmostEqual(rf.gain_in_match_db(0j, 1), 0.0, places=12)
+        # |s11|^2 = 0.5 adds exactly 3.0103 dB of input-match uplift.
+        r = math.sqrt(0.5)
+        self.assertAlmostEqual(rf.gain_in_match_db(r, 1),
+                               10 * math.log10(2.0), places=12)
+        # It is the INPUT-match-only metric: unlike ga_max_db it cannot see
+        # the output port, so it sits exactly 10*log10(1 - |s22|^2) above it.
+        s11, s12, s21, s22 = 0.1 + 0.2j, 0.0, 10.0, 0.3 - 0.4j
+        self.assertAlmostEqual(
+            rf.gain_in_match_db(s11, s21)
+            - 10 * math.log10(1 - abs(s22) ** 2),
+            rf.ga_max_db(s11, s12, s21, s22), places=12)
+        # ...which makes it the LOWER of the two whenever an output mismatch
+        # exists, the ordering README.md "Three gain metrics" relies on.
+        self.assertLess(rf.gain_in_match_db(s11, s21),
+                        rf.ga_max_db(s11, s12, s21, s22))
+        # Phase-independent: only the magnitudes enter.
+        self.assertAlmostEqual(rf.gain_in_match_db(0.5j, -10),
+                               rf.gain_in_match_db(0.5, 10), places=12)
+        # A fully reflecting input has no finite conjugate-match uplift.
+        with self.assertRaises(ValueError):
+            rf.gain_in_match_db(1.0, 10)
+
     def test_ga_max_db(self):
         self.assertAlmostEqual(rf.ga_max_db(0, 0, 10, 0), 20.0, places=12)
         # |s11|^2 = 0.5 and |s22|^2 = 0.5 each add 3.0103 dB
