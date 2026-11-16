@@ -5,7 +5,7 @@
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#317**: chore(loom): resync installed Loom to v0.19.1302
+_None._
 
 ## Very Important
 
@@ -27,28 +27,28 @@ Human-approved issues ready for implementation (`loom:issue`).
 - **#305**: design/README.md misstates which xschem generated the committed netlist
 - **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence
 - **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift
-- **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
 - **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323)
 - **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration'
+- **#329**: lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#300**: Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh
-- **#306**: lna_variant_campaign: --temps slicing has no unit test; a narrower summarize slice under-checks coverage silently
+- **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#332**: chore(loom): resync installed Loom to v0.19.1305
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#317**: chore(loom): resync installed Loom to v0.19.1302
+_None._
 
 ## Proposed
 
@@ -61,12 +61,12 @@ Issues carrying `loom:curated`.
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
 - **#300**: Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh *(curated)*
 - **#305**: design/README.md misstates which xschem generated the committed netlist *(curated)*
-- **#306**: lna_variant_campaign: --temps slicing has no unit test; a narrower summarize slice under-checks coverage silently *(curated)*
 - **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence *(curated)*
 - **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift *(curated)*
 - **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins *(curated)*
 - **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323) *(curated)*
 - **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration' *(curated)*
+- **#329**: lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -82,13 +82,13 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 7 |
 | In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 13 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
