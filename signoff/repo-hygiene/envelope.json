@@ -2,7 +2,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:b1a15173196e560a5391a711cf95d63108d4afb2db60dbe5679b2a3c0a50e06c",
+      "content_hash": "sha256:86369d01b1d7b505f5c67219214242c09f03db1e514f5e62d578b8604a66d4e0",
       "path": "signoff/repo-hygiene/inventory.json"
     }
   },

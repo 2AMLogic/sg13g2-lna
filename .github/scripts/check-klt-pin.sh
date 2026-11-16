@@ -2,7 +2,8 @@
 # check-klt-pin.sh — fail when the klt release that grades the signoff
 # (.github/workflows/signoff.yml) differs from the one that mints the cited
 # layout evidence (layout/run_flow.sh KLT_RELEASE), so the skew of issue #100
-# cannot recur silently. Also checks check-signoff.sh and signoff/README.md.
+# cannot recur silently. Also checks check-signoff.sh, signoff/README.md and
+# the KLayout engine pin KLAYOUT_PIN (issue #294).
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 [ "${1:-}" = "--root" ] && [ -n "${2:-}" ] && ROOT="$2"
@@ -15,6 +16,13 @@ rc=0
 runner="$(sed -n 's/^KLT_RELEASE = "\([0-9][0-9.]*\)".*$/\1/p' layout/run_native_drc.py)"
 [ -n "$runner" ] || { echo "FAIL: no KLT_RELEASE in layout/run_native_drc.py" >&2; rc=1; }
 [ "$runner" = "$flow" ] || { echo "FAIL: layout/run_native_drc.py pins '${runner:-nothing}', layout/run_flow.sh KLT_RELEASE is $flow" >&2; rc=1; }
+# issue #294: the same two sites also share the KLayout engine pin
+# (uvx --with klayout==$KLAYOUT_PIN); keep them from skewing the same way.
+kflow="$(sed -n 's/^KLAYOUT_PIN="\([0-9][0-9.]*\)"$/\1/p' layout/run_flow.sh)"
+[ -n "$kflow" ] || { echo "FAIL: no KLAYOUT_PIN in layout/run_flow.sh" >&2; rc=1; }
+krunner="$(sed -n 's/^KLAYOUT_PIN = "\([0-9][0-9.]*\)".*$/\1/p' layout/run_native_drc.py)"
+[ -n "$krunner" ] || { echo "FAIL: no KLAYOUT_PIN in layout/run_native_drc.py" >&2; rc=1; }
+[ "$krunner" = "$kflow" ] || { echo "FAIL: layout/run_native_drc.py pins KLayout '${krunner:-nothing}', layout/run_flow.sh KLAYOUT_PIN is ${kflow:-nothing}" >&2; rc=1; }
 for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md; do
   pins="$(grep -o 'klayout-tools==[0-9][0-9.]*' "$f" | sort -u | tr '\n' ' ')"
   [ "$pins" = "klayout-tools==$flow " ] || {
