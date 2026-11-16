@@ -1,0 +1,11 @@
+klt sim: warning: batch job bound 27120s (options.timeout_s 900s x 30 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 10 to run one job per shard of at most 3 units, each within the ceiling
+klt: batch job klt-sim-9a0aa2959809 submitting to s3://<bucket>/jobs/klt-sim-9a0aa2959809
+klt sim: batch job klt-sim-9a0aa2959809: submitted
+{
+  "schema_version": 1,
+  "error": {
+    "command": "sim",
+    "message": "batch backend failed: batch-fleet-provision.sh launch failed (exit 1): error: 256 vCPU already running + 1 instance(s) of up to 32 vCPU exceeds BATCH_MAX_VCPU=224, and only 0 type(s) fit the -32 vCPU left (floor 3) \u2014 the spot quota is shared with ci-spot (batch-fleet.md \u00a7vCPU budget)",
+    "code": "batch_no_capacity"
+  }
+}

@@ -33,13 +33,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:1b4d4b3080f37c1e7cd9099552f4413ae135007618ab08f3945d2fe1f20f4a4e",
+        "content_hash": "sha256:5696a4709a005d03409407c6c37f3c4d3e289865e32cc0b8a575ef92af6731fb",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:1b4d4b3080f37c1e7cd9099552f4413ae135007618ab08f3945d2fe1f20f4a4e",
+          "content_hash": "sha256:5696a4709a005d03409407c6c37f3c4d3e289865e32cc0b8a575ef92af6731fb",
           "input_verified": true,
           "members": [
             {
@@ -47,7 +47,7 @@
                 "path": "design/lna.sch",
                 "scope": "repo"
               },
-              "content_hash": "sha256:8a747194ea7d995e540c0da81c824f01b7c28283334ad2cee0530d6146d40be0",
+              "content_hash": "sha256:67e9dab242883e39234b1d5c1be9125778d08b7f0addd85a16a06f94b44db560",
               "status": "verified"
             },
             {
@@ -63,7 +63,7 @@
                 "path": "design/netlist/lna.spice",
                 "scope": "repo"
               },
-              "content_hash": "sha256:2575cbbc00459b60cbe05704f240f1c742880286444d01bd2053ddc081b731ae",
+              "content_hash": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
               "status": "verified"
             },
             {
@@ -79,7 +79,7 @@
                 "path": "signoff/attest/item1.json",
                 "scope": "repo"
               },
-              "content_hash": "sha256:4a0a79ca00b9dd4a4d6afbf380a0b7ebefd156b7e7bb60c18614bc71c8b54787",
+              "content_hash": "sha256:035c16558b50f55301b356cfd74df7ac779b4c0d9ad6959f4005d4d99ecc8b1c",
               "status": "verified"
             }
           ],
@@ -200,7 +200,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:45a6e2e9553f3e9505f0ebed9181470babef03a31eb931573150719872544a76",
+        "content_hash": "sha256:df155c62a37ddef70fcbc38ca429de73014d77fef737f9084f841e114ae8e031",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -209,7 +209,7 @@
             "path": "signoff/attest/item9.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:45a6e2e9553f3e9505f0ebed9181470babef03a31eb931573150719872544a76",
+          "content_hash": "sha256:df155c62a37ddef70fcbc38ca429de73014d77fef737f9084f841e114ae8e031",
           "input_verified": true,
           "summary": "T1 item 9 (Testbenches shipped): 25/25 attestation checks passed (klt signoff --attest)",
           "source": "signoff/attest/item9.json",

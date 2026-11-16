@@ -164,12 +164,15 @@ step "artifact-manifests: check" python3 -I .github/scripts/check-artifact-manif
 # --- job: netlist-freshness
 step "netlist-freshness: self-test" .github/scripts/test-check-netlist-freshness.sh
 step "netlist-freshness: check" python3 -I .github/scripts/check-netlist-freshness
+step "netlist-freshness: floating-node guard self-test" .github/scripts/test-check-floating-nodes.sh
+step "netlist-freshness: floating-node guard" python3 -I .github/scripts/check-floating-nodes
 
-# --- job: netlist-regen (issue #138; needs xschem 3.4.4 + the pinned PDK,
-# never installed here -- CI provisions them via block-scalar steps)
+# --- job: netlist-regen (issue #138; needs xschem 3.4.7 + the pinned PDK,
+# only when the host has both -- CI provisions them via install-xschem and
+# a block-scalar fetch step)
 regen_pdk=0
 if command -v xschem >/dev/null 2>&1 \
-  && xschem --version 2>&1 | grep -q 'XSCHEM V3\.4\.4'; then
+  && xschem --version 2>&1 | grep -q 'XSCHEM V3\.4\.7'; then
   for c in "${PDK_ROOT:-}" /usr/share/pdk /usr/local/share/pdk "$HOME/share/pdk" "$HOME/.ciel" "$HOME/.volare"; do
     if [ -n "$c" ] && [ -f "$c/ihp-sg13g2/libs.tech/xschem/xschemrc" ]; then
       export PDK_ROOT="$c" PDK=ihp-sg13g2; regen_pdk=1; break
@@ -181,8 +184,8 @@ if [ "$regen_pdk" -eq 1 ]; then
   step "netlist-regen: check" .github/scripts/check-netlist-regen
   step "netlist-regen: source audit bound to live tools" .github/scripts/design-source-audit check --live-tools
 else
-  skip "netlist-regen: self-test (need xschem 3.4.4 and the SG13G2 PDK; CI provisions both)"
-  skip "netlist-regen: check (need xschem 3.4.4 and the SG13G2 PDK)"
+  skip "netlist-regen: self-test (need xschem 3.4.7 and the SG13G2 PDK; CI provisions both)"
+  skip "netlist-regen: check (need xschem 3.4.7 and the SG13G2 PDK)"
 fi
 
 # --- job: design-source-audit (issue #182; klt cases of the self-test SKIP

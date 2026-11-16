@@ -1,0 +1,47 @@
+* klt sim -- generated corner deck, do not edit
+.lib /var/tmp/eda-job-klt-sim-313184ef752c/inputs/cornerHBT.lib hbt_typ
+.lib /var/tmp/eda-job-klt-sim-313184ef752c/inputs/cornerMOShv.lib mos_fs
+.include /var/tmp/eda-job-klt-sim-313184ef752c/inputs/netlist.cir
+.temp 27
+.control
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save all
+alter vdd=1.8
+noise v(nfout) vin lin 11 2.4e+09 2.4835e+09
+let inoise_spectrum = noise1.inoise_spectrum
+let onoise_spectrum = noise1.onoise_spectrum
+let nf290_db_lo = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[0]
+print nf290_db_lo
+let nf290_db_mid = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[5]
+print nf290_db_mid
+let nf290_db_hi = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[10]
+print nf290_db_hi
+let nf290_db_worst = vecmax(10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))
+print nf290_db_worst
+let nf290_db_f00 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[0]
+print nf290_db_f00
+let nf290_db_f01 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[1]
+print nf290_db_f01
+let nf290_db_f02 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[2]
+print nf290_db_f02
+let nf290_db_f03 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[3]
+print nf290_db_f03
+let nf290_db_f04 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[4]
+print nf290_db_f04
+let nf290_db_f05 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[5]
+print nf290_db_f05
+let nf290_db_f06 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[6]
+print nf290_db_f06
+let nf290_db_f07 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[7]
+print nf290_db_f07
+let nf290_db_f08 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[8]
+print nf290_db_f08
+let nf290_db_f09 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[9]
+print nf290_db_f09
+let nf290_db_f10 = (10*log10(1 + (noise1.inoise_spectrum^2)/(4*1.380649e-23*290*50)))[10]
+print nf290_db_f10
+quit
+.endc
+.end

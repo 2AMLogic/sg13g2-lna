@@ -144,6 +144,13 @@ OP_MEASUREMENTS = [
     ("pdc", "v(vdd)*(-i(vdd))", "W"),
 ]
 
+# Bias-attribution bound (README "Bias confound"): if a variant's I_C1 is
+# within +/- this many percent of `ideal` at every cell, its RF deltas are
+# attributable to inductor loss alone; beyond it they are not. Single-sourced
+# here so the threshold comparison and the headline text that quotes it
+# cannot drift apart. Changing the value is a spec change (README).
+IC1_ATTRIB_PCT = 0.05
+
 LE_LINE = "Le e1 vss 1n m=1"
 LC_LINE = "Lc vdd outn 5n m=1"
 
@@ -788,8 +795,8 @@ def cmd_summarize(a):
                         pcts.append((100.0 * (val - b) / b, k))
                 if pcts:
                     worst = max(pcts, key=lambda t: abs(t[0]))
-                    if abs(worst[0]) < 0.05:
-                        lines.append("- Bias attribution: I_C1 within +/-0.05 % of `ideal` at every cell "
+                    if abs(worst[0]) < IC1_ATTRIB_PCT:
+                        lines.append(f"- Bias attribution: I_C1 within +/-{IC1_ATTRIB_PCT} % of `ideal` at every cell "
                                      "-- the deltas above are inductor loss, not a bias shift.")
                     else:
                         lines.append(
@@ -800,6 +807,9 @@ def cmd_summarize(a):
                             "degeneration. See README 'Bias confound'.")
                 elif base_ic1:
                     lines.append("- Bias attribution: no per-cell `ideal` I_C1 to compare against.")
+                else:
+                    lines.append("- Bias attribution: I_C1 not computed -- no `ideal` `op` I_C1 "
+                                 "to attribute against; the RF deltas above are unattributed.")
         lines.append("")
     complete = not issues
     banner = []
@@ -854,8 +864,24 @@ def _issue_text(i):
     return " ".join(parts)
 
 
+def apply_temps(spec: str) -> None:
+    """Restrict the campaign to a temperature slice (issue #258): request() and
+    expected_grid() both read TEMPS, so gen and summarize stay in agreement as
+    long as they are given the same --temps. Empty spec = all of TEMPS."""
+    global TEMPS
+    if not spec:
+        return
+    want = [int(t) for t in spec.split(",") if t]
+    bad = [t for t in want if t not in TEMPS]
+    if bad or not want:
+        raise SystemExit(f"--temps must be a comma list drawn from {TEMPS} (got {spec!r})")
+    TEMPS = [t for t in TEMPS if t in want]
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    temps_help = ("temperature slice, e.g. --temps=125 (default: all of -40,27,125). Pass the same "
+                  "value to gen and summarize; a slice is a partial grid, not a PVT campaign")
     sub = p.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("gen")
     g.add_argument("--outdir", required=True)
@@ -864,6 +890,7 @@ def main():
     g.add_argument("--backend", default="")
     g.add_argument("--nf-npts", type=int, default=N_NF,
                    help=f"points of the 290 K NF sweep (odd, >= {N_BAND}); default {N_NF}")
+    g.add_argument("--temps", default="", help=temps_help)
     g.set_defaults(fn=cmd_gen)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
@@ -877,8 +904,10 @@ def main():
                    help="NF grid the reports were generated with (must match gen)")
     s.add_argument("--variants", default="",
                    help="comma list of variants that must be complete (default: ideal + any present)")
+    s.add_argument("--temps", default="", help=temps_help)
     s.set_defaults(fn=cmd_summarize)
     a = p.parse_args()
+    apply_temps(a.temps)
     sys.exit(a.fn(a) or 0)
 
 
