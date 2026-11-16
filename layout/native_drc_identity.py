@@ -34,7 +34,9 @@ from pathlib import Path
 SCHEMA = "sg13g2-lna.native-drc/1"
 NAME = "native_drc_inputs.json"
 REPORT = "native_drc_report.json"
-# The completed-run status tokens klt's native engine can emit. Duplicated
+# The completed-run status tokens these gates accept from klt's rollup
+# vocabulary (run_native_drc.py's rationale records which of them
+# --engine klayout emits today — issue #312). Duplicated
 # from run_native_drc.py on purpose (which carries the rationale): `python3
 # -I` does not put this script's directory on sys.path, so this script
 # cannot import its sibling. The vocabulary exists in three places that

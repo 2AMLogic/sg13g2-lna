@@ -36,14 +36,21 @@ Prerequisites, all explicit:
   - The IHP PDK install ($PDK_ROOT, or --pdk-root) so klt can resolve the
     native deck for --pdk (default ihp-sg13g2).
 
-Completed-run exit semantics (verified against the klt 0.9.2 release docs):
-`klt drc --engine klayout` exits 0 for clean and clean_partial (every rule
-that ran passed, but the deck's requested rule coverage was partial), 3 for
-violations, and 4 for coverage_unknown and not_checked. coverage_unknown is
+Completed-run exit semantics (exit mapping verified against the klt 0.9.2
+release docs): `klt drc --engine klayout` exits 0 for clean and
+clean_partial (every rule that ran passed, but the deck's requested rule
+coverage was partial), 3 for violations, and 4 for coverage_unknown and
+not_checked. coverage_unknown is
 zero findings without a caller-vouched rule-category assertion, which is
 how a genuinely clean layout looks until someone supplies a reviewed
 --expect-rule-categories(-file) list; not_checked means the deck checked
-nothing. All five are completed runs and are published verbatim with the
+nothing. Accepted is not reachable: measured against the pinned producer
+itself (klayout-tools 0.9.2, issue #312) the klayout engine never
+populates coverage.skipped, so a --engine klayout run reaches clean,
+violations, coverage_unknown and not_checked today but not clean_partial —
+that token is accepted here for forward compatibility with klt's rollup
+contract and would arrive with exit 0 the moment klt populates skipped.
+All five are completed runs and are published verbatim with the
 report's own status — a partial or no-verdict token is recorded as honest
 evidence, not as a full-scope pass (see the scope note in layout/README.md).
 Any other klt exit is a failed run: nothing is published.
@@ -83,11 +90,15 @@ KLAYOUT_PIN = "0.30.12"
 REPORT_NAME = "native_drc_report.json"
 SIDE_NAME = "native_drc_inputs.json"
 STAGING = REPORT_NAME + ".tmp"
-# The completed-run status tokens klt's native engine can emit, from its
-# total coverage rollup via rollup_status(success="clean",
-# failure="violations"): clean_partial (klt exit 0) and not_checked (exit 4)
-# arrive with an exit code COMPLETED_RC already classifies as a completed
-# run, so this gate must accept them or it discards honest runs. The
+# The completed-run status tokens this gate accepts, from klt's total
+# coverage rollup via rollup_status(success="clean",
+# failure="violations"): each carries an exit code COMPLETED_RC already
+# classifies as a completed run, so the gate must accept all of them or it
+# discards honest runs. Accepted is not reachable: measured on pinned
+# klayout-tools 0.9.2 (issue #312) the klayout engine never populates
+# coverage.skipped, so --engine klayout emits four of the five today —
+# clean_partial is accepted for forward compatibility and would arrive
+# with exit 0 the moment klt populates skipped. The
 # vocabulary exists in three places that must move together: here, the
 # identity copy in native_drc_identity.py, and NATIVE_STATUSES in the
 # freshness gate .github/scripts/check-layout-freshness — test_native_drc.py

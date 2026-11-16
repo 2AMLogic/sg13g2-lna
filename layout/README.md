@@ -235,7 +235,9 @@ pair beside the curated evidence:
 
 - `lna_core/native_drc_report.json` — the `klt drc --engine klayout --pdk
   ihp-sg13g2` envelope, verbatim (`clean`, `clean_partial`, `violations`,
-  `coverage_unknown` or `not_checked`);
+  `coverage_unknown` or `not_checked` — the accepted completed-run set; on
+  klayout-tools 0.9.2 the engine itself does not emit `clean_partial`,
+  which is accepted for forward compatibility, issue #312);
 - `lna_core/native_drc_inputs.json` — written by
   `layout/native_drc_identity.py` only after a completed run, binding the
   report's exact bytes to the GDS, to the PDK/deck identity the report
@@ -273,13 +275,19 @@ Prerequisites, all explicit:
 - **The IHP PDK install** (`$PDK_ROOT`, or `--pdk-root`) so klt resolves
   the native deck for `--pdk ihp-sg13g2`.
 
-Completed-run semantics (per the klt 0.9.2 release docs): `klt drc --engine
-klayout` exits 0 for clean and `clean_partial` (every rule that ran passed,
-but the deck's requested rule coverage was partial), 3 for violations, and
-4 for `coverage_unknown` — zero findings without a caller-vouched
-rule-category assertion, which is how a genuinely clean layout looks until
-a reviewed `--expect-rule-categories-file` is supplied — and `not_checked`
-(the deck checked nothing). The runner publishes all five verbatim with
+Completed-run semantics (exit mapping per the klt 0.9.2 release docs):
+`klt drc --engine klayout` exits 0 for clean and `clean_partial` (every
+rule that ran passed, but the deck's requested rule coverage was partial),
+3 for violations, and 4 for `coverage_unknown` — zero findings without a
+caller-vouched rule-category assertion, which is how a genuinely clean
+layout looks until a reviewed `--expect-rule-categories-file` is supplied
+— and `not_checked` (the deck checked nothing). Accepted is not the same
+as reachable: measured against the pinned producer itself (klayout-tools
+0.9.2, issue #312), the klayout engine never populates `coverage.skipped`,
+so a run reaches clean, `violations`, `coverage_unknown` and `not_checked`
+today but not `clean_partial` — the gate accepts that token for forward
+compatibility with klt's rollup contract, and it would arrive with exit 0
+the moment klt populates `skipped`. The runner publishes all five verbatim with
 the report's own status, so a `clean` native claim always traces to an
 explicit recorded assertion in the binding's `argv`. **Honest-status
 caveat**: a published `clean_partial`, `coverage_unknown` or `not_checked`
@@ -525,7 +533,9 @@ evidence (the partial-scope guard above still applies);
    a one-sided pair fails, and a present pair must: bind the report's exact
    bytes (`report_sha256`) and the committed GDS (`gds`/`gds_sha256`); agree
    with the report's own `status` (one of clean / clean_partial /
-   violations / coverage_unknown / not_checked) and with the deck and PDK
+   violations / coverage_unknown / not_checked — the accepted set; on klt
+   0.9.2 the klayout engine does not emit `clean_partial`, which is
+   accepted for forward compatibility) and with the deck and PDK
    identity in the report's
    provenance (`deck_binding`/`pdk_binding`); record a non-empty klt identity
    and argv; and record a standalone executable version (`klayout_exe_version`)
