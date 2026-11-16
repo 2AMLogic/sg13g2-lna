@@ -6,4 +6,4 @@
 
 20260921-154716-f718094 intentional historical citation: ratified DR-0003 text (kept verbatim, corrected by its 2026-10-10 erratum) and the root README mismatch disclosure; the real Stage-1 record is 20260921-160018-a46ed37 (#70)
 
-20261101-104711-4d7f140 id quoted from issue #258 / the #27 note as the 27 C converged-cell baseline; no evidence for it is committed under sim/, so the record at sim/lna-characterization/records/issue-258-xout-bleed-convergence.md leaves the nominal match delta unclaimed (#258)
+20261101-104711-4d7f140 id quoted from issue #258 / the #27 note and cited by sim/lna-characterization/records/issue-258-xout-bleed-convergence.md and its 2026-11-16 addendum issue-258-xout-bleed-convergence-20261116.md as the **rejected** baseline: it was a noise-only run stopped before sp_band/sp_stab, so it has no committed S-parameter evidence; the nominal match delta was claimed 2026-11-16 against 20261101-023246-5bbb70c instead (#258)

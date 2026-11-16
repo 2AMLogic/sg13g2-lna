@@ -1550,7 +1550,7 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). No NF or stability pass/fail claim: mu_min/max|S22| sit at the 1.0000 sweep edge at every temperature, the |S22| > 1 anomaly stays with #27. No spec row change.",
       "records": [
         {
           "corners": {
@@ -1603,6 +1603,40 @@
         },
         {
           "corners": {
+            "files": 197,
+            "git_blob_digest": "sha256:f58408d749234388aba6f48d23d703f9d4eb4c32290f39ca369e401be29d8d08"
+          },
+          "id": "20261116-022647-eacd53a",
+          "netlist_snapshots": {
+            "files": 8,
+            "git_blob_digest": "sha256:aa82668aa5bf4343a0e826611d804d0f7611d26f7b0637d47da2a75655dbe2e5"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261116-022647-eacd53a-compare.csv",
+            "sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv",
+            "sim/lna-characterization/records/20261116-022647-eacd53a.md",
+            "sim/lna-characterization/records/20261116-022647-eacd53a.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 197,
+            "git_blob_digest": "sha256:55acd7cbd23616e18dfaae704e7e12e482a1e00712a5f0dc92f7eaa14fdcf1ae"
+          },
+          "id": "20261116-023212-eacd53a",
+          "netlist_snapshots": {
+            "files": 8,
+            "git_blob_digest": "sha256:f62c4b81f93c02ec926060c8762e0528e18a2172bcd4c3d6e5648fd61bb886d5"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261116-023212-eacd53a-compare.csv",
+            "sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv",
+            "sim/lna-characterization/records/20261116-023212-eacd53a.md",
+            "sim/lna-characterization/records/20261116-023212-eacd53a.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
             "files": 0,
             "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
@@ -1612,6 +1646,7 @@
             "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "published_files": [
+            "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md",
             "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md"
           ]
         }
@@ -1630,7 +1665,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30 (20261106-055142-64b37ae); its sp_band/sp_stab gap closed 2026-11-16 by the 27 C slice (20261116-022647-eacd53a, 15/15, all analyses pass) and the -40 C slice (20261116-023212-eacd53a, 15/15, all analyses pass); nominal-cell match delta vs pre-bleed record 20261101-023246-5bbb70c: in-band worst S11 +0.0039 dB, S22 +0.0076 dB \u2014 a cross-engine delta (pre-bleed side run_lna_sweep.sh on local ngspice-46; post-bleed side the matched variant on ngspice-47/KLU on the fleet), read as an upper bound on the bleed's effect, not a same-harness measurement. Convergence write-up: issue-258-xout-bleed-convergence, updated additively by issue-258-xout-bleed-convergence-20261116.",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
@@ -2403,6 +2438,15 @@
     "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv": "sha256:14e7dcc7f1b62c882d340919fb918a360e90f4c77feb6419897568ebe41dc556",
     "sim/lna-characterization/records/20261114-025351-7a54cc2.md": "sha256:798350acf6fd0e64f42a292aabc02490b5aa12f24870c8f9f4683aec90a31bda",
     "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261116-022647-eacd53a-compare.csv": "sha256:0b0d446ca86a51fdd45d19bf1c77851e2721d753b6345d8e66c835661bce9d39",
+    "sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv": "sha256:c31a6dbe0b37d89c346ccca4b80569e8144745cb1eb3490cf89849845d579483",
+    "sim/lna-characterization/records/20261116-022647-eacd53a.md": "sha256:07e9d5c6938713da299eba3967049ec42141b66646ae2cfd9df6eaea142ef265",
+    "sim/lna-characterization/records/20261116-022647-eacd53a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261116-023212-eacd53a-compare.csv": "sha256:0b0d446ca86a51fdd45d19bf1c77851e2721d753b6345d8e66c835661bce9d39",
+    "sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv": "sha256:53ca2a3b4cabb2acf5ada709a01a2e84ffc476efda3fd7e728c6884c5f2a056a",
+    "sim/lna-characterization/records/20261116-023212-eacd53a.md": "sha256:4d8a850227adc86dea82bda185f383969240610776d26d68cbe91478b7b06875",
+    "sim/lna-characterization/records/20261116-023212-eacd53a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md": "sha256:53eee615518d19ac477d903c2835d16dfa796e76e007f98be2752f0b8fc01cd0",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
