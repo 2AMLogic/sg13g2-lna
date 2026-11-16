@@ -27,7 +27,6 @@ does not prove execution succeeds.
 Exit status: 0 ok, 1 audit/freshness failure, 2 usage error.
 """
 
-import argparse
 import fnmatch
 import hashlib
 import importlib.util
@@ -38,17 +37,18 @@ import subprocess
 import sys
 
 # Shared signoff-checker helpers, loaded by explicit path so `python3 -I` works
-# (isolated mode does not put the script directory on sys.path). Issue #274.
-# dont_write_bytecode first: a __pycache__/ write would break this checker's
-# own "check mode writes nothing" guarantee.
+# (isolated mode does not put the script directory on sys.path). Issues #274
+# and #302: check_bindings and the whole main() protocol live in the shared
+# module. dont_write_bytecode first: a __pycache__/ write would break this
+# checker's own "check mode writes nothing" guarantee.
 sys.dont_write_bytecode = True
 _spec = importlib.util.spec_from_file_location(
     "signoff_common",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "signoff_common.py"))
 _sc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_sc)
-Audit, check_bindings, read_bytes, render, sha256_bytes = (
-    _sc.Audit, _sc.check_bindings, _sc.read_bytes, _sc.render, _sc.sha256_bytes)
+run_item_check, read_bytes, sha256_bytes = (
+    _sc.run_item_check, _sc.read_bytes, _sc.sha256_bytes)
 
 ITEM = 9
 INDEX = "signoff/testbench-coverage.json"
@@ -569,65 +569,35 @@ def envelope_for(inv_hash):
     }
 
 
+def incomplete_verdict_gate(inv):
+    """Item-9-only pre-render refusal for run_item_check (issue #302).
+
+    An audit block whose verdict is "incomplete" — declared open gaps, or
+    findings raised late in build() that cannot abort the inventory — must
+    neither pass nor emit a pass envelope. Prints its own findings and
+    returns True to refuse the run.
+    """
+    if inv["audit"]["verdict"] == "complete":
+        return False
+    for g in inv["audit"]["open_gaps"]:
+        print("AUDIT: open gap: %s" % g, file=sys.stderr)
+    print("FAIL: audit verdict is incomplete (open gaps declared); no pass emitted", file=sys.stderr)
+    return True
+
+
 def main(argv):
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--root", default=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-    ap.add_argument("--write", action="store_true", help="regenerate inventory (+ envelope)")
-    args = ap.parse_args(argv)
-    root = os.path.abspath(args.root)
-
-    audit = Audit(root)
-    inv = build(root, audit)
-    if inv is None or audit.errors:
-        for e in audit.errors:
-            print("AUDIT: %s" % e, file=sys.stderr)
-        print("FAIL: testbench inventory audit is incomplete (%d finding(s)); nothing written/passed"
-              % len(audit.errors), file=sys.stderr)
-        return 1
-    if inv["audit"]["verdict"] != "complete":
-        for g in inv["audit"]["open_gaps"]:
-            print("AUDIT: open gap: %s" % g, file=sys.stderr)
-        print("FAIL: audit verdict is incomplete (open gaps declared); no pass emitted", file=sys.stderr)
-        return 1
-    data = render(inv)
-
-    if args.write:
-        with open(os.path.join(root, INVENTORY), "wb") as fh:
-            fh.write(data)
-        inv_hash = sha256_bytes(data)
-        with open(os.path.join(root, ENVELOPE), "w") as fh:
-            fh.write(json.dumps(envelope_for(inv_hash), indent=2, sort_keys=True) + "\n")
-        print("wrote %s (%s) and %s" % (INVENTORY, inv_hash, ENVELOPE))
-        print("re-attest item 9 (signoff/README.md) and refresh the rolling report")
-        return 0
-
-    try:
-        committed = read_bytes(root, INVENTORY)
-    except FileNotFoundError:
-        print("FAIL: %s is missing; run with --write" % INVENTORY, file=sys.stderr)
-        return 1
-    if committed != data:
-        try:
-            old = json.loads(committed.decode())
-        except ValueError:
-            old = {}
-        oldf, newf = old.get("files", {}), inv["files"]
-        for p in sorted(set(oldf) | set(newf)):
-            if oldf.get(p) != newf.get(p):
-                print("STALE: %s: inventory has %s, tree has %s" % (p, oldf.get(p), newf.get(p)), file=sys.stderr)
-        print("FAIL: %s is stale against the tracked tree and %s; regenerate with "
-              "`python3 -I .github/scripts/check-testbench-inventory.py --write`" % (INVENTORY, INDEX),
-              file=sys.stderr)
-        return 1
-    check_bindings(audit, root, ENVELOPE, committed, envelope_for)
-    if audit.errors:
-        for e in audit.errors:
-            print("BINDING: %s" % e, file=sys.stderr)
-        print("FAIL: item 9 outer bindings are stale", file=sys.stderr)
-        return 1
-    print("OK: testbench inventory is fresh (%d claims, %d hashed files) and bound by its envelope"
-          % (len(inv["claims"]), len(inv["files"])))
-    return 0
+    # Per-item parts only (issue #302): the audit-freshness-binding protocol
+    # is run_item_check in signoff_common.py; this item adds the verdict gate.
+    return run_item_check(
+        argv, item=ITEM, inventory=INVENTORY, envelope=ENVELOPE,
+        build=build, envelope_for=envelope_for, sections=("files",),
+        audit_label="testbench inventory",
+        ok_line=lambda inv, committed: (
+            "OK: testbench inventory is fresh (%d claims, %d hashed files) and bound by its envelope"
+            % (len(inv["claims"]), len(inv["files"]))),
+        stale_context=" and %s" % INDEX,
+        gate=incomplete_verdict_gate,
+        description=__doc__.split("\n")[0])
 
 
 if __name__ == "__main__":
