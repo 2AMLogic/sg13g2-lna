@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "requests": [
+    {
+      "index": 0,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_noise.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_noise.request",
+      "status": "pass",
+      "job_id": "klt-sim-73d61093b9a4",
+      "job_ids": [
+        "klt-sim-73d61093b9a4"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 1,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_op.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_op.request",
+      "status": "pass",
+      "job_id": "klt-sim-315d960c58b5",
+      "job_ids": [
+        "klt-sim-315d960c58b5"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 2,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_sp_band.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_sp_band.request",
+      "status": "pass",
+      "job_id": "klt-sim-6ff951463704",
+      "job_ids": [
+        "klt-sim-6ff951463704"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 3,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-022647-eacd53a/matched_sp_stab.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-022647-eacd53a/set/matched_sp_stab.request",
+      "status": "pass",
+      "job_id": "klt-sim-e6044fc359b6",
+      "job_ids": [
+        "klt-sim-e6044fc359b6"
+      ],
+      "attempts": 1
+    }
+  ]
+}
