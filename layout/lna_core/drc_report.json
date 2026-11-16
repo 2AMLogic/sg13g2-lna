@@ -323,7 +323,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e2d7541554286bb24e9efd72800bd874ae656c0d80e5630d499d501512c4a14f",
+      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
       "role": "layout"
     },
     "klayout_version_mismatch": false

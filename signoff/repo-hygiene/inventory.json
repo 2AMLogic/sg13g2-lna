@@ -61,12 +61,12 @@
     ".github/scripts/test-check-signoff.sh": {
       "bytes": 12328,
       "role": "script of a declared CI command",
-      "sha256": "sha256:b673fcd521c0a85e2b9242d53f7ef3ae6c942553f5f978feebffacdc82eac4d9"
+      "sha256": "sha256:5d426f1ef1b978f7b018bcc8c0318a3d2dd1f24de76f249522c3e7fcee5492bb"
     },
     ".github/scripts/test-run-local-checks.sh": {
-      "bytes": 7952,
+      "bytes": 8130,
       "role": "script of a declared CI command",
-      "sha256": "sha256:d3980eddaa12bfbffe5473d72555c7e51b67ab4b661c388c0a2ee242c7d9b9fb"
+      "sha256": "sha256:3c13b7f50a469730f8c98a14601b90acb5998cad8de17a49f6a95bff70d62f41"
     },
     "sim/models/check_sources.sh": {
       "bytes": 1830,
@@ -159,9 +159,9 @@
       "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 26572,
+      "bytes": 27245,
       "role": "CI workflow",
-      "sha256": "sha256:ffc9d61992b0d93bd4d81e3055edc454dd969b9f24c21bfb8d569f698895fd76"
+      "sha256": "sha256:1c18b794c92ea5c070274eb9fab5f4cf41208031a23958afeb92e4d0a4a3dca4"
     },
     "LICENSE": {
       "bytes": 11358,

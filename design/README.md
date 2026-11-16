@@ -186,10 +186,16 @@ locally with `python3 -I .github/scripts/check-netlist-freshness`.
 regeneration**: it needs neither xschem nor the PDK, so it does not compare
 connectivity or net naming (a pure rewire with unchanged devices passes). The
 authoritative step is the `xschem -n` command above, run in CI by the
-`netlist-regen` job (issue #138): `.github/scripts/check-netlist-regen`
-copies `design/` to a scratch directory, runs exactly that command there
+**Netlist-regeneration CI gate (issue #138).** The `netlist-regen` job
+(`.github/scripts/check-netlist-regen`, self-test
+`test-check-netlist-regen.sh`) copies `design/` to a scratch directory, runs exactly that command there
 against the PDK release pinned in `sim/pdk.json` (v0.3.0, sha256-verified
-tarball) and xschem 3.4.4 (Ubuntu 24.04 package), and compares the result
+tarball) and the xschem release pinned in the script's `XSCHEM_VERSION`
+(3.4.7 — the fleet's version, 2am#6535; issue #259 moved the pin here from
+the noble apt package's 3.4.4. The noble archive only ships 3.4.4, so CI
+builds the pinned tag from source, credential-free:
+`.github/scripts/install-xschem` asserts the upstream tag-to-commit pair
+mirrored from the fleet's `PIN_XSCHEM_*`). It compares the result
 with the committed netlist line for line. Only the `** sch_path:` header and
 blank lines (which differ between xschem builds) are ignored, so connectivity,
 parameters, `.subckt` pin order and `*.iopin` order are all compared. Exit
@@ -199,10 +205,18 @@ error output, no/empty netlist). xschem exits 0 even when a symbol library is
 missing, hence the symbol preflight and the stderr scan. The check never
 writes the checkout. Its negative fixtures are
 `.github/scripts/test-check-netlist-regen.sh`; `run-local-checks.sh` runs both
-when xschem 3.4.4 and a PDK are found and prints SKIP otherwise. To regenerate
+when xschem 3.4.7 and a PDK are found and prints SKIP otherwise. To regenerate
 after an intended schematic change, run the command above (it rewrites the
 committed netlist and its header; see the header note below before committing
 that).
+
+**The 3.4.4 → 3.4.7 pin move (issue #259).** The committed netlist was
+generated under 3.4.4; before the pin moved, 3.4.7 was run over the same
+schematic in a scratch directory and its output compared against the
+committed netlist: identical beyond the `** sch_path:` header (the
+check's own normalization, exercised directly). No netlist bytes were
+touched by the pin move, and the committed netlist remains the 3.4.4-era
+generation — the header note below still applies.
 
 **The `** sch_path:` header line.** xschem stamps the invoking absolute path
 on the first line of the netlist, so it differs per machine and the committed

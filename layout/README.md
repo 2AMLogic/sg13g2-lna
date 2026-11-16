@@ -46,13 +46,14 @@ partition `design/netlist/lna.spice` exactly: `lvs_reference.py` fails if
 any netlist instance is in neither list, in both, or names a device the
 netlist no longer has.
 
-**Drawn (6 of 30 instances):**
+**Drawn (7 of 31 instances):**
 
 | Instance | Drawn as (PDK PyCell) | Role |
 |---|---|---|
 | `XQ1`, `XQ2` | `npn13G2`, `Nx` = the `nx` parameter (default 8, the netlist's value) | cascode core |
 | `XQ3` | `npn13G2`, `Nx=1` | DR-0003 island: diode-tied density-match reference |
 | `R3b` | `rppd` w=1u l=1.005u | DR-0003 island: `bref` to `b1` coupling. The PyCell's own model readout for this geometry is 329.74 Ω against the schematic's ideal 330 Ω |
+| `Rbleed` | `rppd` w=1u l=386.650u | DC bleed of the output-match node, `xout` to `vss` (issue #258). Length is on the 0.005 µm manufacturing grid so the pad contacts pass klt 0.9.2's `cont.ongrid.1`; the 2 nm shortening moves r by ~0.5 Ω. The PyCell's own model readout for this geometry is 100.000 kΩ against the schematic's ideal 100 kΩ |
 | `Cbref` | 16 × `cmim` 64.5 × 64.5 µm in parallel | DR-0003 island RF ground. 16 × 6.2507 pF = 100.01 pF at `cap_typ` against the ideal 100 pF. `cmim` allows at most 8 pF per instance |
 | `XMis` | `pmosHV` w=512u l=1u, ng=32 (16 µm fingers) | DR-0003 island feed (the 12.8:1 bank into `bref`) |
 
@@ -64,7 +65,7 @@ reason for every instance that is not drawn. In short, the inductors and
 coupling caps belong to the matching work (#27/#56) and have no SG13G2
 model; the `vb2` divider and its bypass cap are left out; so is the
 reference core above. Their nets are labelled ports of this cell: `b1`,
-`e1`, `outn`, `vb2`, `gsvo`, `vdd`, `vss`.
+`e1`, `outn`, `vb2`, `gsvo`, `xout`, `vdd`, `vss`.
 
 **The emitter count is a parameter.** `generate.py --nx N` (or `NX=N
 layout/run_flow.sh`) redraws Q1/Q2 at `Nx=N`. Everything that depends on
@@ -177,7 +178,11 @@ coverage fields below are re-quoted from the **0.9.2** envelope.
 
 What 0.9.2's deck changed here (#272), all at `status: "clean"` and
 `rule_counts: {}`: one rule was added to the checked set, `cont.ongrid.1`
-(Cont vertices on the 0.005 µm grid, klayout-tools#5231), which found nothing;
+(Cont vertices on the 0.005 µm grid, klayout-tools#5231). On main's tree it
+found nothing; on this tree it first flagged the four end-pad Cont vertices
+of `Rbleed`, whose 386.652 µm body put the pads 3 nm off-grid — fixed by
+snapping the drawn length to 386.650 µm (see the `Rbleed` row above), after
+which the report is `clean` with `rule_counts: {}` here too.
 `coverage.deck_layers` gained `7/21`, `32/0` and `63/0`, so those three moved
 out of `layers_in_stream_without_rules` into `layers_checked`; and the deck
 `content_hash` moved to `sha256:cf6dfead…d8e9`. No rule left the checked set.
@@ -291,7 +296,7 @@ committed GDS hash; each failure class has its own exit code (2 usage,
 freshness gate (item 6 below) fails a one-sided pair — an interrupted
 publication cannot pass silently.
 
-**Scope.** This is still the partial cell — 6 of the netlist's 30
+**Scope.** This is still the partial cell — 7 of the netlist's 31
 instances. A native verdict on it, clean or not, is a cell result: it
 cannot satisfy a block-level T1 row, `check-signoff-scope.py` still fails
 any `met` item 2/3/4 row backed by this scope, and
@@ -304,8 +309,10 @@ through #201's evidence run.
 
 The run recognises 32 `pfet` (XMis's fingers, L=1u W=16u, all four
 terminals on the intended nets), 16 `cap_cmim` (6.250695 pF each,
-`vss`–`bref`) and, new under klt 0.8.0, 1 `rppd` (`bref`–`b1`,
-r=329.74 Ω, L=1.005u W=1u; 49 devices in all, 48 under 0.7.0). It finds 9 nets, which are exactly the 9 labelled ones.
+`vss`–`bref`) and 2 `rppd` (`bref`–`b1` at r=329.74 Ω L=1.005u W=1u, and
+issue #258's `xout`–`vss` bleed at r=99.99942 kΩ L=386.65u W=1u; 50
+devices in all). It finds 10 nets, which are exactly the 10 labelled ones
+(`xout` is new with the bleed resistor, as a port of the cell).
 Nothing is merged or dangling: `single_terminal_nets`, `dead_metal` and
 `merged_net_labels` are all empty.
 
@@ -316,13 +323,14 @@ Nothing is merged or dangling: `single_terminal_nets`, `dead_metal` and
   [#2864](https://github.com/2AMLogic/klayout-tools/issues/2864), with
   per-gap issues #2860-#2863). Their terminals extract as plain nets:
   `casc`, `b1`, `e1`, `outn`, `vb2` and the `bref` diode tie.
-- `R3b` (`rppd`) was not recognised under klt 0.7.0 (the curated deck took
+- `R3b` and `Rbleed` (`rppd`) were not recognised under klt 0.7.0 (the
+  curated deck took
   the body from GatPoly ∩ PolyRes, while the PDK's `rppd` PyCell has no
   GatPoly under it;
   [klayout-tools#2679](https://github.com/2AMLogic/klayout-tools/issues/2679)).
-  Klt 0.9.2 extracts it as a device (the `X$49 … rppd` card in
-  `lna_core.extracted.spice`). Whether it pairs with the schematic's R3B is
-  the LVS question below.
+  Klt 0.9.2 extracts both as devices (the `X$49`/`X$50 … rppd` cards in
+  `lna_core.extracted.spice`). Whether they pair with the schematic's R
+  cards is the LVS question below.
 
 ### LVS against `design/netlist/lna.spice` (`lvs_full_report.json`): `status: "mismatch"`
 
@@ -333,10 +341,10 @@ This compare uses `reference.form: "subckt-call"` with `reference.deck:
 "device.geometry_not_compared": 4, "reference.unresolved_subckt_call": 6,
 "topology": 10, "topology.hierarchy_mismatch": 1}` (0.8.0 added the explicit
 `reference.unresolved_subckt_call` category for the `npn13G2` calls; 0.9.2
-adds the two newly-named categories, see below; `error_count` 14,
-`mismatch_count` 22).
-`counts.devices` is layout 3, reference 31, matched 0. `counts.nets` is
-layout 9, reference 23, matched 0. This failure is expected: most of the
+adds the newly-named `topology.hierarchy_mismatch`, see below; 14 errors,
+22 mismatches in all).
+`counts.devices` is layout 4, reference 32, matched 0. `counts.nets` is
+layout 10, reference 23, matched 0. This failure is expected: 24 of the 31
 netlist instances are out of scope, and the `npn13G2` subcircuit calls pass
 through as undefined abstract circuits.
 
@@ -362,23 +370,53 @@ this is the honest answer to that question today. `power_connectivity.status:
 `lvs_reference.py` projects the in-scope instances of `lna.spice` onto
 plain-element cards in the deck's own class names. Values come from the
 schematic, and the `rppd` L/W from the realization. The compare runs with
-`combine_devices: true` and no parameter tolerance.
+`combine_devices: true` and no parameter tolerance. Fresh numbers
+(klayout engine 0.30.13 under klt 0.8.0; the committed pre-#258 reports
+were rendered by engine 0.30.12): `category_counts` is
+`{"device.unmatched": 9, "net.merged": 7, "net.split": 3,
+"net.unmatched": 4, "topology": 2, "device.geometry_not_compared": 2,
+"device.combine_parameter_corrected": 1}` — 24 errors, 28 mismatches.
+`counts.devices` is layout 4, reference 7, matched 1; `counts.nets` is
+layout 10, reference 10, matched 2; pins pair 10/10.
 
 - **Matched**: `XMis`. The 32 extracted 16 µm fingers combine into one
   `pfet` L=1U W=512U against the reference `MMis bref gsvo vdd vdd pfet
   L=1U W=512U`, and nets `gsvo` and `vdd` pair.
 - **Unmatched, because of extraction gaps**: `Q1`, `Q2`, `Q3` (class
-  `NPN13G2`, no layout devices). `R3B` (reference class `RPPD`) also stays
-  unmatched under 0.9.2 even though the layout has an extracted `rppd`
-  device; the report's 7 `device.unmatched` entries do not name the
-  devices, so the cause of that non-pairing is not established here.
+  `NPN13G2`, no layout devices).
+- **Unmatched, cause now established**: `R3B` and `RBLEED`. Both `rppd`
+  devices exist on both sides (`X$50`/`X$49` in the extracted netlist) yet
+  do not pair, and the scratch rerun pins down why: the deck's `rppd` class
+  is **three-terminal** — every extracted card carries a bulk node
+  (`X$49 xout vss vss rppd …`), while `lvs_reference.py`'s projection of
+  the schematic's two-terminal ideal `R` cards is two-terminal, and a
+  2-vs-3 terminal-count device can never be a pairing candidate. At 0.8.0
+  hand-editing the reference cards to `RRbleed xout vss vss …` was enough
+  to pair them (9 → 5); under the pinned 0.9.2 that three-node `RR` card
+  form no longer pairs (the compare still sees two terminals), and the
+  experiment had to go one step further: expressing the two cards as
+  `rppd` subckt-calls with the bulk node and drawn L/W
+  (`XRBLEED xout vss vss rppd r=100k L=386.65U W=1U`, with
+  `reference.form: "subckt-call"`) pairs both immediately —
+  `device.unmatched` drops 9 → 3 (only the undrawn `NPN13G2` references
+  remain), `net.merged` 7 → 4 and `net.split` 3 → 0. What pairing leaves
+  is R's exact-value compare: the drawn 99.99942 kΩ is not the
+  schematic's ideal 100 kΩ (`device.placeholder_value` /
+  `device.property`), and R3B's 329.74 Ω is not 330 Ω. The bulk node a
+  schematic-side ideal `R` would need is not part of the design netlist,
+  and the projection is a plain-element rendering of that netlist, so it
+  cannot add one honestly; the reference keeps the schematic's own
+  two-terminal cards, and the mismatch stands as recorded. Filed upstream:
+  the 2-vs-3-terminal shape and the exact-R dead end, see
+  [klayout-tools#2946](https://github.com/2AMLogic/klayout-tools/issues/2946)
+  (cap sibling) and the PR conversation for the run log.
 - **Unmatched**: `Cbref`. Layout: the 16 extracted units combined into one
   `cap_cmim` of 16 × 6.250695 pF = 100.011 pF. Reference: `CBREF 100P`, the
   schematic value. The two differ by 0.011 %, and the compare is exact, so
   the cap does not pair. Its isolated `vss` net then cannot pair either,
   which accounts for the `net.merged`/`net.split` entries on `vss`. The
-  `net.unmatched` entries on `b1`, `casc`, `e1`, `outn` and `vb2` are the
-  HBT/R3b nets, which hold no devices on the layout side. Declaring
+  `net.unmatched` entries on `casc`, `e1`, `outn` and `vb2` are the HBT
+  nets, which hold no devices on the layout side. Declaring
   `options.parameter_tolerance` does **not** rescue the pairing in this
   configuration: an isolated-net device plus unrelated device-less pins
   defeats klt's tolerance recovery. Filed with a minimal reproduction as
@@ -396,13 +434,15 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
 
 ## What the evidence supports
 
-- **It does support:** a committed, reproducible, parameterised GDS of 6 of
-  the netlist's 30 instances, drawn from the PDK's own PyCells. The drawn
+- **It does support:** a committed, reproducible, parameterised GDS of 7 of
+  the netlist's 31 instances, drawn from the PDK's own PyCells. The drawn
   interconnect passes every curated sg13g2 rule the run checked, apart from
   the checked rules (the curated 0.9.2 verdict is `clean`). MIM, M1–M5, TM1 and V1–V4/TV1 all fall
   inside the deck's checked scope. The XMis bank, as drawn, extracts to the
   netlist's own device (W=512u, L=1u) on the right nets. The Cbref bank
-  extracts to 100.011 pF between `vss` and `bref`.
+  extracts to 100.011 pF between `vss` and `bref`, and the Rbleed bleed
+  resistor extracts between `xout` and `vss` at 99.99942 kΩ — both ends of
+  the schematic's floating-node DC path, present in the extracted netlist.
 - **It does not support:**
   - DRC clean for the block. The curated status is `clean` for this partial
     cell only, and the native deck did not run.
@@ -420,11 +460,11 @@ schematic, and the `rppd` L/W from the realization. The compare runs with
 `signoff/manifest.json` cites `lvs_full_report.json` for **item 4**, pinned
 to the GDS hash above. It renders `unmet` / `check_failed`, which records
 that the evidence exists and fails. It is not a claim. **Item 3 is no longer
-cited** (first withdrawn at klt 0.8.0, issue #235; unchanged at 0.9.2):
+cited** (first withdrawn at klt 0.8.0, issue #235; still `clean` at 0.9.2):
 `drc_report.json` is `clean` for this partial cell, which would render item 3
 `met` for a cell that is not the block, so the citation stays withdrawn as the
 scope guard requires. **Item 2 is deliberately uncited.**
-A layout of 6 of 30 instances does not back "Layout" for the block. Item 2
+A layout of 7 of 31 instances does not back "Layout" for the block. Item 2
 accepts any passing envelope (klt cannot check topical relevance), so
 citing `extract_report.json` would turn the row `met` on a partial layout.
 

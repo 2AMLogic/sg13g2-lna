@@ -108,6 +108,9 @@ check() {
           "Installed ShellCheck is exactly 0.10.0")
             grep -qF "shellcheck --version | grep -qx 'version: 0.10.0'" "$rn" \
               || { echo "runner does not probe for ShellCheck exactly 0.10.0"; probs=1; } ;;
+          "Pinned xschem is on PATH")
+            grep -qF 'XSCHEM V3\.4\.7' "$rn" \
+              || { echo "runner does not probe for the pinned xschem version"; probs=1; } ;;
           "Lint tracked first-party Bash") inlint=1 ;;
           *) echo "unhandled block-scalar step '$name' (teach this test how the runner mirrors it)"; probs=1 ;;
         esac ;;
