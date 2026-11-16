@@ -13,8 +13,10 @@
 # and used to copy-paste: sim_require_pdk (the preflight and its exit-3
 # contract), sim_record_paths (mint a <record-id>, create its append-only
 # output dirs), sim_jobs / sim_pool_init / sim_pool_spawn (the ngspice job
-# pool), sim_render (deck rendering), sim_check_log (the per-point
-# pass/fail gate) and the canonical corner-label -> PDK-section maps
+# pool), sim_render (deck rendering), sim_check_log (the concurrent
+# runners' per-point pass/fail gate) and sim_run_deck (the sequential
+# matching-feasibility runners' per-deck pass/fail gate, issue #300) and
+# the canonical corner-label -> PDK-section maps
 # SIM_HBT_SECTION_OF / SIM_MOS_SECTION_OF with their sim_grid_desc
 # formatter (issue #283: that is one PDK fact, not a per-bench choice, and
 # it has already taken one cross-repo correction). See sim/README.md
@@ -394,6 +396,33 @@ sim_check_log() {
     || ! grep -q "^BENCH_COMPLETE" "${log}"; then
     echo "${SIM_SCRIPT_NAME}: FAILED ${point_id} (rc=${rc}) -- see ${log}" >&2
     echo "${point_id}" >> "${FAILED_LIST}"
+    return 1
+  fi
+  return 0
+}
+
+sim_run_deck() {
+  # sim_run_deck <stem> <log> <see-path>
+  #
+  # The per-deck pass/fail gate the sequential matching-feasibility
+  # runners share: run one ngspice -b with cwd = ${CORNERS_OUT}, stdout
+  # and stderr redirected into <log>, and fail unless the exit code is 0
+  # and the log carries a line-start "BENCH_COMPLETE" marker. On failure
+  # it prints the runner-format line
+  #   ${SIM_SCRIPT_NAME}: <stem> FAILED (rc=<rc>) -- see <see-path>
+  # to stderr and returns 1; on success it returns 0 silently.
+  #
+  # It returns a status and never exits, so each runner keeps its own
+  # failure policy -- fatal exit for feed/le/q, return 1 into
+  # || FAILED+=(...) for dc_reference/matching -- and the N_RUN counter
+  # and BUDGET caps stay in the runner wrappers. sim_check_log above is
+  # the concurrent runners' variant of this gate and is deliberately
+  # untouched (different message format, FAILED_LIST file,
+  # SIM_LOG_FAIL_PATTERNS).
+  local stem="$1" log="$2" see="$3" rc=0
+  ( cd "${CORNERS_OUT}" && ngspice -b "${SNAPSHOTS_OUT}/${stem}.spice" > "${log}" 2>&1 ) || rc=$?
+  if (( rc != 0 )) || ! grep -q '^BENCH_COMPLETE' "${log}"; then
+    echo "${SIM_SCRIPT_NAME}: ${stem} FAILED (rc=${rc}) -- see ${see}" >&2
     return 1
   fi
   return 0

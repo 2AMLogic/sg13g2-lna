@@ -120,6 +120,8 @@ step "layout-reduction-tests: lvs_reference unit tests" \
 # --- job: sim-record-paths-tests
 step "sim-record-paths-tests: sim_record_paths reservation tests" \
   sim/tests/test-sim-record-paths.sh
+step "sim-record-paths-tests: sim_run_deck sequential-deck gate tests (issue #300)" \
+  sim/tests/test-sim-run-deck.sh
 step "sim-pdk-identity-tests: installed-PDK identity preflight tests" \
   sim/tests/test-pdk-identity.sh
 step "sim-core-envelope-lifecycle-tests: core-envelope record lifecycle tests" \
