@@ -124,12 +124,32 @@ elif [ "$klt_found" = "klt $klt_expected" ]; then
   mk kmut; printf ' ' >> "$TMP/kmut/signoff/attest/item1.json"
   case "$(item1 "$TMP/kmut")" in met*) echo "FAIL: mutated inventory still renders item 1 met"; fail=$((fail+1)) ;;
     *) echo "PASS: mutated inventory cannot render item 1 met"; pass=$((pass+1)) ;; esac
+elif [ -z "$klt_found" ] && { [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; }; then
+  echo "FAIL: klt cases: no klt on PATH (or --version unreadable), expected 'klt $klt_expected' — skew (the design-source-audit job installs the pin before this suite)"; fail=$((fail+1))
 elif [ -z "$klt_found" ]; then
   echo "SKIP: klt cases (need release klt $klt_expected on PATH; CI pip-installs it)"; skip=$((skip+1))
 elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
   echo "FAIL: klt cases: klt on PATH reports '${klt_found}', expected 'klt $klt_expected' — skew (the design-source-audit job installs the pin before this suite)"; fail=$((fail+1))
 else
   echo "SKIP: klt cases (release klt $klt_expected not on PATH, have: ${klt_found:-none}; CI pip-installs it)"; skip=$((skip+1))
+fi
+
+
+# meta-case: an ABSENT klt must be fatal under CI and a SKIP locally. Re-runs
+# this suite as a child with klt stripped from PATH; LNA_AUDIT_SELFTEST_CHILD
+# stops the child from recursing into this case.
+if [ -z "${LNA_AUDIT_SELFTEST_CHILD:-}" ]; then
+  nokltpath=""; IFS=:
+  for p in $PATH; do [ -x "$p/klt" ] || nokltpath="${nokltpath:+$nokltpath:}$p"; done
+  unset IFS
+  out="$(env -u GITHUB_ACTIONS LNA_AUDIT_SELFTEST_CHILD=1 CI=1 PATH="$nokltpath" "$0" 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'FAIL: klt cases:'; then
+    echo "PASS: absent klt is fatal under CI"; pass=$((pass+1))
+  else echo "FAIL: absent klt under CI (rc=$rc): $out"; fail=$((fail+1)); fi
+  out="$(env -u CI -u GITHUB_ACTIONS LNA_AUDIT_SELFTEST_CHILD=1 PATH="$nokltpath" "$0" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ] && printf '%s\n' "$out" | grep -q 'SKIP: klt cases'; then
+    echo "PASS: absent klt skips locally"; pass=$((pass+1))
+  else echo "FAIL: absent klt locally (rc=$rc): $out"; fail=$((fail+1)); fi
 fi
 
 echo "$pass passed, $fail failed, $skip skipped"
