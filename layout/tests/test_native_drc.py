@@ -541,6 +541,11 @@ class RunnerTest(IdentityFixtureTest):
                 self.assertEqual(self.report()["status"], status)
                 self.assertEqual(
                     self.sidecar()["status"], status)
+                note = "is not a full-scope DRC pass"
+                if status in run_native_drc.FULL_SCOPE_STATUSES:
+                    self.assertNotIn(note, r.stdout)
+                else:
+                    self.assertIn(note, r.stdout)
 
     def test_klayout_exe_env_fallback(self):
         r = self.run_runner(klayout_exe=False,

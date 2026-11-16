@@ -105,6 +105,12 @@ STAGING = REPORT_NAME + ".tmp"
 # pins all three equal.
 STATUSES = ("clean", "clean_partial", "violations",
             "coverage_unknown", "not_checked")
+# The full-scope tokens, derived: the published-run NOTE below fires on
+# "not in" this tuple instead of restating the complement of STATUSES, so
+# the partition is total and a token added to STATUSES defaults to the
+# warned-not-silent side (issue #321). test_native_drc.py pins which
+# statuses carry the NOTE.
+FULL_SCOPE_STATUSES = ("clean",)
 COMPLETED_RC = {0, 3, 4}
 
 E_PUBLISHED, E_USAGE, E_NO_EXE, E_BAD_VERSION, E_OLD_VERSION, E_RUN, E_SELFCHECK \
@@ -372,7 +378,7 @@ def main(argv):
     if r.returncode != 0:
         die(E_SELFCHECK, "published pair failed its self-check: "
                          f"{(r.stderr or r.stdout).strip()}")
-    if status in ("clean_partial", "coverage_unknown", "not_checked"):
+    if status not in FULL_SCOPE_STATUSES:
         say(f"NOTE: status {status!r} is not a full-scope DRC pass; it is "
             f"published verbatim as honest evidence, and layout/README.md "
             f"'Scope' explains what it does and does not attest")
