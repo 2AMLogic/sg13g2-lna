@@ -26,10 +26,10 @@ Human-approved issues ready for implementation (`loom:issue`).
 - **#27**: design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core)
 - **#305**: design/README.md misstates which xschem generated the committed netlist
 - **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence
-- **#318**: sim/lna-characterization/README.md's "Which DUT each record describes" table is stale: 3 of 9 records, and the one it calls "current main" is superseded
 - **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift
 - **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
 - **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323)
+- **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration'
 
 ## In Progress
 
@@ -63,10 +63,10 @@ Issues carrying `loom:curated`.
 - **#305**: design/README.md misstates which xschem generated the committed netlist *(curated)*
 - **#306**: lna_variant_campaign: --temps slicing has no unit test; a narrower summarize slice under-checks coverage silently *(curated)*
 - **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence *(curated)*
-- **#318**: sim/lna-characterization/README.md's "Which DUT each record describes" table is stale: 3 of 9 records, and the one it calls "current main" is superseded *(curated)*
 - **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift *(curated)*
 - **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins *(curated)*
 - **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323) *(curated)*
+- **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration' *(curated)*
 
 ## Proposed (Architect / Hermit)
 
