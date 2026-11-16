@@ -22,25 +22,58 @@ rather than on this campaign's numbers.
 
 ### Which DUT each record describes — read this before quoting any number
 
-This directory holds **three** append-only records, and they characterize
-**three different circuits**. A number quoted from the wrong one is a
-statement about a design that no longer exists.
+This directory holds **eleven** append-only characterization records, and
+they characterize **six different circuits** (six distinct DUT sha256s). A
+number quoted from the wrong one is a statement about a design that no
+longer exists. The two `issue-258-xout-bleed-convergence*.md` files are
+convergence notes for the #258 xout DC bleed, not characterization records,
+and are deliberately not rows of this table.
+
+The Standing column uses [`signoff/README.md`](../../signoff/README.md)'s
+taxonomy. The DUT committed on `main` today is
+`design/netlist/lna.spice` sha256 `151aec66ade8f052…` (commit `dd6c5be`:
+DR-0003 flat-reference core + `lp_noise` matching network + DC bleed on
+xout); only the records listing that sha are `present-dut`.
 
 | Record | DUT sha256 (first 16) | The circuit it characterizes | Standing |
 |---|---|---|---|
-| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23) | **historical** |
-| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34) | **historical** |
-| **`20260926-122301-088c734`** | **`23f9445b01dbec99`** | **DR-0003 flat-reference bias core** (issue #33 / PR #40, commit `e25df3b`) — current `main` | **current** |
+| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23, commit `988b474`) | **historical-dut** |
+| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34, commit `f718094`) | **historical-dut** |
+| `20260926-122301-088c734` | `23f9445b01dbec99` | **DR-0003 flat-reference bias core**, pre-match (issue #33 / PR #40, commit `e25df3b`) | **historical-dut** |
+| `20261101-023117-5bbb70c` | `f58b6a1a37baf31c` | DR-0003 core + hand-rounded matching-network draft — **no commit of `design/netlist/lna.spice` on `main` hashes to this sha** (see below) | **historical-dut** |
+| `20261101-023246-5bbb70c` | `2575cbbc00459b60` | DR-0003 core + `lp_noise` matching network, **pre-bleed** (commit `b8ad5d3`) | **historical-dut** |
+| `20261106-054735-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim, no inductor edit (`dd6c5be`) | **present-dut** |
+| `20261106-055142-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
+| `20261106-055453-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
+| `20261114-025351-7a54cc2` | `2575cbbc00459b60` | issue #56 inductor-loss variant campaign (6 variants incl. `ideal`) on the **pre-bleed** DUT (`b8ad5d3`) — a variant study of a superseded circuit; both facts hold | **variant-exploration** |
+| `20261116-022647-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
+| `20261116-023212-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **present-dut** |
 
 The headline numbers, findings narrative and every figure quoted below are
-from the **current** record unless a sentence explicitly names a historical
-one. Re-baselined under issue
-[#49](https://github.com/2AMLogic/sg13g2-lna/issues/49); the two historical
-records are untouched (`../README.md` §"Append-only rule") and remain the
-only valid source for statements about the DUTs *they* ran.
+from record `20260926-122301-088c734` — the DR-0003 re-baseline under issue
+[#49](https://github.com/2AMLogic/sg13g2-lna/issues/49) — unless a sentence
+explicitly names another record. That record is itself now `historical-dut`:
+its DUT predates the `lp_noise` matching network (`b8ad5d3`) and the xout DC
+bleed (`dd6c5be`), so read its numbers as the **pre-match baseline**, not as
+the circuit committed on `main` today. All records are untouched
+(`../README.md` §"Append-only rule") and each remains the only valid source
+for statements about the DUT *it* ran.
 
-> **Headline conclusion, stated up front so it is not buried:** the DUT as
-> committed has **no input or output matching network** — `Cin`/`Cout` are
+On `20261101-023117-5bbb70c`'s untraceable DUT (`f58b6a1a37baf31c…`):
+`design/netlist/lna.spice` has five revisions in the entire history of
+`main` (`988b474`, `f718094`, `e25df3b`, `b8ad5d3`, `dd6c5be`), and none of
+them hashes to `f58b6a1a…`, so that DUT is **not reproducible from any
+commit on `main`** — its provenance is not traced. The circuit it ran is
+still inspectable in the record's committed decks
+(`netlist-snapshots/20261101-023117-5bbb70c/`): content-wise it is the
+DR-0003 core plus an intermediate, hand-rounded matching-network draft —
+the `Lb`/`Rlb`/`Cpin`/`Cpout`/`Csout` values are 3-significant-digit
+roundings of `b8ad5d3`'s, without `b8ad5d3`'s `Rle`/`Rlc` loss resistors.
+Do not cite it for any committed circuit.
+
+> **Headline conclusion, stated up front so it is not buried:** the DUT of
+> record `20260926-122301-088c734` (the pre-match circuit) has **no input
+> or output matching network** — `Cin`/`Cout` are
 > 100 pF DC blocks, not matching elements, and there is no base
 > inductor. Its measured `S11 = −3.07 dB` and `S22 = −0.0044 dB` (nominal
 > cell) are therefore not a *failed* match, they are the **absence** of
@@ -91,9 +124,10 @@ snapshot rather than being `.include`d from elsewhere.
 
 Bias comes from the DUT's own on-chip network off a single ideal `VDD`
 source — there is no external bias tee and no forced operating point. In
-the current record that network is the **DR-0003 flat-reference core**
+every record from `20260926-122301-088c734` on, that network is the
+**DR-0003 flat-reference core**
 (`sg13_hv_pmos`/`sg13_hv_nmos` + `npn13G2`, issue #33 / PR #40), not the
-`R1a`/`R1b` resistive divider the two historical records ran. The measured
+`R1a`/`R1b` resistive divider the first two records ran. The measured
 operating point (`I_C1`, `I_C2`, `V_CE1`, `V_CE2`, `V_BE1`, `I_DD`, `P_dc`)
 is echoed by every deck and lands in the summary CSV, so every
 S-parameter/NF/IIP3 number below carries the bias point it was taken at.
@@ -214,7 +248,7 @@ inferred:
   `HISTORICAL three-point` in `nf290_grid`.
 
 **How to read the two methods' agreement (this is a result, not a caveat).**
-On the current record `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
+On record `20260926-122301-088c734` `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
 across all 15 cells at 27 °C**, and diverge by up to **0.50 dB at −40 °C**
 and **0.66 dB at 125 °C**. That is not a discrepancy — it is the *expected*
 signature of the two definitions, and it is why the analytic source term
@@ -528,7 +562,8 @@ written into every generated IIP3 deck's header as well as here.
   landed: `cornerMOShv.lib` ships all five sections, so
   `typ→mos_tt`, `bcs→mos_ff`, `wcs→mos_ss`, `sf→mos_sf`, `fs→mos_fs` map
   straight through. The `sf`/`fs` cells are therefore **no longer bit-identical
-  to `typ`** on the current record the way they were on the two historical,
+  to `typ`** on `20260926-122301-088c734` and every record after it, the way
+  they were on the two historical,
   HBT-only ones — they differ through the bias core's MOS devices while
   still sharing `typ`'s HBT section. The difference is real but *small*,
   because the DR-0003 reference is well regulated: across all nine
@@ -579,17 +614,18 @@ written into every generated IIP3 deck's header as well as here.
    closes.**
 2. **`sf`/`fs` are not real HBT corners** in this PDK (above). On the two
    historical records that made 18 of the 45 cells numerically identical to
-   their `typ` counterparts; on the current record they differ, but only
+   their `typ` counterparts; on `20260926-122301-088c734` and every record
+   after it they differ, but only
    through the DR-0003 core's MOS devices (≤ 0.05 % on `I_C1`,
    ≤ 0.0001 dB on `NFmin`) — the HBT that sets the RF behaviour is still
    `hbt_typ` in all three. They are committed as such, deliberately, rather
    than being silently dropped.
 3. **Which bias network a record describes is a property of the record, not
-   of this bench.** The two historical records characterize DUTs whose base
+   of this bench.** The first two records characterize DUTs whose base
    bias came from a bare `V_BE`-referenced resistive divider
    (`20260918-210908-4293920`) and from an `npn13G2` mirror reference
-   (`20260921-131646-d6da30a`). The current record
-   (`20260926-122301-088c734`) characterizes the **DR-0003 flat-reference
+   (`20260921-131646-d6da30a`). Record `20260926-122301-088c734` and every
+   record after it characterize the **DR-0003 flat-reference
    core** (PR #40). The measured `ic1_a`/`pdc_w` columns in each record's
    summary CSV are how you check a bias claim against the DUT that record
    actually ran — never across records.
@@ -635,8 +671,9 @@ written into every generated IIP3 deck's header as well as here.
 
 ## Results
 
-See [`records/`](records/) for the append-only per-run records (three of
-them — see "Which DUT each record describes" above). The current record's
+See [`records/`](records/) for the append-only per-run records (eleven of
+them — see "Which DUT each record describes" above). Record
+`20260926-122301-088c734`'s
 headline numbers are reproduced in its own `records/<record-id>.md` and
 summarized against the target-spec rows in
 [`../../measurements/README.md`](../../measurements/README.md) — which is
@@ -763,7 +800,7 @@ rule").
 **Plumbing check without a full campaign**: `LNA_SWEEP_SMOKE=1
 sim/lna-characterization/run_lna_sweep.sh` runs the identical flow over the
 single nominal cell in ~1 min (measured 58 s on the host that produced
-the current record). A smoke record is a real record but is *not* a
+record `20260926-122301-088c734`). A smoke record is a real record but is *not* a
 PVT campaign — do not commit one as evidence.
 
 **Re-deriving the CSVs from the committed raw logs alone** (no ngspice, no
@@ -1092,8 +1129,10 @@ result use the committed 45-cell record instead.
 
 ## What these numbers do and do not license
 
-**Do**: treat the current record as the evidence base for any statement
-about the DUT on `main`; use `NFmin` and the measured operating point to
+**Do**: treat the `present-dut` records (`20261106-*-64b37ae`,
+`20261116-*-eacd53a`) as the evidence base for any statement about the DUT
+committed on `main`, and treat record `20260926-122301-088c734` as what it
+is — the pre-match baseline; use `NFmin` and the measured operating point to
 size the *missing* input matching network — and to argue about whether the
 ratified NF row is reachable at this bias point at all (it is not, see
 "The three questions" above); use the broadband μ/|S11|/|S22| data as the
@@ -1106,7 +1145,7 @@ gain/NF/S11/S22 as achievable silicon performance (ideal
 passives, §Model limitations); declare the matching network final (there
 isn't one, and stability has not been shown unconditional); quote k
 without μ beside it (§Why k is ill-conditioned); mix numbers **across**
-records (§Which DUT each record describes — the three records are three
+records (§Which DUT each record describes — the eleven records are six
 different circuits); treat the corner spread as a statistical (mismatch)
 spread, or call any RF row non-statistical (§Model limitations item 6); or read a `|S22| > 1` / μ count off the summary CSV
 without checking the raw `*.stability.dat` tables, whose ppm-scale residues
