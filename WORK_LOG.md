@@ -4,6 +4,22 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-16
+
+- **PR #296**: fix(layout): accept clean_partial and not_checked native DRC verdicts across all three gates
+- **PR #304**: ci: gate KLAYOUT_PIN and derive the audit suite's expected klt release
+- **PR #314**: sim: land the matched DUT's -40/27 C PVT slices and the bleed match delta
+- **PR #316**: docs(signoff): correct the item 5 bullet's absence claim, campaign count and DUT label
+- **PR #281**: refactor(core-envelope): name the in-band gain metric and split parse_core_envelope main()
+- **PR #308**: refactor: share one main() driver between the item-9/item-10 inventory checkers
+- **Issue #290** (closed): run_native_drc.py STATUSES omits clean_partial, so a partial-scope native DRC run would be rejected as a failed run
+- **Issue #312** (closed): layout/README.md and run_native_drc.py docstring overstate clean_partial reachability: klt 0.9.2's klayout engine cannot emit it
+- **Issue #294** (closed): check-klt-pin.sh cannot gate test-design-source-audit.sh's klt version strings, so a future bump silently disables its klt cases
+- **Issue #258** (closed): design: give the output-match node xout a DC path and re-run the matched DUT's 125 C cells
+- **Issue #301** (closed): signoff/README.md item 5 says no klt sim envelope exists for the current DUT, three sentences before naming the one that does
+- **Issue #276** (closed): Name the logic buried in parse_core_envelope.py: 404-line main() and the one gain metric #94 left inline
+- **Issue #302** (closed): signoff checkers: main() is still duplicated after #274 (the largest remaining shared block)
+
 ### 2026-11-15
 
 - **PR #293**: test: pin the variant campaign's bias-attribution claim generator
