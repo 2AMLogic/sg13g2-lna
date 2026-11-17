@@ -1,10 +1,10 @@
-# Issue #27 — the matched DUT's 45-cell PVT verdict and the `\|S22\| > 1` anomaly investigation
+# Issue #27 — the matched DUT's 45-cell PVT verdict and the `|S22| > 1` anomaly investigation
 
 This note assembles, from **already committed** evidence, the full-grid verdict
 the matching network has been waiting for since PR #247 landed the `lp_noise`
 match as "nominal-cell, not final", and it closes the one open item #258's
 convergence note explicitly left with this issue: the 17-of-45-cells
-`\|S22\| > unity` anomaly. It is a synthesis and a local single-corner probe —
+`|S22| > unity` anomaly. It is a synthesis and a local single-corner probe —
 **no new batch-fleet campaign was run**; every grid number below is quoted from
 committed records with the record, analysis and column named.
 
@@ -87,9 +87,9 @@ why the verdict above says "at numerical resolution, conditional on the Q ≈ 10
 inductor-loss model", and why the anomaly investigation below matters: it is
 the direct measurement of what happens when that loss is removed.
 
-## The `\|S22\| > 1` anomaly — investigated, and the hypothesis is refuted
+## The `|S22| > 1` anomaly — investigated, and the hypothesis is refuted
 
-The issue's hypothesis: the 17-of-45-cells `\|S22| > unity` excess (max
+The issue's hypothesis: the 17-of-45-cells `|S22| > unity` excess (max
 1.000004 at 237–398 MHz, record `20260918-210908-4293920`; re-counted at
 +0.18 ppm max on the DR-0003 core, record `20260926-122301-088c734`) is
 "presumably a numerical-resolution artifact of the current lossless model".
@@ -119,10 +119,15 @@ debug probe per the host rules — not a grid, not a campaign.
   `Rlc`/`Rlb` → 0; a hypothetical circuit that exists only inside the probe
   deck, marked with `PROBE EDIT` comments, and **not committed anywhere as a
   design**): max \|S22\| = **1.000743220** at 2288.2 MHz, with \|S22\| > 1
-  across **412.8–2536.6 MHz (325 points)**; μ_min = **0.997165** at
-  2414.1 MHz (364 points < 1); k_min = **−37.20** at 469.4 MHz.
+  at **334 of 9911 points** (the deck's own full-precision `n_s22_gt1`),
+  spanning **410.7–2536.6 MHz** — the committed 9-digit `.table.txt` resolves
+  325 of them strictly above unity and prints 9 more, at 410.7–412.6 MHz, as
+  exactly `1.00000000e+00`, the same table-truncation effect this note
+  recounts the pre-match `+0.18 ppm` case for. μ_min = **0.997165** at
+  2414.1 MHz, with μ < 1 at **365 points** (the deck's `n_mu_lt1`; 364 of
+  them resolved in the table); k_min = **−37.20** at 469.4 MHz.
 
-**Conclusion.** A +743 ppm \|S22\| excess, robust across 325 fine-swept
+**Conclusion.** A +743 ppm \|S22\| excess, robust across 334 fine-swept
 points, is three orders of magnitude above solver round-off: the lossless
 matched network genuinely presents **active negative resistance** at port 2
 over a wide band — the same mechanism class the original 17-cell anomaly

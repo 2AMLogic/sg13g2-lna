@@ -28,7 +28,7 @@ number quoted from the wrong one is a statement about a design that no
 longer exists. The two `issue-258-xout-bleed-convergence*.md` files are
 convergence notes for the #258 xout DC bleed, and
 `issue-27-matched-pvt-verdict.md` is the #27 verdict synthesis for the
-matched DUT (45-cell PVT assembly + the `\|S22\| > 1` anomaly probe);
+matched DUT (45-cell PVT assembly + the `|S22| > 1` anomaly probe);
 these are not characterization records and are deliberately not rows of
 this table.
 
@@ -768,7 +768,7 @@ model exists, do not dismiss. (Re-checked 2026-11-17 with the lossy model:
 closed as understood-and-damped — the excess is real negative resistance,
 not solver round-off, and the committed Q ≈ 10 loss removes it; see
 [`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md)
-§"The `\|S22\| > 1` anomaly".)
+§"The `|S22| > 1` anomaly".)
 
 Per-artifact layout of a record `<record-id>`:
 
@@ -1151,7 +1151,7 @@ result use the committed 45-cell record instead.
 same committed DUT; only the three *together* span the full PVT grid, so a
 full-grid claim must cite all three, and a claim drawn from any one of them
 alone is a single-temperature claim. The assembled 45-cell reading of the
-three — and the `\|S22\| > 1` anomaly probe that closes #27's open item — is
+three — and the `|S22| > 1` anomaly probe that closes #27's open item — is
 [`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md).
 The other two `64b37ae` runs are **not**
 evidence and nothing may be quoted from either: `20261106-055142-64b37ae`
