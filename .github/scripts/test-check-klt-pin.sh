@@ -22,6 +22,10 @@
 #      (issue #339). Every fixture's run_native_drc.py also carries the
 #      line-271 f-string (klayout-tools=={KLT_RELEASE}); it holds no
 #      literal version, so case 1 staying green proves it registers no pin.
+#  14. signoff README line-8 "Consumes" prose pin drift            -> FAILS
+#      (issue #341), with the pip-install line left correct
+#  15. README reproduction-index comment pin drift (issue #341)    -> FAILS,
+#      with the uvx line left correct
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-klt-pin.sh"
@@ -47,7 +51,14 @@ mkroot() { # mkroot <name> [klt-in-runner] [klayout-in-runner] [klayout-in-flow]
   for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md; do
     printf 'python3 -m pip install "klayout-tools==%s"\n' "$KLT" > "$d/$f"
   done
-  printf 'uvx --isolated --from klayout-tools==%s --with klayout==%s klt\n' "$KLT" "$klay_f" > "$d/README.md"
+  # issue #341: the signoff README's "Consumes" prose and the top-level
+  # README's reproduction-index comment restate the pin in the same
+  # klayout-tools== form the loop greps — represent both shapes.
+  printf -- '- **Consumes**: `klt signoff` (klayout-tools, pinned `klayout-tools==%s` from\n  PyPI)\n' "$KLT" >> "$d/signoff/README.md"
+  {
+    printf 'uvx --isolated --from klayout-tools==%s --with klayout==%s klt\n' "$KLT" "$klay_f"
+    printf '.github/scripts/check-signoff.sh       # T1 verdict of record is current (needs klayout-tools==%s)\n' "$KLT"
+  } > "$d/README.md"
   {
     printf 'python3 -m venv .venv && .venv/bin/pip install klayout==%s\n' "$klay_f"
     printf '`run_flow.sh` runs klt as the **PyPI release** `klayout-tools==%s`,\n' "$KLT"
@@ -143,6 +154,20 @@ mkroot drc_docstring_skew
 sed -i "s/klayout-tools==$KLT/klayout-tools==0.8.0/" "$TMP/drc_docstring_skew/layout/run_native_drc.py"
 run "docstring klayout-tools== drift in run_native_drc.py still fails (#339)" 1 drc_docstring_skew \
   "layout/run_native_drc.py pins 'klayout-tools==0.8.0 ', layout/run_flow.sh KLT_RELEASE is $KLT"
+
+# issue #341: the signoff README's line-8 prose pin must gate on its own —
+# skew it while the pip-install line stays correct
+mkroot signoff_prose_skew
+sed -i 's/pinned `klayout-tools=='"$KLT"'/pinned `klayout-tools==0.8.0/' "$TMP/signoff_prose_skew/signoff/README.md"
+run "signoff README Consumes-prose pin drift still fails (#341)" 1 signoff_prose_skew \
+  "signoff/README.md pins 'klayout-tools==0.8.0 klayout-tools==$KLT ', layout/run_flow.sh KLT_RELEASE is $KLT"
+
+# issue #341: the README reproduction-index comment pin must gate on its own —
+# skew it while the uvx line stays correct
+mkroot readme_comment_skew
+sed -i 's/needs klayout-tools=='"$KLT"'/needs klayout-tools==0.8.0/' "$TMP/readme_comment_skew/README.md"
+run "README reproduction-index comment pin drift still fails (#341)" 1 readme_comment_skew \
+  "README.md pins 'klayout-tools==0.8.0 klayout-tools==$KLT ', layout/run_flow.sh KLT_RELEASE is $KLT"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
