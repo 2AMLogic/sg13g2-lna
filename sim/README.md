@@ -64,7 +64,7 @@ scaffolding lives once, in `env.sh`, and each runner calls it:
 | Helper | Contract |
 |---|---|
 | `sim_require_pdk <script-name> [--osdi]` | The preflight. Any miss — no resolvable PDK, no `ngspice` on PATH, no `cornerHBT.lib`, or (with `--osdi`) no `cornerMOShv.lib`/`.osdi` models — prints `"<script-name>: …"` on **stderr** and exits **3**. The `<script-name>` argument is what keeps that message prefix per-runner. On success it sets `NGSPICE_VERSION`, `MODELS_LIB` and, with `--osdi`, `MOS_LIB`/`OSDI_DIR`. Paths come from `env.sh`'s own `SG13G2_NGSPICE_MODELS`, so there is exactly one definition of where the model libs live. |
-| `sim_record_paths` | Mints `RECORD_ID` (`<YYYYMMDD>-<HHMMSS>-<short-git-sha>`, UTC) and sets + creates `SNAPSHOTS_OUT`, `CORNERS_OUT`, `RECORDS_DIR` under the caller's `SCRIPT_DIR`. The ID is **reserved atomically** (exclusive `mkdir` of `netlist-snapshots/<id>`) and the call exits **4** with a message on stderr, before setting any path variable, if `corners/<id>` or any `records/<id>*` already exists, the reservation is lost to a concurrent run, or a directory cannot be created. Existing artifacts are never modified or removed; on a partial failure only directories this call created are `rmdir`'d. See "Record-id collisions" below. |
+| `sim_record_paths` | Mints `RECORD_ID` (`<YYYYMMDD>-<HHMMSS>-<short-git-sha>`, UTC) and sets + creates `SNAPSHOTS_OUT`, `CORNERS_OUT`, `RECORDS_DIR` under the caller's `SCRIPT_DIR`. The ID is **reserved atomically** (exclusive `mkdir` of `netlist-snapshots/<id>`); the reservation is **monotonic through the output-directory steps** — once won it is not released while `corners/<id>` and `records/` are created — and the call exits **4** with a message on stderr (naming the failing call, its `errno` and the caller PID), before setting any path variable, if `corners/<id>` or any `records/<id>*` already exists, the reservation is lost to a concurrent run, or a directory cannot be created. Existing artifacts are never modified or removed; no reservation-rejection path removes anything, so a failed mint leaves only its empty `netlist-snapshots/<id>` behind. (The PDK-provenance rollback still releases the caller's own directories.) See "Record-id collisions" below. |
 | `sim_jobs <var-name>` | Sets `<var-name>` to `min(6, ncpu/3)`, floor 1, unless it is already set in the environment — an explicit `*_JOBS` knob wins. |
 | `sim_pool_init <jobs>` / `sim_pool_spawn <fn> <args…>` | The bash-4.3 `wait -n` job pool. `SIM_POOL_SPAWNED` counts what was scheduled (what a record quotes as "N ngspice invocations"). |
 | `sim_render <tmpl> <out> <sed-args…>` | Applies the caller's own substitutions, then `@@MODELS_LIB@@`/`@@MOS_LIB@@`/`@@OSDI_DIR@@`; if `SIM_DUT_SUBCKT` is set, splices that file in at `@@LNA_SUBCKT@@`. |
@@ -78,8 +78,13 @@ runs of the same experiment in the same second (same commit) would mint the
 same ID. `sim_record_paths` never reuses an ID: the first caller wins the
 reservation and every other caller (or a caller that finds leftover
 `corners/<id>` / `records/<id>*` artifacts) fails fast with exit 4 and a
-message naming the ID, having written nothing. A loser never deletes the
-winner's reservation. **After a rejection, just rerun** (a second later the
+message naming the ID, having written nothing. The reservation is monotonic
+through the output-directory steps (it is not released while `corners/<id>`
+and `records/` are created), so a loser has nothing it could delete: no
+reservation-rejection path contains a removal, and a failed mint leaves only
+its empty `netlist-snapshots/<id>` — append-only evidence that the ID was
+taken, which blocks no later ID because the pre-check never looks at
+`netlist-snapshots/`. **After a rejection, just rerun** (a second later the
 ID differs); do not delete the colliding directories or records by hand —
 they are append-only evidence. Tests: `sim/tests/test-sim-record-paths.sh`
 (PDK-free, run by the `sim-record-paths-tests` CI job and

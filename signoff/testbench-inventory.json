@@ -17,7 +17,7 @@
     "establishes": "that the benches, runners, reducers, pins and documented cold-start invocations of the declared scope are committed, hashed and cross-referenced. It does not establish that any command succeeds, RF compliance, or overall T1.",
     "mechanical_checks": [
       "the coverage index parses and every claim carries the required fields and a known classification",
-      "every listed path is a tracked, existing file (runners invoked directly are mode 100755)",
+      "every listed path is a tracked, existing file (a listed file invoked as a cold-start command's bare command word is mode 100755)",
       "every sim/<dir>/ is an indexed family or an explicitly named support directory",
       "every tracked non-evidence file in an indexed family is listed by a claim or excluded with a reason",
       "every tracked record, view, corners and netlist-snapshots id in an indexed family belongs to a claim",
@@ -1550,7 +1550,7 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). Verdict (issue #27, records/issue-27-matched-pvt-verdict.md): the ratified S11/S22/gain/stability rows are met at 45/45 cells (worst in-band S11 -11.1124 dB, S22 -14.9653 dB, S21 18.7163 dB; mu_min 1.000000370 at every cell, k_min 49.15, max|S11| 0.998996 and max|S22| 0.999999631 both < 1), conditional on the Q~10 inductor-loss model. The |S22| > 1 anomaly is closed as understood-and-damped: the netlist-snapshots/issue-27-s22-anomaly-probe/ differential probe (single corner, 71x point density) shows the lossless variant genuinely exceeds unity (+743 ppm, mu_min 0.9972) -- real negative resistance, not solver round-off -- while the committed lossy DUT shows zero violations at 9911 points at both probed corners. NF stays failing (0/45 cells under 1.5 dB; ~0.68 dB nominal delta is the finite-Q input loss on top of the NFmin floor); IIP3 stays DRAFT with no post-match re-measure yet. No spec row change; spec/target-spec.md untouched.",
       "records": [
         {
           "corners": {
@@ -1603,6 +1603,40 @@
         },
         {
           "corners": {
+            "files": 197,
+            "git_blob_digest": "sha256:f58408d749234388aba6f48d23d703f9d4eb4c32290f39ca369e401be29d8d08"
+          },
+          "id": "20261116-022647-eacd53a",
+          "netlist_snapshots": {
+            "files": 8,
+            "git_blob_digest": "sha256:aa82668aa5bf4343a0e826611d804d0f7611d26f7b0637d47da2a75655dbe2e5"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261116-022647-eacd53a-compare.csv",
+            "sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv",
+            "sim/lna-characterization/records/20261116-022647-eacd53a.md",
+            "sim/lna-characterization/records/20261116-022647-eacd53a.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
+            "files": 197,
+            "git_blob_digest": "sha256:55acd7cbd23616e18dfaae704e7e12e482a1e00712a5f0dc92f7eaa14fdcf1ae"
+          },
+          "id": "20261116-023212-eacd53a",
+          "netlist_snapshots": {
+            "files": 8,
+            "git_blob_digest": "sha256:f62c4b81f93c02ec926060c8762e0528e18a2172bcd4c3d6e5648fd61bb886d5"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261116-023212-eacd53a-compare.csv",
+            "sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv",
+            "sim/lna-characterization/records/20261116-023212-eacd53a.md",
+            "sim/lna-characterization/records/20261116-023212-eacd53a.pdk-provenance.json"
+          ]
+        },
+        {
+          "corners": {
             "files": 0,
             "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
@@ -1612,8 +1646,49 @@
             "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "published_files": [
+            "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md",
             "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md"
           ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "20261116-190440-9cd8cdc",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261116-190440-9cd8cdc.md"
+          ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-27-matched-pvt-verdict",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md"
+          ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-27-s22-anomaly-probe",
+          "netlist_snapshots": {
+            "files": 9,
+            "git_blob_digest": "sha256:b8ba6c6e243741c44c9227a08638483475131c09e289fbabe86f22d9e46cdbe4"
+          },
+          "published_files": []
         }
       ],
       "replay_checks": [
@@ -1630,7 +1705,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30 (20261106-055142-64b37ae); its sp_band/sp_stab gap closed 2026-11-16 by the 27 C slice (20261116-022647-eacd53a, 15/15, all analyses pass) and the -40 C slice (20261116-023212-eacd53a, 15/15, all analyses pass); nominal-cell match delta vs pre-bleed record 20261101-023246-5bbb70c: in-band worst S11 +0.0039 dB, S22 +0.0076 dB \u2014 a cross-engine delta (pre-bleed side run_lna_sweep.sh on local ngspice-46; post-bleed side the matched variant on ngspice-47/KLU on the fleet), read as an upper bound on the bleed's effect, not a same-harness measurement. Convergence write-up: issue-258-xout-bleed-convergence, updated additively by issue-258-xout-bleed-convergence-20261116. Erratum 20261116-190440-9cd8cdc withdraws the unqualified full-grid reading of 20261106-054735-64b37ae (it is the 125 C slice only).",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
@@ -2202,6 +2277,143 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/gen_spec_envelopes.py"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_spec_envelopes.sh sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt with batch-fleet access",
+            "no local ngspice and no local PDK (the fleet stages the pinned models; OSDI preloaded per request)"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-spec-envelope-20261117-054141-bdebb4d",
+      "limitations": "Covers the ratified corner box narrowed to its three real HBT sections (typ/bcs/wcs x 1.62/1.80/1.98 V x -40/27/125 C = 27 cells per analysis); the ratified sf/fs labels are documented HBT duplicates of typ and are not re-run (their mos-section residue is covered by the committed 45-cell records). Bench results and per-row pass/fail only; the nf row is expected to fail at every cell until #58 (DR-0004) and nothing here relaxes it. mu's margin over 1 sits at the 10 MHz sweep floor at numerical resolution (~4e-7, identical across cells; Q~10 loss model). The 100 pF DC blocks and Q~10 match are as committed; no layout parasitics, mismatch or Monte Carlo. IIP3 is not measured (numeric target NOT ratified).",
+      "records": [
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "20261117-054141-bdebb4d",
+          "netlist_snapshots": {
+            "files": 14,
+            "git_blob_digest": "sha256:b2fdba141bad93b6ee8f04eab98feb97b5b14143a552d6d3999c8e4bd3e4d54b"
+          },
+          "published_files": []
+        }
+      ],
+      "reducers": [
+        "sim/lna-characterization/reduce_spec_envelopes.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_spec_envelopes.sh"
+      ],
+      "shared": [
+        "pdk-pin",
+        "dut-netlist"
+      ],
+      "summary": "T1 item-5 klt sim corner envelopes (issue #231): matched DUT, 4 analyses x 27 ratified cells each, limits generated from spec/ratified-rows.json into the requests; run on the Spot batch fleet (one klt sim invocation per analysis, --wait-for-capacity 600).",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet worker image)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 request features (sim/pdk.json klt_variant_campaign); signoff grader pin 0.9.2",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_iip3.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "PDK_ROOT/PDK",
+            "OSDI models",
+            "a fleet runner image that supports it, or a local ngspice >= 46"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-iip3-issue-337",
+      "limitations": "Extrapolated intercepts, not a measured intercept: accepted only where the cell's two-level IM3 slope sits within 3 +/- 0.15 (README policy; 45/45 cells valid in this record). IM5 bins are numerical-floor sentinels (per-point im3_over_im5_db committed; minimum 32.4 dB across this record). Wide 7.63 MHz tone spacing (coherence requirement), 4 ps timestep (125 GHz Nyquist), steady-state assumed after 1 us, single-ended in-band two-tone only (no blocker/OOB-IM/AM-PM/P1dB). The IIP3 numeric row stays DRAFT: this record supplies the number spec/target-spec.md line 171 names; binding requires a decision record of its own. The matched_iip3_a1mv request's first batch submit was abandoned client-side at the launch wait and re-submitted unchanged (disclosed in the record).",
+      "records": [
+        {
+          "corners": {
+            "files": 614,
+            "git_blob_digest": "sha256:2186a7d17a746a6ab8c496f3a6db1d2c2b9898cca9f22c4cf6b9b8259ddcb1ff"
+          },
+          "id": "20261117-040629-30d1235a",
+          "netlist_snapshots": {
+            "files": 12,
+            "git_blob_digest": "sha256:dd0801dbdb5b2dae7e16fd0564ea774a5ebc041a9c81d74095284283bf6d95c5"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/20261117-040629-30d1235a-iip3-summary.csv",
+            "sim/lna-characterization/records/20261117-040629-30d1235a-iip3.csv",
+            "sim/lna-characterization/records/20261117-040629-30d1235a.md",
+            "sim/lna-characterization/records/20261117-040629-30d1235a.pdk-provenance.json"
+          ]
+        }
+      ],
+      "reducers": [
+        "sim/lna-characterization/lna_variant_campaign.py",
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_iip3.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Issue #337: the post-match IIP3 re-measure owed by #27's Test Plan, on the ratified tb_lna_iip3.spice.tmpl protocol (template unchanged; the generated deck reproduces its .control sequence verbatim through a klt sim request) on the committed matched DUT (sha256 151aec66ade8f052...), full 45-cell PVT box on the Spot batch fleet. 93 two-tone points (1 mV + 2 mV per tone at every cell, 0.5/4/8 mV at the nominal cell) + 45 op corners; 45/45 cells pass the 3:1 IM3 slope check; FFT vs coherent-DFT extraction agree <= 0.0017 dB. Available-power-referred IIP3 at 2 mV/tone: -3.1181..-0.9683 dBm (nominal -2.0905 dBm); device-plane (per-cell matched |S11|, term +0.2408..+0.3152 dB): -3.3976..-1.2712 dBm; 0 of 45 cells reach the draft > 0 dBm value. Spec row stays DRAFT; no spec/target-spec.md edit.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet runner 47)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -2274,11 +2486,11 @@
     }
   },
   "files": {
-    "README.md": "sha256:623c8e8b439ae370ade8a27958e932bec8760a13a101d9cc53df615e42240e8e",
+    "README.md": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e",
     "design/netlist/lna.spice": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
-    "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
+    "measurements/README.md": "sha256:e6b5cbee2067b1126570089f27a050ace8de608f6bab0a95c67380e89f993954",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
-    "sim/README.md": "sha256:220d06a3f06ae0f0f4bbdcbb211982622bc3e6c0fe8754e43a30f1b4c08cdcbe",
+    "sim/README.md": "sha256:f25e27b3c086d34203774879ee9386cab7f43cf5f0bd8dd109a9c7bc19d0ce16",
     "sim/biasref-topology/README.md": "sha256:d63baef67a7f0af6a9a7738a2eea5eef680aaffc1ee4b3cf3e57dcddb9f8ef7a",
     "sim/biasref-topology/records/20260921-160018-a46ed37-core-minigrid.csv": "sha256:f357b4d1b6b093e52799905b2ac6d569483dc1329be9c81733af4307e1dbb82d",
     "sim/biasref-topology/records/20260921-160018-a46ed37-core-startup.csv": "sha256:b9969ffaae6da283edb659ffecea489ebd0aa0b39e4fb9529f18353e35eb6dec",
@@ -2313,7 +2525,7 @@
     "sim/breakdown-extraction/testbench/tb_bvcer_vsweep.spice.tmpl": "sha256:955a56ad5cb24325d85805eb619413c1639d3f7fe529821f0601f060cf7caa80",
     "sim/breakdown-extraction/tests/check_breakdown_replay.py": "sha256:41a031f7a0dc1e8b1d59b85e08ce1aa7df32a7b6e7b07b24c1800a401bfe40b7",
     "sim/breakdown-extraction/tests/test_reduce_breakdown.py": "sha256:e4dac7fde75c0aa8c2e68b377e2c86dd5da95643a77018211dcd5274154aaed1",
-    "sim/env.sh": "sha256:4207a90cb5bd8658ccbec6fce2efb75719b8755670dd640b233dbc8c409bb288",
+    "sim/env.sh": "sha256:0db4d54e2b3b47df81fe38a52f38ebf2aeb8b0dee64048cdc60e953b321d2ce1",
     "sim/hbt-characterization/README.md": "sha256:0d5d367ed0800bfead07d0de1abc1a890b92d1a48d2c371151a37e281ec9d1ac",
     "sim/hbt-characterization/hbt_parse.sh": "sha256:2684ddc28b3e81a324a265b13f32a0d40185509ce583e8891cf5c8a5ed19d250",
     "sim/hbt-characterization/parse_hbt_log.awk": "sha256:f065330b74438fb2052a3033951d1dfc131cb9ee2824d0e03b262fcbf0b318a9",
@@ -2358,8 +2570,9 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:574e5ea0554c99e8c4a7f95e4ada416adfc01dfa1a0295b210b10d1ce1f02269",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:b5ca623372daa356e58e59c5b99d374953ddc63bbe5baf8d90aefa9fe019a1db",
+    "sim/lna-characterization/README.md": "sha256:9bbeeb913f6d6035f52e7cf8ba2b47b6b7496bc89811aedeb08e06646e205c5e",
+    "sim/lna-characterization/gen_spec_envelopes.py": "sha256:c8ba7ca228c993b5e1356605356cccc358b20ab494886ddeb4de7228a57debdd",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:383ade9012a5256a7abdcbc39bdfdf45a359821aa915b4d89c5066a639fbcaa9",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
@@ -2403,24 +2616,42 @@
     "sim/lna-characterization/records/20261114-025351-7a54cc2-summary.csv": "sha256:14e7dcc7f1b62c882d340919fb918a360e90f4c77feb6419897568ebe41dc556",
     "sim/lna-characterization/records/20261114-025351-7a54cc2.md": "sha256:798350acf6fd0e64f42a292aabc02490b5aa12f24870c8f9f4683aec90a31bda",
     "sim/lna-characterization/records/20261114-025351-7a54cc2.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261116-022647-eacd53a-compare.csv": "sha256:0b0d446ca86a51fdd45d19bf1c77851e2721d753b6345d8e66c835661bce9d39",
+    "sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv": "sha256:c31a6dbe0b37d89c346ccca4b80569e8144745cb1eb3490cf89849845d579483",
+    "sim/lna-characterization/records/20261116-022647-eacd53a.md": "sha256:07e9d5c6938713da299eba3967049ec42141b66646ae2cfd9df6eaea142ef265",
+    "sim/lna-characterization/records/20261116-022647-eacd53a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261116-023212-eacd53a-compare.csv": "sha256:0b0d446ca86a51fdd45d19bf1c77851e2721d753b6345d8e66c835661bce9d39",
+    "sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv": "sha256:53ca2a3b4cabb2acf5ada709a01a2e84ffc476efda3fd7e728c6884c5f2a056a",
+    "sim/lna-characterization/records/20261116-023212-eacd53a.md": "sha256:4d8a850227adc86dea82bda185f383969240610776d26d68cbe91478b7b06875",
+    "sim/lna-characterization/records/20261116-023212-eacd53a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/20261116-190440-9cd8cdc.md": "sha256:f6b949d78e2ff641682da0b04da81ae33fb315669d7ad5f4e6a07f393da172db",
+    "sim/lna-characterization/records/20261117-040629-30d1235a-iip3-summary.csv": "sha256:517d1049bcff88e7d357f7b705d5c979dc399149ff3dc504c5c19add45e33ad7",
+    "sim/lna-characterization/records/20261117-040629-30d1235a-iip3.csv": "sha256:4340c2dd29e170d02420f3ea767de3620281c9106b0a513bddd7885975303a6d",
+    "sim/lna-characterization/records/20261117-040629-30d1235a.md": "sha256:b313490107a4c0ca04bc6a97e0ae77513b9308583843a0918016a7e9b8ea373c",
+    "sim/lna-characterization/records/20261117-040629-30d1235a.pdk-provenance.json": "sha256:cfc05055463206753923dbbf71de47879ec1c8469ec8bbfe0a8fe7a7551a5682",
+    "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md": "sha256:53eee615518d19ac477d903c2835d16dfa796e76e007f98be2752f0b8fc01cd0",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
+    "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:923252dfcaf4edc613de5dc32a75416498327fb4dd744f892148a685b071ce54",
+    "sim/lna-characterization/reduce_spec_envelopes.py": "sha256:7c0cd8867fd4b1d191582a9e1613a2651e19bd4188fdd0a5263a6b971542506f",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
+    "sim/lna-characterization/run_lna_iip3.sh": "sha256:ddf57057c86cdf2caa0b3efd9af7786139dab0d878dea2b523cd6327e42bb4a3",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:ef7f699cd5c6d14e640b505e4f57d0f10c82b102d2c232834aa7f7eaae7c80ab",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:280eeb08093a120e8dd2abd5919db9796b560712bb6f44d03e11a459037383ef",
+    "sim/lna-characterization/run_spec_envelopes.sh": "sha256:34a140e55dc0333a03b0b20ad8256c762feb0186f08e54fce632286bd12f0950",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
-    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:d3f721c82cb4ed8f3e20def0d91aa633591d01b2602438c78da8b31951be67f4",
+    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:4bf271b75eb7d931eedfd0b83cf22215550720f6d8f4f3aec90109d4b2bf3db8",
     "sim/lna-characterization/tests/test_parse_lna_sweep.py": "sha256:1f502b52304b3dd5d89eb15335bb76ee98bb5030649f7836197ff7ad001f1c3f",
     "sim/lna-characterization/tests/test_render_results.py": "sha256:dade5ce6c7e80f1b4335f02bc9fe4c3d33c00b6d6c0fe3c16ea618e188291c8c",
     "sim/lna-characterization/views/20260926-122301-088c734-nfmin290.csv": "sha256:f419185943f2d86a25f14b93954d2daca8d3c6358227ad6b14b814d3497eaaf7",
     "sim/lna-core-envelope/README.md": "sha256:052a87cd29d27b3764262e6717bdb6f540cb8585ffb56e30b76d30d387de8578",
     "sim/lna-core-envelope/core_envelope_campaign.py": "sha256:aa3278d55fde36aa6de33dbf76e1844bb94c0b82d918aa77a4c220cc06de70a4",
     "sim/lna-core-envelope/core_envelope_lifecycle.py": "sha256:32840dd2684900205ab2c40191de8c7ae229386c1437262e2cb80f9ca62a9bd8",
-    "sim/lna-core-envelope/derive_committed_record_envelope.py": "sha256:6888979f7121a808161b8b63d30c4a35176c1afa4e823af46e06dc69dba9a646",
+    "sim/lna-core-envelope/derive_committed_record_envelope.py": "sha256:ee7873a6416d9c2c6b49664745c44fdb2213a2a43e40d1c01e4007fa223ed36f",
     "sim/lna-core-envelope/dut/lna_2stage.spice.tmpl": "sha256:8e7f6abe62cb725bf2308461a5481e75e7e6c53c4892aff068d0f4c61696f59e",
-    "sim/lna-core-envelope/envelope_rf.py": "sha256:0f024753777662c74267322d5719ab8a0a6b1f2c8c644804e32c20d81d878f6a",
-    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:f9027cf6156bb72e692ddf14e2c80118cdcecc89146ec8ff5deb33bc04a5c208",
+    "sim/lna-core-envelope/envelope_rf.py": "sha256:3cf1fc347b5c582e7fe8b0f59399a54b5c9927b73e5c12b08f41266d3298138f",
+    "sim/lna-core-envelope/parse_core_envelope.py": "sha256:47ce6f3092d2679b94cf2211c7596f547868049f3022dd423e6a41b395fd4789",
     "sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv": "sha256:dead1d4b3415c5909de6e25602698bd6d390aa0b18380a3d77e745dc02d2ddd1",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv": "sha256:9c9280605a7f7e89a7fd8c4a53d376a1ba2e3e88883cb9783660d0faf3d523f4",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv": "sha256:c3fbeac7243324b42a7bd1c03fe434e7de8c2b480e6ea58ef04bc430c2238d62",
@@ -2434,9 +2665,9 @@
     "sim/lna-core-envelope/tests/test_check_envelope_replay.py": "sha256:57ae426bc80a0360ef63a8d3644bc43e11f6a5a0aae673bac927c1c735180491",
     "sim/lna-core-envelope/tests/test_core_envelope_campaign.py": "sha256:323b1d492b95081f6a3adcaf43546cbdb6b0910935941aa7cd2af0db116cc507",
     "sim/lna-core-envelope/tests/test_derive_append_only.py": "sha256:99f76a679add5991327c707fa60f01570e15a5a8defa8156d4b56580986049a1",
-    "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:35878831fd4d2c949c855c3713a2bb461ffdbce8c4c2b0f2545aca470708634e",
-    "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:3305ce98b7a34aea7ec27b86dd81bc594047b013f05b8c4fb6bbfbd740e03126",
-    "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:888b435c47b2a35406b871dfcafdf9269f324fbdc58178b15f4c71171ecc46bf",
+    "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:803c84153a1d1f6ff6cfd4f14692a966ee20b8d43304bb347df0e2a2d7b56fcf",
+    "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:348f305b19a3c3e189268866fb904d9855977ac92513c744d6ca620c65a36985",
+    "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:4b5f66eba1c5d10508373d9350c38f2047d514a0c74ca4356441d5408699bf52",
     "sim/lna-matching-feasibility/README.md": "sha256:3352edeebd0cef05f0af68497b40514ae764f0a49e6b75360738dc85828afebb",
     "sim/lna-matching-feasibility/feed-study-declaration.md": "sha256:26291c8f01e966d0b837fc97999a72df18d1d7c74c91d2e56434312c151591e2",
     "sim/lna-matching-feasibility/feed_study.py": "sha256:edafee1d671fde06267f6cc39289e0f917eae92b503cb287986eff848bf0dc77",

@@ -360,8 +360,15 @@ class ControlReplay(Base):
         self.assertEqual(R.REPLAY_REL_TOL, 1e-6)  # the existing parser's tolerance, not relaxed
 
     def test_tolerance_matches_existing_parser(self):
-        src = (EXP / "parse_core_envelope.py").read_text()
-        self.assertIn("worst > 1e-6", src)
+        # Assert the parser's tolerance VALUE, not a source spelling: since
+        # #276 the parser is importable, so the constant the control-drift
+        # gate actually compares against can be read directly.
+        _s = importlib.util.spec_from_file_location(
+            "parse_core_envelope", EXP / "parse_core_envelope.py")
+        pce = importlib.util.module_from_spec(_s)
+        _s.loader.exec_module(pce)
+        self.assertEqual(pce.CONTROL_RTOL, 1e-6)
+        self.assertEqual(pce.CONTROL_RTOL, R.REPLAY_REL_TOL)
 
 
 if __name__ == "__main__":

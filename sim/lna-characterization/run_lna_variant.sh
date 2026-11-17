@@ -90,7 +90,7 @@ NF_NPTS="${LNA_NF_NPTS:-11}"
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
 [[ -n "${LNA_VARIANTS:-}" ]] && GEN_ARGS+=(--variants "${LNA_VARIANTS}")
 [[ -n "${LNA_VARIANT_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_variant.sh: LNA_VARIANT_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }
-[[ -n "${LNA_TEMPS:-}" ]] && GEN_ARGS+=("--temps=${LNA_TEMPS}")
+[[ -n "${LNA_TEMPS:-}" ]] && { GEN_ARGS+=("--temps=${LNA_TEMPS}"); echo "run_lna_variant.sh: LNA_TEMPS set (${LNA_TEMPS}) -- temperature slice, partial PVT grid, NOT a full corner-box campaign"; }
 python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen "${GEN_ARGS[@]}"
 
 KLT_ARGS=(--format json)
@@ -246,8 +246,20 @@ PYEOF
   echo
   echo "- **Experiment**: lna-characterization, inductor-loss variants (issue #56)."
   echo "- **Claim**: what replacing the ideal \`Le\`/\`Lc\` of \`design/lna.sch\` with lossy"
-  echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
-  echo "  45 PVT cells, versus the ideal baseline run through the identical harness."
+  if [[ -n "${LNA_VARIANT_SMOKE:-}" ]]; then
+    SMOKE_SLICE_NOTE=""
+    [[ -n "${LNA_TEMPS:-}" ]] && SMOKE_SLICE_NOTE="; the requested temperature slice ${LNA_TEMPS} was ignored"
+    echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
+    echo "  single nominal 27 C smoke cell (plumbing check, NOT a PVT campaign${SMOKE_SLICE_NOTE}),"
+    echo "  versus the ideal baseline run through the identical harness."
+  elif [[ -n "${LNA_TEMPS:-}" ]]; then
+    echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
+    echo "  TEMPERATURE SLICE ${LNA_TEMPS} of the 45 PVT cells (partial grid, NOT the full"
+    echo "  corner box), versus the ideal baseline run through the identical harness."
+  else
+    echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
+    echo "  45 PVT cells, versus the ideal baseline run through the identical harness."
+  fi
   echo "  Not a conformance claim against any \`spec/target-spec.md\` row."
   echo "- **DUT**: \`design/netlist/lna.spice\` sha256 \`${DESIGN_NETLIST_SHA}\`, inlined verbatim"
   echo "  except the single inductor edit per variant (marked \`VARIANT EDIT\` in each"
@@ -269,6 +281,12 @@ PYEOF
   fi
   if (( SUMMARIZE_RC != 0 )); then
     echo "- **Reduction**: FAILED (exit ${SUMMARIZE_RC}) -- **coverage incomplete**; not a complete-grid result."
+  elif [[ -n "${LNA_VARIANT_SMOKE:-}" ]]; then
+    SMOKE_SLICE_NOTE=""
+    [[ -n "${LNA_TEMPS:-}" ]] && SMOKE_SLICE_NOTE="; the requested temperature slice ${LNA_TEMPS} was ignored"
+    echo "- **Reduction**: ok over the single nominal 27 C smoke cell only (plumbing check, all measurements finite${SMOKE_SLICE_NOTE}) -- NOT a PVT campaign."
+  elif [[ -n "${LNA_TEMPS:-}" ]]; then
+    echo "- **Reduction**: ok over the TEMPERATURE SLICE ${LNA_TEMPS} only (expected slice complete, all measurements finite) -- partial grid, NOT the full 45-cell PVT box."
   else
     echo "- **Reduction**: ok (expected grid complete, all measurements finite)."
   fi

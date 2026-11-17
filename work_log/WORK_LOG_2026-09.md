@@ -2,6 +2,11 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-16
+
+- **PR #22**: docs(spec): propose a 1.8 V cascode bias/supply topology in decision record 0001
+- **Issue #16** (closed): Decision record: LNA bias/supply topology (cascode vs. single-stage) and supply voltage
+
 ### 2026-09-11
 
 - **PR #15**: chore: remove dead _sg13g2_env_self variable in sim/env.sh

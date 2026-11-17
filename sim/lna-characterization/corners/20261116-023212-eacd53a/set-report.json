@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "request_count": 4,
+  "max_in_flight": 4,
+  "submitted": 4,
+  "refused": 0,
+  "refused_codes": [],
+  "requests": [
+    {
+      "index": 0,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_noise.request.json",
+      "status": "pass",
+      "exit_code": 0,
+      "job_id": "klt-sim-541914b4f7b9",
+      "job_ids": [
+        "klt-sim-541914b4f7b9"
+      ],
+      "report": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_noise.request/report.json",
+      "error": null,
+      "shards": [
+        {
+          "job_id": "klt-sim-541914b4f7b9",
+          "last_state": "done",
+          "interrupted_observations": 0
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_op.request.json",
+      "status": "pass",
+      "exit_code": 0,
+      "job_id": "klt-sim-5f2fe2b54c06",
+      "job_ids": [
+        "klt-sim-5f2fe2b54c06"
+      ],
+      "report": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_op.request/report.json",
+      "error": null,
+      "shards": [
+        {
+          "job_id": "klt-sim-5f2fe2b54c06",
+          "last_state": "done",
+          "interrupted_observations": 0
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_band.request.json",
+      "status": "pass",
+      "exit_code": 0,
+      "job_id": "klt-sim-2ce19a9153d2",
+      "job_ids": [
+        "klt-sim-2ce19a9153d2"
+      ],
+      "report": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_sp_band.request/report.json",
+      "error": null,
+      "shards": [
+        {
+          "job_id": "klt-sim-2ce19a9153d2",
+          "last_state": "done",
+          "interrupted_observations": 0
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/netlist-snapshots/20261116-023212-eacd53a/matched_sp_stab.request.json",
+      "status": "pass",
+      "exit_code": 0,
+      "job_id": "klt-sim-827f2fc4112b",
+      "job_ids": [
+        "klt-sim-827f2fc4112b"
+      ],
+      "report": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-258/sim/lna-characterization/corners/20261116-023212-eacd53a/set/matched_sp_stab.request/report.json",
+      "error": null,
+      "shards": [
+        {
+          "job_id": "klt-sim-827f2fc4112b",
+          "last_state": "done",
+          "interrupted_observations": 0
+        }
+      ]
+    }
+  ]
+}

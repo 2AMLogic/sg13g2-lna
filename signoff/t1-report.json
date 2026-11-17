@@ -140,9 +140,83 @@
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+          "rows": [
+            "power",
+            "ic1"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+          "rows": [
+            "gain",
+            "s11",
+            "s22"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+          "rows": [
+            "mu",
+            "negres"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json",
+          "rows": [
+            "nf"
+          ],
+          "status": "unmet",
+          "reason": "check_failed"
+        }
+      ],
+      "detail": {
+        "critical_metric_blockers": [
+          {
+            "metric": "sim__corner__failed_count",
+            "value": 27,
+            "higher_is_better": false
+          }
+        ],
+        "failed_citations": [
+          "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json"
+        ],
+        "failed_rows": [
+          "nf"
+        ],
+        "uncovered_rows": [],
+        "declared_gaps": [
+          {
+            "id": "iip3",
+            "gap": "numeric target NOT ratified (DR-0002 keeps the former DRAFT > 0 dBm DRAFT); until the number is ratified through its own decision record there is no ratified row for an envelope to grade"
+          },
+          {
+            "id": "supply",
+            "gap": "context row realized by the ratified corner axis itself (VDD 1.62/1.80/1.98 V = 1.80 V +/-10 %, DR-0001/DR-0002), not an independently measured performance row"
+          }
+        ],
+        "unratified_rows": [],
+        "row_sources": {
+          "gain": "derived",
+          "ic1": "derived",
+          "mu": "derived",
+          "negres": "derived",
+          "power": "derived",
+          "s11": "derived",
+          "s22": "derived"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -181,7 +255,7 @@
       "text": "one aggregated, current artifact summarizing per-spec-row performance across conditions, with the evidence record each verdict rests on (#309 tracks the aggregation tool). For a digital or mixed-signal digital partition this includes Fmax, area, and power across the corner set, not just functional pass/fail. Unlike every other T1 item, this one names no specific `klt` verb for its evidence, which may be a hand-assembled record (e.g. a committed Markdown characterization report) rather than one `klt` verb's own JSON output. `klt signoff --attest 8 --inventory FILE` (issue #4311) produces the generic envelope mechanically \u2014 report present, each spec row cited, each cited envelope present and passing its own `--check`, and for a digital partition Fmax/area/power bound per corner \u2014 and a met citation discloses whether the tool produced it; a bare hand-written envelope still grades. `klt signoff --manifest` grades it via an opt-in **generic evidence envelope** (`\"kind\": \"generic\"`, issue #1152) \u2014 a minimal, hand-rolled JSON wrapper asserting `status: \"pass\"|\"fail\"` for whatever record backs it. Item 8 is the only T1 item that accepts a *bare* generic envelope. Items 1, 2, 9 and 10 accept only the artifact-anchored form (issue #2718), and items 3\u20137 and 11 reject the generic kind entirely: see `docs/cli/signoff.md`'s \"Generic evidence (opt-in, non-`klt`-native)\" section for the envelope shape. The full opt-in kind -> item mapping (including kinds whose scope is currently empty) is published by `klt signoff --describe-grader` and the `klt signoff --help` epilog.",
       "notes": [],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
       "citation": null
     },

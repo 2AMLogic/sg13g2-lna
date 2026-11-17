@@ -1,0 +1,33 @@
+* klt sim -- generated corner deck, do not edit
+.lib /var/tmp/eda-job-klt-sim-2d9fc27d9f51/inputs/cornerHBT.lib hbt_bcs
+.lib /var/tmp/eda-job-klt-sim-2d9fc27d9f51/inputs/cornerMOShv.lib mos_ff
+.include /var/tmp/eda-job-klt-sim-2d9fc27d9f51/inputs/netlist.cir
+.temp 27
+.control
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save all
+alter vdd=1.98
+op 
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+print ic1
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+print ic2
+let ib1 = @q.xa.xq1.qnpn13g2[ib]
+print ib1
+let ve1 = v(xa.e1)
+print ve1
+let vbe1 = v(xa.b1) - v(xa.e1)
+print vbe1
+let vce1 = v(xa.casc) - v(xa.e1)
+print vce1
+let vce2 = v(xa.outn) - v(xa.casc)
+print vce2
+let idd = -i(vdd)
+print idd
+let pdc = v(vdd)*(-i(vdd))
+print pdc
+quit
+.endc
+.end

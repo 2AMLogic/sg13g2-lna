@@ -70,32 +70,60 @@ shell_lint() {
   shellcheck --shell=bash --severity=warning "${files[@]}"
 }
 
-# --- job: attest (issue #238; klt signoff --attest --check, needs release klt)
+# --- pinned release klt resolution (issue #357; shared by the attest and
+# signoff jobs below): the host klt when it matches the signoff pin,
+# otherwise a throwaway uvx wrapper dir prepended to PATH for exactly those
+# gated steps (never a host-wide install). A wrapper that cannot resolve --
+# e.g. uvx offline -- leaves klt_ready=0, so the gated steps SKIP instead of
+# silently grading with a dev-build klt.
 klt_pin="$(grep -Eo 'klayout-tools==[0-9][0-9.]*' .github/workflows/signoff.yml | head -n 1 | cut -d= -f3)"
 klt_have="$(command -v klt >/dev/null 2>&1 && klt --version 2>/dev/null | head -n 1)"
+klt_tmp=""
+klt_ready=0
 if [ -n "$klt_pin" ] && [ "$klt_have" = "klt $klt_pin" ]; then
+  klt_ready=1
+elif [ -n "$klt_pin" ] && command -v uvx >/dev/null 2>&1; then
+  klt_tmp="$(mktemp -d)" \
+    && printf '#!/usr/bin/env bash\nexec uvx --from "klayout-tools==%s" klt "$@"\n' "$klt_pin" >"$klt_tmp/klt" \
+    && chmod +x "$klt_tmp/klt" \
+    && [ "$(PATH="$klt_tmp:$PATH" klt --version 2>/dev/null | head -n 1)" = "klt $klt_pin" ] \
+    && klt_ready=1
+fi
+klt_tmp_cleanup() { [ -n "$klt_tmp" ] && rm -rf "$klt_tmp"; }
+trap klt_tmp_cleanup EXIT
+
+# --- job: attest (issue #238; klt signoff --attest --check, needs release klt)
+if [ "$klt_ready" -eq 1 ]; then
+  # Scope the pinned wrapper to these steps only: both attest commands and
+  # the signoff job's scripts below resolve a literal `klt` from PATH, and
+  # later jobs (design-source-audit) must keep seeing the host PATH.
+  [ -n "$klt_tmp" ] && PATH="$klt_tmp:$PATH"
   step "attest: T1 item 1 attestation reproduces" klt signoff --attest 1 --inventory signoff/attest/item1.json --check signoff/attest/item1.envelope.json
   step "attest: T1 item 9 attestation reproduces" klt signoff --attest 9 --inventory signoff/attest/item9.json --check signoff/attest/item9.envelope.json
   step "attest: T1 item 10 attestation reproduces" klt signoff --attest 10 --inventory signoff/attest/item10.json --check signoff/attest/item10.envelope.json
+  [ -n "$klt_tmp" ] && PATH="${PATH#"$klt_tmp":}"
 else
-  skip "attest: items 1, 9, 10 (need release klt $klt_pin on PATH, have: ${klt_have:-none}; CI pip-installs it)"
+  skip "attest: items 1, 9, 10 (need release klt $klt_pin on PATH or uvx to fetch it, have: ${klt_have:-none}; CI pip-installs it)"
 fi
 
 # --- job: signoff
 step "signoff: check-klt-pin.sh" .github/scripts/check-klt-pin.sh
-klt_pin="$(grep -Eo 'klayout-tools==[0-9][0-9.]*' .github/workflows/signoff.yml | head -n 1 | cut -d= -f3)"
-klt_have="$(command -v klt >/dev/null 2>&1 && klt --version 2>/dev/null | head -n 1)"
-if [ -n "$klt_pin" ] && [ "$klt_have" = "klt $klt_pin" ]; then
+step "signoff: test-check-klt-pin.sh" .github/scripts/test-check-klt-pin.sh
+if [ "$klt_ready" -eq 1 ]; then
+  [ -n "$klt_tmp" ] && PATH="$klt_tmp:$PATH"
   step "signoff: test-check-signoff.sh" .github/scripts/test-check-signoff.sh
   step "signoff: check-signoff.sh" .github/scripts/check-signoff.sh
+  [ -n "$klt_tmp" ] && PATH="${PATH#"$klt_tmp":}"
 else
-  skip "signoff: test-check-signoff.sh (need release klt $klt_pin on PATH, have: ${klt_have:-none}; CI pip-installs it)"
+  skip "signoff: test-check-signoff.sh (need release klt $klt_pin on PATH or uvx to fetch it, have: ${klt_have:-none}; CI pip-installs it)"
   skip "signoff: check-signoff.sh (need release klt $klt_pin on PATH)"
 fi
 
 # --- job: reduction-tests
 step "reduction-tests: lna-characterization unit tests" \
   python3 -I -m unittest discover -s sim/lna-characterization/tests -v
+step "reduction-tests: spec-envelope committed-record replay (issue #364)" \
+  python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check
 
 # --- job: hbt-reduction-tests
 # (fixed-T0 NF re-derivation, issue #101, and the production log parser
@@ -154,6 +182,10 @@ step "record-citations: check" .github/scripts/check-record-citations
 # --- job: testbench-inventory (issue #195; read-only, no PDK/ngspice/klt)
 step "testbench-inventory: self-test" .github/scripts/test-check-testbench-inventory.sh
 step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inventory.py
+
+# --- job: characterization-report (issue #233; read-only, no PDK/ngspice/klt)
+step "characterization-report: self-test" .github/scripts/test-characterization-report.sh
+step "characterization-report: check" python3 -I .github/scripts/characterization-report
 
 # --- job: repo-hygiene (issue #217; read-only, no PDK/ngspice/klt)
 step "repo-hygiene: self-test" .github/scripts/test-check-repo-hygiene.sh

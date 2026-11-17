@@ -1,0 +1,508 @@
+#!/usr/bin/env python3
+"""Generate and check the T1 item-8 characterization report (issue #233).
+
+T1 item 8 ("Characterization report") asks for one aggregated, current
+artifact summarizing per-spec-row performance across conditions, with the
+evidence record each verdict rests on. The artifact is
+`measurements/characterization-report.json`: one row per ratified row of
+`spec/ratified-rows.json`, graded from the committed item-5 `klt sim`
+envelopes that `signoff/manifest.json` cites (plus item-6/7 evidence when
+the manifest cites any). The generic evidence envelope
+`signoff/characterization.envelope.json` wraps the report for item 8; its
+`status` is derived mechanically from the per-row verdicts — `pass` only
+when every graded row passes — never hand-set. A failing row (today: `nf`)
+yields `fail`, and item 8 then renders `unmet`; that is the honest verdict,
+not a defect of this checker.
+
+The per-row verdicts, worst values and binding corners come from
+`sim/lna-characterization/reduce_spec_envelopes.py` (loaded by explicit
+path so `python3 -I` works), the same module whose committed verdict files
+CI replays — one mapping of envelope measurement to ratified row, not two.
+
+Modes
+-----
+(default) check   Read-only. Recompute the report and its envelope from the
+                  committed inputs and fail on any divergence: a stale report
+                  or envelope, a cited item-5 envelope that no longer hashes
+                  to its manifest pin, a cited record the coverage index
+                  marks superseded or historical, a ratified row with neither
+                  covering envelope nor declared gap, or a manifest item-8
+                  citation that does not bind the current report hash. Needs
+                  only python3 (stdlib); no klt, PDK, ngspice, git or network,
+                  and it writes nothing.
+--write           Regenerate `measurements/characterization-report.json` and
+                  `signoff/characterization.envelope.json`. Running it twice
+                  on a clean tree is byte-identical.
+
+Exit status: 0 ok, 1 check/generation failure, 2 usage error.
+"""
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import re
+import sys
+
+# dont_write_bytecode first: a __pycache__/ write would break this checker's
+# own "check mode writes nothing" guarantee (same recipe as
+# check-testbench-inventory.py, which loads signoff_common.py the same way).
+sys.dont_write_bytecode = True
+
+MANIFEST = "signoff/manifest.json"
+RATIFIED = "spec/ratified-rows.json"
+COVERAGE = "signoff/testbench-coverage.json"
+REDUCER = "sim/lna-characterization/reduce_spec_envelopes.py"
+REPORT = "measurements/characterization-report.json"
+ENVELOPE = "signoff/characterization.envelope.json"
+ENVELOPE_ITEM = 8
+
+CITATION_RE = re.compile(
+    r"^sim/lna-characterization/netlist-snapshots/([^/]+)/reports/([A-Za-z0-9_]+)\.report\.json$")
+
+
+class Fail(Exception):
+    """A generation/check failure reported as `FAIL: <msg>` with exit 1."""
+
+
+def digest_eq(a, b):
+    """Compare two sha256 digests regardless of the `sha256:` prefix: the
+    klt envelopes carry the prefix in `provenance.input.content_hash` but
+    bare hex in `environment.netlist_sha256` / `netlist_closure[].sha256`."""
+    strip = lambda d: d[7:] if isinstance(d, str) and d.startswith("sha256:") else d
+    return a is not None and b is not None and strip(a) == strip(b)
+
+
+def read_bytes(root, rel):
+    try:
+        with open(os.path.join(root, rel), "rb") as fh:
+            return fh.read()
+    except OSError as exc:
+        raise Fail("%s is missing or unreadable (%s)" % (rel, exc))
+
+
+def sha256_bytes(data):
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def load_json(root, rel):
+    try:
+        return json.loads(read_bytes(root, rel).decode("utf-8"))
+    except ValueError as exc:
+        raise Fail("%s is not valid JSON (%s)" % (rel, exc))
+
+
+def load_reducer(root):
+    """Path-load the bench reducer: the one measurement->row mapping."""
+    path = os.path.join(root, REDUCER)
+    if not os.path.isfile(path):
+        raise Fail("%s is missing (the reducer is the bench's row mapping)" % REDUCER)
+    spec = importlib.util.spec_from_file_location("reduce_spec_envelopes", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def render_target(entry):
+    fmt = {k: entry[k] for k in ("comparator", "limit", "unit")}
+    fmt["tolerance_pct"] = entry.get("tolerance_pct", "")
+    return entry["template"].format(**fmt)
+
+
+def load_ratified(root):
+    """The ratified row list, lightly validated. The deep validation against
+    the spec table is render_results.py's job (its own CI job); this checker
+    needs only the row list, statuses and target strings."""
+    doc = load_json(root, RATIFIED)
+    entries = doc.get("rows")
+    if not isinstance(entries, list) or not entries:
+        raise Fail("%s: no rows" % RATIFIED)
+    out = []
+    seen = set()
+    for e in entries:
+        for key in ("id", "selector", "status", "comparator", "limit", "unit",
+                    "template", "classification"):
+            if key not in e:
+                raise Fail("%s: entry %r missing %r" % (RATIFIED, e.get("id"), key))
+        if e["id"] in seen:
+            raise Fail("%s: duplicate id %r" % (RATIFIED, e["id"]))
+        seen.add(e["id"])
+        row = dict(e)
+        row["target"] = render_target(e)
+        out.append(row)
+    return out
+
+
+def item5_citations(manifest):
+    ev = manifest.get("evidence", {}).get("5")
+    if not isinstance(ev, list) or not ev:
+        raise Fail("%s: evidence.\"5\" is missing or empty; the report is generated "
+                   "from the cited item-5 envelopes" % MANIFEST)
+    for c in ev:
+        for key in ("file", "content_hash", "rows"):
+            if key not in c:
+                raise Fail("%s: an evidence.\"5\" entry lacks %r" % (MANIFEST, key))
+        if not isinstance(c["rows"], list) or not c["rows"]:
+            raise Fail("%s: an evidence.\"5\" entry for %s declares no rows"
+                       % (MANIFEST, c["file"]))
+    return ev
+
+
+def declared_gaps(manifest):
+    """Row-id -> gap text from the manifest's item-5 spec_rows declaration."""
+    out = {}
+    for entry in (manifest.get("spec_rows", {}).get("5") or []):
+        if "gap" in entry:
+            out[entry["id"]] = entry["gap"]
+    return out
+
+
+def check_superseded(root, rec_id):
+    """Refuse a record the coverage index does not index as current DUT work."""
+    index = load_json(root, COVERAGE)
+    hits = [c for c in index.get("claims", [])
+            if rec_id in c.get("id", "")]
+    if not hits:
+        raise Fail("record %s is not indexed in %s; unindexed evidence cannot "
+                   "back the characterization report" % (rec_id, COVERAGE))
+    if len(hits) > 1:
+        raise Fail("record %s matches %d claims in %s; expected exactly one"
+                   % (rec_id, len(hits), COVERAGE))
+    claim = hits[0]
+    if claim.get("result_status") == "superseded":
+        raise Fail("record %s is superseded (%s) and cannot back the "
+                   "characterization report" % (rec_id, claim["id"]))
+    if claim.get("classification") == "historical-dut":
+        raise Fail("record %s measures a superseded DUT (%s: historical-dut) "
+                   "and cannot back the characterization report"
+                   % (rec_id, claim["id"]))
+
+
+def verify_envelope_input(root, rel, pin):
+    """The grader's freshness rule for a cited `klt` envelope: the manifest
+    pin must equal the envelope's own `provenance.input.content_hash`, and
+    the input artifact the envelope names must still re-hash to it. A
+    mismatch means the envelope would grade stale evidence.
+
+    Two input shapes exist in this repo: `path` + `content_hash` (the
+    generic envelopes, `klt yield`/`klt pex` reports) and the `klt sim`
+    form, where `provenance.input` names the netlist by hash only and
+    `environment.netlist_closure` carries it by path and sha256.
+    """
+    env = load_json(root, rel)
+    inp = (env.get("provenance") or {}).get("input") or {}
+    if not digest_eq(inp.get("content_hash"), pin):
+        raise Fail("%s: envelope records input %s but the manifest pins %s"
+                   % (rel, inp.get("content_hash"), pin))
+    path = inp.get("path")
+    if path:
+        actual = sha256_bytes(read_bytes(root, path))
+        if not digest_eq(actual, pin):
+            raise Fail("%s: input artifact %s no longer hashes to the pinned %s"
+                       % (rel, path, pin))
+        return env
+    closure = (env.get("environment") or {}).get("netlist_closure") or []
+    if not closure:
+        raise Fail("%s: provenance.input names no path and carries no "
+                   "netlist_closure to re-hash" % rel)
+    for entry in closure:
+        if not (entry.get("path") and entry.get("sha256")):
+            continue
+        actual = sha256_bytes(read_bytes(root, entry["path"]))
+        if not digest_eq(actual, entry["sha256"]):
+            raise Fail("%s: netlist-closure input %s no longer hashes to its "
+                       "recorded %s" % (rel, entry["path"], entry["sha256"]))
+    netlist_hash = (env.get("environment") or {}).get("netlist_sha256")
+    if netlist_hash and not digest_eq(netlist_hash, pin):
+        raise Fail("%s: envelope netlist hash %s disagrees with the manifest "
+                   "pin %s" % (rel, netlist_hash, pin))
+    return env
+
+
+def load_citations(root, citations, reducer):
+    """Hash-verify each citation, group by snapshot, reduce, cross-check."""
+    rec_ids = set()
+    stems = {}
+    for c in citations:
+        m = CITATION_RE.match(c["file"])
+        if not m:
+            raise Fail("%s: citation %s does not point at a "
+                       "netlist-snapshots/<record>/reports/<stem>.report.json envelope"
+                       % (MANIFEST, c["file"]))
+        rec_ids.add(m.group(1))
+        stems[m.group(2)] = c
+    if len(rec_ids) != 1:
+        raise Fail("%s: item-5 citations span records %s; the characterization "
+                   "report is generated from one record"
+                   % (MANIFEST, ", ".join(sorted(rec_ids))))
+    rec_id = rec_ids.pop()
+
+    missing = sorted(set(reducer.STEMS) - set(stems))
+    extra = sorted(set(stems) - set(reducer.STEMS))
+    if missing or extra:
+        raise Fail("manifest citations and the bench reducer disagree on the "
+                   "envelope set (missing: %s; unknown: %s)"
+                   % (", ".join(missing) or "none", ", ".join(extra) or "none"))
+
+    for c in citations:
+        verify_envelope_input(root, c["file"], c["content_hash"])
+
+    check_superseded(root, rec_id)
+
+    snap = os.path.join(root, "sim/lna-characterization/netlist-snapshots", rec_id)
+    _, reports, summary, rollups, _ = reducer.reduce_snapshot(snap)
+
+    by_stem_rows = {}
+    for r in rollups:
+        by_stem_rows.setdefault(r["stem"], set()).add(r["row"])
+    for stem, c in sorted(stems.items()):
+        declared = set(c["rows"])
+        reduced = by_stem_rows.get(stem, set())
+        if declared != reduced:
+            raise Fail("%s: declared rows %s but the reducer grades %s for "
+                       "envelope %s" % (MANIFEST, sorted(declared) or "{}",
+                                        sorted(reduced) or "{}", stem))
+    return rec_id, stems, reports, summary, rollups
+
+
+def build_report(root):
+    reducer = load_reducer(root)
+    manifest = load_json(root, MANIFEST)
+    ratified = load_ratified(root)
+    ratified_ids = [r["id"] for r in ratified]
+    by_id = {r["id"]: r for r in ratified}
+    gaps = declared_gaps(manifest)
+
+    rec_id, stems, reports, summary, rollups = load_citations(
+        root, item5_citations(manifest), reducer)
+
+    # The min/max rollup extreme per (stem, measurement), taken from the
+    # reducer's own GRADED mapping so the report cannot drift from it.
+    extreme_by = {}
+    for stem, graded in reducer.GRADED.items():
+        for meas_name, _row_id, extreme in graded:
+            extreme_by[(stem, meas_name)] = extreme
+
+    rollups_by_row = {}
+    for r in rollups:
+        rollups_by_row.setdefault(r["row"], []).append(r)
+    unknown = sorted(set(rollups_by_row) - set(ratified_ids))
+    if unknown:
+        raise Fail("the bench reducer grades row(s) %s that %s does not list; "
+                   "one of the two drifted" % (", ".join(unknown), RATIFIED))
+
+    rows = []
+    for entry in ratified:
+        rid = entry["id"]
+        row = {
+            "id": rid,
+            "selector": entry["selector"],
+            "status": entry["status"],
+            "classification": entry["classification"],
+            "target": entry["target"],
+        }
+        if rid in rollups_by_row:
+            meas = []
+            for r in rollups_by_row[rid]:
+                c = stems[r["stem"]]
+                meas.append({
+                    "envelope": c["file"],
+                    "content_hash": c["content_hash"],
+                    "measurement": r["measurement"],
+                    "statistic": extreme_by.get((r["stem"], r["measurement"])),
+                    "limits": json.loads(r["limits"]) if r["limits"] else None,
+                    "status": r["status"],
+                    "worst_value": r["worst_value"],
+                    "unit": r["unit"],
+                    "binding_corner": r["binding_corner"],
+                })
+            row["verdict"] = "pass" if all(m["status"] == "pass" for m in meas) else "fail"
+            row["measurements"] = meas
+        elif rid in gaps:
+            row["verdict"] = "gap"
+            row["gap"] = gaps[rid]
+        else:
+            raise Fail("ratified row %r has neither a covering envelope nor a "
+                       "declared gap; a row may not be silently omitted" % rid)
+        rows.append(row)
+
+    graded = [r for r in rows if r["verdict"] in ("pass", "fail")]
+    if not graded:
+        raise Fail("the report grades no ratified rows; refusing to emit an "
+                   "envelope for a vacuous report")
+    failed = sorted(r["id"] for r in graded if r["verdict"] != "pass")
+    gap_ids = [r["id"] for r in rows if r["verdict"] == "gap"]
+    status = "pass" if not failed else "fail"
+
+    envelopes = []
+    for stem in sorted(stems):
+        c = stems[stem]
+        s = summary[stem]
+        envelopes.append({
+            "analysis": stem,
+            "file": c["file"],
+            "content_hash": c["content_hash"],
+            "rows": sorted(c["rows"]),
+            "status": s["status"],
+            "corner_count": s["corner_count"],
+            "corners_passed": s["passed"],
+            "corners_failed": s["failed"],
+        })
+
+    other = {}
+    for item in ("6", "7"):
+        ev = manifest.get("evidence", {}).get(item)
+        if not ev:
+            continue
+        entries = []
+        for c in (ev if isinstance(ev, list) else [ev]):
+            entry = {"file": c["file"], "content_hash": c["content_hash"]}
+            verify_envelope_input(root, c["file"], c["content_hash"])
+            doc = load_json(root, c["file"])
+            if isinstance(doc, dict) and "status" in doc:
+                entry["envelope_status"] = doc["status"]
+            entries.append(entry)
+        other[item] = entries
+
+    report = {
+        "schema_version": 1,
+        "generated_by": ".github/scripts/characterization-report",
+        "record": rec_id,
+        "snapshot_dir": "sim/lna-characterization/netlist-snapshots/%s" % rec_id,
+        "row_source": RATIFIED,
+        "rows": rows,
+        "envelopes": envelopes,
+        "summary": {
+            "graded": len(graded),
+            "passed": len(graded) - len(failed),
+            "failed": len(failed),
+            "failed_rows": failed,
+            "gaps": len(gap_ids),
+            "gap_rows": gap_ids,
+            "status": status,
+        },
+        # The manifest is deliberately not hashed here: it pins this report's
+        # hash in evidence."8", so hashing it would make the pin non-convergent.
+        # Freshness against the manifest is enforced by recomputation in check
+        # mode, which re-derives the report from the live manifest and
+        # byte-compares.
+        "inputs": {
+            "ratified_rows": {"path": RATIFIED, "sha256": sha256_bytes(read_bytes(root, RATIFIED))},
+            "coverage_index": {"path": COVERAGE, "sha256": sha256_bytes(read_bytes(root, COVERAGE))},
+            "reducer": {"path": REDUCER, "sha256": sha256_bytes(read_bytes(root, REDUCER))},
+        },
+    }
+    if other:
+        report["other_cited_evidence"] = other
+    return report
+
+
+def envelope_for(report_hash, report):
+    s = report["summary"]
+    failed = ", ".join(s["failed_rows"]) if s["failed_rows"] else "none"
+    return {
+        "schema_version": 1,
+        "kind": "generic",
+        "status": s["status"],
+        "t1_item": ENVELOPE_ITEM,
+        "summary": (
+            "Characterization report for klt-sim record %s: %d/%d graded ratified rows "
+            "pass (%s fail), %d declared gaps (%s). The status is derived mechanically "
+            "from the per-row verdicts, never hand-set; a failing row keeps item 8 "
+            "unmet until the design meets the ratified row."
+            % (report["record"], s["passed"], s["graded"], failed,
+               s["gaps"], ", ".join(s["gap_rows"]) or "none")
+        ),
+        "source": "%s via .github/scripts/characterization-report" % REPORT,
+        "provenance": {"input": {"path": REPORT, "content_hash": report_hash}},
+    }
+
+
+def render(obj):
+    """The committed on-disk form: sorted keys, 2-space indent, one trailing
+    newline (same convention as the other signoff inventories)."""
+    return (json.dumps(obj, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def check_manifest_citation(audit, root, report_hash):
+    """When item 8 is cited, the citation must bind this envelope to this
+    report. An absent citation is a deliberate act (the grader then renders
+    no_evidence); the checker warns, not fails, so unciting stays possible."""
+    ev = load_json(root, MANIFEST).get("evidence", {}).get(str(ENVELOPE_ITEM))
+    if not ev:
+        audit.append("note: item %d is not cited in %s; the grader renders it "
+                     "no_evidence" % (ENVELOPE_ITEM, MANIFEST))
+        return
+    entry = ev if isinstance(ev, dict) else None
+    if entry is None:
+        audit.append("FAIL: evidence.\"%d\" is not a single file citation"
+                     % ENVELOPE_ITEM)
+        return
+    if entry.get("file") != ENVELOPE:
+        audit.append("FAIL: evidence.\"%d\" cites %s, not %s"
+                     % (ENVELOPE_ITEM, entry.get("file"), ENVELOPE))
+    if entry.get("content_hash") != report_hash:
+        audit.append("FAIL: evidence.\"%d\" pins %s but the current report hashes "
+                     "to %s (regenerate, or refresh the pin)"
+                     % (ENVELOPE_ITEM, entry.get("content_hash"), report_hash))
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--root", default=os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..")))
+    ap.add_argument("--write", action="store_true",
+                    help="regenerate the report and its item-8 envelope")
+    args = ap.parse_args(argv)
+    root = os.path.abspath(args.root)
+
+    try:
+        report = build_report(root)
+    except Fail as exc:
+        print("FAIL: %s" % exc, file=sys.stderr)
+        return 1
+
+    report_bytes = render(report)
+    report_hash = sha256_bytes(report_bytes)
+    envelope_bytes = render(envelope_for(report_hash, report))
+
+    if args.write:
+        for rel, data in ((REPORT, report_bytes), (ENVELOPE, envelope_bytes)):
+            path = os.path.join(root, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fh:
+                fh.write(data)
+        print("wrote %s (%s)" % (REPORT, report_hash))
+        print("wrote %s (status %s)" % (ENVELOPE, report["summary"]["status"]))
+        print("refresh the item-%d citation in %s if the report hash changed, then "
+              "re-render signoff/t1-report.json (signoff/README.md)"
+              % (ENVELOPE_ITEM, MANIFEST))
+        return 0
+
+    audit = []
+    for rel, data in ((REPORT, report_bytes), (ENVELOPE, envelope_bytes)):
+        try:
+            committed = read_bytes(root, rel)
+        except Fail as exc:
+            print("FAIL: %s" % exc, file=sys.stderr)
+            return 1
+        if committed != data:
+            print("FAIL: %s does not match a fresh generation (regenerate with "
+                  "--write)" % rel, file=sys.stderr)
+            audit.append("stale: %s" % rel)
+    check_manifest_citation(audit, root, report_hash)
+    for line in audit:
+        print(line, file=sys.stderr)
+    if any(line.startswith("FAIL") or line.startswith("stale") for line in audit):
+        return 1
+    s = report["summary"]
+    print("OK: %s is fresh and bound by %s (record %s: %d/%d graded rows pass, "
+          "%d gap(s); envelope status %s)"
+          % (REPORT, ENVELOPE, report["record"], s["passed"], s["graded"],
+             s["gaps"], s["status"]))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

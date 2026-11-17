@@ -1,0 +1,145 @@
+{
+  "netlist": "matched_iip3_a1mv.spice",
+  "models": {
+    "pdk": "ihp-sg13g2"
+  },
+  "corners": {
+    "process": [
+      {
+        "name": "typ",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_tt"
+          }
+        ]
+      },
+      {
+        "name": "bcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_bcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ff"
+          }
+        ]
+      },
+      {
+        "name": "wcs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_wcs"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_ss"
+          }
+        ]
+      },
+      {
+        "name": "sf",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_sf"
+          }
+        ]
+      },
+      {
+        "name": "fs",
+        "sections": [
+          {
+            "lib": "libs.tech/ngspice/models/cornerHBT.lib",
+            "section": "hbt_typ"
+          },
+          {
+            "lib": "libs.tech/ngspice/models/cornerMOShv.lib",
+            "section": "mos_fs"
+          }
+        ]
+      }
+    ],
+    "supply_v": {
+      "vdd": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "set specwindow = none\nop\nlet ic1 = @q.xa.xq1.qnpn13g2[ic]\nlet ic2 = @q.xa.xq2.qnpn13g2[ic]\nlet vce1 = v(xa.casc) - v(xa.e1)\nlet vce2 = v(xa.outn) - v(xa.casc)\nlet idd = -i(vdd)\necho \"OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd\"\ntran 4e-12 1.26214e-06 1e-06 4e-12\nlinearize v(rfout) v(vin)\nlet npts = length(v(rfout))\necho \"NPTS $&npts\"\nlet tv = time\nlet w1 = 2*PI*2441406250.0\nlet w2 = 2*PI*2449035644.53125\nlet w3 = 2*PI*2433776855.46875\nlet w4 = 2*PI*2456665039.0625\nlet d1 = 2*sqrt(mean(v(rfout)*cos(w1*tv))^2 + mean(v(rfout)*sin(w1*tv))^2)\nlet d2 = 2*sqrt(mean(v(rfout)*cos(w2*tv))^2 + mean(v(rfout)*sin(w2*tv))^2)\nlet d3 = 2*sqrt(mean(v(rfout)*cos(w3*tv))^2 + mean(v(rfout)*sin(w3*tv))^2)\nlet d4 = 2*sqrt(mean(v(rfout)*cos(w4*tv))^2 + mean(v(rfout)*sin(w4*tv))^2)\nlet ds = 2*sqrt(mean(v(vin)*cos(w1*tv))^2 + mean(v(vin)*sin(w1*tv))^2)\necho \"DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds\"\nfft v(rfout) v(vin)",
+    "args": ""
+  },
+  "measurements": [
+    {
+      "name": "fft_df",
+      "expr": "frequency[1] - frequency[0]"
+    },
+    {
+      "name": "tone1",
+      "expr": "mag(v(rfout))[640]"
+    },
+    {
+      "name": "tone2",
+      "expr": "mag(v(rfout))[642]"
+    },
+    {
+      "name": "im3l",
+      "expr": "mag(v(rfout))[638]"
+    },
+    {
+      "name": "im3h",
+      "expr": "mag(v(rfout))[644]"
+    },
+    {
+      "name": "im5l",
+      "expr": "mag(v(rfout))[636]"
+    },
+    {
+      "name": "im5h",
+      "expr": "mag(v(rfout))[646]"
+    },
+    {
+      "name": "src1",
+      "expr": "mag(v(vin))[640]"
+    },
+    {
+      "name": "src2",
+      "expr": "mag(v(vin))[642]"
+    }
+  ],
+  "options": {
+    "timeout_s": 900,
+    "keep_artifacts": true,
+    "osdi_preload": [
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi",
+      "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi"
+    ],
+    "stage_model_inputs": true,
+    "ngspice_init": [
+      "set numdgt=8"
+    ]
+  },
+  "remote": {
+    "hosts": 15
+  }
+}

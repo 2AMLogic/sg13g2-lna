@@ -25,6 +25,10 @@
 #   3. a line removed from the copied shell-lint discovery       -> FAILS
 #   4. an unhandled `run: |` step added to a workflow copy       -> FAILS
 #   5. extraction found a sane number of commands (no vacuous pass)
+#   6. an attest step (items 1, 9, 10) removed from a copy       -> FAILS;
+#      the runner must also keep a pinned-klt fallback for the gated
+#      attest/signoff steps (issue #357: without one they are always
+#      skipped on dev-build hosts, the #355 failure shape)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
@@ -177,6 +181,26 @@ if out="$(check "$TMP/wf.yml" "$RUNNER")"; then bad "unhandled 'run: |' step was
 elif echo "$out" | grep -qF "unhandled block-scalar step 'Some future multi-line step'"; then
   ok "unhandled 'run: |' step fails loudly"
 else bad "unhandled 'run: |' step failed for the wrong reason: $out"; fi
+
+# 6. attest coverage (issue #357): the drift gate had no attest-specific
+# case, so nothing failed loudly when the three attest steps went missing
+# from the runner. Each must be removable only at the cost of a FAIL, and
+# the runner must keep a pinned-klt (uvx) fallback so the steps actually
+# run on dev-build-klt hosts instead of always skipping.
+for n in 1 9 10; do
+  grep -vF -- "klt signoff --attest $n --inventory signoff/attest/item$n.json --check signoff/attest/item$n.envelope.json" \
+    "$RUNNER" > "$TMP/mutant.sh"
+  if check "$WF" "$TMP/mutant.sh" >/dev/null; then
+    bad "removing the attest item $n step from the runner was not detected"
+  else
+    ok "drift detected when the attest item $n step is removed"
+  fi
+done
+if grep -qF 'uvx --from' "$RUNNER"; then
+  ok "runner keeps a pinned-uvx fallback for the gated attest/signoff steps"
+else
+  bad "runner lost the pinned-uvx fallback for the attest/signoff steps (steps present but always skipped on dev-build klt hosts; teach this test the new fallback mechanism if the mechanism changed)"
+fi
 
 echo "passed=$pass failed=$fail"
 [ "$fail" -eq 0 ]

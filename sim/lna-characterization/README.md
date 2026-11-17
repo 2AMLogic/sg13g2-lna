@@ -22,25 +22,70 @@ rather than on this campaign's numbers.
 
 ### Which DUT each record describes — read this before quoting any number
 
-This directory holds **three** append-only records, and they characterize
-**three different circuits**. A number quoted from the wrong one is a
-statement about a design that no longer exists.
+This directory holds **twelve** append-only characterization records, and
+they characterize **six different circuits** (six distinct DUT sha256s). A
+number quoted from the wrong one is a statement about a design that no
+longer exists. The two `issue-258-xout-bleed-convergence*.md` files are
+convergence notes for the #258 xout DC bleed, and
+`issue-27-matched-pvt-verdict.md` is the #27 verdict synthesis for the
+matched DUT (45-cell PVT assembly + the `|S22| > 1` anomaly probe);
+these are not characterization records and are deliberately not rows of
+this table.
 
-| Record | DUT sha256 (first 16) | The circuit it characterizes | Standing |
-|---|---|---|---|
-| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23) | **historical** |
-| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34) | **historical** |
-| **`20260926-122301-088c734`** | **`23f9445b01dbec99`** | **DR-0003 flat-reference bias core** (issue #33 / PR #40, commit `e25df3b`) — current `main` | **current** |
+The Standing column uses [`signoff/README.md`](../../signoff/README.md)'s
+taxonomy. The DUT committed on `main` today is
+`design/netlist/lna.spice` sha256 `151aec66ade8f052…` (commit `dd6c5be`:
+DR-0003 flat-reference core + `lp_noise` matching network + DC bleed on
+xout); only the records listing that sha are `present-dut`.
+
+| Record | DUT sha256 (first 16) | The circuit it characterizes | Coverage | Standing |
+|---|---|---|---|---|
+| `20260918-210908-4293920` | `79447449c494d601` | original cascode, **placeholder resistive base-bias divider** (issue #17 / PR #23, commit `988b474`) | full grid (45/45 cells) | **historical-dut** |
+| `20260921-131646-d6da30a` | `fd7c18ab8d4cea52` | `npn13G2` **mirror-reference** bias (PR #34, commit `f718094`) | full grid (45/45 cells) | **historical-dut** |
+| `20260926-122301-088c734` | `23f9445b01dbec99` | **DR-0003 flat-reference bias core**, pre-match (issue #33 / PR #40, commit `e25df3b`) | full grid (45/45 cells) | **historical-dut** |
+| `20261101-023117-5bbb70c` | `f58b6a1a37baf31c` | DR-0003 core + hand-rounded matching-network draft — **no commit of `design/netlist/lna.spice` on `main` hashes to this sha** (see below) | smoke — plumbing check, **not** a PVT campaign (3/3 points) | **historical-dut** |
+| `20261101-023246-5bbb70c` | `2575cbbc00459b60` | DR-0003 core + `lp_noise` matching network, **pre-bleed** (commit `b8ad5d3`) | smoke — plumbing check, **not** a PVT campaign (3/3 points) | **historical-dut** |
+| `20261106-054735-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim, no inductor edit (`dd6c5be`) | single-temperature slice (125 °C, 15/45 cells) | **present-dut** |
+| `20261106-055142-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **coverage incomplete** (−40/27 °C, 30 cells; 32 validation issues) — quote nothing from it | **present-dut** |
+| `20261106-055453-64b37ae` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | **failed** — reduction failed, no reports, no summary — quote nothing from it | **present-dut** |
+| `20261114-025351-7a54cc2` | `2575cbbc00459b60` | issue #56 inductor-loss variant campaign (6 variants incl. `ideal`) on the **pre-bleed** DUT (`b8ad5d3`) — a variant study of a superseded circuit; both facts hold | full grid per variant (6 × 45 cells) | **variant-exploration** |
+| `20261116-022647-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (27 °C, 15/45 cells) | **present-dut** |
+| `20261116-023212-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (−40 °C, 15/45 cells) | **present-dut** |
+| `20261117-040629-30d1235a` | `151aec66ade8f052` | issue #337 two-tone IIP3 on the committed matched DUT, the ratified `tb_lna_iip3.spice.tmpl` protocol via `run_lna_iip3.sh` (deck reproduces the template's control sequence; template unchanged) | full grid (45/45 cells, two drive levels per cell + the nominal cell's 0.5/4/8 mV extras) | **present-dut** |
+
+The `Coverage` column is run status, not DUT taxonomy (taxonomy is the
+`Standing` column alone): a `full grid` record spans all 45 PVT cells of
+§PVT grid and corner scope, a `single-temperature slice` is 15 of those 45
+cells at one temperature — three such slices on the same DUT only assemble a
+full grid as a *set* — a `smoke` record is the plumbing check of §Regenerating
+(not a campaign), and a `coverage incomplete` / `failed` record
+carries no quotable PVT evidence at all.
 
 The headline numbers, findings narrative and every figure quoted below are
-from the **current** record unless a sentence explicitly names a historical
-one. Re-baselined under issue
-[#49](https://github.com/2AMLogic/sg13g2-lna/issues/49); the two historical
-records are untouched (`../README.md` §"Append-only rule") and remain the
-only valid source for statements about the DUTs *they* ran.
+from record `20260926-122301-088c734` — the DR-0003 re-baseline under issue
+[#49](https://github.com/2AMLogic/sg13g2-lna/issues/49) — unless a sentence
+explicitly names another record. That record is itself now `historical-dut`:
+its DUT predates the `lp_noise` matching network (`b8ad5d3`) and the xout DC
+bleed (`dd6c5be`), so read its numbers as the **pre-match baseline**, not as
+the circuit committed on `main` today. All records are untouched
+(`../README.md` §"Append-only rule") and each remains the only valid source
+for statements about the DUT *it* ran.
 
-> **Headline conclusion, stated up front so it is not buried:** the DUT as
-> committed has **no input or output matching network** — `Cin`/`Cout` are
+On `20261101-023117-5bbb70c`'s untraceable DUT (`f58b6a1a37baf31c…`):
+`design/netlist/lna.spice` has five revisions in the entire history of
+`main` (`988b474`, `f718094`, `e25df3b`, `b8ad5d3`, `dd6c5be`), and none of
+them hashes to `f58b6a1a…`, so that DUT is **not reproducible from any
+commit on `main`** — its provenance is not traced. The circuit it ran is
+still inspectable in the record's committed decks
+(`netlist-snapshots/20261101-023117-5bbb70c/`): content-wise it is the
+DR-0003 core plus an intermediate, hand-rounded matching-network draft —
+the `Lb`/`Rlb`/`Cpin`/`Cpout`/`Csout` values are 3–4-significant-digit
+roundings of `b8ad5d3`'s, without `b8ad5d3`'s `Rle`/`Rlc` loss resistors.
+Do not cite it for any committed circuit.
+
+> **Headline conclusion, stated up front so it is not buried:** the DUT of
+> record `20260926-122301-088c734` (the pre-match circuit) has **no input
+> or output matching network** — `Cin`/`Cout` are
 > 100 pF DC blocks, not matching elements, and there is no base
 > inductor. Its measured `S11 = −3.07 dB` and `S22 = −0.0044 dB` (nominal
 > cell) are therefore not a *failed* match, they are the **absence** of
@@ -91,9 +136,10 @@ snapshot rather than being `.include`d from elsewhere.
 
 Bias comes from the DUT's own on-chip network off a single ideal `VDD`
 source — there is no external bias tee and no forced operating point. In
-the current record that network is the **DR-0003 flat-reference core**
+every record from `20260926-122301-088c734` on, that network is the
+**DR-0003 flat-reference core**
 (`sg13_hv_pmos`/`sg13_hv_nmos` + `npn13G2`, issue #33 / PR #40), not the
-`R1a`/`R1b` resistive divider the two historical records ran. The measured
+`R1a`/`R1b` resistive divider the first two records ran. The measured
 operating point (`I_C1`, `I_C2`, `V_CE1`, `V_CE2`, `V_BE1`, `I_DD`, `P_dc`)
 is echoed by every deck and lands in the summary CSV, so every
 S-parameter/NF/IIP3 number below carries the bias point it was taken at.
@@ -214,7 +260,7 @@ inferred:
   `HISTORICAL three-point` in `nf290_grid`.
 
 **How to read the two methods' agreement (this is a result, not a caveat).**
-On the current record `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
+On record `20260926-122301-088c734` `nf_sp_db` and `nf30015_db` match to **≤ 0.0001 dB
 across all 15 cells at 27 °C**, and diverge by up to **0.50 dB at −40 °C**
 and **0.66 dB at 125 °C**. That is not a discrepancy — it is the *expected*
 signature of the two definitions, and it is why the analytic source term
@@ -528,7 +574,8 @@ written into every generated IIP3 deck's header as well as here.
   landed: `cornerMOShv.lib` ships all five sections, so
   `typ→mos_tt`, `bcs→mos_ff`, `wcs→mos_ss`, `sf→mos_sf`, `fs→mos_fs` map
   straight through. The `sf`/`fs` cells are therefore **no longer bit-identical
-  to `typ`** on the current record the way they were on the two historical,
+  to `typ`** on `20260926-122301-088c734` and every record after it, the way
+  they were on the two historical,
   HBT-only ones — they differ through the bias core's MOS devices while
   still sharing `typ`'s HBT section. The difference is real but *small*,
   because the DR-0003 reference is well regulated: across all nine
@@ -579,17 +626,18 @@ written into every generated IIP3 deck's header as well as here.
    closes.**
 2. **`sf`/`fs` are not real HBT corners** in this PDK (above). On the two
    historical records that made 18 of the 45 cells numerically identical to
-   their `typ` counterparts; on the current record they differ, but only
+   their `typ` counterparts; on `20260926-122301-088c734` and every record
+   after it they differ, but only
    through the DR-0003 core's MOS devices (≤ 0.05 % on `I_C1`,
    ≤ 0.0001 dB on `NFmin`) — the HBT that sets the RF behaviour is still
    `hbt_typ` in all three. They are committed as such, deliberately, rather
    than being silently dropped.
 3. **Which bias network a record describes is a property of the record, not
-   of this bench.** The two historical records characterize DUTs whose base
+   of this bench.** The first two records characterize DUTs whose base
    bias came from a bare `V_BE`-referenced resistive divider
    (`20260918-210908-4293920`) and from an `npn13G2` mirror reference
-   (`20260921-131646-d6da30a`). The current record
-   (`20260926-122301-088c734`) characterizes the **DR-0003 flat-reference
+   (`20260921-131646-d6da30a`). Record `20260926-122301-088c734` and every
+   record after it characterize the **DR-0003 flat-reference
    core** (PR #40). The measured `ic1_a`/`pdc_w` columns in each record's
    summary CSV are how you check a bias claim against the DUT that record
    actually ran — never across records.
@@ -635,8 +683,9 @@ written into every generated IIP3 deck's header as well as here.
 
 ## Results
 
-See [`records/`](records/) for the append-only per-run records (three of
-them — see "Which DUT each record describes" above). The current record's
+See [`records/`](records/) for the append-only per-run records (twelve of
+them — see "Which DUT each record describes" above). Record
+`20260926-122301-088c734`'s
 headline numbers are reproduced in its own `records/<record-id>.md` and
 summarized against the target-spec rows in
 [`../../measurements/README.md`](../../measurements/README.md) — which is
@@ -716,7 +765,29 @@ bcs/125 °C/1.98 V. For comparison, re-counted the same way: the
 the original record and did **not** disappear. At 0.18 ppm it remains
 indistinguishable from the numerical resolution of a lossless port, so
 issue #27's disposition is unchanged: re-check once a *lossy* inductor
-model exists, do not dismiss.
+model exists, do not dismiss. (Re-checked 2026-11-17 with the lossy model:
+closed as understood-and-damped — the excess is real negative resistance,
+not solver round-off, and the committed Q ≈ 10 loss removes it; see
+[`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md)
+§"The `|S22| > 1` anomaly".)
+
+**Known wart in the issue-27 probe decks (cosmetic, ngspice-47):** the three
+committed probe decks under
+[`netlist-snapshots/issue-27-s22-anomaly-probe/`](netlist-snapshots/issue-27-s22-anomaly-probe/)
+have as the last `print` in their `.control` block
+`print frequency[maxindex(m22)] frequency[maxindex(m11)] frequency[minindex(mu)] frequency[minindex(k)]`
+(followed only by `wrdata` and `quit`), and `maxindex`/`minindex` do not
+exist in ngspice-47 — that line errors non-fatally in each of the three
+committed logs (`Error: no such function as maxindex`, once per log). The
+analysis itself completes, and ngspice-47 treats the unknown-function error
+as non-fatal and continues, so the following `wrdata` still writes all 9911
+rows and every quoted probe number is in the committed artifacts, and the
+decks are intentionally left as run (`../README.md` §"Append-only rule").
+Do not use `maxindex`/`minindex` in new decks: take the probe frequency
+attributions from the committed `.table.txt` sweeps, where all four are
+exact (lossless: max `|S22|` @ 2.28823e9, μ min @ 2.41407e9, k min @
+4.69353e8, max `|S11|` @ 1e7; lossy, both cells: max `|S22|`, μ min and
+max `|S11|` all @ 1e7, k min @ 3.00262e9; all in Hz).
 
 Per-artifact layout of a record `<record-id>`:
 
@@ -763,7 +834,7 @@ rule").
 **Plumbing check without a full campaign**: `LNA_SWEEP_SMOKE=1
 sim/lna-characterization/run_lna_sweep.sh` runs the identical flow over the
 single nominal cell in ~1 min (measured 58 s on the host that produced
-the current record). A smoke record is a real record but is *not* a
+record `20260926-122301-088c734`). A smoke record is a real record but is *not* a
 PVT campaign — do not commit one as evidence.
 
 **Re-deriving the CSVs from the committed raw logs alone** (no ngspice, no
@@ -1090,24 +1161,201 @@ ngspice >= 46; this worker now has ngspice-47 on `PATH`). Read its numbers as
 one operating point of one process, with all the limits above. For a real
 result use the committed 45-cell record instead.
 
+## Matched-DUT two-tone IIP3 (issue #337)
+
+Issue #27's Test Plan owes a post-match IIP3 re-measure on the RATIFIED
+protocol, and `spec/target-spec.md`'s IIP3 row binds its number "after #26
+(bias) and #27 (matching) re-measurement on this exact protocol". Record
+`20261117-040629-30d1235a` is that measurement: the two-tone transient bench
+of §IIP3 (template unchanged — the deck `run_lna_iip3.sh` generates
+reproduces the template's `.control` sequence line for line) on the committed
+matched DUT, across the full 45-cell PVT box, at two drive levels per cell
+(so the 3:1 IM3 slope is *checked* at every cell, not assumed at one) plus
+the nominal cell's 0.5/4/8 mV extras for the 24 dB drive range.
+
+**Cold start** (same conventions as every runner in this directory):
+
+```bash
+export PDK_ROOT=/path/to/ihp-open-pdk PDK=ihp-sg13g2
+sim/lna-characterization/run_lna_iip3.sh
+```
+
+What it runs (six `klt sim` requests on the Spot batch fleet; see
+`lna_variant_campaign.py gen-iip3`): `matched_op` (the 45-cell DC bias join,
+so `I_C1` sits beside every number the record quotes),
+`matched_iip3_a1mv`/`_a2mv` (the ratified two-level pair at every cell) and
+`matched_iip3_a0p5mv`/`_a4mv`/`_a8mv` (nominal cell only). Each IIP3 deck
+carries the template's sequence — op + OP echo, `tran 4e-12 1.26214e-06
+1e-06 4e-12`, `linearize v(rfout) v(vin)` + NPTS echo, the coherent-DFT
+projection + DFT echo, `fft` — carried through klt sim as the analysis
+command sequence, with the FFT bin magnitudes (`mag(v(rfout))[640]` and
+friends) as `measurements[].expr` read in the spectrum plot the template's
+own `fft` leaves current. The FFT (primary) and the DFT projection
+(cross-check) IIP3 of every point are both committed
+(`iip3_dbm`, `iip3_dbm_dft_crosscheck`, agreement `dft_fft_iip3_agreement_db`).
+
+**Reduce/replay without ngspice** (the committed reports + per-corner logs
+are sufficient — this is how a reviewer checks the committed CSVs):
+
+```bash
+sim/lna-characterization/lna_variant_campaign.py summarize-iip3 \
+  --corners-dir sim/lna-characterization/corners/<record-id> \
+  --iip3-csv /tmp/check-iip3.csv \
+  --summary-csv /tmp/check-iip3-summary.csv \
+  --headlines-md /tmp/check-iip3-headlines.md \
+  --op-report sim/lna-characterization/corners/<record-id>/matched_op.report.json \
+  --s11-csv sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv,sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv,sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv
+diff /tmp/check-iip3-summary.csv sim/lna-characterization/records/<record-id>-iip3-summary.csv
+```
+
+The reducer applies the README's IM3-slope validity policy (3 ± 0.15 on each
+cell's two-level pair; a cell outside it contributes **no accepted
+intercept** — raw per-point values stay in the CSV) and converts to the
+device-plane figure with the matched DUT's own per-cell mid-band |S11| from
+the three committed present-dut slices (the mismatch term
+`−10·log10(1−|S11|²)` is a property of *this* DUT, ≈ +0.24…+0.32 dB — not the
++2.96 dB of the unmatched DR-0003 core, and not the ≈ +8.9 dB of the
+placeholder-divider DUT). **The IIP3 numeric row stays DRAFT**: this record
+supplies the number the spec row names, nothing more; binding it (or relaxing
+it) requires a decision record of its own. A single-cell plumbing check runs
+with `LNA_IIP3_SMOKE=1` — same "not a PVT campaign, do not commit" rule as
+every smoke mode here.
+
 ## What these numbers do and do not license
 
-**Do**: treat the current record as the evidence base for any statement
-about the DUT on `main`; use `NFmin` and the measured operating point to
+**Do**: treat the three complete `present-dut` slices — `20261106-054735-64b37ae`
+(125 °C), `20261116-022647-eacd53a` (27 °C) and `20261116-023212-eacd53a`
+(−40 °C) — as the evidence base for any statement about the DUT committed on
+`main`. Each is a one-temperature 15/45-cell slice of the same harness on the
+same committed DUT; only the three *together* span the full PVT grid, so a
+full-grid claim must cite all three, and a claim drawn from any one of them
+alone is a single-temperature claim. The assembled 45-cell reading of the
+three — and the `|S22| > 1` anomaly probe that closes #27's open item — is
+[`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md).
+The other two `64b37ae` runs are **not**
+evidence and nothing may be quoted from either: `20261106-055142-64b37ae`
+ended coverage incomplete (32 validation issues, no complete-grid claim) and
+`20261106-055453-64b37ae` failed before producing any report. Also treat
+record `20260926-122301-088c734` as what it
+is — the pre-match baseline; use `NFmin` and the measured operating point to
 size the *missing* input matching network — and to argue about whether the
 ratified NF row is reachable at this bias point at all (it is not, see
 "The three questions" above); use the broadband μ/|S11|/|S22| data as the
-stability baseline any future matching network must be re-checked against.
+stability baseline the matching network has now been re-checked against
+(verdict record above).
 
-**Do not**: quote any number here as "meets spec" (the as-committed DUT
-predates the #27 matching re-run the ratified rows' notes gate conformance
-on, and ideal passives bound what these numbers mean); quote
-gain/NF/S11/S22 as achievable silicon performance (ideal
-passives, §Model limitations); declare the matching network final (there
-isn't one, and stability has not been shown unconditional); quote k
+**Do not**: quote any number here as "meets spec" without its bench, its
+record, and the stated conditionality — the ratified S11/S22/gain/stability
+rows are met at 45/45 cells by the matched DUT *at numerical resolution and
+conditional on the Q ≈ 10 inductor-loss model* (verdict record: μ's 3.7 ×
+10⁻⁷ margin is set by the modeled inductor loss, not by transistor physics,
+and the probe shows the lossless counterpart genuinely exceeds unity, so an
+inductor re-model must re-run the gate); quote
+gain/NF/S11/S22 as achievable silicon performance (no layout parasitics,
+package or mismatch, §Model limitations); read the NF row as anything but
+failing (0/45 cells, attributed, not relaxed); quote k
 without μ beside it (§Why k is ill-conditioned); mix numbers **across**
-records (§Which DUT each record describes — the three records are three
+records (§Which DUT each record describes — the twelve records are six
 different circuits); treat the corner spread as a statistical (mismatch)
 spread, or call any RF row non-statistical (§Model limitations item 6); or read a `|S22| > 1` / μ count off the summary CSV
 without checking the raw `*.stability.dat` tables, whose ppm-scale residues
 the CSV's six-decimal columns round away.
+
+## Ratified-row signoff envelopes (issue #231)
+
+Record
+[`20261117-054141-bdebb4d`](netlist-snapshots/20261117-054141-bdebb4d/)
+is the T1 item-5 evidence bench: the matched DUT re-run at the full
+ratified corner box **through `klt sim`**, with per-row limits injected
+into the requests, so `signoff/manifest.json` can cite four `klt sim`
+report envelopes for the eight ratified rows (issue #27/#56's 45-cell
+campaign produced the same physics in this repo's own record format,
+which `klt signoff` cannot grade — that gap is what this record closes).
+
+**Deck and request provenance.** The four decks
+(`matched_{op,sp_band,sp_stab,noise}.spice`) are **byte-identical copies**
+of record `20261116-023212-eacd53a`'s — the envelope benches ARE the
+committed matched-DUT benches; only the requests differ. The four requests
+are **generated, not hand-edited**:
+`sim/lna-characterization/gen_spec_envelopes.py` reads every measurement
+expression, analysis and option verbatim from that reference record,
+replaces the corner box, and injects `limits`/`spec_row` taken from
+[`spec/ratified-rows.json`](../../spec/ratified-rows.json) — the ratified
+limit values are parsed and unit-scaled (mW→W, mA→A) with exact decimal
+arithmetic at generation time, never retyped:
+
+| request | ratified rows graded | measurement → limits | `spec_row` tag |
+|---|---|---|---|
+| `matched_op` | `power`, `ic1` | `pdc` < 10 mW (= 0.01 W), `ic1` ≤ 4.5 mA (= 0.0045 A) | `power`, `ic1` |
+| `matched_sp_band` | `gain`, `s11`, `s22` | `s21_db_min` > 15 dB, `s11_db_worst` < −10 dB, `s22_db_worst` < −10 dB | `gain`, `s11`, `s22` |
+| `matched_sp_stab` | `mu`, `negres` | `mu_min` > 1, `s11_mag_max` < 1, `s22_mag_max` < 1 | `mu`, `negres` ×2 |
+| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (redundant if set — see below) |
+
+The `nf` measurement carries its honest limit but no `spec_row` tag: the
+row is expected to fail at every cell until #58 lands (DR-0004), and the
+tag would be redundant here, not protective. `klt signoff`'s
+derived-coverage path does drop a *failing* tagged measurement from
+`row_sources`, but the row's coverage comes from the manifest citation's
+`rows` declaration (`rows: ["nf"]`), not from the measurement tag —
+verified with the pinned `klayout-tools==0.9.2` render (issue #363): the
+signoff output is byte-identical with and without the tag,
+`uncovered_rows` stays empty either way, and the envelope's failure keeps
+item 5 `unmet` either way.
+
+**Corner box.** Process `{typ, bcs, wcs}` × supply `{1.62, 1.80, 1.98} V`
+× temperature `{−40, 27, 125} °C` = **27 cells per analysis** (108
+`klt sim` units total). This is the ratified box narrowed to its three
+real HBT sections: the ratified `sf`/`fs` labels are documented duplicates
+of `typ` at the HBT (`spec/target-spec.md` "Verification corners"), and
+their mos-section-only residue is covered by the committed 45-cell records
+rather than re-run here. The `op` request covers **all three temperatures**,
+which fills the gap the 45-cell verdict recorded (its 125 °C slice ran no
+`op` request, so `pdc`/`ic1` at 125 °C were assembled from the pre-match
+record plus a bleed-current argument; this record measures them).
+
+**Cold start** (batch fleet — a grid submit, never a local loop; per the
+host rules and issue #231 the four requests go through `klt sim
+--backend batch --wait-for-capacity 600`, one invocation per request; a
+request exit of 3 is a *verdict* — the grid ran and at least one corner
+missed its limits, the expected NF result — not a tool failure):
+
+```
+sim/lna-characterization/run_spec_envelopes.sh sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d
+```
+
+Needs: a `klt` with batch-fleet access; no local ngspice, no PDK (the
+fleet stages the pinned models; the requests preload the OSDI models via
+`options.osdi_preload` + `stage_model_inputs`, exactly as the reference
+record's requests do). Bulk per-corner artifacts land under
+`$SIM_ENVELOPE_ARTIFACTS` (default a `/tmp` tree), not in git.
+
+**Replay** (PDK-free, ngspice-free — re-reduces the committed reports and
+byte-compares the verdict files):
+
+```
+python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check
+```
+
+**Results.** `reports/matched_*.report.json` are the four `klt sim`
+envelopes `signoff/manifest.json` cites for item 5 (one per testbench,
+each with `rows` naming the ratified rows it grades, under a declared
+`spec_rows."5"` set that also declares `iip3` — numeric target NOT
+ratified, DR-0002 — and `supply` — the context row the corner axis itself
+realizes — as gaps). `<record-id>-envelope-verdict.{md,csv}` are the
+per-row verdicts with the binding corner per row, reduced by the replay
+command above. The bench-equivalence anchors against the 45-cell verdict
+(`issue-27-matched-pvt-verdict.md`) are in the verdict `.md`; where the
+benches are equivalent the numbers must agree to the record's printed
+precision, modulo the ngspice 46/47 pairing already flagged for `sim/`
+(two generators and two engine builds coexist; the envelopes' own
+`environment.engine_version` records which one produced each number).
+
+**μ at the 10 MHz floor.** As in the 45-cell verdict, the `mu` row's
+margin over 1 sits at the sweep floor at numerical resolution (~4 × 10⁻⁷,
+identical across cells): the Edwards–Sinsky denominator collapses onto
+|S22| there, so the margin is the low-frequency asymptote of the Q ≈ 10
+lossy output network, not a transistor-physics margin. A μ value below 1
+at that floor is a numerical-resolution event, not a demonstrated
+instability dip — the committed 9911-point fine-resolution probe covers
+that reading.
+

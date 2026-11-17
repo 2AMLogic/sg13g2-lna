@@ -4,7 +4,88 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-17
+
+- **PR #375**: ci: key the testbench-inventory executable-bit assertion on the command word, any extension
+- **Issue #372** (closed): ci: no guard keeps a documented bare-path .py command executable (class of #367/#369)
+- **PR #371**: fix: make rederive_nf_fixed_t0.py executable for record replay command
+- **PR #370**: feat(signoff): generate the item-8 characterization report with a mechanically derived envelope
+- **PR #368**: fix: make lna_variant_campaign.py executable for README reviewer-replay
+- **PR #366**: test+ci: replay-gate the spec-envelope bench and unit-test its generator
+- **PR #365**: docs: correct the nf spec_row rationale to match the pinned klt render
+- **PR #362**: fix: run gated attest/signoff local checks via a pinned uvx klt fallback
+- **PR #361**: sim: cite T1 item 5 with ratified-row klt sim corner envelopes
+- **PR #360**: docs: align audit self-test header with post-#323 klt SKIP/FAIL policy
+- **PR #358**: chore(loom): resync installed Loom to v0.19.1306
+- **PR #356**: docs: note the ngspice-47 maxindex/minindex gap beside the issue-27 probe record reference
+- **PR #355**: docs: mark pre-bleed characterization records superseded in root README
+- **PR #354**: run_lna_variant: smoke-aware Claim/Reduction record lines
+- **PR #353**: sim: matched-DUT two-tone IIP3 on the ratified protocol (93 pts + 45 op corners, 45-cell PVT box)
+- **PR #351**: fix: TEMPERATURE SLICE disclosure names the grid's temperatures, not the requested slice
+- **PR #349**: fix(sim): make sim_record_paths reservation monotonic, split its two mkdir failure modes
+- **PR #348**: signoff: state taxonomy precedence for a variant study on a superseded DUT
+- **Issue #369** (closed): Second instance of #367: rederive_nf_fixed_t0.py documented as a bare-path replay command but not executable
+- **Issue #367** (closed): README reviewer-replay command fails as written: lna_variant_campaign.py is not executable
+- **Issue #364** (closed): Ratified-row envelope bench has no CI replay gate or unit tests, unlike every sibling reducer
+- **Issue #363** (closed): Envelope generator's rationale for the untagged nf measurement is refuted by the pinned klt render
+- **Issue #357** (closed): run-local-checks.sh always skips the attest steps on workers (exact klt version match), hiding stale pinned manifests
+- **Issue #352** (closed): run_lna_variant.sh record Claim/Reduction lines name the requested --temps slice on a smoke run, where the cell is 27 C
+- **Issue #350** (closed): README.md:81,192 group records 20261114-025351-7a54cc2 and 20261101-023246-5bbb70c under 'the matched DUT now on main', but both ran on the superseded pre-bleed netlist
+- **Issue #344** (closed): probe decks: maxindex/minindex unavailable in ngspice-47, so the frequency-attribution print never emits
+- **Issue #337** (closed): post-match IIP3 re-measure on the ratified protocol (owed by #27 Test Plan; binds spec/target-spec.md line 171)
+- **Issue #329** (closed): lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run
+- **Issue #327** (closed): signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration'
+- **Issue #324** (closed): test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323)
+- **Issue #311** (closed): test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence
+- **Issue #233** (closed): T1 item 8 (characterization): one-command characterization report with generic envelope
+- **Issue #231** (closed): T1 item 5 (corner verification): klt sim corner envelopes for the eight ratified rows
+- **PR #343**: docs: reword the last two bare klt-pin restatements into the gated klayout-tools== form
+- **PR #340**: fix: gate run_native_drc.py's docstring klt pin, restate README pins prefixed only
+- **PR #338**: feat: gate the README prose klt/KLayout pins in check-klt-pin.sh
+- **PR #335**: docs: state the pin-move netlist claims as evidence, not a 3.4.4-era attribution
+- **PR #334**: records: matched-DUT 45-cell PVT verdict; |S22|>1 anomaly closed by fine-sweep probe
+- **PR #331**: fix: derive native DRC full-scope NOTE from FULL_SCOPE_STATUSES, pin in tests
+- **Issue #342** (closed): evidence: issue-27 probe record's |S22|>1 / mu<1 point counts are table recounts that disagree with the committed ngspice log (325 vs 334, 364 vs 365)
+- **Issue #341** (closed): check-klt-pin.sh: two bare klt-pin restatements remain ungated (README.md:122, signoff/README.md:8)
+- **Issue #339** (closed): check-klt-pin.sh still misses two klt/KLayout pin literals: run_native_drc.py's docstring and README.md:80's bare backticked versions
+- **Issue #321** (closed): run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
+- **Issue #320** (closed): check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift
+- **Issue #305** (closed): design/README.md misstates which xschem generated the committed netlist
+- **Issue #27** (closed): design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core)
+
+### 2026-11-16
+
+- **PR #317**: chore(loom): resync installed Loom to v0.19.1302
+- **PR #319**: lna_variant_campaign: make a --temps slice disclose itself and unit-test the option
+- **Issue #306** (closed): lna_variant_campaign: --temps slicing has no unit test; a narrower summarize slice under-checks coverage silently
+- **PR #326**: docs(sim): index all 11 lna-characterization records by DUT and retire the stale 'current' labels
+- **Issue #318** (closed): sim/lna-characterization/README.md's "Which DUT each record describes" table is stale: 3 of 9 records, and the one it calls "current main" is superseded
+- **PR #323**: ci: fail audit suite on absent klt under CI
+- **Issue #307** (closed): test-design-source-audit.sh still SKIPs green in CI when klt is absent from PATH (not just wrong-version)
+- **PR #296**: fix(layout): accept clean_partial and not_checked native DRC verdicts across all three gates
+- **PR #304**: ci: gate KLAYOUT_PIN and derive the audit suite's expected klt release
+- **PR #314**: sim: land the matched DUT's -40/27 C PVT slices and the bleed match delta
+- **PR #316**: docs(signoff): correct the item 5 bullet's absence claim, campaign count and DUT label
+- **PR #281**: refactor(core-envelope): name the in-band gain metric and split parse_core_envelope main()
+- **PR #308**: refactor: share one main() driver between the item-9/item-10 inventory checkers
+- **Issue #290** (closed): run_native_drc.py STATUSES omits clean_partial, so a partial-scope native DRC run would be rejected as a failed run
+- **Issue #312** (closed): layout/README.md and run_native_drc.py docstring overstate clean_partial reachability: klt 0.9.2's klayout engine cannot emit it
+- **Issue #294** (closed): check-klt-pin.sh cannot gate test-design-source-audit.sh's klt version strings, so a future bump silently disables its klt cases
+- **Issue #258** (closed): design: give the output-match node xout a DC path and re-run the matched DUT's 125 C cells
+- **Issue #301** (closed): signoff/README.md item 5 says no klt sim envelope exists for the current DUT, three sentences before naming the one that does
+- **Issue #276** (closed): Name the logic buried in parse_core_envelope.py: 404-line main() and the one gain metric #94 left inline
+- **Issue #302** (closed): signoff checkers: main() is still duplicated after #274 (the largest remaining shared block)
+
 ### 2026-11-15
+
+- **PR #293**: test: pin the variant campaign's bias-attribution claim generator
+- **PR #259**: design: add DC bleed on xout, floating-node guard, 125 C batch record
+- **PR #298**: docs: correct the pre-match/matched DUT claims in the status prose
+- **PR #297**: test: pin Python corner-section map copies to sim/env.sh (#287)
+- **Issue #279** (closed): sim: unit-test the variant campaign's bias-attribution claim generator (ic1_pct, span_scaled, the ±0.05 % branch)
+- **Issue #260** (closed): PR #259 follow-up: add Rbleed to layout, rerun LVS, re-attest T1 items 1/10
+- **Issue #271** (closed): docs: refresh status prose that still describes the pre-match DUT (README, signoff/README, lna-characterization README)
+- **Issue #287** (closed): sim: reduce_biasref.py still holds a private copy of the corner-label -> MOS-section map that #283 consolidated on the shell side
 
 - **PR #292**: sim: validate core-envelope base-netlist anchors up front and print per-variant substitution evidence
 - **PR #291**: refactor: dedupe startup verdict rule and require across the sim reducers
@@ -292,9 +373,4 @@
 - **Issue #20** (closed): Committed BVCEO / BVCER breakdown-extraction testbench for npn13G2
 - **Issue #18** (closed): sim: S-parameter, NF, stability, and IIP3 testbenches against design/lna.sch
 - **Issue #17** (closed): design/lna.sch: schematic and derived netlist for the ratified bias/supply topology
-
-### 2026-09-16
-
-- **PR #22**: docs(spec): propose a 1.8 V cascode bias/supply topology in decision record 0001
-- **Issue #16** (closed): Decision record: LNA bias/supply topology (cascode vs. single-stage) and supply voltage
 

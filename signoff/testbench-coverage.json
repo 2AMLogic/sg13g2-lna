@@ -1148,12 +1148,17 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Incomplete grid: only the 15 cells at 125 C have all three analyses; 30 cells have no sp_band/sp_stab result. No nominal-cell match delta, NF or stability pass/fail claim, and no spec row change. Records 20261106-055142 and 20261106-055453 are coverage-incomplete by design (failed submits were not replaced by local runs).",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). Verdict (issue #27, records/issue-27-matched-pvt-verdict.md): the ratified S11/S22/gain/stability rows are met at 45/45 cells (worst in-band S11 -11.1124 dB, S22 -14.9653 dB, S21 18.7163 dB; mu_min 1.000000370 at every cell, k_min 49.15, max|S11| 0.998996 and max|S22| 0.999999631 both < 1), conditional on the Q~10 inductor-loss model. The |S22| > 1 anomaly is closed as understood-and-damped: the netlist-snapshots/issue-27-s22-anomaly-probe/ differential probe (single corner, 71x point density) shows the lossless variant genuinely exceeds unity (+743 ppm, mu_min 0.9972) -- real negative resistance, not solver round-off -- while the committed lossy DUT shows zero violations at 9911 points at both probed corners. NF stays failing (0/45 cells under 1.5 dB; ~0.68 dB nominal delta is the finite-Q input loss on top of the NFmin floor); IIP3 stays DRAFT with no post-match re-measure yet. No spec row change; spec/target-spec.md untouched.",
       "record_ids": [
         "20261106-054735-64b37ae",
         "20261106-055142-64b37ae",
         "20261106-055453-64b37ae",
-        "issue-258-xout-bleed-convergence"
+        "20261116-022647-eacd53a",
+        "20261116-023212-eacd53a",
+        "issue-258-xout-bleed-convergence",
+        "20261116-190440-9cd8cdc",
+        "issue-27-matched-pvt-verdict",
+        "issue-27-s22-anomaly-probe"
       ],
       "replay_checks": [
         "sim/lna-characterization/tests/test_lna_variant_campaign.py"
@@ -1169,7 +1174,7 @@
         "dut-netlist",
         "em-model"
       ],
-      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30; sp_band/sp_stab not run (batch_no_capacity) (20261106-055142-64b37ae). 27 C retry: not run, no usable report (20261106-055453-64b37ae). Convergence write-up: issue-258-xout-bleed-convergence.",
+      "summary": "Issue #258: matched variant with Rbleed (xout DC bleed) run on the Spot batch fleet. 125 C slice (15 cells): sp_band, sp_stab and noise all converged (20261106-054735-64b37ae). -40/27 C slice: noise converged 30/30 (20261106-055142-64b37ae); its sp_band/sp_stab gap closed 2026-11-16 by the 27 C slice (20261116-022647-eacd53a, 15/15, all analyses pass) and the -40 C slice (20261116-023212-eacd53a, 15/15, all analyses pass); nominal-cell match delta vs pre-bleed record 20261101-023246-5bbb70c: in-band worst S11 +0.0039 dB, S22 +0.0076 dB — a cross-engine delta (pre-bleed side run_lna_sweep.sh on local ngspice-46; post-bleed side the matched variant on ngspice-47/KLU on the fleet), read as an upper bound on the bleed's effect, not a same-harness measurement. Convergence write-up: issue-258-xout-bleed-convergence, updated additively by issue-258-xout-bleed-convergence-20261116. Erratum 20261116-190440-9cd8cdc withdraws the unqualified full-grid reading of 20261106-054735-64b37ae (it is the 125 C slice only).",
       "tool_pins": {
         "ngspice": "ngspice via klt sim",
         "osdi_models": true,
@@ -1583,6 +1588,116 @@
         "ngspice": "ngspice >= 46 (OSDI v0.4)",
         "osdi_models": true,
         "other": "",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/gen_spec_envelopes.py"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_spec_envelopes.sh sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt with batch-fleet access",
+            "no local ngspice and no local PDK (the fleet stages the pinned models; OSDI preloaded per request)"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-spec-envelope-20261117-054141-bdebb4d",
+      "limitations": "Covers the ratified corner box narrowed to its three real HBT sections (typ/bcs/wcs x 1.62/1.80/1.98 V x -40/27/125 C = 27 cells per analysis); the ratified sf/fs labels are documented HBT duplicates of typ and are not re-run (their mos-section residue is covered by the committed 45-cell records). Bench results and per-row pass/fail only; the nf row is expected to fail at every cell until #58 (DR-0004) and nothing here relaxes it. mu's margin over 1 sits at the 10 MHz sweep floor at numerical resolution (~4e-7, identical across cells; Q~10 loss model). The 100 pF DC blocks and Q~10 match are as committed; no layout parasitics, mismatch or Monte Carlo. IIP3 is not measured (numeric target NOT ratified).",
+      "record_ids": [
+        "20261117-054141-bdebb4d"
+      ],
+      "reducers": [
+        "sim/lna-characterization/reduce_spec_envelopes.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_spec_envelopes.sh"
+      ],
+      "shared": [
+        "pdk-pin",
+        "dut-netlist"
+      ],
+      "summary": "T1 item-5 klt sim corner envelopes (issue #231): matched DUT, 4 analyses x 27 ratified cells each, limits generated from spec/ratified-rows.json into the requests; run on the Spot batch fleet (one klt sim invocation per analysis, --wait-for-capacity 600).",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet worker image)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 request features (sim/pdk.json klt_variant_campaign); signoff grader pin 0.9.2",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_iip3.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "PDK_ROOT/PDK",
+            "OSDI models",
+            "a fleet runner image that supports it, or a local ngspice >= 46"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-iip3-issue-337",
+      "limitations": "Extrapolated intercepts, not a measured intercept: accepted only where the cell's two-level IM3 slope sits within 3 +/- 0.15 (README policy; 45/45 cells valid in this record). IM5 bins are numerical-floor sentinels (per-point im3_over_im5_db committed; minimum 32.4 dB across this record). Wide 7.63 MHz tone spacing (coherence requirement), 4 ps timestep (125 GHz Nyquist), steady-state assumed after 1 us, single-ended in-band two-tone only (no blocker/OOB-IM/AM-PM/P1dB). The IIP3 numeric row stays DRAFT: this record supplies the number spec/target-spec.md line 171 names; binding requires a decision record of its own. The matched_iip3_a1mv request's first batch submit was abandoned client-side at the launch wait and re-submitted unchanged (disclosed in the record).",
+      "record_ids": [
+        "20261117-040629-30d1235a"
+      ],
+      "reducers": [
+        "sim/lna-characterization/lna_variant_campaign.py",
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_iip3.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Issue #337: the post-match IIP3 re-measure owed by #27's Test Plan, on the ratified tb_lna_iip3.spice.tmpl protocol (template unchanged; the generated deck reproduces its .control sequence verbatim through a klt sim request) on the committed matched DUT (sha256 151aec66ade8f052...), full 45-cell PVT box on the Spot batch fleet. 93 two-tone points (1 mV + 2 mV per tone at every cell, 0.5/4/8 mV at the nominal cell) + 45 op corners; 45/45 cells pass the 3:1 IM3 slope check; FFT vs coherent-DFT extraction agree <= 0.0017 dB. Available-power-referred IIP3 at 2 mV/tone: -3.1181..-0.9683 dBm (nominal -2.0905 dBm); device-plane (per-cell matched |S11|, term +0.2408..+0.3152 dB): -3.3976..-1.2712 dBm; 0 of 45 cells reach the draft > 0 dBm value. Spec row stays DRAFT; no spec/target-spec.md edit.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet runner 47)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
     }
