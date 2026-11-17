@@ -25,6 +25,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
+- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
 - **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
 - **#372**: ci: no guard keeps a documented bare-path .py command executable (class of #367/#369)
 
@@ -33,7 +34,6 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#300**: Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh
-- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
 
 ## PRs Awaiting Review
 
@@ -78,8 +78,8 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 3 |
-| Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 2 |
+| Ready (`loom:issue`) | 3 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 8 |
