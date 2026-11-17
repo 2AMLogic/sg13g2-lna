@@ -210,13 +210,17 @@ after an intended schematic change, run the command above (it rewrites the
 committed netlist and its header; see the header note below before committing
 that).
 
-**The 3.4.4 → 3.4.7 pin move (issue #259).** The committed netlist was
-generated under 3.4.4; before the pin moved, 3.4.7 was run over the same
-schematic in a scratch directory and its output compared against the
-committed netlist: identical beyond the `** sch_path:` header (the
-check's own normalization, exercised directly). No netlist bytes were
-touched by the pin move, and the committed netlist remains the 3.4.4-era
-generation — the header note below still applies.
+**The 3.4.4 → 3.4.7 pin move (issue #259).** The pin move itself changed no
+netlist bytes: before the pin moved, xschem 3.4.7 was run over the same
+schematic in a scratch directory and compared against the then-committed
+(3.4.4-era) netlist — identical beyond the `** sch_path:` header (the
+check's own normalization, exercised directly). The committed netlist also
+reproduces under the 3.4.7 pin: the `netlist-regen` gate above regenerated
+and compared it line for line and passed (CI run `43742571665`, at the
+pin-move PR's head). The netlist file records no generator version, so
+reproduction under the pinned toolchain is the property these checks
+establish — not a stamped build provenance; the header note below still
+applies.
 
 **The `** sch_path:` header line.** xschem stamps the invoking absolute path
 on the first line of the netlist, so it differs per machine and the committed
