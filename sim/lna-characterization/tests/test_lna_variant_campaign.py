@@ -204,6 +204,20 @@ class TemperatureSlice(unittest.TestCase):
             self.assertIn(f"only {[125]} of {V.TEMPS_ALL}", md1)
             self.assertNotIn("TEMPERATURE SLICE", md2)
 
+    def test_smoke_slice_names_grid_temp_not_slice_temp(self):
+        # Smoke grid's single expected cell is the nominal 27 C cell regardless of
+        # the slice (issue #329): the disclosure must name 27, not the slice's 125.
+        with tempfile.TemporaryDirectory() as d:
+            V.apply_temps("125")
+            write_reports(d, grid=V.GRID_SMOKE)
+            rc, cov, _ = run_summ(d, grid=V.GRID_SMOKE)
+            self.assertEqual(rc, 0)
+            self.assertEqual(cov["temps"], [125])  # requested slice, machine-readable
+            md = (Path(d) / "h.md").read_text()
+            self.assertIn("TEMPERATURE SLICE", md)
+            self.assertIn(f"only [27] of {V.TEMPS_ALL}", md)
+            self.assertNotIn("only [125]", md)
+
 
 class Reduction(unittest.TestCase):
     def test_complete_grid_summary_and_order_independence(self):
