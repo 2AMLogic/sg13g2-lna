@@ -64,9 +64,9 @@
       "sha256": "sha256:5d426f1ef1b978f7b018bcc8c0318a3d2dd1f24de76f249522c3e7fcee5492bb"
     },
     ".github/scripts/test-run-local-checks.sh": {
-      "bytes": 8130,
+      "bytes": 9466,
       "role": "script of a declared CI command",
-      "sha256": "sha256:3c13b7f50a469730f8c98a14601b90acb5998cad8de17a49f6a95bff70d62f41"
+      "sha256": "sha256:f02e5bd89e9c1c116d2db18758636cacda9c3be91e20407cc84a019db1cb11be"
     },
     "sim/models/check_sources.sh": {
       "bytes": 1830,
@@ -169,9 +169,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 16566,
+      "bytes": 16937,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:b4acc7c0a7409f91826a5419c38dd28a50906a2c61611829abe4043caa7834d2"
+      "sha256": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e"
     },
     "spec/target-spec.md": {
       "bytes": 34193,

@@ -16,12 +16,17 @@
 #   9. gate exits non-zero -> refuses to write (exit 3); gate exits 0 -> writes
 #      files that then pass `check`
 # klt cases (expected release derived from layout/run_flow.sh KLT_RELEASE;
-# SKIP when that release is not on PATH — a wrong-version klt FAILs when
-# CI/GITHUB_ACTIONS is set, because the design-source-audit job pip-installs
-# the pin immediately before this suite, so there it is skew; issue #294):
+# SKIP locally when that release is not on PATH — absent or wrong-version
+# alike — while under CI/GITHUB_ACTIONS an absent klt FAILs as well, not
+# just a wrong-version one: the design-source-audit job pip-installs the
+# pin immediately before this suite, so any mismatch there is skew;
+# issue #294):
 #  10. fresh tree renders item 1 met from the klt signoff --attest
 #      envelope (issue #238), with artifact_binding         -> met
 #  11. attest inventory bytes mutated, citation not updated -> item 1 NOT met
+# meta-case (re-invokes this suite as a child; LNA_AUDIT_SELFTEST_CHILD
+# guards that child against recursing):
+#  12. absent klt is fatal under CI, SKIPs locally              -> (each)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
