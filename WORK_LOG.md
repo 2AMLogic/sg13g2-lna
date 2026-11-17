@@ -6,6 +6,10 @@
 
 ### 2026-11-17
 
+- **PR #315**: refactor: consolidate five run_deck() deck gates into one sim_run_deck helper
+- **Issue #300** (closed): Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh
+- **PR #377**: ci: resolve bare cold-start command words by basename in the exec-bit assertion
+- **Issue #376** (closed): ci: the exec-bit assertion does not cover a basename-only documented command word (reduce_biasop.py)
 - **PR #375**: ci: key the testbench-inventory executable-bit assertion on the command word, any extension
 - **Issue #372** (closed): ci: no guard keeps a documented bare-path .py command executable (class of #367/#369)
 - **PR #371**: fix: make rederive_nf_fixed_t0.py executable for record replay command
