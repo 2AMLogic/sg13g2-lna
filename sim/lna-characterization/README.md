@@ -26,8 +26,11 @@ This directory holds **eleven** append-only characterization records, and
 they characterize **six different circuits** (six distinct DUT sha256s). A
 number quoted from the wrong one is a statement about a design that no
 longer exists. The two `issue-258-xout-bleed-convergence*.md` files are
-convergence notes for the #258 xout DC bleed, not characterization records,
-and are deliberately not rows of this table.
+convergence notes for the #258 xout DC bleed, and
+`issue-27-matched-pvt-verdict.md` is the #27 verdict synthesis for the
+matched DUT (45-cell PVT assembly + the `|S22| > 1` anomaly probe);
+these are not characterization records and are deliberately not rows of
+this table.
 
 The Standing column uses [`signoff/README.md`](../../signoff/README.md)'s
 taxonomy. The DUT committed on `main` today is
@@ -761,7 +764,11 @@ bcs/125 °C/1.98 V. For comparison, re-counted the same way: the
 the original record and did **not** disappear. At 0.18 ppm it remains
 indistinguishable from the numerical resolution of a lossless port, so
 issue #27's disposition is unchanged: re-check once a *lossy* inductor
-model exists, do not dismiss.
+model exists, do not dismiss. (Re-checked 2026-11-17 with the lossy model:
+closed as understood-and-damped — the excess is real negative resistance,
+not solver round-off, and the committed Q ≈ 10 loss removes it; see
+[`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md)
+§"The `|S22| > 1` anomaly".)
 
 Per-artifact layout of a record `<record-id>`:
 
@@ -1143,7 +1150,10 @@ result use the committed 45-cell record instead.
 `main`. Each is a one-temperature 15/45-cell slice of the same harness on the
 same committed DUT; only the three *together* span the full PVT grid, so a
 full-grid claim must cite all three, and a claim drawn from any one of them
-alone is a single-temperature claim. The other two `64b37ae` runs are **not**
+alone is a single-temperature claim. The assembled 45-cell reading of the
+three — and the `|S22| > 1` anomaly probe that closes #27's open item — is
+[`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md).
+The other two `64b37ae` runs are **not**
 evidence and nothing may be quoted from either: `20261106-055142-64b37ae`
 ended coverage incomplete (32 validation issues, no complete-grid claim) and
 `20261106-055453-64b37ae` failed before producing any report. Also treat
@@ -1152,14 +1162,19 @@ is — the pre-match baseline; use `NFmin` and the measured operating point to
 size the *missing* input matching network — and to argue about whether the
 ratified NF row is reachable at this bias point at all (it is not, see
 "The three questions" above); use the broadband μ/|S11|/|S22| data as the
-stability baseline any future matching network must be re-checked against.
+stability baseline the matching network has now been re-checked against
+(verdict record above).
 
-**Do not**: quote any number here as "meets spec" (the as-committed DUT
-predates the #27 matching re-run the ratified rows' notes gate conformance
-on, and ideal passives bound what these numbers mean); quote
-gain/NF/S11/S22 as achievable silicon performance (ideal
-passives, §Model limitations); declare the matching network final (there
-isn't one, and stability has not been shown unconditional); quote k
+**Do not**: quote any number here as "meets spec" without its bench, its
+record, and the stated conditionality — the ratified S11/S22/gain/stability
+rows are met at 45/45 cells by the matched DUT *at numerical resolution and
+conditional on the Q ≈ 10 inductor-loss model* (verdict record: μ's 3.7 ×
+10⁻⁷ margin is set by the modeled inductor loss, not by transistor physics,
+and the probe shows the lossless counterpart genuinely exceeds unity, so an
+inductor re-model must re-run the gate); quote
+gain/NF/S11/S22 as achievable silicon performance (no layout parasitics,
+package or mismatch, §Model limitations); read the NF row as anything but
+failing (0/45 cells, attributed, not relaxed); quote k
 without μ beside it (§Why k is ill-conditioned); mix numbers **across**
 records (§Which DUT each record describes — the eleven records are six
 different circuits); treat the corner spread as a statistical (mismatch)
