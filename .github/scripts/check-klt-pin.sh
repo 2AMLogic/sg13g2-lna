@@ -27,7 +27,10 @@ krunner="$(sed -n 's/^KLAYOUT_PIN = "\([0-9][0-9.]*\)".*$/\1/p' layout/run_nativ
 # issue #320: the prose klayout-tools== pins in the two top-level READMEs
 # follow the same rule; the historical dev-build string (0.9.2.dev1022+g…)
 # carries no klayout-tools== prefix, so it never matches.
-for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md README.md layout/README.md; do
+# issue #339: layout/run_native_drc.py's docstring restates the pin the same
+# way; its line-271 f-string (klayout-tools=={KLT_RELEASE}) carries no
+# literal version, so it registers no pin here.
+for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md README.md layout/README.md layout/run_native_drc.py; do
   pins="$(grep -o 'klayout-tools==[0-9][0-9.]*' "$f" | sort -u | tr '\n' ' ')"
   [ "$pins" = "klayout-tools==$flow " ] || {
     echo "FAIL: $f pins '${pins:-nothing}', layout/run_flow.sh KLT_RELEASE is $flow" >&2

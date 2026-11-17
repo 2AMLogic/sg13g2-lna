@@ -18,6 +18,10 @@
 #      layout/README.md prose leaves the gate green               -> passes
 #  12. both README pins drifted in one run -> FAILS with both
 #      messages (the gate reports every skew, not just the first)
+#  13. docstring klayout-tools== drift in run_native_drc.py       -> FAILS
+#      (issue #339). Every fixture's run_native_drc.py also carries the
+#      line-271 f-string (klayout-tools=={KLT_RELEASE}); it holds no
+#      literal version, so case 1 staying green proves it registers no pin.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-klt-pin.sh"
@@ -31,7 +35,15 @@ mkroot() { # mkroot <name> [klt-in-runner] [klayout-in-runner] [klayout-in-flow]
   d="$TMP/$1"; klt_r="${2:-$KLT}"; klay_r="${3:-$KLAY}"; klay_f="${4:-$KLAY}"
   mkdir -p "$d/layout" "$d/.github/workflows" "$d/.github/scripts" "$d/signoff"
   printf 'KLT_RELEASE="%s"\nKLAYOUT_PIN="%s"\n' "$KLT" "$klay_f" > "$d/layout/run_flow.sh"
-  printf 'KLT_RELEASE = "%s"  # keep in sync with layout/run_flow.sh\nKLAYOUT_PIN = "%s"\n' "$klt_r" "$klay_r" > "$d/layout/run_native_drc.py"
+  {
+    printf 'KLT_RELEASE = "%s"  # keep in sync with layout/run_flow.sh\n' "$klt_r"
+    printf 'KLAYOUT_PIN = "%s"\n' "$klay_r"
+    # issue #339: the docstring restates the pin in prose (stating the flow
+    # pin, like the real file), and the line-271 f-string carries no literal
+    # version — neither may skew the gate on its own.
+    printf '  - klt: the pinned PyPI release klayout-tools==%s run isolated through\n' "$KLT"
+    printf '        "KLT", f"uvx --isolated --from klayout-tools=={KLT_RELEASE} "\n'
+  } > "$d/layout/run_native_drc.py"
   for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md; do
     printf 'python3 -m pip install "klayout-tools==%s"\n' "$KLT" > "$d/$f"
   done
@@ -125,6 +137,12 @@ if [ "$got" -eq 1 ] \
 else
   echo "FAIL: both README pins drifted in one run (exit-class $got, output below)"; printf '%s\n' "$out" | sed 's/^/    /'; fail=$((fail+1))
 fi
+
+# issue #339: the docstring pin in run_native_drc.py must gate like any other
+mkroot drc_docstring_skew
+sed -i "s/klayout-tools==$KLT/klayout-tools==0.8.0/" "$TMP/drc_docstring_skew/layout/run_native_drc.py"
+run "docstring klayout-tools== drift in run_native_drc.py still fails (#339)" 1 drc_docstring_skew \
+  "layout/run_native_drc.py pins 'klayout-tools==0.8.0 ', layout/run_flow.sh KLT_RELEASE is $KLT"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
