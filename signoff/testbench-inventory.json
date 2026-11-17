@@ -2570,7 +2570,7 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:32ea27ff517035cc912551c32b0063a6f404d638e46b329c45be59f3b9744ef2",
+    "sim/lna-characterization/README.md": "sha256:9bbeeb913f6d6035f52e7cf8ba2b47b6b7496bc89811aedeb08e06646e205c5e",
     "sim/lna-characterization/gen_spec_envelopes.py": "sha256:c8ba7ca228c993b5e1356605356cccc358b20ab494886ddeb4de7228a57debdd",
     "sim/lna-characterization/lna_variant_campaign.py": "sha256:383ade9012a5256a7abdcbc39bdfdf45a359821aa915b4d89c5066a639fbcaa9",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
