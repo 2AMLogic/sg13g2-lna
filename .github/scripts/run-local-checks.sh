@@ -181,6 +181,10 @@ step "record-citations: check" .github/scripts/check-record-citations
 step "testbench-inventory: self-test" .github/scripts/test-check-testbench-inventory.sh
 step "testbench-inventory: check" python3 -I .github/scripts/check-testbench-inventory.py
 
+# --- job: characterization-report (issue #233; read-only, no PDK/ngspice/klt)
+step "characterization-report: self-test" .github/scripts/test-characterization-report.sh
+step "characterization-report: check" python3 -I .github/scripts/characterization-report
+
 # --- job: repo-hygiene (issue #217; read-only, no PDK/ngspice/klt)
 step "repo-hygiene: self-test" .github/scripts/test-check-repo-hygiene.sh
 step "repo-hygiene: check" python3 -I .github/scripts/check-repo-hygiene.py

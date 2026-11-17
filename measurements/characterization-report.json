@@ -1,0 +1,306 @@
+{
+  "envelopes": [
+    {
+      "analysis": "matched_noise",
+      "content_hash": "sha256:c13b80c340e98200031787ab2e35fd713f1b170deee4a81faf642160983571b2",
+      "corner_count": 27,
+      "corners_failed": 27,
+      "corners_passed": 0,
+      "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json",
+      "rows": [
+        "nf"
+      ],
+      "status": "fail"
+    },
+    {
+      "analysis": "matched_op",
+      "content_hash": "sha256:ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+      "corner_count": 27,
+      "corners_failed": 0,
+      "corners_passed": 27,
+      "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+      "rows": [
+        "ic1",
+        "power"
+      ],
+      "status": "pass"
+    },
+    {
+      "analysis": "matched_sp_band",
+      "content_hash": "sha256:f0ee9ce4f138ee4ba1d7fac67ea1ca5da5c458086d92a5c9bbfa27ec3003ad83",
+      "corner_count": 27,
+      "corners_failed": 0,
+      "corners_passed": 27,
+      "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+      "rows": [
+        "gain",
+        "s11",
+        "s22"
+      ],
+      "status": "pass"
+    },
+    {
+      "analysis": "matched_sp_stab",
+      "content_hash": "sha256:9f66719d7ede34aa81b3280511672b78101d1c244d5ce2e76f817b3fa712efa2",
+      "corner_count": 27,
+      "corners_failed": 0,
+      "corners_passed": 27,
+      "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+      "rows": [
+        "mu",
+        "negres"
+      ],
+      "status": "pass"
+    }
+  ],
+  "generated_by": ".github/scripts/characterization-report",
+  "inputs": {
+    "coverage_index": {
+      "path": "signoff/testbench-coverage.json",
+      "sha256": "sha256:72b3f104366c4fa66e735459c85a223521e547972ef22913e28626a9f8140834"
+    },
+    "ratified_rows": {
+      "path": "spec/ratified-rows.json",
+      "sha256": "sha256:b36eb0219c9a23fc450d592c18712ee70457842a94ecf157b56786a9f689eb36"
+    },
+    "reducer": {
+      "path": "sim/lna-characterization/reduce_spec_envelopes.py",
+      "sha256": "sha256:7c0cd8867fd4b1d191582a9e1613a2651e19bd4188fdd0a5263a6b971542506f"
+    }
+  },
+  "record": "20261117-054141-bdebb4d",
+  "row_source": "spec/ratified-rows.json",
+  "rows": [
+    {
+      "classification": "requirement",
+      "id": "gain",
+      "measurements": [
+        {
+          "binding_corner": "wcs/1.620V/125C",
+          "content_hash": "sha256:f0ee9ce4f138ee4ba1d7fac67ea1ca5da5c458086d92a5c9bbfa27ec3003ad83",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+          "limits": {
+            "min": 15.0
+          },
+          "measurement": "s21_db_min",
+          "statistic": "min",
+          "status": "pass",
+          "unit": "dB",
+          "worst_value": "18.7162981"
+        }
+      ],
+      "selector": "Gain (S21)",
+      "status": "ratified",
+      "target": "> 15 dB",
+      "verdict": "pass"
+    },
+    {
+      "classification": "requirement",
+      "id": "nf",
+      "measurements": [
+        {
+          "binding_corner": "wcs/1.980V/125C",
+          "content_hash": "sha256:c13b80c340e98200031787ab2e35fd713f1b170deee4a81faf642160983571b2",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json",
+          "limits": {
+            "max": 1.5
+          },
+          "measurement": "nf290_db_worst",
+          "statistic": "max",
+          "status": "fail",
+          "unit": "dB",
+          "worst_value": "4.37793746"
+        }
+      ],
+      "selector": "Noise figure (NF)",
+      "status": "ratified",
+      "target": "< 1.5 dB",
+      "verdict": "fail"
+    },
+    {
+      "classification": "requirement",
+      "id": "s11",
+      "measurements": [
+        {
+          "binding_corner": "bcs/1.980V/-40C",
+          "content_hash": "sha256:f0ee9ce4f138ee4ba1d7fac67ea1ca5da5c458086d92a5c9bbfa27ec3003ad83",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+          "limits": {
+            "max": -10.0
+          },
+          "measurement": "s11_db_worst",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "dB",
+          "worst_value": "-11.11244"
+        }
+      ],
+      "selector": "Input match (S11)",
+      "status": "ratified",
+      "target": "< -10 dB",
+      "verdict": "pass"
+    },
+    {
+      "classification": "requirement",
+      "id": "s22",
+      "measurements": [
+        {
+          "binding_corner": "wcs/1.620V/125C",
+          "content_hash": "sha256:f0ee9ce4f138ee4ba1d7fac67ea1ca5da5c458086d92a5c9bbfa27ec3003ad83",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+          "limits": {
+            "max": -10.0
+          },
+          "measurement": "s22_db_worst",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "dB",
+          "worst_value": "-14.965332"
+        }
+      ],
+      "selector": "Output match (S22)",
+      "status": "ratified",
+      "target": "< -10 dB",
+      "verdict": "pass"
+    },
+    {
+      "classification": "requirement",
+      "id": "mu",
+      "measurements": [
+        {
+          "binding_corner": "typ/1.620V/-40C",
+          "content_hash": "sha256:9f66719d7ede34aa81b3280511672b78101d1c244d5ce2e76f817b3fa712efa2",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+          "limits": {
+            "min": 1.0
+          },
+          "measurement": "mu_min",
+          "statistic": "min",
+          "status": "pass",
+          "unit": "",
+          "worst_value": "1.00000037"
+        }
+      ],
+      "selector": "Stability",
+      "status": "ratified",
+      "target": "\u03bc > 1 (Edwards\u2013Sinsky)",
+      "verdict": "pass"
+    },
+    {
+      "classification": "requirement",
+      "id": "negres",
+      "measurements": [
+        {
+          "binding_corner": "bcs/1.980V/-40C",
+          "content_hash": "sha256:9f66719d7ede34aa81b3280511672b78101d1c244d5ce2e76f817b3fa712efa2",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+          "limits": {
+            "max": 1.0
+          },
+          "measurement": "s11_mag_max",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "",
+          "worst_value": "0.998995826"
+        },
+        {
+          "binding_corner": "typ/1.620V/-40C",
+          "content_hash": "sha256:9f66719d7ede34aa81b3280511672b78101d1c244d5ce2e76f817b3fa712efa2",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+          "limits": {
+            "max": 1.0
+          },
+          "measurement": "s22_mag_max",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "",
+          "worst_value": "0.999999631"
+        }
+      ],
+      "selector": "Stability",
+      "status": "ratified",
+      "target": "max |S11|, max |S22| < 1 with the other port at 50 \u03a9",
+      "verdict": "pass"
+    },
+    {
+      "classification": "not-ratified",
+      "gap": "numeric target NOT ratified (DR-0002 keeps the former DRAFT > 0 dBm DRAFT); until the number is ratified through its own decision record there is no ratified row for an envelope to grade",
+      "id": "iip3",
+      "selector": "IIP3",
+      "status": "not-ratified",
+      "target": "Numeric: former DRAFT > 0 dBm remains DRAFT",
+      "verdict": "gap"
+    },
+    {
+      "classification": "context",
+      "gap": "context row realized by the ratified corner axis itself (VDD 1.62/1.80/1.98 V = 1.80 V +/-10 %, DR-0001/DR-0002), not an independently measured performance row",
+      "id": "supply",
+      "selector": "Supply",
+      "status": "ratified",
+      "target": "1.80 V \u00b1 10 %",
+      "verdict": "gap"
+    },
+    {
+      "classification": "requirement",
+      "id": "power",
+      "measurements": [
+        {
+          "binding_corner": "bcs/1.980V/125C",
+          "content_hash": "sha256:ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+          "limits": {
+            "max": 0.01
+          },
+          "measurement": "pdc",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "W",
+          "worst_value": "0.0097681213"
+        }
+      ],
+      "selector": "Power (P_dc)",
+      "status": "ratified",
+      "target": "< 10 mW DC",
+      "verdict": "pass"
+    },
+    {
+      "classification": "requirement",
+      "id": "ic1",
+      "measurements": [
+        {
+          "binding_corner": "bcs/1.980V/-40C",
+          "content_hash": "sha256:ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+          "envelope": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+          "limits": {
+            "max": 0.0045
+          },
+          "measurement": "ic1",
+          "statistic": "max",
+          "status": "pass",
+          "unit": "A",
+          "worst_value": "0.00415097376"
+        }
+      ],
+      "selector": "Power (P_dc)",
+      "status": "ratified",
+      "target": "I_C \u2264 4.5 mA over corners",
+      "verdict": "pass"
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_dir": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d",
+  "summary": {
+    "failed": 1,
+    "failed_rows": [
+      "nf"
+    ],
+    "gap_rows": [
+      "iip3",
+      "supply"
+    ],
+    "gaps": 2,
+    "graded": 8,
+    "passed": 7,
+    "status": "fail"
+  }
+}

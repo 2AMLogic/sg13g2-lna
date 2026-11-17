@@ -19,11 +19,15 @@ checked.
    as PR #32) — the band, gain, NF, S11/S22, stability, supply and power
    rows are binding, while the IIP3 numeric target and every former DRAFT
    *stretch* column remain DRAFT by that record's explicit carve-outs.
-   Nothing here is a conformance verdict: the DUT this report reads is the
-   as-committed pre-#27 design (DR-0003 bias core landed, **no matching
+   Nothing in the prose below is a conformance verdict: the DUT it reads is
+   the as-committed pre-#27 design (DR-0003 bias core landed, **no matching
    network**, ideal passives), so the comparisons below remain
    descriptive — measured shortfalls against the target rows, disclosed as
    such — and the language stays "against the target", never "passing".
+   The mechanical per-row verdicts for the **current matched DUT** are a
+   different artifact: the generated
+   [`characterization-report.json`](characterization-report.json) described
+   in the next section.
 2. **These are simulations of a schematic with idealized passives, not
    measurements of silicon.** Both inductors, all four capacitors and all
    four bias resistors in `design/lna.sch` are generic ideal SPICE
@@ -73,6 +77,44 @@ still not exercised by this campaign**. It cannot be: the L/C it refers to
 are ideal primitives here with no corner models to sweep. Read `wcs` as
 this repo's `ss`-equivalent. Full reasoning:
 [`../sim/README.md`](../sim/README.md) §"Corner-label convention".
+
+## The current-design characterization report (generated)
+
+[`characterization-report.json`](characterization-report.json) is the
+block's machine-readable characterization report: one row per ratified row
+of [`../spec/ratified-rows.json`](../spec/ratified-rows.json), each with
+its verdict, the worst value and binding corner behind it, and the cited
+`klt sim` envelope (path + content hash) the verdict rests on. It is
+**generated, not written**: one documented command regenerates it from the
+item-5 envelopes `../signoff/manifest.json` cites (record
+`20261117-054141-bdebb4d`, the matched-DUT 27-cell PVT box of issue #231;
+bench definitions in
+[`../sim/lna-characterization/README.md`](../sim/lna-characterization/README.md)),
+and running it twice on a clean tree is byte-identical:
+
+```bash
+.github/scripts/characterization-report --write   # regenerate; CI runs the read-only check
+```
+
+CI fails if the report or the item-8 envelope wrapping it
+([`../signoff/characterization.envelope.json`](../signoff/characterization.envelope.json))
+drifts from a fresh generation, if a cited envelope no longer satisfies its
+manifest hash pin, or if a cited record is superseded in the coverage
+index. The envelope's `status` is **derived mechanically from the per-row
+verdicts, never hand-set** — `pass` only when every graded row passes — and
+is currently **`fail`**: gain, S11, S22, μ, the negative-resistance check,
+power and `I_C1` pass their ratified rows at every one of the 27 cells,
+while **NF fails at every cell** (4.378 dB worst value at
+`wcs/1.980V/125C` against the ratified < 1.5 dB) until the DR-0004
+redesign lands (#58); the IIP3 and supply rows appear as declared gaps (the
+IIP3 numeric target is still DRAFT; supply is realized by the ratified
+corner axis itself). Item 8 therefore renders `unmet` with this envelope
+cited — the honest verdict, with no relaxation of the ratified rows.
+
+The prose below is the earlier, record-level reading of the pre-match
+45-cell campaign. It stays for its findings and its caveats — which carry
+over to the current DUT wherever the passives are still idealized — not as
+the current verdict artifact.
 
 ## Results against the ratified target table
 

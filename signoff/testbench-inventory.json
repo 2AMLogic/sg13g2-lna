@@ -2488,7 +2488,7 @@
   "files": {
     "README.md": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e",
     "design/netlist/lna.spice": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
-    "measurements/README.md": "sha256:f52e1531056fd6c643af746ae514646eb9a3b166c4404f7e11151a2d402ae9bd",
+    "measurements/README.md": "sha256:e6b5cbee2067b1126570089f27a050ace8de608f6bab0a95c67380e89f993954",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
     "sim/README.md": "sha256:4c93c0f0c9052b3e55047b380ab0dd57445864c9c4b57796fa246e31d666d5a3",
     "sim/biasref-topology/README.md": "sha256:d63baef67a7f0af6a9a7738a2eea5eef680aaffc1ee4b3cf3e57dcddb9f8ef7a",
