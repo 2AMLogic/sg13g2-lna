@@ -770,6 +770,22 @@ not solver round-off, and the committed Q ≈ 10 loss removes it; see
 [`records/issue-27-matched-pvt-verdict.md`](records/issue-27-matched-pvt-verdict.md)
 §"The `|S22| > 1` anomaly".)
 
+**Known wart in the issue-27 probe decks (cosmetic, ngspice-47):** the three
+committed probe decks under
+[`netlist-snapshots/issue-27-s22-anomaly-probe/`](netlist-snapshots/issue-27-s22-anomaly-probe/)
+end their `.control` block with
+`print frequency[maxindex(m22)] frequency[maxindex(m11)] frequency[minindex(mu)] frequency[minindex(k)]`,
+and `maxindex`/`minindex` do not exist in ngspice-47 — the trailing line
+errors non-fatally in each of the three committed logs
+(`Error: no such function as maxindex`, once per log). The analysis itself
+completes and `wrdata` writes all 9911 rows before the error, so every
+quoted probe number is in the committed artifacts, and the decks are
+intentionally left as run (`../README.md` §"Append-only rule"). Do not use
+`maxindex`/`minindex` in new decks: take the probe frequency attributions
+from the committed `.table.txt` sweeps, where all four are exact
+(lossless: max `|S22|` @ 2.28823e9, μ min @ 2.41407e9, k min @ 4.69353e8;
+lossy, both cells: max `|S22|` and μ min both @ 1e7, all in Hz).
+
 Per-artifact layout of a record `<record-id>`:
 
 | Path | Content |
