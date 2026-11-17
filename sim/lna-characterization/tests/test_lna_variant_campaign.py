@@ -1,4 +1,5 @@
 """Unit tests for the pure helpers in lna_variant_campaign.py (stdlib only)."""
+import argparse
 import csv
 import importlib.util
 import io
@@ -15,6 +16,9 @@ LNA = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("lna_variant_campaign", LNA / "lna_variant_campaign.py")
 V = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(V)
+_ps_spec = importlib.util.spec_from_file_location("parse_lna_sweep", LNA / "parse_lna_sweep.py")
+_sweep = importlib.util.module_from_spec(_ps_spec)
+_ps_spec.loader.exec_module(_sweep)
 
 
 class VariantHelpers(unittest.TestCase):
@@ -740,6 +744,436 @@ class BiasAttribution(unittest.TestCase):
         self.assertIn("- Bias attribution: no per-cell `ideal` I_C1 to compare against.", sec)
         self.assertNotIn("I_C1 not computed", sec)
 
+
+# ---------------------------------------------------------------------------
+# Two-tone IIP3 (issue #337): generation helpers and the summarize-iip3
+# reducer, on synthetic fixtures only.
+# ---------------------------------------------------------------------------
+
+def synth_log(path, ic1=0.00394, ic2=0.00393, idd=0.00471, dft=(0.005114, 0.005116, 2.55e-10, 2.56e-10, 0.000999)):
+    t1, t2, i3l, i3h, s1 = dft
+    path.write_text(
+        f'OP ic1 {ic1!r} ic2 {ic2!r} vce1 0.8 vce2 0.96 idd {idd!r}\n'
+        'NPTS 65536\n'
+        f'DFT tone1 {t1!r} tone2 {t2!r} im3l {i3l!r} im3h {i3h!r} src1 {s1!r}\n')
+
+
+def synth_report(path, label, temp, vdd, amp, fft):
+    """One IIP3 corner's klt report + its kept-log layout, as gen-iip3/the
+    batch set produce them. `fft` = the nine measurements[].expr values."""
+    stem = f"matched_iip3_{V.iip3_amp_label(amp)}"
+    cdir = path.parent / "set" / stem / klt_corner_dirname(label, temp, vdd)
+    cdir.mkdir(parents=True, exist_ok=True)
+    log = cdir / "ngspice.log"
+    synth_log(log)
+    corner = {
+        "corner_id": f"{label}/{vdd:.3f}V/{temp}C",
+        "process": {"name": label},
+        "supply_v": {"vdd": vdd},
+        "temperature_c": temp,
+        "status": "pass",
+        "measurements": [{"name": k, "value": v} for k, v in fft.items()],
+        "artifacts": {"log": str(log), "deck": str(cdir / "corner.cir")},
+    }
+    path.write_text(json.dumps({"corners": [corner], "status": "pass"}, indent=1) + "\n")
+    return path
+
+
+def klt_corner_dirname(label, temp, vdd):
+    """klt's corner directory naming: typ_1p800V_27C / bcs_1p620V_n40C."""
+    vv = ("%0.3f" % vdd).replace(".", "p")
+    tt = f"{temp}C" if temp >= 0 else f"n{abs(temp)}C"
+    return f"{label}_{vv}V_{tt}"
+
+
+def reroot_report_logs(root):
+    """Rewrite every report's artifacts.log into the shape the committed klt
+    reports carry: an absolute path into the (since-reaped) submitting
+    worktree, embedding corners/<record-id>/ ahead of the committed-layout
+    suffix -- dead on any later replay, exercising the reducer's re-rooting."""
+    for rp in sorted(root.glob("matched_iip3_*.report.json")):
+        doc = json.loads(rp.read_text())
+        for c in doc["corners"]:
+            log = (c.get("artifacts") or {}).get("log")
+            if not log:
+                continue
+            suffix = Path(log).relative_to(root / "set")
+            c["artifacts"]["log"] = str(
+                Path("/gone/.loom/worktrees/issue-337/sim/lna-characterization/corners")
+                / root.name / "set" / suffix)
+        rp.write_text(json.dumps(doc, indent=1) + "\n")
+
+
+def fft_values(tone=0.01023, im3=2.0e-9):
+    v = {"fft_df": V.IIP3_DF, "tone1": tone, "tone2": tone * 1.0005,
+         "im3l": im3, "im3h": im3 * 1.005,
+         "im5l": 7.13e-11, "im5h": 7.36e-11,
+         "src1": 0.001999, "src2": 0.001998}
+    return v
+
+
+class Iip3Generation(unittest.TestCase):
+    def test_amp_label(self):
+        self.assertEqual(V.iip3_amp_label(2e-3), "a2mv")
+        self.assertEqual(V.iip3_amp_label(1e-3), "a1mv")
+        self.assertEqual(V.iip3_amp_label(5e-4), "a0p5mv")
+        self.assertEqual(V.iip3_amp_label(8e-3), "a8mv")
+
+    def test_protocol_constants_are_the_ratified_ones(self):
+        # spec/target-spec.md IIP3 row (and the AC): f1/f2/spacing and the
+        # FFT parameters are pinned exactly; the template stays the source.
+        self.assertEqual(V.IIP3_TSTEP, 4e-12)
+        self.assertEqual(V.IIP3_NFFT, 65536)
+        self.assertEqual(V.IIP3_TSTART, 1e-6)
+        self.assertAlmostEqual(V.IIP3_DF, 3814697.265625, places=6)
+        self.assertEqual(V.IIP3_F1, 2441406250.0)
+        self.assertEqual(V.IIP3_F2, 2449035644.53125)
+        self.assertEqual(V.IIP3_FSPACE, 7629394.53125)
+        self.assertAlmostEqual(V.IIP3_TSTOP, 1.26214e-6, places=12)
+        self.assertEqual((V.IIP3_B1, V.IIP3_B2, V.IIP3_BIM3L, V.IIP3_BIM3H,
+                          V.IIP3_BIM5L, V.IIP3_BIM5H), (640, 642, 638, 644, 636, 646))
+        self.assertEqual(V.IIP3_AMPS_GRID, (1e-3, 2e-3))
+        self.assertEqual(V.IIP3_AMPS_NOMINAL_ONLY, (5e-4, 4e-3, 8e-3))
+
+    def test_control_kind_reproduces_the_template_sequence(self):
+        k = V.iip3_control_kind().split("\n")
+        self.assertEqual(k[0], "set specwindow = none")
+        self.assertIn("op", k)
+        self.assertIn(f"tran {V.IIP3_TSTEP:g} {V.IIP3_TSTOP:.11g} {V.IIP3_TSTART:g} {V.IIP3_TSTEP:g}", k)
+        self.assertIn("linearize v(rfout) v(vin)", k)
+        self.assertIn("fft v(rfout) v(vin)", k)
+        echoes = [ln for ln in k if ln.startswith("echo ")]
+        self.assertEqual(len(echoes), 3)  # OP, NPTS and DFT echoes
+        self.assertIn('echo "OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd"', echoes)
+        self.assertIn('echo "DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds"', echoes)
+        self.assertIn('echo "NPTS $&npts"', echoes)
+        # no newline issues: every line is non-empty
+        self.assertTrue(all(ln.strip() for ln in k))
+
+    def test_measurements_are_the_fft_bins(self):
+        m = {x["name"]: x["expr"] for x in V.iip3_measurements()}
+        self.assertEqual(m["tone1"], "mag(v(rfout))[640]")
+        self.assertEqual(m["tone2"], "mag(v(rfout))[642]")
+        self.assertEqual(m["im3l"], "mag(v(rfout))[638]")
+        self.assertEqual(m["im3h"], "mag(v(rfout))[644]")
+        self.assertEqual(m["im5l"], "mag(v(rfout))[636]")
+        self.assertEqual(m["im5h"], "mag(v(rfout))[646]")
+        self.assertEqual(m["src1"], "mag(v(vin))[640]")
+        self.assertEqual(m["src2"], "mag(v(vin))[642]")
+        self.assertEqual(m["fft_df"], "frequency[1] - frequency[0]")
+
+    def test_request_grids_and_sharding(self):
+        full = V.iip3_request("matched", 2e-3, "m.spice", False, "")
+        n_full = (len(full["corners"]["process"]) * len(full["corners"]["supply_v"]["vdd"])
+                  * len(full["corners"]["temperature_c"]))
+        self.assertEqual(n_full, 45)
+        self.assertEqual(full["remote"]["hosts"], 15)  # 45 units / 3 per job
+        self.assertEqual(full["options"]["timeout_s"], 900)
+        self.assertEqual(full["options"]["ngspice_init"], ["set numdgt=8"])
+        self.assertTrue(full["options"]["osdi_preload"])
+        nom = V.iip3_request("matched", 8e-3, "m.spice", False, "", nominal_only=True)
+        n_nom = (len(nom["corners"]["process"]) * len(nom["corners"]["supply_v"]["vdd"])
+                 * len(nom["corners"]["temperature_c"]))
+        self.assertEqual(n_nom, 1)
+        self.assertEqual(nom["corners"]["process"][0]["name"], "typ")
+        self.assertEqual(nom["remote"]["hosts"], 1)
+        smoke = V.iip3_request("matched", 1e-3, "m.spice", True, "")
+        n_smoke = (len(smoke["corners"]["process"]) * len(smoke["corners"]["supply_v"]["vdd"])
+                   * len(smoke["corners"]["temperature_c"]))
+        self.assertEqual(n_smoke, 1)
+
+    def test_gen_iip3_writes_the_full_set(self):
+        with tempfile.TemporaryDirectory() as d:
+            a = argparse.Namespace(outdir=d, variants="matched", amps="0.001,0.002",
+                                   amps_nominal_only="0.0005,0.004,0.008", op=True,
+                                   smoke=False, backend="", temps="")
+            V.cmd_gen_iip3(a)
+            names = sorted(p.name for p in Path(d).iterdir())
+            for stem in ("matched_op", "matched_iip3_a1mv", "matched_iip3_a2mv",
+                         "matched_iip3_a0p5mv", "matched_iip3_a4mv", "matched_iip3_a8mv"):
+                self.assertIn(f"{stem}.spice", names)
+                self.assertIn(f"{stem}.request.json", names)
+            req = json.loads((Path(d) / "matched_iip3_a8mv.request.json").read_text())
+            self.assertEqual(len(req["corners"]["process"]), 1)  # nominal cell only
+            req2 = json.loads((Path(d) / "matched_iip3_a2mv.request.json").read_text())
+            self.assertEqual(len(req2["corners"]["process"]), 5)  # full grid
+
+    def test_gen_iip3_rejects_a_level_declared_twice(self):
+        with tempfile.TemporaryDirectory() as d:
+            a = argparse.Namespace(outdir=d, variants="matched", amps="0.001,0.002",
+                                   amps_nominal_only="0.002", op=False,
+                                   smoke=False, backend="", temps="")
+            with self.assertRaises(SystemExit):
+                V.cmd_gen_iip3(a)
+
+    def test_gen_iip3_without_extras(self):
+        with tempfile.TemporaryDirectory() as d:
+            a = argparse.Namespace(outdir=d, variants="matched", amps="0.001,0.002",
+                                   amps_nominal_only="", op=False,
+                                   smoke=False, backend="", temps="")
+            V.cmd_gen_iip3(a)
+            names = sorted(p.name for p in Path(d).iterdir())
+            self.assertEqual(names, ["matched_iip3_a1mv.request.json", "matched_iip3_a1mv.spice",
+                                     "matched_iip3_a2mv.request.json", "matched_iip3_a2mv.spice"])
+
+
+class Iip3Reduction(unittest.TestCase):
+    def run_reduce(self, cells, amps="0.001,0.002", extras="", s11=None,
+                   op=True, extra_report=None, grid=V.GRID_SMOKE,
+                   reroot_logs=False):
+        """cells: {(label, temp, vdd): {"a1": (tone, im3), "a2": (tone, im3)}};
+        a missing level key makes that point genuinely missing. With
+        reroot_logs=True the reports' artifacts.log paths are rewritten into
+        the dead absolute-worktree shape the committed klt reports carry."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for key, lv in cells.items():
+                for tag, amp in (("a1", 1e-3), ("a2", 2e-3)):
+                    if tag not in lv:
+                        continue
+                    tone, im3 = lv[tag]
+                    synth_report(root / f"matched_iip3_{tag}mv.report.json",
+                                 key[0], key[1], key[2], amp, fft_values(tone, im3))
+            if extra_report:
+                synth_report(root / extra_report, "typ", 27, 1.8, 4e-3, fft_values())
+            if reroot_logs:
+                reroot_report_logs(root)
+            op_path = ""
+            if op:
+                op_cells = []
+                for (label, temp, vdd) in cells:
+                    op_cells.append({
+                        "corner_id": f"{label}/{vdd:.3f}V/{temp}C",
+                        "process": {"name": label}, "supply_v": {"vdd": vdd},
+                        "temperature_c": temp, "status": "pass",
+                        "measurements": [{"name": n, "value": 0.00394}
+                                         for n, _e, _u in V.OP_MEASUREMENTS],
+                        "artifacts": {},
+                    })
+                (root / "matched_op.report.json").write_text(
+                    json.dumps({"corners": op_cells, "status": "pass"}, indent=1) + "\n")
+                op_path = str(root / "matched_op.report.json")
+            s11_path = ""
+            if s11:
+                p = root / "s11.csv"
+                p.write_text("variant,corner_label,temp_c,vdd_v,s11_db_mid\n" + "".join(
+                    f"matched,{k[0]},{k[1]},{k[2]:.2f},{v}\n" for k, v in s11.items()) + "\n")
+                s11_path = str(p)
+            out = root / "iip3.csv"
+            summ = root / "summary.csv"
+            head = root / "h.md"
+            a = argparse.Namespace(corners_dir=d, iip3_csv=str(out),
+                                   summary_csv=str(summ), headlines_md=str(head),
+                                   variant="matched", amps=amps,
+                                   amps_nominal_only=extras, op_report=op_path,
+                                   s11_csv=s11_path,
+                                   slope_tol=_sweep.IIP3_SLOPE_TOL,
+                                   grid=grid, temps="")
+            rc = V.cmd_summarize_iip3(a)
+            rows = list(csv.DictReader(open(out)))
+            srows = list(csv.DictReader(open(summ)))
+            return rc, rows, srows, head.read_text()
+
+    def test_nominal_cell_valid_and_arithmetic_matches_the_definition(self):
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, md = self.run_reduce({("typ", 27, 1.80): {"a1": (tone / 2, im3 / 8), "a2": (tone, im3)}},
+                                              s11={("typ", 27, 1.80): -12.0})
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(rows), 2)
+        r2 = next(r for r in rows if r["point_id"].endswith("a2mv"))
+        pin = _sweep.avail_power_dbm(2e-3)
+        t_out = (float(r2["v_tone1_out_v"]) + float(r2["v_tone2_out_v"])) / 2
+        i_out = (float(r2["v_im3l_out_v"]) + float(r2["v_im3h_out_v"])) / 2
+        pout = _sweep.out_power_dbm(t_out)
+        pim3 = _sweep.out_power_dbm(i_out)
+        self.assertAlmostEqual(float(r2["iip3_dbm"]), pin + (pout - pim3) / 2, places=3)
+        self.assertAlmostEqual(float(r2["pin_avail_dbm_per_tone"]), -50.0, places=3)
+        self.assertAlmostEqual(float(r2["gain_db"]), pout - pin, places=3)
+        # 8x amplitude per 2x drive is the exact 3:1 slope
+        s = srows[0]
+        self.assertEqual(s["iip3_validity"], "valid")
+        self.assertAlmostEqual(float(s["im3_slope_2pt"]), 3.0, places=3)
+        self.assertIn("The 3:1 IM3 slope assumption holds at every cell", md)
+        term = V.iip3_mismatch_term_db(-12.0)
+        self.assertAlmostEqual(float(s["iip3_mismatch_term_db"]), term, places=4)
+        self.assertAlmostEqual(float(s["iip3_device_plane_dbm_a2mv"]),
+                               float(s["iip3_dbm_a2mv"]) - term, places=4)
+        self.assertIn("Draft > 0 dBm value", md)
+        self.assertIn("stays DRAFT", md)
+
+    def test_dead_recorded_log_path_reroots_onto_corners_dir(self):
+        # The committed klt reports record artifacts.log as an absolute path
+        # into the submitting worktree, reaped long since; the replay must
+        # still reduce every point by re-rooting the suffix after
+        # corners/<record-id>/ onto --corners-dir (the committed layout)
+        # instead of taking the missing_log_echoes branch.
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (tone / 2, im3 / 8), "a2": (tone, im3)}},
+            s11={("typ", 27, 1.80): -12.0}, reroot_logs=True)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(srows[0]["iip3_validity"], "valid")
+        self.assertIn("The 3:1 IM3 slope assumption holds at every cell", md)
+        self.assertNotIn("missing_log_echoes", md)
+
+    def test_log_unreachable_everywhere_still_fails_loudly(self):
+        # Neither the recorded absolute path nor the committed-layout re-root
+        # finds the log: the point must still fail as missing_log_echoes -- a
+        # genuinely missing log never silently reduces.
+        tone, im3 = 0.01023, 2.0e-9
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for tag, amp, t, i3 in (("a1", 1e-3, tone / 2, im3 / 8),
+                                    ("a2", 2e-3, tone, im3)):
+                synth_report(root / f"matched_iip3_{tag}mv.report.json",
+                             "typ", 27, 1.8, amp, fft_values(t, i3))
+            reroot_report_logs(root)
+            (root / "set" / "matched_iip3_a2mv" / klt_corner_dirname("typ", 27, 1.8)
+             / "ngspice.log").unlink()
+            out = root / "iip3.csv"
+            a = argparse.Namespace(corners_dir=d, iip3_csv=str(out),
+                                   summary_csv=str(root / "s.csv"),
+                                   headlines_md=str(root / "h.md"),
+                                   variant="matched", amps="0.001,0.002",
+                                   amps_nominal_only="", op_report="",
+                                   s11_csv="", slope_tol=0.15,
+                                   grid=V.GRID_SMOKE, temps="")
+            rc = V.cmd_summarize_iip3(a)
+            self.assertEqual(rc, 2)
+            md = (root / "h.md").read_text()
+            self.assertIn("missing_log_echoes", md)
+            # the healthy a1mv point still reduces; only the dead one is dropped
+            rows = list(csv.DictReader(open(out)))
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0]["point_id"].endswith("a1mv"))
+
+    def test_invalid_slope_gets_no_intercept_but_raw_rows_survive(self):
+        # 2x amplitude per 2x drive = slope 1: the cell is invalid. Validity is
+        # measurement policy, distinct from point coverage (README), so the
+        # reduce still exits 0 -- the headlines just refuse the intercept.
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, md = self.run_reduce({("typ", 27, 1.80): {"a1": (tone / 2, im3 / 2), "a2": (tone, im3)}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(srows[0]["iip3_validity"], "invalid")
+        self.assertIn("outside 3 +/-", md)
+        self.assertIn("no intercept accepted", md)
+        self.assertIn("**No intercept accepted**: zero cells passed the slope check.", md)
+        self.assertNotIn("slope assumption holds at every cell", md)
+        # raw per-point iip3 values are still in the IIP3 CSV
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(r["iip3_dbm"] for r in rows))
+
+    def test_missing_drive_level_is_unknown_and_fails_coverage(self):
+        tone, im3 = 0.01023, 2.0e-9
+        rc, _rows, srows, md = self.run_reduce({("typ", 27, 1.80): {"a2": (tone, im3)}})
+        self.assertEqual(rc, 2)
+        self.assertEqual(srows[0]["iip3_validity"], "unknown")
+        self.assertIn("missing_report", md)  # the a1mv report never appeared
+
+    def test_grid_incompleteness_fails_and_extra_report_is_flagged(self):
+        cells = {("typ", 27, 1.80): {"a1": (0.01, 2e-9), "a2": (0.01023, 2.0e-9)}}
+        rc, _r, _s, md = self.run_reduce(cells, extra_report="matched_iip3_a4mv.report.json",
+                                         grid=V.GRID_FULL)
+        self.assertEqual(rc, 2)
+        self.assertIn("missing_cell", md)   # 44 cells of the box absent
+        self.assertIn("unexpected_report", md)
+
+    def test_nonfinite_bin_fails_the_cell(self):
+        # a1mv healthy (so rows exist and CSVs are still written), a2mv's IM3L
+        # bin non-finite: the cell gets no a2 intercept, coverage fails, and
+        # the issue is named in the headlines.
+        tone, im3 = 0.01023, 2.0e-9
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            stem = "matched_iip3_a1mv"
+            cdir = root / "set" / stem / klt_corner_dirname("typ", 27, 1.8)
+            cdir.mkdir(parents=True)
+            synth_log(cdir / "ngspice.log")
+            (root / f"{stem}.report.json").write_text(json.dumps({"corners": [{
+                "corner_id": "typ/1.800V/27C", "process": {"name": "typ"},
+                "supply_v": {"vdd": 1.8}, "temperature_c": 27, "status": "pass",
+                "measurements": [{"name": k, "value": v}
+                                 for k, v in fft_values(tone / 2, im3 / 8).items()],
+                "artifacts": {"log": str(cdir / "ngspice.log")}}]}))
+            stem = "matched_iip3_a2mv"
+            cdir = root / "set" / stem / klt_corner_dirname("typ", 27, 1.8)
+            cdir.mkdir(parents=True)
+            synth_log(cdir / "ngspice.log")
+            vals = fft_values(tone, im3)
+            vals["im3l"] = None
+            (root / f"{stem}.report.json").write_text(json.dumps({"corners": [{
+                "corner_id": "typ/1.800V/27C", "process": {"name": "typ"},
+                "supply_v": {"vdd": 1.8}, "temperature_c": 27, "status": "pass",
+                "measurements": [{"name": k, "value": v} for k, v in vals.items()],
+                "artifacts": {"log": str(cdir / "ngspice.log")}}]}))
+            a = argparse.Namespace(corners_dir=d, iip3_csv=str(root / "o.csv"),
+                                   summary_csv=str(root / "s.csv"),
+                                   headlines_md=str(root / "h.md"),
+                                   variant="matched", amps="0.001,0.002",
+                                   amps_nominal_only="", op_report="",
+                                   s11_csv="", slope_tol=0.15,
+                                   grid=V.GRID_SMOKE, temps="")
+            rc = V.cmd_summarize_iip3(a)
+            self.assertEqual(rc, 2)
+            self.assertIn("non-finite or absent FFT bins", (root / "h.md").read_text())
+
+    def test_incoherent_fft_df_fails_the_cell(self):
+        tone, im3 = 0.01023, 2.0e-9
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            stem = "matched_iip3_a1mv"
+            cdir = root / "set" / stem / klt_corner_dirname("typ", 27, 1.8)
+            cdir.mkdir(parents=True)
+            synth_log(cdir / "ngspice.log")
+            (root / f"{stem}.report.json").write_text(json.dumps({"corners": [{
+                "corner_id": "typ/1.800V/27C", "process": {"name": "typ"},
+                "supply_v": {"vdd": 1.8}, "temperature_c": 27, "status": "pass",
+                "measurements": [{"name": k, "value": v}
+                                 for k, v in fft_values(tone / 2, im3 / 8).items()],
+                "artifacts": {"log": str(cdir / "ngspice.log")}}]}))
+            stem = "matched_iip3_a2mv"
+            cdir = root / "set" / stem / klt_corner_dirname("typ", 27, 1.8)
+            cdir.mkdir(parents=True)
+            synth_log(cdir / "ngspice.log")
+            vals = fft_values(tone, im3)
+            vals["fft_df"] = V.IIP3_DF * 2  # zero-padded / incoherent grid
+            (root / f"{stem}.report.json").write_text(json.dumps({"corners": [{
+                "corner_id": "typ/1.800V/27C", "process": {"name": "typ"},
+                "supply_v": {"vdd": 1.8}, "temperature_c": 27, "status": "pass",
+                "measurements": [{"name": k, "value": v} for k, v in vals.items()],
+                "artifacts": {"log": str(cdir / "ngspice.log")}}]}))
+            a = argparse.Namespace(corners_dir=d, iip3_csv=str(root / "o.csv"),
+                                   summary_csv=str(root / "s.csv"),
+                                   headlines_md=str(root / "h.md"),
+                                   variant="matched", amps="0.001,0.002",
+                                   amps_nominal_only="", op_report="",
+                                   s11_csv="", slope_tol=0.15,
+                                   grid=V.GRID_SMOKE, temps="")
+            rc = V.cmd_summarize_iip3(a)
+            self.assertEqual(rc, 2)
+            self.assertIn("incoherent_fft_df", (root / "h.md").read_text())
+
+    def test_mismatch_term_formula(self):
+        # |S11| = 10^(-12/20): term = -10*log10(1 - |S11|^2)
+        t = V.iip3_mismatch_term_db(-12.0)
+        self.assertAlmostEqual(t, -10 * math.log10(1 - (10 ** (-12 / 20)) ** 2), places=9)
+        # historical anchors: the unmatched 0.933 DUT inflated by ~8.9 dB,
+        # the matched DUT sits near 0.3 dB (README "IIP3 mismatch-inflation")
+        self.assertAlmostEqual(V.iip3_mismatch_term_db(-0.60), 8.9, places=1)
+        self.assertLess(V.iip3_mismatch_term_db(-11.0), 0.5)
+        with self.assertRaises(ValueError):
+            V.iip3_mismatch_term_db(0.0)   # |S11| = 1: no delivered power
+
+    def test_op_and_bias_join_lands_in_the_summary(self):
+        rc, _rows, srows, _md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (0.005, 2.5e-10), "a2": (0.01023, 2.0e-9)}},
+            s11={("typ", 27, 1.80): -12.0})
+        self.assertEqual(rc, 0)
+        s = srows[0]
+        self.assertEqual(s["ic1"], "0.00394")
+        self.assertEqual(s["pdc"], "0.00394")
+        self.assertTrue(s["iip3_device_plane_dbm_a2mv"])
 
 
 if __name__ == "__main__":
