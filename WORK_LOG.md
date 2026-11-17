@@ -6,6 +6,8 @@
 
 ### 2026-11-17
 
+- **PR #375**: ci: key the testbench-inventory executable-bit assertion on the command word, any extension
+- **Issue #372** (closed): ci: no guard keeps a documented bare-path .py command executable (class of #367/#369)
 - **PR #371**: fix: make rederive_nf_fixed_t0.py executable for record replay command
 - **PR #370**: feat(signoff): generate the item-8 characterization report with a mechanically derived envelope
 - **PR #368**: fix: make lna_variant_campaign.py executable for README reviewer-replay
