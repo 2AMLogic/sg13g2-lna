@@ -4,6 +4,22 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-17
+
+- **PR #343**: docs: reword the last two bare klt-pin restatements into the gated klayout-tools== form
+- **PR #340**: fix: gate run_native_drc.py's docstring klt pin, restate README pins prefixed only
+- **PR #338**: feat: gate the README prose klt/KLayout pins in check-klt-pin.sh
+- **PR #335**: docs: state the pin-move netlist claims as evidence, not a 3.4.4-era attribution
+- **PR #334**: records: matched-DUT 45-cell PVT verdict; |S22|>1 anomaly closed by fine-sweep probe
+- **PR #331**: fix: derive native DRC full-scope NOTE from FULL_SCOPE_STATUSES, pin in tests
+- **Issue #342** (closed): evidence: issue-27 probe record's |S22|>1 / mu<1 point counts are table recounts that disagree with the committed ngspice log (325 vs 334, 364 vs 365)
+- **Issue #341** (closed): check-klt-pin.sh: two bare klt-pin restatements remain ungated (README.md:122, signoff/README.md:8)
+- **Issue #339** (closed): check-klt-pin.sh still misses two klt/KLayout pin literals: run_native_drc.py's docstring and README.md:80's bare backticked versions
+- **Issue #321** (closed): run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
+- **Issue #320** (closed): check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift
+- **Issue #305** (closed): design/README.md misstates which xschem generated the committed netlist
+- **Issue #27** (closed): design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core)
+
 ### 2026-11-16
 
 - **PR #317**: chore(loom): resync installed Loom to v0.19.1302

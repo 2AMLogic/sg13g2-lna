@@ -1148,7 +1148,7 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). No NF or stability pass/fail claim: mu_min/max|S22| sit at the 1.0000 sweep edge at every temperature, the |S22| > 1 anomaly stays with #27. No spec row change.",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). Verdict (issue #27, records/issue-27-matched-pvt-verdict.md): the ratified S11/S22/gain/stability rows are met at 45/45 cells (worst in-band S11 -11.1124 dB, S22 -14.9653 dB, S21 18.7163 dB; mu_min 1.000000370 at every cell, k_min 49.15, max|S11| 0.998996 and max|S22| 0.999999631 both < 1), conditional on the Q~10 inductor-loss model. The |S22| > 1 anomaly is closed as understood-and-damped: the netlist-snapshots/issue-27-s22-anomaly-probe/ differential probe (single corner, 71x point density) shows the lossless variant genuinely exceeds unity (+743 ppm, mu_min 0.9972) -- real negative resistance, not solver round-off -- while the committed lossy DUT shows zero violations at 9911 points at both probed corners. NF stays failing (0/45 cells under 1.5 dB; ~0.68 dB nominal delta is the finite-Q input loss on top of the NFmin floor); IIP3 stays DRAFT with no post-match re-measure yet. No spec row change; spec/target-spec.md untouched.",
       "record_ids": [
         "20261106-054735-64b37ae",
         "20261106-055142-64b37ae",
@@ -1156,7 +1156,9 @@
         "20261116-022647-eacd53a",
         "20261116-023212-eacd53a",
         "issue-258-xout-bleed-convergence",
-        "20261116-190440-9cd8cdc"
+        "20261116-190440-9cd8cdc",
+        "issue-27-matched-pvt-verdict",
+        "issue-27-s22-anomaly-probe"
       ],
       "replay_checks": [
         "sim/lna-characterization/tests/test_lna_variant_campaign.py"
