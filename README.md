@@ -119,7 +119,7 @@ diff /tmp/summary.csv sim/lna-characterization/records/<record-id>-summary.csv
 sim/lna-core-envelope/derive_committed_record_envelope.py --out /tmp/envelope.csv
 diff /tmp/envelope.csv sim/lna-core-envelope/records/20260926-122301-088c734-derived-envelope.csv
 sim/models/check_sources.sh            # vendored inductor model still matches its recorded sha256
-.github/scripts/check-signoff.sh       # T1 verdict of record is current (needs klt 0.9.2)
+.github/scripts/check-signoff.sh       # T1 verdict of record is current (needs klayout-tools==0.9.2)
 ```
 
 The shell runners and checks are linted in CI by the `shell-lint` job

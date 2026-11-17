@@ -5,7 +5,7 @@
   report rendered by `klt signoff --manifest` — never a hand-maintained
   checkbox list in an issue body.
 - **Date**: 2026-09-21, issue #30 (companion item-11 work item: #35).
-- **Consumes**: `klt signoff` (klayout-tools, pinned release `0.9.2` from
+- **Consumes**: `klt signoff` (klayout-tools, pinned `klayout-tools==0.9.2` from
   PyPI) and the vendored checklist below.
 - **Does not**: grade anything itself. Every row's verdict comes from the
   tool's own mechanical parse-and-grade; this directory only declares what
