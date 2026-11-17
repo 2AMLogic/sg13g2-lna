@@ -22,7 +22,7 @@ rather than on this campaign's numbers.
 
 ### Which DUT each record describes — read this before quoting any number
 
-This directory holds **eleven** append-only characterization records, and
+This directory holds **twelve** append-only characterization records, and
 they characterize **six different circuits** (six distinct DUT sha256s). A
 number quoted from the wrong one is a statement about a design that no
 longer exists. The two `issue-258-xout-bleed-convergence*.md` files are
@@ -51,6 +51,7 @@ xout); only the records listing that sha are `present-dut`.
 | `20261114-025351-7a54cc2` | `2575cbbc00459b60` | issue #56 inductor-loss variant campaign (6 variants incl. `ideal`) on the **pre-bleed** DUT (`b8ad5d3`) — a variant study of a superseded circuit; both facts hold | full grid per variant (6 × 45 cells) | **variant-exploration** |
 | `20261116-022647-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (27 °C, 15/45 cells) | **present-dut** |
 | `20261116-023212-eacd53a` | `151aec66ade8f052` | issue #56 harness, variant `matched`: the committed DUT verbatim (`dd6c5be`) | single-temperature slice (−40 °C, 15/45 cells) | **present-dut** |
+| `20261117-040629-30d1235a` | `151aec66ade8f052` | issue #337 two-tone IIP3 on the committed matched DUT, the ratified `tb_lna_iip3.spice.tmpl` protocol via `run_lna_iip3.sh` (deck reproduces the template's control sequence; template unchanged) | full grid (45/45 cells, two drive levels per cell + the nominal cell's 0.5/4/8 mV extras) | **present-dut** |
 
 The `Coverage` column is run status, not DUT taxonomy (taxonomy is the
 `Standing` column alone): a `full grid` record spans all 45 PVT cells of
@@ -682,7 +683,7 @@ written into every generated IIP3 deck's header as well as here.
 
 ## Results
 
-See [`records/`](records/) for the append-only per-run records (eleven of
+See [`records/`](records/) for the append-only per-run records (twelve of
 them — see "Which DUT each record describes" above). Record
 `20260926-122301-088c734`'s
 headline numbers are reproduced in its own `records/<record-id>.md` and
@@ -1160,6 +1161,66 @@ ngspice >= 46; this worker now has ngspice-47 on `PATH`). Read its numbers as
 one operating point of one process, with all the limits above. For a real
 result use the committed 45-cell record instead.
 
+## Matched-DUT two-tone IIP3 (issue #337)
+
+Issue #27's Test Plan owes a post-match IIP3 re-measure on the RATIFIED
+protocol, and `spec/target-spec.md`'s IIP3 row binds its number "after #26
+(bias) and #27 (matching) re-measurement on this exact protocol". Record
+`20261117-040629-30d1235a` is that measurement: the two-tone transient bench
+of §IIP3 (template unchanged — the deck `run_lna_iip3.sh` generates
+reproduces the template's `.control` sequence line for line) on the committed
+matched DUT, across the full 45-cell PVT box, at two drive levels per cell
+(so the 3:1 IM3 slope is *checked* at every cell, not assumed at one) plus
+the nominal cell's 0.5/4/8 mV extras for the 24 dB drive range.
+
+**Cold start** (same conventions as every runner in this directory):
+
+```bash
+export PDK_ROOT=/path/to/ihp-open-pdk PDK=ihp-sg13g2
+sim/lna-characterization/run_lna_iip3.sh
+```
+
+What it runs (six `klt sim` requests on the Spot batch fleet; see
+`lna_variant_campaign.py gen-iip3`): `matched_op` (the 45-cell DC bias join,
+so `I_C1` sits beside every number the record quotes),
+`matched_iip3_a1mv`/`_a2mv` (the ratified two-level pair at every cell) and
+`matched_iip3_a0p5mv`/`_a4mv`/`_a8mv` (nominal cell only). Each IIP3 deck
+carries the template's sequence — op + OP echo, `tran 4e-12 1.26214e-06
+1e-06 4e-12`, `linearize v(rfout) v(vin)` + NPTS echo, the coherent-DFT
+projection + DFT echo, `fft` — carried through klt sim as the analysis
+command sequence, with the FFT bin magnitudes (`mag(v(rfout))[640]` and
+friends) as `measurements[].expr` read in the spectrum plot the template's
+own `fft` leaves current. The FFT (primary) and the DFT projection
+(cross-check) IIP3 of every point are both committed
+(`iip3_dbm`, `iip3_dbm_dft_crosscheck`, agreement `dft_fft_iip3_agreement_db`).
+
+**Reduce/replay without ngspice** (the committed reports + per-corner logs
+are sufficient — this is how a reviewer checks the committed CSVs):
+
+```bash
+sim/lna-characterization/lna_variant_campaign.py summarize-iip3 \
+  --corners-dir sim/lna-characterization/corners/<record-id> \
+  --iip3-csv /tmp/check-iip3.csv \
+  --summary-csv /tmp/check-iip3-summary.csv \
+  --headlines-md /tmp/check-iip3-headlines.md \
+  --op-report sim/lna-characterization/corners/<record-id>/matched_op.report.json \
+  --s11-csv sim/lna-characterization/records/20261106-054735-64b37ae-summary.csv,sim/lna-characterization/records/20261116-022647-eacd53a-summary.csv,sim/lna-characterization/records/20261116-023212-eacd53a-summary.csv
+diff /tmp/check-iip3-summary.csv sim/lna-characterization/records/<record-id>-iip3-summary.csv
+```
+
+The reducer applies the README's IM3-slope validity policy (3 ± 0.15 on each
+cell's two-level pair; a cell outside it contributes **no accepted
+intercept** — raw per-point values stay in the CSV) and converts to the
+device-plane figure with the matched DUT's own per-cell mid-band |S11| from
+the three committed present-dut slices (the mismatch term
+`−10·log10(1−|S11|²)` is a property of *this* DUT, ≈ +0.24…+0.32 dB — not the
++2.96 dB of the unmatched DR-0003 core, and not the ≈ +8.9 dB of the
+placeholder-divider DUT). **The IIP3 numeric row stays DRAFT**: this record
+supplies the number the spec row names, nothing more; binding it (or relaxing
+it) requires a decision record of its own. A single-cell plumbing check runs
+with `LNA_IIP3_SMOKE=1` — same "not a PVT campaign, do not commit" rule as
+every smoke mode here.
+
 ## What these numbers do and do not license
 
 **Do**: treat the three complete `present-dut` slices — `20261106-054735-64b37ae`
@@ -1194,7 +1255,7 @@ gain/NF/S11/S22 as achievable silicon performance (no layout parasitics,
 package or mismatch, §Model limitations); read the NF row as anything but
 failing (0/45 cells, attributed, not relaxed); quote k
 without μ beside it (§Why k is ill-conditioned); mix numbers **across**
-records (§Which DUT each record describes — the eleven records are six
+records (§Which DUT each record describes — the twelve records are six
 different circuits); treat the corner spread as a statistical (mismatch)
 spread, or call any RF row non-statistical (§Model limitations item 6); or read a `|S22| > 1` / μ count off the summary CSV
 without checking the raw `*.stability.dat` tables, whose ppm-scale residues
@@ -1228,15 +1289,18 @@ arithmetic at generation time, never retyped:
 | `matched_op` | `power`, `ic1` | `pdc` < 10 mW (= 0.01 W), `ic1` ≤ 4.5 mA (= 0.0045 A) | `power`, `ic1` |
 | `matched_sp_band` | `gain`, `s11`, `s22` | `s21_db_min` > 15 dB, `s11_db_worst` < −10 dB, `s22_db_worst` < −10 dB | `gain`, `s11`, `s22` |
 | `matched_sp_stab` | `mu`, `negres` | `mu_min` > 1, `s11_mag_max` < 1, `s22_mag_max` < 1 | `mu`, `negres` ×2 |
-| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (deliberate) |
+| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (redundant if set — see below) |
 
-The `nf` measurement carries its honest limit but no `spec_row` tag on
-purpose: the row is expected to fail at every cell until #58 lands
-(DR-0004), and a failing *tagged* measurement would mark the row
-*uncovered* under `klt signoff`'s derived-coverage rule instead of
-*covered and failing* — the manifest asserts the `nf` row's coverage and
-the envelope's failure shows up as the citation failure that keeps item 5
-`unmet`, which is the truthful reading.
+The `nf` measurement carries its honest limit but no `spec_row` tag: the
+row is expected to fail at every cell until #58 lands (DR-0004), and the
+tag would be redundant here, not protective. `klt signoff`'s
+derived-coverage path does drop a *failing* tagged measurement from
+`row_sources`, but the row's coverage comes from the manifest citation's
+`rows` declaration (`rows: ["nf"]`), not from the measurement tag —
+verified with the pinned `klayout-tools==0.9.2` render (issue #363): the
+signoff output is byte-identical with and without the tag,
+`uncovered_rows` stays empty either way, and the envelope's failure keeps
+item 5 `unmet` either way.
 
 **Corner box.** Process `{typ, bcs, wcs}` × supply `{1.62, 1.80, 1.98} V`
 × temperature `{−40, 27, 125} °C` = **27 cells per analysis** (108

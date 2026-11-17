@@ -1,0 +1,261 @@
+klt: batch job klt-sim-023d657f09a0 submitting to s3://<bucket>/jobs/klt-sim-023d657f09a0
+klt: batch job klt-sim-7cc9c0931c2e submitting to s3://<bucket>/jobs/klt-sim-7cc9c0931c2e
+klt: batch job klt-sim-e3ef67dd12b8 submitting to s3://<bucket>/jobs/klt-sim-e3ef67dd12b8
+klt: batch job klt-sim-c787cfc55044 submitting to s3://<bucket>/jobs/klt-sim-c787cfc55044
+klt: batch job klt-sim-5704553c40ae submitting to s3://<bucket>/jobs/klt-sim-5704553c40ae
+klt: batch job klt-sim-6a64f2b64150 submitting to s3://<bucket>/jobs/klt-sim-6a64f2b64150
+klt: batch job klt-sim-5fda9bbf0996 submitting to s3://<bucket>/jobs/klt-sim-5fda9bbf0996
+klt: batch job klt-sim-e97602c6f75f submitting to s3://<bucket>/jobs/klt-sim-e97602c6f75f
+klt: batch job klt-sim-da6ef40cdf99 submitting to s3://<bucket>/jobs/klt-sim-da6ef40cdf99
+klt: batch job klt-sim-021a73a4cca9 submitting to s3://<bucket>/jobs/klt-sim-021a73a4cca9
+klt: batch job klt-sim-e1d05ae435b4 submitting to s3://<bucket>/jobs/klt-sim-e1d05ae435b4
+klt: batch job klt-sim-8b996e14b103 submitting to s3://<bucket>/jobs/klt-sim-8b996e14b103
+klt: batch job klt-sim-28a5106f6d90 submitting to s3://<bucket>/jobs/klt-sim-28a5106f6d90
+klt: batch job klt-sim-0782ebde8c56 submitting to s3://<bucket>/jobs/klt-sim-0782ebde8c56
+klt: batch job klt-sim-6c1107d34335 submitting to s3://<bucket>/jobs/klt-sim-6c1107d34335
+klt: batch job klt-sim-8188e3cfb2ef submitting to s3://<bucket>/jobs/klt-sim-8188e3cfb2ef
+klt sim: batch job klt-sim-7cc9c0931c2e (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: shards 0/15 launched, 1 launching, 14 pending, 0 collected; launch rate unknown, ETA unknown
+klt sim: batch job klt-sim-023d657f09a0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a0p5mv.request.json): submitted
+klt sim: batch job klt-sim-e3ef67dd12b8 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-5704553c40ae (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-5fda9bbf0996 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-c787cfc55044 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-6a64f2b64150 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-0782ebde8c56 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-e97602c6f75f (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-6c1107d34335 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-e1d05ae435b4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-8b996e14b103 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-021a73a4cca9 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-28a5106f6d90 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-da6ef40cdf99 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-8188e3cfb2ef (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): submitted
+klt sim: batch job klt-sim-7cc9c0931c2e launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-7cc9c0931c2e`
+klt sim: batch job klt-sim-5704553c40ae launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-5704553c40ae`
+klt sim: batch job klt-sim-5fda9bbf0996 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-5fda9bbf0996`
+klt sim: batch job klt-sim-7cc9c0931c2e state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-e3ef67dd12b8 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-e3ef67dd12b8`
+klt sim: batch job klt-sim-5704553c40ae state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-e3ef67dd12b8 state=no status.json yet elapsed=1s
+klt sim: waiting for capacity: 15 of 15 shards pending, 1 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 2 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 3 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 4 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-5fda9bbf0996 state=no status.json yet elapsed=10s
+klt sim: waiting for capacity: 15 of 15 shards pending, 5 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 6 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 7 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 8 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-7cc9c0931c2e (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-7cc9c0931c2e state=running elapsed=34s
+klt sim: batch job klt-sim-5704553c40ae (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-5704553c40ae state=running elapsed=35s
+klt sim: batch job klt-sim-e3ef67dd12b8 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-e3ef67dd12b8 state=running elapsed=36s
+klt sim: batch job klt-sim-5fda9bbf0996 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-5fda9bbf0996 state=running elapsed=46s
+klt sim: batch job klt-sim-023d657f09a0 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-023d657f09a0`
+klt sim: batch job klt-sim-da6ef40cdf99 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-da6ef40cdf99`
+klt sim: batch job klt-sim-023d657f09a0 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-c787cfc55044 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-c787cfc55044`
+klt sim: batch job klt-sim-e97602c6f75f launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-e97602c6f75f`
+klt sim: batch job klt-sim-da6ef40cdf99 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-c787cfc55044 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-e97602c6f75f state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-7cc9c0931c2e (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-8188e3cfb2ef launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-8188e3cfb2ef`
+klt sim: batch job klt-sim-5704553c40ae (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-8188e3cfb2ef state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-e3ef67dd12b8 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-5fda9bbf0996 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-023d657f09a0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a0p5mv.request.json): running
+klt sim: batch job klt-sim-023d657f09a0 state=running elapsed=34s
+klt sim: batch job klt-sim-c787cfc55044 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-c787cfc55044 state=running elapsed=33s
+klt sim: batch job klt-sim-e97602c6f75f (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-e97602c6f75f state=running elapsed=34s
+klt sim: waiting for capacity: 11 of 15 shards pending, 7 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-8188e3cfb2ef (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-8188e3cfb2ef state=running elapsed=33s
+klt sim: batch job klt-sim-023d657f09a0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a0p5mv.request.json): done
+klt sim: batch job klt-sim-c787cfc55044 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-da6ef40cdf99 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-da6ef40cdf99 state=running elapsed=65s
+klt sim: batch job klt-sim-e97602c6f75f (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt: batch job klt-sim-16b90af7e82a submitting to s3://<bucket>/jobs/klt-sim-16b90af7e82a
+klt: batch job klt-sim-9e08d0496370 submitting to s3://<bucket>/jobs/klt-sim-9e08d0496370
+klt: batch job klt-sim-2567d0b852c0 submitting to s3://<bucket>/jobs/klt-sim-2567d0b852c0
+klt: batch job klt-sim-ac53a18c5918 submitting to s3://<bucket>/jobs/klt-sim-ac53a18c5918
+klt: batch job klt-sim-6a070669f5f4 submitting to s3://<bucket>/jobs/klt-sim-6a070669f5f4
+klt: batch job klt-sim-4ac3232e8101 submitting to s3://<bucket>/jobs/klt-sim-4ac3232e8101
+klt: batch job klt-sim-455b2bc17b30 submitting to s3://<bucket>/jobs/klt-sim-455b2bc17b30
+klt: batch job klt-sim-9c7b987c2d12 submitting to s3://<bucket>/jobs/klt-sim-9c7b987c2d12
+klt: batch job klt-sim-92677c518e11 submitting to s3://<bucket>/jobs/klt-sim-92677c518e11
+klt: batch job klt-sim-a4d126ca2666 submitting to s3://<bucket>/jobs/klt-sim-a4d126ca2666
+klt: batch job klt-sim-3e9d2396bd5d submitting to s3://<bucket>/jobs/klt-sim-3e9d2396bd5d
+klt: batch job klt-sim-554e6814b82a submitting to s3://<bucket>/jobs/klt-sim-554e6814b82a
+klt: batch job klt-sim-ff4cc127750d submitting to s3://<bucket>/jobs/klt-sim-ff4cc127750d
+klt: batch job klt-sim-65e28d53934c submitting to s3://<bucket>/jobs/klt-sim-65e28d53934c
+klt: batch job klt-sim-7bd881ff4ddd submitting to s3://<bucket>/jobs/klt-sim-7bd881ff4ddd
+klt sim: batch job klt-sim-2567d0b852c0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: shards 0/15 launched, 1 launching, 14 pending, 0 collected; launch rate unknown, ETA unknown
+klt sim: batch job klt-sim-ac53a18c5918 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-16b90af7e82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-6a070669f5f4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-9e08d0496370 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-4ac3232e8101 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-92677c518e11 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-65e28d53934c (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-7bd881ff4ddd (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-a4d126ca2666 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-9c7b987c2d12 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-455b2bc17b30 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-554e6814b82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-3e9d2396bd5d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-e1d05ae435b4 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-e1d05ae435b4`
+klt sim: batch job klt-sim-e1d05ae435b4 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-ac53a18c5918 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-ac53a18c5918`
+klt sim: batch job klt-sim-ac53a18c5918 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-2567d0b852c0 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-2567d0b852c0`
+klt sim: batch job klt-sim-4ac3232e8101 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-4ac3232e8101`
+klt sim: batch job klt-sim-6a070669f5f4 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-6a070669f5f4`
+klt sim: batch job klt-sim-9e08d0496370 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-9e08d0496370`
+klt sim: batch job klt-sim-2567d0b852c0 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-92677c518e11 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-92677c518e11`
+klt sim: batch job klt-sim-6a070669f5f4 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-9e08d0496370 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-8188e3cfb2ef (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-4ac3232e8101 state=no status.json yet elapsed=3s
+klt sim: batch job klt-sim-92677c518e11 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-da6ef40cdf99 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-ff4cc127750d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): submitted
+klt sim: batch job klt-sim-65e28d53934c launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-65e28d53934c`
+klt sim: waiting for capacity: 15 of 15 shards pending, 1 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-65e28d53934c state=no status.json yet elapsed=2s
+klt sim: waiting for capacity: 15 of 15 shards pending, 2 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 7 of 15 shards pending, 6 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 3 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 4 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 5 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 6 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: waiting for capacity: 15 of 15 shards pending, 7 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-a4d126ca2666 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-a4d126ca2666`
+klt sim: batch job klt-sim-a4d126ca2666 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-ac53a18c5918 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-ac53a18c5918 state=running elapsed=33s
+klt sim: batch job klt-sim-2567d0b852c0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-2567d0b852c0 state=running elapsed=34s
+klt sim: batch job klt-sim-6a070669f5f4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-6a070669f5f4 state=running elapsed=33s
+klt sim: batch job klt-sim-9e08d0496370 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-9e08d0496370 state=running elapsed=33s
+klt sim: batch job klt-sim-4ac3232e8101 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-4ac3232e8101 state=running elapsed=35s
+klt sim: batch job klt-sim-92677c518e11 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-92677c518e11 state=running elapsed=33s
+klt sim: batch job klt-sim-65e28d53934c (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-65e28d53934c state=running elapsed=34s
+klt sim: batch job klt-sim-e1d05ae435b4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-e1d05ae435b4 state=running elapsed=69s
+klt sim: batch job klt-sim-ac53a18c5918 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-2567d0b852c0 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-6a070669f5f4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-9e08d0496370 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-4ac3232e8101 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-92677c518e11 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-65e28d53934c (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-e1d05ae435b4 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-a4d126ca2666 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-a4d126ca2666 state=running elapsed=64s
+klt sim: batch job klt-sim-ff4cc127750d launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-ff4cc127750d`
+klt sim: batch job klt-sim-ff4cc127750d state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-9c7b987c2d12 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-9c7b987c2d12`
+klt sim: batch job klt-sim-9c7b987c2d12 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-554e6814b82a launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-554e6814b82a`
+klt sim: batch job klt-sim-554e6814b82a state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-a4d126ca2666 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-455b2bc17b30 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-455b2bc17b30`
+klt sim: batch job klt-sim-455b2bc17b30 state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-3e9d2396bd5d launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-3e9d2396bd5d`
+klt sim: batch job klt-sim-3e9d2396bd5d state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-ff4cc127750d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-ff4cc127750d state=running elapsed=33s
+klt sim: batch job klt-sim-9c7b987c2d12 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-9c7b987c2d12 state=running elapsed=34s
+klt sim: batch job klt-sim-16b90af7e82a launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-16b90af7e82a`
+klt sim: shards 15/15 launched, 0 launching, 0 pending, 8 collected; launch rate 5.6/min, ETA 0m
+klt sim: batch job klt-sim-7bd881ff4ddd launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-7bd881ff4ddd`
+klt sim: batch job klt-sim-16b90af7e82a state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-7bd881ff4ddd state=no status.json yet elapsed=2s
+klt sim: batch job klt-sim-554e6814b82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-554e6814b82a state=running elapsed=35s
+klt sim: batch job klt-sim-455b2bc17b30 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-455b2bc17b30 state=running elapsed=33s
+klt sim: shards 10/15 launched, 5 launching, 0 pending, 9 collected; launch rate 1.6/min, ETA 3m
+klt sim: batch job klt-sim-28a5106f6d90 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-28a5106f6d90`
+klt sim: batch job klt-sim-28a5106f6d90 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-3e9d2396bd5d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-3e9d2396bd5d state=running elapsed=32s
+klt sim: batch job klt-sim-ff4cc127750d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: waiting for capacity: 6 of 15 shards pending, 5 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-9c7b987c2d12 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-16b90af7e82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-16b90af7e82a state=running elapsed=33s
+klt sim: batch job klt-sim-7bd881ff4ddd (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): running
+klt sim: batch job klt-sim-7bd881ff4ddd state=running elapsed=33s
+klt sim: batch job klt-sim-0782ebde8c56 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-0782ebde8c56`
+klt sim: batch job klt-sim-0782ebde8c56 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-554e6814b82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-455b2bc17b30 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-28a5106f6d90 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-28a5106f6d90 state=running elapsed=32s
+klt sim: batch job klt-sim-3e9d2396bd5d (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-6c1107d34335 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-6c1107d34335`
+klt sim: batch job klt-sim-6c1107d34335 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-16b90af7e82a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-7bd881ff4ddd (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json): done
+klt sim: batch job klt-sim-0782ebde8c56 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-0782ebde8c56 state=running elapsed=32s
+klt: batch job klt-sim-b68adb3ca35a submitting to s3://<bucket>/jobs/klt-sim-b68adb3ca35a
+klt sim: batch job klt-sim-b68adb3ca35a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a4mv.request.json): submitted
+klt sim: batch job klt-sim-021a73a4cca9 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-021a73a4cca9`
+klt sim: batch job klt-sim-021a73a4cca9 state=no status.json yet elapsed=1s
+klt sim: waiting for capacity: 6 of 15 shards pending, 2 waiting on a launch (last refusal: batch_no_capacity)
+klt sim: batch job klt-sim-28a5106f6d90 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-6c1107d34335 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-6c1107d34335 state=running elapsed=32s
+klt sim: batch job klt-sim-b68adb3ca35a launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-b68adb3ca35a`
+klt sim: batch job klt-sim-b68adb3ca35a state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-0782ebde8c56 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-021a73a4cca9 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-021a73a4cca9 state=running elapsed=32s
+klt sim: batch job klt-sim-b68adb3ca35a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a4mv.request.json): running
+klt sim: batch job klt-sim-b68adb3ca35a state=running elapsed=32s
+klt sim: batch job klt-sim-6c1107d34335 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-b68adb3ca35a (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a4mv.request.json): done
+klt: batch job klt-sim-d48385bde1e3 submitting to s3://<bucket>/jobs/klt-sim-d48385bde1e3
+klt sim: batch job klt-sim-d48385bde1e3 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a8mv.request.json): submitted
+klt sim: batch job klt-sim-021a73a4cca9 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-d48385bde1e3 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-d48385bde1e3`
+klt sim: batch job klt-sim-d48385bde1e3 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-d48385bde1e3 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a8mv.request.json): running
+klt sim: batch job klt-sim-d48385bde1e3 state=running elapsed=32s
+klt sim: warning: batch job bound 40620s (options.timeout_s 900s x 45 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 15 to run one job per shard of at most 3 units, each within the ceiling
+klt: batch job klt-sim-2d9fc27d9f51 submitting to s3://<bucket>/jobs/klt-sim-2d9fc27d9f51
+klt sim: batch job klt-sim-d48385bde1e3 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a8mv.request.json): done
+klt sim: batch job klt-sim-2d9fc27d9f51 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_op.request.json): submitted
+klt sim: batch job klt-sim-8b996e14b103 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-8b996e14b103`
+klt sim: shards 15/15 launched, 0 launching, 0 pending, 13 collected; launch rate 1.5/min, ETA 0m
+klt sim: batch job klt-sim-6a64f2b64150 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-6a64f2b64150`
+klt sim: batch job klt-sim-8b996e14b103 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-6a64f2b64150 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-2d9fc27d9f51 launched; re-attach with `klt sim <request> --backend batch --attach klt-sim-2d9fc27d9f51`
+klt sim: batch job klt-sim-2d9fc27d9f51 state=no status.json yet elapsed=1s
+klt sim: batch job klt-sim-8b996e14b103 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-8b996e14b103 state=running elapsed=32s
+klt sim: batch job klt-sim-6a64f2b64150 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): running
+klt sim: batch job klt-sim-6a64f2b64150 state=running elapsed=32s
+klt sim: batch job klt-sim-2d9fc27d9f51 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_op.request.json): done
+klt sim: batch job klt-sim-8b996e14b103 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done
+klt sim: batch job klt-sim-6a64f2b64150 (/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json): done

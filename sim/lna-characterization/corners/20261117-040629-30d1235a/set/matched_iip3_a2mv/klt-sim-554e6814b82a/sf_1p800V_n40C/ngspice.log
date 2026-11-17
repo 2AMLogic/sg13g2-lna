@@ -1,0 +1,90 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+No. of Data Rows : 1
+OP ic1 0.00397118 ic2 0.00396825 vce1 0.750824 vce2 1.01874 idd 0.00472988
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                        1.8
+vin                                          0
+va                                           0
+rfin                                         0
+rfout                                        0
+xa.outn                                1.76956
+xa.vb2                                 1.64731
+xa.casc                               0.750824
+xa.xq2.s1                          1.91965e-07
+xa.xq2.t                               7.06709
+xa.b1                                  0.89807
+xa.e1                             -6.23416e-19
+xa.xq1.s1                          7.99071e-08
+xa.xq1.t                               5.21353
+xa.lc_x                                    1.8
+xa.xin                                       0
+xa.xout                                      0
+xa.lb_x                                      0
+xa.nc_b                               0.870867
+xa.nc_a                               0.808859
+xa.nc_e                              0.0427526
+xa.xqb.s1                          9.57869e-08
+xa.xqb.t                             0.0181897
+xa.xqa.s1                          3.23296e-08
+xa.xqa.t                              0.116265
+xa.vbg                                 1.03931
+xa.cb3                                0.808651
+xa.xqc.s1                          3.23215e-08
+xa.xqc.t                              0.115069
+xa.gsvo                               0.898403
+xa.es                                 0.186411
+xa.dn                                 0.902402
+xa.vl                                  1.03926
+xa.bref                               0.899024
+xa.xq3.s1                          3.49616e-08
+xa.xq3.t                                5.1922
+l.xa.lb#branch                               0
+l.xa.lc#branch                      0.00396825
+l.xa.le#branch                      0.00397408
+vt2#branch                                   0
+vt1#branch                                   0
+vdd#branch                         -0.00472988
+
+
+No. of Data Rows : 65536
+NPTS 65536
+DFT tone1 0.0108001 tone2 0.0108044 im3l 1.94376E-07 im3h 1.97433E-07 src1 0.00199924
+FFT: Time span: 2.62144e-07 s, input length: 65536
+FFT: Frequency resolution: 3.8147e+06 Hz, output length: 32769
+fft_df = 3.81469727e+06
+tone1 = 1.08000510e-02
+tone2 = 1.08044192e-02
+im3l = 1.94331547e-07
+im3h = 1.97495459e-07
+im5l = 1.92790350e-10
+im5h = 2.07172935e-10
+src1 = 1.99924113e-03
+src2 = 1.99923633e-03
+ngspice-47 done
