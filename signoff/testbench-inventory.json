@@ -1550,7 +1550,7 @@
       "dut": "present",
       "family": "lna-characterization",
       "id": "lna-char-xout-bleed-20261106",
-      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). No NF or stability pass/fail claim: mu_min/max|S22| sit at the 1.0000 sweep edge at every temperature, the |S22| > 1 anomaly stays with #27. No spec row change.",
+      "limitations": "Grid now complete for the matched DUT at 27 C and -40 C (15 cells each, all four analyses pass; 20261116-022647 and 20261116-023212) alongside the 125 C slice; records 20261106-055142 and 20261106-055453 remain coverage-incomplete by design (failed submits were not replaced by local runs; the 2026-11-16 re-run superseded their sp_band/sp_stab gap). Verdict (issue #27, records/issue-27-matched-pvt-verdict.md): the ratified S11/S22/gain/stability rows are met at 45/45 cells (worst in-band S11 -11.1124 dB, S22 -14.9653 dB, S21 18.7163 dB; mu_min 1.000000370 at every cell, k_min 49.15, max|S11| 0.998996 and max|S22| 0.999999631 both < 1), conditional on the Q~10 inductor-loss model. The |S22| > 1 anomaly is closed as understood-and-damped: the netlist-snapshots/issue-27-s22-anomaly-probe/ differential probe (single corner, 71x point density) shows the lossless variant genuinely exceeds unity (+743 ppm, mu_min 0.9972) -- real negative resistance, not solver round-off -- while the committed lossy DUT shows zero violations at 9911 points at both probed corners. NF stays failing (0/45 cells under 1.5 dB; ~0.68 dB nominal delta is the finite-Q input loss on top of the NFmin floor); IIP3 stays DRAFT with no post-match re-measure yet. No spec row change; spec/target-spec.md untouched.",
       "records": [
         {
           "corners": {
@@ -1663,6 +1663,32 @@
           "published_files": [
             "sim/lna-characterization/records/20261116-190440-9cd8cdc.md"
           ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-27-matched-pvt-verdict",
+          "netlist_snapshots": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "published_files": [
+            "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md"
+          ]
+        },
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "issue-27-s22-anomaly-probe",
+          "netlist_snapshots": {
+            "files": 9,
+            "git_blob_digest": "sha256:b8ba6c6e243741c44c9227a08638483475131c09e289fbabe86f22d9e46cdbe4"
+          },
+          "published_files": []
         }
       ],
       "replay_checks": [
@@ -2407,7 +2433,7 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:00e42e5086bcba11b999573c87056f395014d66680011ae2ff4a17a45a219ba5",
+    "sim/lna-characterization/README.md": "sha256:2f8d2b0a8a7cdeac74e8e18cce076b456b0cdb539ed7a4e022da2cce5b2840dd",
     "sim/lna-characterization/lna_variant_campaign.py": "sha256:3638cdb8b2d8ff1185074f370e23ccbc5b3f58c14efb1f3640b52db4012d6914",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
@@ -2463,6 +2489,7 @@
     "sim/lna-characterization/records/20261116-190440-9cd8cdc.md": "sha256:f6b949d78e2ff641682da0b04da81ae33fb315669d7ad5f4e6a07f393da172db",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md": "sha256:53eee615518d19ac477d903c2835d16dfa796e76e007f98be2752f0b8fc01cd0",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
+    "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:d056eb37d717abcb813b3776e38c6d8be3cc8cc8bd98de0e6cf51f86eb507443",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
     "sim/lna-characterization/run_lna_variant.sh": "sha256:4a74c1405814e3f0398b3fa8a29496d6d4ce406ff393ec4804ca855abac9c15b",
