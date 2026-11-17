@@ -64,9 +64,9 @@
       "sha256": "sha256:5d426f1ef1b978f7b018bcc8c0318a3d2dd1f24de76f249522c3e7fcee5492bb"
     },
     ".github/scripts/test-run-local-checks.sh": {
-      "bytes": 8130,
+      "bytes": 9466,
       "role": "script of a declared CI command",
-      "sha256": "sha256:3c13b7f50a469730f8c98a14601b90acb5998cad8de17a49f6a95bff70d62f41"
+      "sha256": "sha256:f02e5bd89e9c1c116d2db18758636cacda9c3be91e20407cc84a019db1cb11be"
     },
     "sim/models/check_sources.sh": {
       "bytes": 1830,
