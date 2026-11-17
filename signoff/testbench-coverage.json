@@ -1588,6 +1588,62 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/lna_variant_campaign.py"
+      ],
+      "bench_templates": [
+        "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_lna_iip3.sh",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt >= 0.7.0",
+            "PDK_ROOT/PDK",
+            "OSDI models",
+            "a fleet runner image that supports it, or a local ngspice >= 46"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-iip3-issue-337",
+      "limitations": "Extrapolated intercepts, not a measured intercept: accepted only where the cell's two-level IM3 slope sits within 3 +/- 0.15 (README policy; 45/45 cells valid in this record). IM5 bins are numerical-floor sentinels (per-point im3_over_im5_db committed; minimum 32.4 dB across this record). Wide 7.63 MHz tone spacing (coherence requirement), 4 ps timestep (125 GHz Nyquist), steady-state assumed after 1 us, single-ended in-band two-tone only (no blocker/OOB-IM/AM-PM/P1dB). The IIP3 numeric row stays DRAFT: this record supplies the number spec/target-spec.md line 171 names; binding requires a decision record of its own. The matched_iip3_a1mv request's first batch submit was abandoned client-side at the launch wait and re-submitted unchanged (disclosed in the record).",
+      "record_ids": [
+        "20261117-040629-30d1235a"
+      ],
+      "reducers": [
+        "sim/lna-characterization/lna_variant_campaign.py",
+        "sim/lna-characterization/parse_lna_sweep.py"
+      ],
+      "replay_checks": [
+        "sim/lna-characterization/tests/test_lna_variant_campaign.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_lna_iip3.sh"
+      ],
+      "shared": [
+        "runner-common",
+        "pdk-pin",
+        "osdi-build",
+        "dut-netlist"
+      ],
+      "summary": "Issue #337: the post-match IIP3 re-measure owed by #27's Test Plan, on the ratified tb_lna_iip3.spice.tmpl protocol (template unchanged; the generated deck reproduces its .control sequence verbatim through a klt sim request) on the committed matched DUT (sha256 151aec66ade8f052...), full 45-cell PVT box on the Spot batch fleet. 93 two-tone points (1 mV + 2 mV per tone at every cell, 0.5/4/8 mV at the nominal cell) + 45 op corners; 45/45 cells pass the 3:1 IM3 slope check; FFT vs coherent-DFT extraction agree <= 0.0017 dB. Available-power-referred IIP3 at 2 mV/tone: -3.1181..-0.9683 dBm (nominal -2.0905 dBm); device-plane (per-cell matched |S11|, term +0.2408..+0.3152 dB): -3.3976..-1.2712 dBm; 0 of 45 cells reach the draft > 0 dBm value. Spec row stays DRAFT; no spec/target-spec.md edit.",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet runner 47)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 (sim/pdk.json klt_variant_campaign)",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {

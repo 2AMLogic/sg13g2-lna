@@ -1,0 +1,29 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+No. of Data Rows : 1
+ic1 = 3.92268533e-03
+ic2 = 3.91976798e-03
+ib1 = 2.88177391e-06
+ve1 = 1.92445886e-18
+vbe1 = 8.34203865e-01
+vce1 = 6.49883115e-01
+vce2 = 9.40048422e-01
+idd = 4.68070551e-03
+pdc = 7.58274292e-03
+ngspice-47 done

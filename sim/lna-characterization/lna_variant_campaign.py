@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Inductor-loss variant campaign for design/lna.sch (issue #56).
+"""Inductor-loss variant campaign for design/lna.sch (issue #56), plus the
+matched-DUT two-tone IIP3 campaign (issue #337).
 
-Companion to run_lna_variant.sh. Two subcommands:
+Companion to run_lna_variant.sh / run_lna_iip3.sh. Subcommands:
 
-  gen        write, for one record id, every variant's bench netlists and
-             `klt sim` request files under netlist-snapshots/<record-id>/
-  summarize  turn the `klt sim` JSON reports under corners/<record-id>/ into
-             records/<record-id>-{summary,compare}.csv and the headline
-             numbers the record .md quotes
+  gen           write, for one record id, every variant's bench netlists and
+                `klt sim` request files under netlist-snapshots/<record-id>/
+                (--analyses selects a subset of op/sp_band/sp_stab/noise)
+  gen-iip3      write the two-tone IIP3 bench (the ratified
+                testbench/tb_lna_iip3.spice.tmpl protocol as a `klt sim`
+                request; template unchanged) plus the variant's op request,
+                for the drive levels run_lna_sweep.sh's phase 2 uses
+  summarize     turn the `klt sim` JSON reports under corners/<record-id>/
+                into records/<record-id>-{summary,compare}.csv and the
+                headline numbers the record .md quotes
+  summarize-iip3  turn the IIP3 requests' reports + kept ngspice logs into
+                records/<record-id>-iip3.csv (per point),
+                records/<record-id>-iip3-summary.csv (per cell, IM3 slope
+                check per README policy) and the record's IIP3 headlines
 
 Why `klt sim` and not run_lna_sweep.sh's own ngspice pool: this campaign is a
 45-cell PVT grid x several inductor variants, and on the Loom dispatch workers
@@ -120,6 +130,172 @@ VARIANTS = {
     "lc_em_le_q10": ("Lc = EM 5-turn model AND Le Q=10", "em", 10),
 }
 ANALYSES = ["op", "sp_band", "sp_stab", "noise"]
+
+# ---------------------------------------------------------------------------
+# Two-tone IIP3 (issue #337): the ratified tb_lna_iip3.spice.tmpl protocol,
+# expressed as a `klt sim` corner request so the 45-cell grid goes to the Spot
+# batch fleet instead of being hand-launched. The template file itself is NOT
+# changed (its bench definitions and .control sequence are reproduced verbatim
+# below); the FFT-parameter derivation is run_lna_sweep.sh's, single-sourced
+# here so the request, the record and the README cannot drift apart.
+# ---------------------------------------------------------------------------
+IIP3_TSTEP = 4e-12
+IIP3_NFFT = 65536
+IIP3_TSTART = 1e-6
+IIP3_B1, IIP3_B2, IIP3_BIM3L, IIP3_BIM3H, IIP3_BIM5L, IIP3_BIM5H = (
+    640, 642, 638, 644, 636, 646)
+IIP3_DF = 1.0 / (IIP3_NFFT * IIP3_TSTEP)
+IIP3_F1 = IIP3_B1 * IIP3_DF
+IIP3_F2 = IIP3_B2 * IIP3_DF
+IIP3_FIM3L = IIP3_BIM3L * IIP3_DF
+IIP3_FIM3H = IIP3_BIM3H * IIP3_DF
+IIP3_FSPACE = IIP3_F2 - IIP3_F1
+IIP3_TWINDOW = (IIP3_NFFT - 1) * IIP3_TSTEP
+IIP3_TSTOP = IIP3_TSTART + IIP3_TWINDOW
+# Drive levels (V peak, open-circuit per tone): the two-level pair every PVT
+# cell runs (so the 3:1 IM3 slope the extrapolation assumes is checked at
+# every cell, not assumed at one), plus the nominal cell's extra levels for a
+# 24 dB drive range at one cell -- run_lna_sweep.sh's AMPS_GRID and
+# AMPS_NOMINAL_ONLY, restated.
+IIP3_AMPS_GRID = (1e-3, 2e-3)
+IIP3_AMPS_NOMINAL_ONLY = (5e-4, 4e-3, 8e-3)
+
+
+def iip3_amp_label(amp: float) -> str:
+    """run_lna_sweep.sh amp_label_of: 2e-3 -> 'a2mv', 5e-4 -> 'a0p5mv'."""
+    s = ("%g" % (amp * 1e3)).replace(".", "p")
+    return f"a{s}mv"
+
+
+def iip3_control_kind() -> str:
+    """The generated deck's analysis command sequence: the template's own
+    .control block, verbatim, minus its `pre_osdi` lines (klt sim emits those
+    itself from options.osdi_preload, hoisted ahead of the circuit parse) and
+    minus the DUT-independent `set specwindow` (kept here). ngspice executes a
+    deck's control lines in file order, and klt sim appends the request's
+    measurements[].expr `let`/`print` pairs AFTER this sequence, so the exprs
+    evaluate in the spectrum plot the template's `fft` command leaves current
+    -- the same bin reads the template performs. `analysis.args` stays empty:
+    the sequence rides in `kind` as one multi-line string, which the deck
+    writer emits as-is."""
+    return "\n".join([
+        "set specwindow = none",
+        "op",
+        "let ic1 = @q.xa.xq1.qnpn13g2[ic]",
+        "let ic2 = @q.xa.xq2.qnpn13g2[ic]",
+        "let vce1 = v(xa.casc) - v(xa.e1)",
+        "let vce2 = v(xa.outn) - v(xa.casc)",
+        "let idd = -i(vdd)",
+        'echo "OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd"',
+        f"tran {IIP3_TSTEP:g} {IIP3_TSTOP:.11g} {IIP3_TSTART:g} {IIP3_TSTEP:g}",
+        "linearize v(rfout) v(vin)",
+        "let npts = length(v(rfout))",
+        'echo "NPTS $&npts"',
+        "let tv = time",
+        f"let w1 = 2*PI*{IIP3_F1!r}",
+        f"let w2 = 2*PI*{IIP3_F2!r}",
+        f"let w3 = 2*PI*{IIP3_FIM3L!r}",
+        f"let w4 = 2*PI*{IIP3_FIM3H!r}",
+        "let d1 = 2*sqrt(mean(v(rfout)*cos(w1*tv))^2 + mean(v(rfout)*sin(w1*tv))^2)",
+        "let d2 = 2*sqrt(mean(v(rfout)*cos(w2*tv))^2 + mean(v(rfout)*sin(w2*tv))^2)",
+        "let d3 = 2*sqrt(mean(v(rfout)*cos(w3*tv))^2 + mean(v(rfout)*sin(w3*tv))^2)",
+        "let d4 = 2*sqrt(mean(v(rfout)*cos(w4*tv))^2 + mean(v(rfout)*sin(w4*tv))^2)",
+        "let ds = 2*sqrt(mean(v(vin)*cos(w1*tv))^2 + mean(v(vin)*sin(w1*tv))^2)",
+        'echo "DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds"',
+        "fft v(rfout) v(vin)",
+    ])
+
+
+def iip3_measurements() -> list[dict]:
+    """The template's FFT bin reads, as measurements[].expr entries evaluated
+    in the spectrum plot. tone1..src2 feed the reducer's IIP3 arithmetic;
+    fft_df is the coherence witness (df = 1/(N*tstep), exact)."""
+    out = [{"name": "fft_df", "expr": "frequency[1] - frequency[0]"}]
+    for name, vec, bin_ in (
+        ("tone1", "v(rfout)", IIP3_B1), ("tone2", "v(rfout)", IIP3_B2),
+        ("im3l", "v(rfout)", IIP3_BIM3L), ("im3h", "v(rfout)", IIP3_BIM3H),
+        ("im5l", "v(rfout)", IIP3_BIM5L), ("im5h", "v(rfout)", IIP3_BIM5H),
+        ("src1", "v(vin)", IIP3_B1), ("src2", "v(vin)", IIP3_B2),
+    ):
+        out.append({"name": name, "expr": f"mag({vec})[{bin_}]"})
+    return out
+
+
+def iip3_netlist(variant: str, amp: float) -> str:
+    """The template's port section (two series sin() generators = one
+    Thevenin source behind Rs = 50 Ohm, RL = 50 Ohm) around the variant's
+    verbatim DUT. Vdd sits at the nominal 1.8 V here; klt sim `alter`s it per
+    corner exactly as for every other request."""
+    desc, lc, _le_q = VARIANTS[variant]
+    parts = [
+        f"* sg13g2-lna two-tone IIP3 bench (issue #337): variant={variant} amp={amp:g} V peak/tone\n"
+        "* Generated by sim/lna-characterization/lna_variant_campaign.py (gen-iip3) -- do not edit.\n"
+        f"* Variant: {desc}\n"
+        f"* DUT: {'design/netlist/lna.spice (matched) sha256 ' + sha256(LIVE_NETLIST) if lc == 'design' else 'sim/pre-match-dut/lna.pre27.spice (frozen pre-match) sha256 ' + sha256(DESIGN_NETLIST)}, inlined verbatim\n"
+        "*   except the inductor edit(s) marked 'VARIANT EDIT'.\n"
+        "* Bench: the ratified testbench/tb_lna_iip3.spice.tmpl protocol (template unchanged).\n"
+        f"*   Tones f1 = {IIP3_F1!r} Hz (bin {IIP3_B1}), f2 = {IIP3_F2!r} Hz (bin {IIP3_B2}),\n"
+        f"*   spacing {IIP3_FSPACE!r} Hz; IM3 at bins {IIP3_BIM3L}/{IIP3_BIM3H}, IM5 floor sentinels at\n"
+        f"*   bins {IIP3_BIM5L}/{IIP3_BIM5H}. FFT: tstep {IIP3_TSTEP:g} s, N = {IIP3_NFFT}, rectangular window,\n"
+        f"*   df = 1/(N*tstep) = {IIP3_DF!r} Hz, tstart = {IIP3_TSTART:g} s discarded.\n"
+        "*   Powers: available source power per tone A^2/(8*Rs); output V_peak^2/(2*RL);\n"
+        "*   IIP3 = Pin + (Pout - PIM3)/2. Port convention: 50 Ohm both ports.\n"
+        "* Bias: VDD per corner via klt sim `alter vdd`; corners/sections per the\n"
+        f"*   sibling {variant}_iip3_*.request.json. Definitions in full: README.md.\n",
+        ".options gmin=1e-10 tnom=27\n",
+        dut_subckt(lc, None),
+        "Vdd vdd 0 dc 1.8\n",
+        "* Two tone generators in series form the Thevenin source; Rs = 50 Ohm.\n",
+        f"Vt1 vin va dc 0 sin(0 {amp:g} {IIP3_F1!r} 0 0 0)\n",
+        f"Vt2 va 0 dc 0 sin(0 {amp:g} {IIP3_F2!r} 0 0 0)\n",
+        "Rs vin rfin 50\n",
+        "RL rfout 0 50\n",
+        "Xa vdd 0 rfin rfout lna\n",
+    ]
+    return "".join(parts)
+
+
+def iip3_request(variant: str, amp: float, netlist_name: str, smoke: bool,
+                 backend: str | None, nominal_only: bool = False) -> dict:
+    """The IIP3 corner request. `nominal_only` pins the grid to the nominal
+    cell (run_lna_sweep.sh's AMPS_NOMINAL_ONLY levels run there alone).
+    remote.hosts shards the 45-cell grid into fleet jobs of <= 3 units so one
+    job stays inside the fleet's whole-job ceiling (3 x 900 s + overhead)."""
+    labels = ["typ"] if smoke or nominal_only else LABELS
+    temps = [27] if smoke or nominal_only else TEMPS
+    vdds = [1.80] if smoke or nominal_only else VDDS
+    process = [
+        {
+            "name": lab,
+            "sections": [
+                {"lib": "libs.tech/ngspice/models/cornerHBT.lib", "section": HBT[lab]},
+                {"lib": "libs.tech/ngspice/models/cornerMOShv.lib", "section": MOS[lab]},
+            ],
+        }
+        for lab in labels
+    ]
+    osdi = [f"$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/{f}" for f in
+            ("psp103.osdi", "psp103_nqs.osdi", "mosvar.osdi")]
+    n_units = len(labels) * len(temps) * len(vdds)
+    req = {
+        "netlist": netlist_name,
+        "models": {"pdk": "ihp-sg13g2"},
+        "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
+        "analysis": {"kind": iip3_control_kind(), "args": ""},
+        "measurements": iip3_measurements(),
+        "options": {
+            "timeout_s": 900,
+            "keep_artifacts": True,
+            "osdi_preload": osdi,
+            "stage_model_inputs": True,
+            "ngspice_init": ["set numdgt=8"],
+        },
+        "remote": {"hosts": 1 if n_units <= 3 else 15},
+    }
+    if backend:
+        req["backend"] = backend
+    return req
+
 
 # DC operating point, measured per variant per cell (issue #56, prompted by the
 # #186/#188 note on this issue). The `le_q*` variants model Le's loss as a
@@ -350,12 +526,68 @@ def cmd_gen(a):
     for v in names:
         if v not in VARIANTS:
             raise SystemExit(f"unknown variant {v}")
-        for an in ANALYSES:
+    analyses = [x for x in (getattr(a, "analyses", "") or "").split(",") if x]
+    bad = [x for x in analyses if x not in ANALYSES]
+    if bad:
+        raise SystemExit(f"gen: unknown analysis(es) {bad}; choose from {ANALYSES}")
+    for v in names:
+        for an in (analyses or ANALYSES):
             nl = out / f"{v}_{an}.spice"
             nl.write_text(netlist(v, an, rel_model))
             rq = out / f"{v}_{an}.request.json"
             rq.write_text(json.dumps(request(v, an, nl.name, a.smoke, a.backend, a.nf_npts), indent=2) + "\n")
-    print(f"gen: wrote {len(names) * len(ANALYSES)} request/netlist pairs in {out}")
+    print(f"gen: wrote {len(names) * len(analyses or ANALYSES)} request/netlist pairs in {out}")
+
+
+def _parse_amps(spec: str, what: str) -> list[float]:
+    amps = []
+    for tok in (spec or "").split(","):
+        if not tok:
+            continue
+        try:
+            v = float(tok)
+        except ValueError:
+            raise SystemExit(f"{what}: not a number: {tok!r}")
+        if not 0 < v <= 0.1:
+            raise SystemExit(f"{what}: {v!r} is not a plausible per-tone V peak (0, 0.1]")
+        amps.append(v)
+    if not amps:
+        raise SystemExit(f"{what}: at least one level is required")
+    return amps
+
+
+def cmd_gen_iip3(a):
+    out = Path(a.outdir)
+    out.mkdir(parents=True, exist_ok=True)
+    names = a.variants.split(",") if a.variants else ["matched"]
+    for v in names:
+        if v not in VARIANTS:
+            raise SystemExit(f"unknown variant {v}")
+    grid_amps = _parse_amps(a.amps, "--amps")
+    extra_amps = _parse_amps(a.amps_nominal_only, "--amps-nominal-only") if a.amps_nominal_only else []
+    clash = sorted(set(grid_amps) & set(extra_amps))
+    if clash:
+        raise SystemExit(f"gen-iip3: level(s) {clash} declared both per-cell and nominal-only")
+    n = 0
+    for v in names:
+        if a.op:
+            nl = out / f"{v}_op.spice"
+            nl.write_text(netlist(v, "op", os.path.relpath(EM_MODEL, out)))
+            rq = out / f"{v}_op.request.json"
+            rq.write_text(json.dumps(request(v, "op", nl.name, a.smoke, a.backend), indent=2) + "\n")
+            n += 1
+        for amp in grid_amps + extra_amps:
+            label = iip3_amp_label(amp)
+            nl = out / f"{v}_iip3_{label}.spice"
+            nl.write_text(iip3_netlist(v, amp))
+            rq = out / f"{v}_iip3_{label}.request.json"
+            rq.write_text(json.dumps(
+                iip3_request(v, amp, nl.name, a.smoke, a.backend,
+                             nominal_only=amp in extra_amps), indent=2) + "\n")
+            n += 1
+    print(f"gen-iip3: wrote {n} request/netlist pairs in {out}"
+          f" (per-cell levels {[iip3_amp_label(x) for x in grid_amps]},"
+          f" nominal-only {[iip3_amp_label(x) for x in extra_amps]})")
 
 
 # ---------------------------------------------------------------------------
@@ -859,6 +1091,382 @@ def cmd_summarize(a):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# summarize-iip3 (issue #337): reduce `klt sim` two-tone IIP3 reports into the
+# record's per-point CSV, per-cell summary CSV and headline text.
+# ---------------------------------------------------------------------------
+
+IIP3_BIN_KEYS = ("tone1", "tone2", "im3l", "im3h", "im5l", "im5h", "src1", "src2")
+IIP3_LOG_OP_KEYS = ("ic1", "idd")
+IIP3_LOG_DFT_KEYS = ("tone1", "tone2", "im3l", "im3h", "src1")
+VARIANTS_ORDER = {v: i for i, v in enumerate(VARIANTS)}
+
+
+def _iip3_issue(issues: list, kind: str, cell=None, amp=None, detail=""):
+    issues.append({"kind": kind,
+                   "cell": cell_text(cell) if isinstance(cell, tuple) else (cell or ""),
+                   "amp": amp or "", "detail": detail})
+
+
+def _load_klt_cells(path: Path):
+    """(report_doc, {norm_key: {"values","status","ok","artifacts"}},
+    [duplicate keys]) for one `klt sim` report; first occurrence per cell
+    wins, duplicates are returned so the caller can fail loudly rather than
+    silently prefer one."""
+    data = json.loads(path.read_text())
+    cells: dict = {}
+    dup: list = []
+    for c in data.get("corners", []):
+        try:
+            key = norm_key(*corner_key(c))
+        except Exception:
+            continue
+        if key in cells:
+            dup.append(key)
+            continue
+        cells[key] = {"values": corner_values(c), "status": c.get("status"),
+                      "ok": cell_status_ok(c),
+                      "artifacts": c.get("artifacts") or {}}
+    return data, cells, dup
+
+
+def _read_slice_s11_csvs(spec: str) -> dict:
+    """{norm_key: s11_db_mid} from committed present-dut slice summary CSVs
+    (the device-plane conversion's per-cell |S11| source)."""
+    out: dict = {}
+    for p in [x for x in spec.split(",") if x]:
+        path = Path(p)
+        if not path.is_file():
+            raise SystemExit(f"--s11-csv: no such file: {p}")
+        with open(path) as fh:
+            for r in csv.DictReader(fh):
+                try:
+                    key = norm_key(r["corner_label"], float(r["temp_c"]), float(r["vdd_v"]))
+                    val = float(r["s11_db_mid"])
+                except (KeyError, ValueError, TypeError):
+                    continue
+                out[key] = val
+    return out
+
+
+def iip3_mismatch_term_db(s11_db: float) -> float:
+    """The available-vs-device-plane inflation term, -10*log10(1 - |S11|^2)
+    (spec/target-spec.md "IIP3 mismatch-inflation note")."""
+    mag = 10.0 ** (s11_db / 20.0)
+    if not 0.0 <= mag < 1.0:
+        raise ValueError(f"|S11| out of range for the mismatch term: {s11_db} dB")
+    return -10.0 * math.log10(1.0 - mag * mag)
+
+
+def cmd_summarize_iip3(a):
+    cdir = Path(a.corners_dir)
+    variant = a.variant
+    grid_amps = _parse_amps(a.amps, "--amps")
+    extra_amps = (_parse_amps(a.amps_nominal_only, "--amps-nominal-only")
+                  if a.amps_nominal_only else [])
+    grid = getattr(a, "grid", GRID_FULL)
+    grid_keys = expected_grid(grid)
+    issues: list = []
+    rows: list = []
+
+    # Per-cell DC bias from the variant's own op request -- the record carries
+    # the bias point beside every IIP3 number.
+    op_cells: dict = {}
+    if a.op_report:
+        op_path = Path(a.op_report)
+        if not op_path.is_file():
+            raise SystemExit(f"summarize-iip3: --op-report: no such file: {a.op_report}")
+        _, opc, odup = _load_klt_cells(op_path)
+        for k in odup:
+            _iip3_issue(issues, "duplicate_op_cell", cell=k)
+        op_cells = opc
+
+    # Per-cell |S11| for the device-plane conversion.
+    s11 = _read_slice_s11_csvs(a.s11_csv) if a.s11_csv else {}
+
+    for amp in grid_amps + extra_amps:
+        label = iip3_amp_label(amp)
+        path = cdir / f"{variant}_iip3_{label}.report.json"
+        expected_keys = grid_keys if amp in grid_amps else [norm_key(*NOMINAL)]
+        if not path.is_file():
+            _iip3_issue(issues, "missing_report", amp=label, detail=path.name)
+            continue
+        _doc, cells, dup = _load_klt_cells(path)
+        for k in dup:
+            _iip3_issue(issues, "duplicate_cell", amp=label, cell=k)
+        for key in expected_keys:
+            if key not in cells:
+                _iip3_issue(issues, "missing_cell", amp=label, cell=key)
+                continue
+            cell = cells[key]
+            ok, okdetail = cell["ok"]
+            if not ok:
+                _iip3_issue(issues, "failed_cell", amp=label, cell=key, detail=okdetail)
+                continue
+            vals = cell["values"]
+            bad = [n for n in IIP3_BIN_KEYS if not _is_finite_number(vals.get(n))]
+            if bad:
+                _iip3_issue(issues, "missing_measurement", amp=label, cell=key,
+                            detail=f"non-finite or absent FFT bins: {','.join(bad)}")
+                continue
+            if abs(vals["fft_df"] - IIP3_DF) > 1.0:
+                _iip3_issue(issues, "incoherent_fft_df", amp=label, cell=key,
+                            detail=f"fft_df {vals['fft_df']!r} != 1/(N*tstep) {IIP3_DF!r}")
+                continue
+            # The per-corner ngspice log keeps the template's OP/DFT echoes.
+            log_file = (cell["artifacts"] or {}).get("log")
+            parsed_log = {}
+            npts = None
+            if log_file and os.path.isfile(str(log_file)):
+                parsed_log = _sweep.parse_iip3_log(str(log_file))
+                npts = parsed_log.get("npts")
+            if not parsed_log:
+                _iip3_issue(issues, "missing_log_echoes", amp=label, cell=key,
+                            detail=f"OP/NPTS/DFT echoes unreadable ({log_file})")
+                continue
+            bad_log = [k for k in IIP3_LOG_OP_KEYS
+                       if not _is_finite_number(parsed_log.get(k))]
+            bad_log += [f"dft_{k}" for k in IIP3_LOG_DFT_KEYS
+                        if not _is_finite_number(parsed_log.get(f"dft_{k}"))]
+            if npts != IIP3_NFFT:
+                bad_log.append(f"npts={npts!r} (expected {IIP3_NFFT})")
+            if bad_log:
+                _iip3_issue(issues, "invalid_log_echoes", amp=label, cell=key,
+                            detail="; ".join(bad_log))
+                continue
+            pin = _sweep.avail_power_dbm(amp)
+            fft_t = (vals["tone1"] + vals["tone2"]) / 2.0
+            fft_i3 = (vals["im3l"] + vals["im3h"]) / 2.0
+            pout = _sweep.out_power_dbm(fft_t)
+            pim3 = _sweep.out_power_dbm(fft_i3)
+            iip3 = _sweep.iip3_from(pin, pout, pim3)
+            dft_t = (parsed_log["dft_tone1"] + parsed_log["dft_tone2"]) / 2.0
+            dft_i3 = (parsed_log["dft_im3l"] + parsed_log["dft_im3h"]) / 2.0
+            iip3_dft = _sweep.iip3_from(pin, _sweep.out_power_dbm(dft_t),
+                                        _sweep.out_power_dbm(dft_i3))
+            im5 = (vals["im5l"] + vals["im5h"]) / 2.0
+            rows.append({
+                "point_id": f"iip3_{variant}_{key[0]}_{key[1]:g}c_vdd{key[2]:.2f}v_{label}",
+                "variant": variant,
+                "corner_label": key[0], "temp_c": key[1], "vdd_v": key[2],
+                "amp_v_peak_per_tone": f"{amp:.6e}",
+                "src_tone_v_peak_measured": f"{vals['src1']:.6e}",
+                "pin_avail_dbm_per_tone": f"{pin:.4f}",
+                "pout_dbm_per_tone": f"{pout:.4f}",
+                "pim3_dbm": f"{pim3:.4f}",
+                "gain_db": f"{pout - pin:.4f}",
+                "iip3_dbm": f"{iip3:.4f}",
+                "oip3_dbm": f"{iip3 + pout - pin:.4f}",
+                "iip3_dbm_dft_crosscheck": f"{iip3_dft:.4f}",
+                "dft_fft_iip3_agreement_db": f"{abs(iip3 - iip3_dft):.4f}",
+                "v_tone1_out_v": f"{vals['tone1']:.6e}",
+                "v_tone2_out_v": f"{vals['tone2']:.6e}",
+                "v_im3l_out_v": f"{vals['im3l']:.6e}",
+                "v_im3h_out_v": f"{vals['im3h']:.6e}",
+                "v_im5_out_v": f"{im5:.6e}",
+                "im3_over_im5_db": f"{_sweep.db20(fft_i3 / im5):.2f}" if im5 > 0 else "",
+                "ic1_a": f"{parsed_log['ic1']:.6e}",
+                "idd_a": f"{parsed_log['idd']:.6e}",
+                "fft_npts": str(npts),
+                "fft_df_hz": f"{vals['fft_df']:.6e}",
+            })
+    # Extra (non-declared) reports present on disk are reported, not folded in.
+    declared = {f"{variant}_iip3_{iip3_amp_label(x)}.report.json"
+                for x in grid_amps + extra_amps}
+    for rep in sorted(cdir.glob(f"{variant}_iip3_*.report.json")):
+        if rep.name not in declared:
+            _iip3_issue(issues, "unexpected_report", detail=rep.name)
+
+    if not rows:
+        raise SystemExit("summarize-iip3: no IIP3 rows reduced; nothing to write")
+
+    with open(a.iip3_csv, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        for r in sorted(rows, key=lambda r: (VARIANTS_ORDER.get(r["variant"], 9),
+                                             LABELS.index(r["corner_label"]),
+                                             float(r["temp_c"]), float(r["vdd_v"]),
+                                             float(r["amp_v_peak_per_tone"]))):
+            w.writerow(r)
+    print(f"summarize-iip3: wrote {a.iip3_csv} ({len(rows)} points)")
+
+    # --- per-cell summary: intercepts only where the 3:1 slope check passes ---
+    by_cell: dict = {}
+    for r in rows:
+        by_cell.setdefault((r["corner_label"], r["temp_c"], r["vdd_v"]), []).append(r)
+    tol = a.slope_tol
+    summary: list = []
+    for key in sorted(by_cell, key=lambda k: (LABELS.index(k[0]), float(k[1]), float(k[2]))):
+        pts = sorted(by_cell[key], key=lambda r: float(r["amp_v_peak_per_tone"]))
+        validity, reason = _sweep.classify_iip3_cell(pts, tol)
+        row = {"variant": variant, "corner_label": key[0], "temp_c": key[1], "vdd_v": key[2]}
+        opv = (op_cells.get(norm_key(*key)) or {}).get("values") or {}
+        for m in OP_MEASUREMENTS:
+            v = opv.get(m[0])
+            row[m[0]] = "" if v is None else f"{v:.6g}"
+        lo = next((r for r in pts if r["point_id"].endswith("a1mv")), None)
+        hi = next((r for r in pts if r["point_id"].endswith("a2mv")), None)
+        row["iip3_dbm_a1mv"] = lo["iip3_dbm"] if lo else ""
+        row["iip3_dbm_a2mv"] = hi["iip3_dbm"] if hi else ""
+        row["oip3_dbm_a2mv"] = hi["oip3_dbm"] if hi else ""
+        row["gain_db_a2mv"] = hi["gain_db"] if hi else ""
+        row["iip3_spread_2pt_db"] = (
+            f"{abs(float(hi['iip3_dbm']) - float(lo['iip3_dbm'])):.3f}"
+            if lo and hi else "")
+        slope = ""
+        if lo and hi:
+            dpin = (float(hi["pin_avail_dbm_per_tone"])
+                    - float(lo["pin_avail_dbm_per_tone"]))
+            if dpin:
+                slope = (round((float(hi["pim3_dbm"]) - float(lo["pim3_dbm"])) / dpin, 3))
+                slope = f"{slope:.3f}"
+        row["im3_slope_2pt"] = slope
+        row["iip3_validity"] = validity
+        row["iip3_validity_reason"] = reason
+        s11_db = s11.get(norm_key(*key))
+        if s11_db is not None:
+            term = iip3_mismatch_term_db(s11_db)
+            row["iip3_mismatch_term_db"] = f"{term:.4f}"
+            row["iip3_device_plane_dbm_a1mv"] = (
+                f"{float(lo['iip3_dbm']) - term:.4f}" if lo else "")
+            row["iip3_device_plane_dbm_a2mv"] = (
+                f"{float(hi['iip3_dbm']) - term:.4f}" if hi else "")
+        else:
+            row["iip3_mismatch_term_db"] = ""
+            row["iip3_device_plane_dbm_a1mv"] = ""
+            row["iip3_device_plane_dbm_a2mv"] = ""
+        summary.append(row)
+    with open(a.summary_csv, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(summary[0].keys()))
+        w.writeheader()
+        w.writerows(summary)
+    print(f"summarize-iip3: wrote {a.summary_csv} ({len(summary)} cells)")
+
+    # --- headlines (the record embeds this verbatim) ------------------------
+    lines: list = []
+    valid = [r for r in summary if r["iip3_validity"] == _sweep.IIP3_VALID]
+    invalid = [r for r in summary if r["iip3_validity"] == _sweep.IIP3_INVALID]
+    unknown = [r for r in summary if r["iip3_validity"] == _sweep.IIP3_UNKNOWN]
+    lines.append("## Two-tone IIP3 reduction (issue #337)")
+    lines.append("")
+    complete = not issues
+    lines.append(f"- Coverage: **{'COMPLETE' if complete else 'INCOMPLETE'}** "
+                 f"({len(summary)} cells x {[iip3_amp_label(x) for x in grid_amps]} per-cell levels"
+                 + (f" + nominal-only {[iip3_amp_label(x) for x in extra_amps]}" if extra_amps else "")
+                 + f"; {len(issues)} validation issue(s))")
+    lines.append(f"- IM3 slope check (3 +/- {tol:g}, README policy): valid {len(valid)}, "
+                 f"invalid {len(invalid)}, unknown {len(unknown)} of {len(summary)} cells.")
+    if len(valid) == len(summary):
+        lines.append("- The 3:1 IM3 slope assumption holds at every cell; "
+                     "every intercept below is accepted.")
+    elif not valid:
+        lines.append("- **No intercept accepted**: zero cells passed the slope check.")
+    else:
+        lines.append("- Headline intercepts are restricted to the valid cells; "
+                     "raw per-point `iip3_dbm` values in the IIP3 CSV are never altered or dropped.")
+    for r in invalid + unknown:
+        lines.append(f"  - {r['corner_label']}/{float(r['temp_c']):g}C/{float(r['vdd_v']):.2f}V: "
+                     f"{r['iip3_validity']} ({r['iip3_validity_reason']}) -- no intercept accepted")
+
+    def span(col, rows_, nd=4):
+        vals = [(float(r[col]), r) for r in rows_ if r.get(col)]
+        if not vals:
+            return "n/a"
+        lo = min(vals, key=lambda t: t[0])
+        hi = max(vals, key=lambda t: t[0])
+        return (f"{lo[0]:.{nd}f} @ {lo[1]['corner_label']}/{float(lo[1]['temp_c']):g}C/"
+                f"{float(lo[1]['vdd_v']):.2f}V .. "
+                f"{hi[0]:.{nd}f} @ {hi[1]['corner_label']}/{float(hi[1]['temp_c']):g}C/"
+                f"{float(hi[1]['vdd_v']):.2f}V")
+
+    if valid:
+        lines.append(f"- Available-power-referred IIP3, 2 mV/tone [dBm] over valid cells: {span('iip3_dbm_a2mv', valid)}")
+        lines.append(f"- Available-power-referred IIP3, 1 mV/tone [dBm] over valid cells: {span('iip3_dbm_a1mv', valid)}")
+        nom = next((r for r in valid
+                    if norm_key(r["corner_label"], float(r["temp_c"]), float(r["vdd_v"])) == norm_key(*NOMINAL)), None)
+        if nom:
+            lines.append(f"- Nominal cell (typ/27C/1.80V): IIP3 {nom['iip3_dbm_a1mv']} dBm at 1 mV/tone, "
+                         f"{nom['iip3_dbm_a2mv']} dBm at 2 mV/tone, IM3 slope {nom['im3_slope_2pt'] or 'n/a'}, "
+                         f"I_C1 {nom.get('ic1', '')} A, P_dc {nom.get('pdc', '')} W.")
+        if any(r.get("iip3_device_plane_dbm_a2mv") for r in valid):
+            terms = [float(r["iip3_mismatch_term_db"]) for r in valid if r.get("iip3_mismatch_term_db")]
+            lines.append(f"- Device-plane conversion (matched |S11| per cell, "
+                         f"term -10*log10(1-|S11|^2) = {min(terms):+.4f}..{max(terms):+.4f} dB): "
+                         f"device-plane IIP3, 2 mV/tone [dBm]: {span('iip3_device_plane_dbm_a2mv', valid)}")
+        else:
+            lines.append("- Device-plane conversion: NOT computed (--s11-csv not given or cells unmatched).")
+        bar = [r for r in valid if float(r["iip3_dbm_a2mv"]) > 0.0]
+        lines.append(f"- Draft > 0 dBm value (NOT a ratified target): {len(bar)} of {len(valid)} "
+                     f"valid cells reach 0 dBm at 2 mV/tone. Observation only -- the IIP3 numeric "
+                     "row stays DRAFT; binding requires a decision record of its own.")
+    lines.append("")
+    lines.append("### Bench definition (carried beside every number)")
+    lines.append("")
+    lines.append(f"- Tones: f1 = {IIP3_F1!r} Hz (bin {IIP3_B1}), f2 = {IIP3_F2!r} Hz (bin {IIP3_B2}), "
+                 f"spacing = {IIP3_FSPACE!r} Hz; IM3 products at bins {IIP3_BIM3L}/{IIP3_BIM3H}, "
+                 f"IM5 floor sentinels at bins {IIP3_BIM5L}/{IIP3_BIM5H}.")
+    lines.append(f"- FFT: uniform tstep = {IIP3_TSTEP:g} s, N = {IIP3_NFFT} samples "
+                 f"(tstop = {IIP3_TSTOP:.11g} s), rectangular window (`set specwindow=none`), "
+                 f"df = 1/(N*tstep) = {IIP3_DF!r} Hz, tstart = {IIP3_TSTART:g} s discarded; "
+                 "NPTS and the bin-resolution witness (fft_df) are recorded per point.")
+    lines.append("- Ports: 50 Ohm at both ends (Rs = RL = 50 Ohm); input power is the AVAILABLE "
+                 "source power per tone A^2/(8*Rs); output power per tone and per product is "
+                 "V_peak^2/(2*RL); IIP3 = Pin + (Pout - PIM3)/2.")
+    lines.append(f"- Drive levels: {[iip3_amp_label(x) + f' ({x:g} V)' for x in grid_amps]} at every PVT cell; "
+                 + (f"nominal cell additionally {[iip3_amp_label(x) for x in extra_amps]}." if extra_amps else "no nominal-only extra levels."))
+    lines.append("- Extraction: the deck reproduces testbench/tb_lna_iip3.spice.tmpl's control sequence "
+                 "verbatim (op -> OP echo -> tran -> linearize v(rfout) v(vin) -> NPTS -> coherent-DFT "
+                 "projection -> DFT echo -> fft), carried as a klt sim request; the FFT bin magnitudes "
+                 "return in the klt report (measurements[].expr read in the spectrum plot the template's "
+                 "own `fft` leaves current) and the template's OP/DFT echoes stay in the kept ngspice log. "
+                 "Primary IIP3 = FFT bins; `iip3_dbm_dft_crosscheck` = the template's independent "
+                 "coherent-DFT projection from the same log; `dft_fft_iip3_agreement_db` per point.")
+    lines.append("- ngspice: version/build per klt report `environment` (fleet runner); the DUT is "
+                 "design/netlist/lna.spice inlined verbatim (sha256 recorded in the record header).")
+    lines.append("")
+    lines.append("### Stated limits of this method (README 'IIP3', restated)")
+    lines.append("")
+    lines.append("1. Extrapolation, not a measured intercept: meaningful only while IM3 rises 3:1 with "
+                 "drive; cells failing the slope check contribute NO accepted intercept.")
+    lines.append("2. IM5 bins are numerical-floor sentinels; `im3_over_im5_db` is committed per point "
+                 "and the bench is not to be driven lower without re-checking that margin.")
+    lines.append("3. Clean harmonic/intermod separation comes from the wide 7.63 MHz spacing; narrowing "
+                 "it needs a proportionally longer record (wall-clock, not methodology).")
+    lines.append("4. tstep = 4 ps => 125 GHz Nyquist (~51x the tone), so transient truncation does not "
+                 "synthesize its own intermodulation; ngspice default reltol sets the floor in (2).")
+    lines.append("5. Steady state after tstart = 1 us is an argument (ns-scale poles), not a measurement.")
+    lines.append("6. Single-ended, single tone pair, in-band only: no blocker, out-of-band IM, AM-PM, P1dB.")
+    lines.append("")
+    if issues:
+        lines.append("## Validation issues")
+        lines.append("")
+        for i in issues:
+            parts = [i["kind"]]
+            if i.get("cell"):
+                parts.append(f"cell={i['cell']}")
+            if i.get("amp"):
+                parts.append(f"amp={i['amp']}")
+            if i.get("detail"):
+                parts.append(i["detail"])
+            lines.append("- " + " ".join(parts))
+        lines.append("")
+    open(a.headlines_md, "w").write("\n".join(lines) + "\n")
+    print(f"summarize-iip3: wrote {a.headlines_md}")
+    if issues:
+        print(f"summarize-iip3: COVERAGE INCOMPLETE: {len(issues)} issue(s)", file=sys.stderr)
+        for i in issues:
+            parts = [i["kind"]]
+            if i.get("cell"):
+                parts.append(f"cell={i['cell']}")
+            if i.get("amp"):
+                parts.append(f"amp={i['amp']}")
+            if i.get("detail"):
+                parts.append(i["detail"])
+            print("summarize-iip3: " + " ".join(parts), file=sys.stderr)
+        return 2
+    return 0
+
+
 def _issue_text(i):
     parts = [i["kind"], f"variant={i['variant']}", f"analysis={i['analysis']}"]
     if i.get("cell"):
@@ -894,12 +1502,31 @@ def main():
     g = sub.add_parser("gen")
     g.add_argument("--outdir", required=True)
     g.add_argument("--variants", default="")
+    g.add_argument("--analyses", default="",
+                   help=f"comma list from {ANALYSES} (default: all)")
     g.add_argument("--smoke", action="store_true", help="single nominal cell")
     g.add_argument("--backend", default="")
     g.add_argument("--nf-npts", type=int, default=N_NF,
                    help=f"points of the 290 K NF sweep (odd, >= {N_BAND}); default {N_NF}")
     g.add_argument("--temps", default="", help=temps_help)
     g.set_defaults(fn=cmd_gen)
+    gi = sub.add_parser("gen-iip3")
+    gi.add_argument("--outdir", required=True)
+    gi.add_argument("--variants", default="matched",
+                    help="comma list; default matched (issue #337 runs the matched DUT)")
+    gi.add_argument("--amps", default=",".join(f"{x:g}" for x in IIP3_AMPS_GRID),
+                    help="per-cell drive levels, V peak/tone (default the ratified pair)")
+    gi.add_argument("--amps-nominal-only",
+                    default=",".join(f"{x:g}" for x in IIP3_AMPS_NOMINAL_ONLY),
+                    help="extra drive levels run at the nominal cell alone, V peak/tone "
+                         "(default the ratified 0.5/4/8 mV set; pass '' for none)")
+    gi.add_argument("--op", action="store_true", default=True,
+                    help="also write the variant's op request pair (default)")
+    gi.add_argument("--no-op", dest="op", action="store_false")
+    gi.add_argument("--smoke", action="store_true", help="single nominal cell")
+    gi.add_argument("--backend", default="")
+    gi.add_argument("--temps", default="", help=temps_help)
+    gi.set_defaults(fn=cmd_gen_iip3)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
     s.add_argument("--summary-csv", required=True)
@@ -914,6 +1541,28 @@ def main():
                    help="comma list of variants that must be complete (default: ideal + any present)")
     s.add_argument("--temps", default="", help=temps_help)
     s.set_defaults(fn=cmd_summarize)
+    si = sub.add_parser("summarize-iip3")
+    si.add_argument("--corners-dir", required=True)
+    si.add_argument("--iip3-csv", required=True)
+    si.add_argument("--summary-csv", required=True)
+    si.add_argument("--headlines-md", required=True)
+    si.add_argument("--variant", default="matched")
+    si.add_argument("--amps", default=",".join(f"{x:g}" for x in IIP3_AMPS_GRID),
+                    help="per-cell drive levels the reports were generated with (must match gen-iip3)")
+    si.add_argument("--amps-nominal-only",
+                    default=",".join(f"{x:g}" for x in IIP3_AMPS_NOMINAL_ONLY),
+                    help="extra nominal-cell drive levels (must match gen-iip3; pass '' for none)")
+    si.add_argument("--op-report", default="",
+                    help="<variant>_op.report.json for the per-cell bias join (recommended)")
+    si.add_argument("--s11-csv", default="",
+                    help="comma list of committed present-dut slice summary CSVs carrying "
+                         "per-cell s11_db_mid, for the device-plane conversion")
+    si.add_argument("--slope-tol", type=float, default=_sweep.IIP3_SLOPE_TOL,
+                    help=f"IM3 2-point slope tolerance (default {_sweep.IIP3_SLOPE_TOL}, README policy)")
+    si.add_argument("--grid", choices=[GRID_FULL, GRID_SMOKE], default=GRID_FULL,
+                    help="expected grid: full 45-cell PVT box (default) or single nominal smoke cell")
+    si.add_argument("--temps", default="", help=temps_help)
+    si.set_defaults(fn=cmd_summarize_iip3)
     a = p.parse_args()
     apply_temps(a.temps)
     sys.exit(a.fn(a) or 0)
