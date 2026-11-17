@@ -246,7 +246,13 @@ PYEOF
   echo
   echo "- **Experiment**: lna-characterization, inductor-loss variants (issue #56)."
   echo "- **Claim**: what replacing the ideal \`Le\`/\`Lc\` of \`design/lna.sch\` with lossy"
-  if [[ -n "${LNA_TEMPS:-}" ]]; then
+  if [[ -n "${LNA_VARIANT_SMOKE:-}" ]]; then
+    SMOKE_SLICE_NOTE=""
+    [[ -n "${LNA_TEMPS:-}" ]] && SMOKE_SLICE_NOTE="; the requested temperature slice ${LNA_TEMPS} was ignored"
+    echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
+    echo "  single nominal 27 C smoke cell (plumbing check, NOT a PVT campaign${SMOKE_SLICE_NOTE}),"
+    echo "  versus the ideal baseline run through the identical harness."
+  elif [[ -n "${LNA_TEMPS:-}" ]]; then
     echo "  models does to gain, noise figure, S11, S22 and the mu stability margin at the"
     echo "  TEMPERATURE SLICE ${LNA_TEMPS} of the 45 PVT cells (partial grid, NOT the full"
     echo "  corner box), versus the ideal baseline run through the identical harness."
@@ -275,6 +281,10 @@ PYEOF
   fi
   if (( SUMMARIZE_RC != 0 )); then
     echo "- **Reduction**: FAILED (exit ${SUMMARIZE_RC}) -- **coverage incomplete**; not a complete-grid result."
+  elif [[ -n "${LNA_VARIANT_SMOKE:-}" ]]; then
+    SMOKE_SLICE_NOTE=""
+    [[ -n "${LNA_TEMPS:-}" ]] && SMOKE_SLICE_NOTE="; the requested temperature slice ${LNA_TEMPS} was ignored"
+    echo "- **Reduction**: ok over the single nominal 27 C smoke cell only (plumbing check, all measurements finite${SMOKE_SLICE_NOTE}) -- NOT a PVT campaign."
   elif [[ -n "${LNA_TEMPS:-}" ]]; then
     echo "- **Reduction**: ok over the TEMPERATURE SLICE ${LNA_TEMPS} only (expected slice complete, all measurements finite) -- partial grid, NOT the full 45-cell PVT box."
   else
