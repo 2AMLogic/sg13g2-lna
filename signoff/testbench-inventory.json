@@ -2492,7 +2492,7 @@
     "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:923252dfcaf4edc613de5dc32a75416498327fb4dd744f892148a685b071ce54",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:4a74c1405814e3f0398b3fa8a29496d6d4ce406ff393ec4804ca855abac9c15b",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:280eeb08093a120e8dd2abd5919db9796b560712bb6f44d03e11a459037383ef",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
