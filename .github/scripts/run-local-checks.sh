@@ -122,6 +122,8 @@ fi
 # --- job: reduction-tests
 step "reduction-tests: lna-characterization unit tests" \
   python3 -I -m unittest discover -s sim/lna-characterization/tests -v
+step "reduction-tests: spec-envelope committed-record replay (issue #364)" \
+  python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check
 
 # --- job: hbt-reduction-tests
 # (fixed-T0 NF re-derivation, issue #101, and the production log parser
