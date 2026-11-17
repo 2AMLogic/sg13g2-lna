@@ -28,10 +28,15 @@ the reference request; the generator only replaces the corner box and
 injects ``limits`` / ``spec_row`` on the graded measurements, validating
 every injected limit against the parsed ratified row (comparator, limit,
 unit) with exact decimal arithmetic. ``nf290_db_worst`` carries its limit
-but deliberately no ``spec_row`` tag: the row is expected to fail (issue
-#58), and a failing tagged measurement would mark the row *uncovered*
-under ``klt signoff``'s derived-coverage rule instead of *covered and
-failing*, which would misstate the report.
+but no ``spec_row`` tag: the row is expected to fail (issue #58), and the
+tag would be redundant here, not protective. ``klt signoff``'s
+derived-coverage path does drop a *failing* tagged measurement from
+``row_sources``, but the row's coverage comes from the manifest
+citation's ``rows`` declaration (``rows: ["nf"]``), not from the
+measurement tag -- verified with the pinned ``klayout-tools==0.9.2``
+render (issue #363): the ``signoff`` output is byte-identical with and
+without the tag, ``uncovered_rows`` stays empty either way, and the
+failing envelope keeps item 5 ``unmet`` either way.
 
 Usage::
 
@@ -66,7 +71,8 @@ GRADED = {
         ("s22_mag_max", "negres", "negres", None),
     ],
     "matched_noise": [
-        # Honest limit, no spec_row tag (see module docstring).
+        # Honest limit, no spec_row tag (redundant here; see module
+        # docstring).
         ("nf290_db_worst", "nf", None, "dB"),
     ],
 }

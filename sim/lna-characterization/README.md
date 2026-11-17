@@ -1210,15 +1210,18 @@ arithmetic at generation time, never retyped:
 | `matched_op` | `power`, `ic1` | `pdc` < 10 mW (= 0.01 W), `ic1` ≤ 4.5 mA (= 0.0045 A) | `power`, `ic1` |
 | `matched_sp_band` | `gain`, `s11`, `s22` | `s21_db_min` > 15 dB, `s11_db_worst` < −10 dB, `s22_db_worst` < −10 dB | `gain`, `s11`, `s22` |
 | `matched_sp_stab` | `mu`, `negres` | `mu_min` > 1, `s11_mag_max` < 1, `s22_mag_max` < 1 | `mu`, `negres` ×2 |
-| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (deliberate) |
+| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (redundant if set — see below) |
 
-The `nf` measurement carries its honest limit but no `spec_row` tag on
-purpose: the row is expected to fail at every cell until #58 lands
-(DR-0004), and a failing *tagged* measurement would mark the row
-*uncovered* under `klt signoff`'s derived-coverage rule instead of
-*covered and failing* — the manifest asserts the `nf` row's coverage and
-the envelope's failure shows up as the citation failure that keeps item 5
-`unmet`, which is the truthful reading.
+The `nf` measurement carries its honest limit but no `spec_row` tag: the
+row is expected to fail at every cell until #58 lands (DR-0004), and the
+tag would be redundant here, not protective. `klt signoff`'s
+derived-coverage path does drop a *failing* tagged measurement from
+`row_sources`, but the row's coverage comes from the manifest citation's
+`rows` declaration (`rows: ["nf"]`), not from the measurement tag —
+verified with the pinned `klayout-tools==0.9.2` render (issue #363): the
+signoff output is byte-identical with and without the tag,
+`uncovered_rows` stays empty either way, and the envelope's failure keeps
+item 5 `unmet` either way.
 
 **Corner box.** Process `{typ, bcs, wcs}` × supply `{1.62, 1.80, 1.98} V`
 × temperature `{−40, 27, 125} °C` = **27 cells per analysis** (108
