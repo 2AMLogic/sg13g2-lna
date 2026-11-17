@@ -16,7 +16,77 @@
     "9": {
       "content_hash": "sha256:df155c62a37ddef70fcbc38ca429de73014d77fef737f9084f841e114ae8e031",
       "file": "signoff/attest/item9.envelope.json"
-    }
+    },
+    "5": [
+      {
+        "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+        "content_hash": "sha256:ee72de06c96fe94d6be55ddfcb0a3b2a7b5a108e0958aa67e7419058c56473b9",
+        "rows": [
+          "power",
+          "ic1"
+        ]
+      },
+      {
+        "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+        "content_hash": "sha256:f0ee9ce4f138ee4ba1d7fac67ea1ca5da5c458086d92a5c9bbfa27ec3003ad83",
+        "rows": [
+          "gain",
+          "s11",
+          "s22"
+        ]
+      },
+      {
+        "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+        "content_hash": "sha256:9f66719d7ede34aa81b3280511672b78101d1c244d5ce2e76f817b3fa712efa2",
+        "rows": [
+          "mu",
+          "negres"
+        ]
+      },
+      {
+        "file": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json",
+        "content_hash": "sha256:c13b80c340e98200031787ab2e35fd713f1b170deee4a81faf642160983571b2",
+        "rows": [
+          "nf"
+        ]
+      }
+    ]
   },
-  "kind": "analog"
+  "kind": "analog",
+  "spec_rows": {
+    "5": [
+      {
+        "id": "gain"
+      },
+      {
+        "id": "nf"
+      },
+      {
+        "id": "s11"
+      },
+      {
+        "id": "s22"
+      },
+      {
+        "id": "mu"
+      },
+      {
+        "id": "negres"
+      },
+      {
+        "id": "power"
+      },
+      {
+        "id": "ic1"
+      },
+      {
+        "id": "iip3",
+        "gap": "numeric target NOT ratified (DR-0002 keeps the former DRAFT > 0 dBm DRAFT); until the number is ratified through its own decision record there is no ratified row for an envelope to grade"
+      },
+      {
+        "id": "supply",
+        "gap": "context row realized by the ratified corner axis itself (VDD 1.62/1.80/1.98 V = 1.80 V +/-10 %, DR-0001/DR-0002), not an independently measured performance row"
+      }
+    ]
+  }
 }

@@ -2277,6 +2277,71 @@
         "other": "",
         "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
       }
+    },
+    {
+      "bench_generators": [
+        "sim/lna-characterization/gen_spec_envelopes.py"
+      ],
+      "classification": "present-dut",
+      "cold_start": [
+        {
+          "command": "sim/lna-characterization/run_spec_envelopes.sh sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "run",
+          "needs": [
+            "klt with batch-fleet access",
+            "no local ngspice and no local PDK (the fleet stages the pinned models; OSDI preloaded per request)"
+          ]
+        },
+        {
+          "command": "python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check",
+          "doc": "sim/lna-characterization/README.md",
+          "kind": "replay",
+          "needs": [
+            "python3 stdlib",
+            "no PDK, no ngspice"
+          ]
+        }
+      ],
+      "docs": [
+        "sim/lna-characterization/README.md"
+      ],
+      "dut": "present",
+      "family": "lna-characterization",
+      "id": "lna-char-spec-envelope-20261117-054141-bdebb4d",
+      "limitations": "Covers the ratified corner box narrowed to its three real HBT sections (typ/bcs/wcs x 1.62/1.80/1.98 V x -40/27/125 C = 27 cells per analysis); the ratified sf/fs labels are documented HBT duplicates of typ and are not re-run (their mos-section residue is covered by the committed 45-cell records). Bench results and per-row pass/fail only; the nf row is expected to fail at every cell until #58 (DR-0004) and nothing here relaxes it. mu's margin over 1 sits at the 10 MHz sweep floor at numerical resolution (~4e-7, identical across cells; Q~10 loss model). The 100 pF DC blocks and Q~10 match are as committed; no layout parasitics, mismatch or Monte Carlo. IIP3 is not measured (numeric target NOT ratified).",
+      "records": [
+        {
+          "corners": {
+            "files": 0,
+            "git_blob_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "id": "20261117-054141-bdebb4d",
+          "netlist_snapshots": {
+            "files": 14,
+            "git_blob_digest": "sha256:b2fdba141bad93b6ee8f04eab98feb97b5b14143a552d6d3999c8e4bd3e4d54b"
+          },
+          "published_files": []
+        }
+      ],
+      "reducers": [
+        "sim/lna-characterization/reduce_spec_envelopes.py"
+      ],
+      "result_status": "published",
+      "runners": [
+        "sim/lna-characterization/run_spec_envelopes.sh"
+      ],
+      "shared": [
+        "pdk-pin",
+        "dut-netlist"
+      ],
+      "summary": "T1 item-5 klt sim corner envelopes (issue #231): matched DUT, 4 analyses x 27 ratified cells each, limits generated from spec/ratified-rows.json into the requests; run on the Spot batch fleet (one klt sim invocation per analysis, --wait-for-capacity 600).",
+      "tool_pins": {
+        "ngspice": "ngspice via klt sim (fleet worker image)",
+        "osdi_models": true,
+        "other": "klt >= 0.7.0 request features (sim/pdk.json klt_variant_campaign); signoff grader pin 0.9.2",
+        "pdk": "sim/pdk.json (IHP-Open-PDK v0.3.0, variant ihp-sg13g2)"
+      }
     }
   ],
   "excluded_bench_like_paths": {
@@ -2433,7 +2498,8 @@
     "sim/lna-bias-pvt/tests/test_mc_campaign.py": "sha256:bc74a15f277a8c594c4bc8a70eea0ff9dc7adc0cc9411d68637ce192af1ef35c",
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
-    "sim/lna-characterization/README.md": "sha256:a8725b03e8e3a01173675af64c1cd999bc1ff8adbff493232f54421db14f2db2",
+    "sim/lna-characterization/README.md": "sha256:ef815431ee8b96c1374451d4b986bcc0e872ef985b320861319b3a7dd91e3eb9",
+    "sim/lna-characterization/gen_spec_envelopes.py": "sha256:086c1adaf2b970be530ca1814429a80af17f11fd1211839287bcbdc179845cfa",
     "sim/lna-characterization/lna_variant_campaign.py": "sha256:3638cdb8b2d8ff1185074f370e23ccbc5b3f58c14efb1f3640b52db4012d6914",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
@@ -2490,9 +2556,11 @@
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence-20261116.md": "sha256:53eee615518d19ac477d903c2835d16dfa796e76e007f98be2752f0b8fc01cd0",
     "sim/lna-characterization/records/issue-258-xout-bleed-convergence.md": "sha256:c020167a0731cb2f4e00da9214c15538ea384ea24c1a7269d24b65e2903365bc",
     "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:923252dfcaf4edc613de5dc32a75416498327fb4dd744f892148a685b071ce54",
+    "sim/lna-characterization/reduce_spec_envelopes.py": "sha256:7c0cd8867fd4b1d191582a9e1613a2651e19bd4188fdd0a5263a6b971542506f",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
     "sim/lna-characterization/run_lna_variant.sh": "sha256:4a74c1405814e3f0398b3fa8a29496d6d4ce406ff393ec4804ca855abac9c15b",
+    "sim/lna-characterization/run_spec_envelopes.sh": "sha256:34a140e55dc0333a03b0b20ad8256c762feb0186f08e54fce632286bd12f0950",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
