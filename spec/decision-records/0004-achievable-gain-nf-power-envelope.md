@@ -1,6 +1,6 @@
 # 0004: The achievable (gain, NF, P_dc) envelope on `npn13G2`, and what the RATIFIED NF row costs
 
-- **Status**: ruled 2026-10-08 — Option A adopted (disclosure-note correction, no ratified value changes; issue [#57](https://github.com/2AMLogic/sg13g2-lna/issues/57)); Option C in progress ([#58](https://github.com/2AMLogic/sg13g2-lna/issues/58)); Options B and D not taken. Originally `proposed` 2026-09-26; analysis below unchanged.
+- **Status**: ruled 2026-10-08 — Option A adopted (disclosure-note correction, no ratified value changes; issue [#57](https://github.com/2AMLogic/sg13g2-lna/issues/57)); Option C in progress ([#58](https://github.com/2AMLogic/sg13g2-lna/issues/58)); Options B and D not taken. Originally `proposed` 2026-09-26; analysis below unchanged. **Amendment 2026-11-17 appended** (issue [#336](https://github.com/2AMLogic/sg13g2-lna/issues/336)): disclosure-cell-refresh delegation, `proposed` and **pending ratification** — until ratified it authorises nothing and disclosure-cell refreshes remain the operator's act (see [§Amendment 2026-11-17](#amendment-2026-11-17--the-narrow-disclosure-cell-refresh-becomes-builder-work)).
 - **Date**: 2026-09-26
 - **Decided by**: Builder (Loom), issue #52 — **drafted for the operator to
   rule on; this record decides nothing by itself**
@@ -518,3 +518,79 @@ and its market rationale.
   input-network NF budget).
 - IIP3 on any variant — this bench has no two-tone phase, and the DRAFT IIP3
   number is explicitly out of #52's scope.
+
+---
+
+## Amendment 2026-11-17 — the narrow disclosure-cell refresh becomes Builder work
+
+- **Status**: `proposed` — this amendment awaits ratification (two reviews,
+  then the operator). Until ratified it authorises nothing: a disclosure-cell
+  refresh remains an operator act, exactly as the 2026-10-08 ruling above has
+  it. **This amendment ratifies nothing and changes no ratified value.**
+- **Date**: 2026-11-17
+- **Driven by**: operator ruling (rjwalters, 2026-11-17, `/fleet:decide`
+  round 20261116-r15, q116, option 3) on issue
+  [#336](https://github.com/2AMLogic/sg13g2-lna/issues/336); the first
+  refresh it would enable is tracked as issue
+  [#380](https://github.com/2AMLogic/sg13g2-lna/issues/380), blocked on this
+  amendment's ratification.
+
+### Scope of the amendment
+
+This amendment changes only *who may perform* the narrow, mechanical act
+defined below. It does not rewrite the 2026-10-08 ruling, the Options text
+or any Evidence section above; it changes no ratified threshold; and it is
+**not retroactive** — it authorises no `spec/` edit already made and no
+change outside the disclosure cells of `spec/target-spec.md`.
+
+### What becomes Builder work
+
+A **disclosure-cell refresh** in [`spec/target-spec.md`](../target-spec.md) —
+replacing, in one or more ratified rows' disclosure cells, the cited record,
+its quoted numbers, and the status stated with them, by those of a newer
+**committed** record — may be performed by the Builder **only when all three
+of these hold**:
+
+1. **No ratified threshold changes.** Every row's ratified value and binding
+   conditions are carried across verbatim; only the evidence cited in the
+   disclosure column moves.
+2. **Every number is taken from a committed record and named with its
+   bench.** Each refreshed figure cites the `sim/<experiment>/records/`
+   record id and the analysis and column behind it — per `CLAUDE.md`, a
+   gain or NF claim without its bench is not a result.
+3. **A row's status follows what that record says.** The status word in the
+   cell (met / failing / DRAFT / …) is whatever the cited record's verdict
+   is — including a row that stays failing.
+
+### What stays an operator act
+
+Anything beyond that narrow definition, specifically:
+
+- a **threshold change** in any ratified row;
+- a row **added to or removed from** the table;
+- asserting a **status the cited record does not state**;
+- any **non-disclosure change** to `spec/target-spec.md` or any other
+  ratified document.
+
+### Conditions the ruling fixes for the first refresh under it
+
+The ruling, and the committed record that refresh would cite
+(`sim/lna-characterization/records/issue-27-matched-pvt-verdict.md`), pin
+these non-loosening conditions, which any refresh must carry **in the cells
+themselves**:
+
+- The **stability row keeps its condition in the cell**: met at **45/45 at
+  numerical resolution**, **conditional on the Q ≈ 10 inductor-loss model**,
+  and **any inductor re-model re-runs the stability gate**.
+- The **NF row stays FAILING (0/45)**, with the matched-DUT attribution (the
+  match's finite-Q input loss is measured inside the delta; nothing is
+  relaxed).
+- **IIP3 stays DRAFT / unbound** — no post-match IIP3 re-measure exists.
+
+### Verification
+
+The repository is public and the spec is a public statement: the **Judge
+checks each refreshed cell against the committed record digit for digit**
+before a refresh PR merges. Per the TEMPLATE's status vocabulary, a
+`proposed` record never ratifies itself — this amendment included; its
+effect begins only when the operator ratifies it.
