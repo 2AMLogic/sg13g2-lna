@@ -140,9 +140,83 @@
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_op.report.json",
+          "rows": [
+            "power",
+            "ic1"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_band.report.json",
+          "rows": [
+            "gain",
+            "s11",
+            "s22"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_sp_stab.report.json",
+          "rows": [
+            "mu",
+            "negres"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json",
+          "rows": [
+            "nf"
+          ],
+          "status": "unmet",
+          "reason": "check_failed"
+        }
+      ],
+      "detail": {
+        "critical_metric_blockers": [
+          {
+            "metric": "sim__corner__failed_count",
+            "value": 27,
+            "higher_is_better": false
+          }
+        ],
+        "failed_citations": [
+          "sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d/reports/matched_noise.report.json"
+        ],
+        "failed_rows": [
+          "nf"
+        ],
+        "uncovered_rows": [],
+        "declared_gaps": [
+          {
+            "id": "iip3",
+            "gap": "numeric target NOT ratified (DR-0002 keeps the former DRAFT > 0 dBm DRAFT); until the number is ratified through its own decision record there is no ratified row for an envelope to grade"
+          },
+          {
+            "id": "supply",
+            "gap": "context row realized by the ratified corner axis itself (VDD 1.62/1.80/1.98 V = 1.80 V +/-10 %, DR-0001/DR-0002), not an independently measured performance row"
+          }
+        ],
+        "unratified_rows": [],
+        "row_sources": {
+          "gain": "derived",
+          "ic1": "derived",
+          "mu": "derived",
+          "negres": "derived",
+          "power": "derived",
+          "s11": "derived",
+          "s22": "derived"
+        }
+      }
     },
     {
       "tier": "T1",

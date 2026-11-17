@@ -635,7 +635,11 @@ def coverage_markdown(rows, grid, complete, issues, title="Ideal-baseline"):
     if grid == GRID_SMOKE:
         out.append("- SMOKE grid (single nominal cell): not a PVT campaign, not a corner-box result.")
     if TEMPS != TEMPS_ALL:
-        out.append(f"- TEMPERATURE SLICE: expected grid covers only {TEMPS} of {TEMPS_ALL} "
+        # Name the temperatures the grid actually contains, not the requested
+        # slice: expected_grid(GRID_SMOKE) is the nominal 27 C cell regardless of
+        # TEMPS, so a smoke+slice run must disclose [27], not the slice (issue #329).
+        shown = ", ".join(f"{t:g}" for t in sorted({t for _, t, _ in expected_grid(grid)}))
+        out.append(f"- TEMPERATURE SLICE: expected grid covers only [{shown}] of {TEMPS_ALL} "
                    f"({len(expected_grid(grid))} of {len(LABELS) * len(TEMPS_ALL) * len(VDDS)} cells); "
                    "a partial PVT grid, not a full corner-box result.")
     out.append("")
