@@ -110,7 +110,7 @@ STATUSES = ("clean", "clean_partial", "violations",
 # the partition is total and a token added to STATUSES defaults to the
 # warned-not-silent side (issue #321). test_native_drc.py pins which
 # statuses carry the NOTE.
-FULL_SCOPE_STATUSES = ("clean",)
+FULL_SCOPE_STATUSES = ("clean", "violations")
 COMPLETED_RC = {0, 3, 4}
 
 E_PUBLISHED, E_USAGE, E_NO_EXE, E_BAD_VERSION, E_OLD_VERSION, E_RUN, E_SELFCHECK \
