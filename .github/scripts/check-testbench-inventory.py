@@ -153,6 +153,20 @@ def command_word(cmd):
     return None
 
 
+def matching_paths(t, files):
+    """Listed paths matching a command token: the one predicate every
+    cold-start command check shares. An exact listed path, a directory
+    prefix of one, or -- for a bare command word, which a shell resolves
+    through PATH -- a listed path's basename."""
+    return [
+        f
+        for f in files
+        if f == t
+        or f.startswith(t.rstrip("/") + "/")
+        or ("/" not in t and f.endswith("/" + t))
+    ]
+
+
 def load_json(audit, rel, what):
     try:
         return json.loads(read_text(audit.root, rel))
@@ -355,26 +369,26 @@ def build(root, audit):
                 if "/" in t or t.endswith((".py", ".sh"))
             ]
             code = [f for f in listed if f not in claim.get("docs", [])]
-            hits = [
-                t
-                for t in cmd_paths
-                if any(
-                    f == t
-                    or f.startswith(t.rstrip("/") + "/")
-                    or ("/" not in t and f.endswith("/" + t))
-                    for f in code
-                )
-            ]
+            hits = [t for t in cmd_paths if matching_paths(t, code)]
             if not hits:
                 audit.err(
                     "claim %s: cold-start command does not name a listed runner/reducer/"
                     "derivation/replay path: %s" % (cid, cmd)
                 )
+            # An `env VAR=val x.sh` wrapper leaves `env` as the command word,
+            # which resolves to no listed file, so the wrapped file stays
+            # unguarded here; no claim documents that form. A bare command
+            # word resolves by basename (matching_paths): enforce the bit on
+            # its unique listed match, skip when the basename is ambiguous.
             word = command_word(cmd)
-            if word in code and word in tracked and tracked[word][0] != "100755":
-                audit.err(
-                    "claim %s: %s is invoked directly but is not executable" % (cid, word)
-                )
+            resolved = matching_paths(word, code) if word else []
+            if len(resolved) == 1:
+                path = resolved[0]
+                if path in tracked and tracked[path][0] != "100755":
+                    audit.err(
+                        "claim %s: %s is invoked directly but is not executable"
+                        % (cid, path)
+                    )
 
     # ---- family file accountability
     all_listed = set().union(*claim_files.values()) if claim_files else set()

@@ -27,6 +27,9 @@
 #      cold-start command's bare command word must be 100755 regardless of
 #      extension; an interpreter-prefixed .py stays exempt; the assertion
 #      still fires through a VAR=val prefix
+#  13. the command word resolves by basename against the claim's listed
+#      paths (issue #376): a bare `reduce_biasop.py` invocation asserts the
+#      bit on its unique listed match, and an ambiguous basename is skipped
 
 set -u
 
@@ -252,6 +255,24 @@ expect "interpreter-prefixed .py at 100644 is exempt" 0 "$t"
 t="$(new_case)"; (cd "$t" && git update-index --chmod=-x sim/hbt-characterization/run_hbt_sweep.sh)
 expect "VAR=val-prefixed bare-path runner at 100644 is rejected" 1 "$t" \
   "run_hbt_sweep.sh is invoked directly but is not executable"
+
+# 13. a bare command word with no `/` resolves against the claim's non-docs
+#     listed paths with the same basename rule the hits matcher uses
+#     (issue #376). The real instance: claim lna-bias-pvt-20260921-173552-
+#     2aeafef documents `reduce_biasop.py --corners-dir ...`, whose command
+#     word is a basename -- case 12's exact-match assertion never saw it.
+t="$(new_case)"; (cd "$t" && git update-index --chmod=-x sim/lna-bias-pvt/reduce_biasop.py)
+expect "basename-resolved command word at 100644 is rejected" 1 "$t" \
+  "lna-bias-pvt-20260921-173552-2aeafef" \
+  "sim/lna-bias-pvt/reduce_biasop.py is invoked directly but is not executable"
+#     Two listed non-docs files sharing the command word's basename: the
+#     match is ambiguous, the assertion skips rather than guessing.
+t="$(new_case)"
+cp "$t/sim/lna-bias-pvt/reduce_biasop.py" "$t/sim/lna-bias-pvt/testbench/reduce_biasop.py"
+pyedit "$t" 'i = rd("signoff/testbench-coverage.json"); [c["reducers"].append("sim/lna-bias-pvt/testbench/reduce_biasop.py") for c in i["claims"] if c["id"] == "lna-bias-pvt-20260921-173552-2aeafef"]; wr("signoff/testbench-coverage.json", i)'
+rebind "$t"
+(cd "$t" && git update-index --chmod=-x sim/lna-bias-pvt/reduce_biasop.py)
+expect "ambiguous basename command word is skipped, not failed" 0 "$t"
 
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
