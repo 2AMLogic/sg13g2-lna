@@ -1,0 +1,56 @@
+* klt sim -- generated corner deck, do not edit
+.lib /var/tmp/eda-job-klt-sim-e3ef67dd12b8/inputs/cornerHBT.lib hbt_typ
+.lib /var/tmp/eda-job-klt-sim-e3ef67dd12b8/inputs/cornerMOShv.lib mos_tt
+.include /var/tmp/eda-job-klt-sim-e3ef67dd12b8/inputs/netlist.cir
+.temp 125
+.control
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+save all
+alter vdd=1.8
+set specwindow = none
+op
+let ic1 = @q.xa.xq1.qnpn13g2[ic]
+let ic2 = @q.xa.xq2.qnpn13g2[ic]
+let vce1 = v(xa.casc) - v(xa.e1)
+let vce2 = v(xa.outn) - v(xa.casc)
+let idd = -i(vdd)
+echo "OP ic1 $&ic1 ic2 $&ic2 vce1 $&vce1 vce2 $&vce2 idd $&idd"
+tran 4e-12 1.26214e-06 1e-06 4e-12
+linearize v(rfout) v(vin)
+let npts = length(v(rfout))
+echo "NPTS $&npts"
+let tv = time
+let w1 = 2*PI*2441406250.0
+let w2 = 2*PI*2449035644.53125
+let w3 = 2*PI*2433776855.46875
+let w4 = 2*PI*2456665039.0625
+let d1 = 2*sqrt(mean(v(rfout)*cos(w1*tv))^2 + mean(v(rfout)*sin(w1*tv))^2)
+let d2 = 2*sqrt(mean(v(rfout)*cos(w2*tv))^2 + mean(v(rfout)*sin(w2*tv))^2)
+let d3 = 2*sqrt(mean(v(rfout)*cos(w3*tv))^2 + mean(v(rfout)*sin(w3*tv))^2)
+let d4 = 2*sqrt(mean(v(rfout)*cos(w4*tv))^2 + mean(v(rfout)*sin(w4*tv))^2)
+let ds = 2*sqrt(mean(v(vin)*cos(w1*tv))^2 + mean(v(vin)*sin(w1*tv))^2)
+echo "DFT tone1 $&d1 tone2 $&d2 im3l $&d3 im3h $&d4 src1 $&ds"
+fft v(rfout) v(vin) 
+let fft_df = frequency[1] - frequency[0]
+print fft_df
+let tone1 = mag(v(rfout))[640]
+print tone1
+let tone2 = mag(v(rfout))[642]
+print tone2
+let im3l = mag(v(rfout))[638]
+print im3l
+let im3h = mag(v(rfout))[644]
+print im3h
+let im5l = mag(v(rfout))[636]
+print im5l
+let im5h = mag(v(rfout))[646]
+print im5h
+let src1 = mag(v(vin))[640]
+print src1
+let src2 = mag(v(vin))[642]
+print src2
+quit
+.endc
+.end

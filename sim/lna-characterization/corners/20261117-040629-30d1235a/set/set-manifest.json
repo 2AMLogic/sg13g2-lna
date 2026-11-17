@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "requests": [
+    {
+      "index": 0,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a0p5mv.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_iip3_a0p5mv",
+      "status": "pass",
+      "job_id": "klt-sim-023d657f09a0",
+      "job_ids": [
+        "klt-sim-023d657f09a0"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 1,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a1mv.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_iip3_a1mv",
+      "status": "error",
+      "job_id": null,
+      "job_ids": [
+        "klt-sim-7cc9c0931c2e",
+        "klt-sim-e3ef67dd12b8",
+        "klt-sim-5704553c40ae",
+        "klt-sim-5fda9bbf0996",
+        "klt-sim-c787cfc55044",
+        "klt-sim-6a64f2b64150",
+        "klt-sim-0782ebde8c56",
+        "klt-sim-e97602c6f75f",
+        "klt-sim-6c1107d34335",
+        "klt-sim-e1d05ae435b4",
+        "klt-sim-8b996e14b103",
+        "klt-sim-021a73a4cca9",
+        "klt-sim-28a5106f6d90",
+        "klt-sim-da6ef40cdf99",
+        "klt-sim-8188e3cfb2ef"
+      ],
+      "attempts": 1,
+      "error_code": "not_launched"
+    },
+    {
+      "index": 2,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a2mv.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_iip3_a2mv",
+      "status": "pass",
+      "job_id": null,
+      "job_ids": [
+        "klt-sim-3e9d2396bd5d",
+        "klt-sim-7bd881ff4ddd",
+        "klt-sim-ac53a18c5918",
+        "klt-sim-92677c518e11",
+        "klt-sim-16b90af7e82a",
+        "klt-sim-4ac3232e8101",
+        "klt-sim-9e08d0496370",
+        "klt-sim-ff4cc127750d",
+        "klt-sim-a4d126ca2666",
+        "klt-sim-6a070669f5f4",
+        "klt-sim-554e6814b82a",
+        "klt-sim-9c7b987c2d12",
+        "klt-sim-2567d0b852c0",
+        "klt-sim-65e28d53934c",
+        "klt-sim-455b2bc17b30"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 3,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a4mv.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_iip3_a4mv",
+      "status": "pass",
+      "job_id": "klt-sim-b68adb3ca35a",
+      "job_ids": [
+        "klt-sim-b68adb3ca35a"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 4,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_iip3_a8mv.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_iip3_a8mv",
+      "status": "pass",
+      "job_id": "klt-sim-d48385bde1e3",
+      "job_ids": [
+        "klt-sim-d48385bde1e3"
+      ],
+      "attempts": 1
+    },
+    {
+      "index": 5,
+      "request": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/netlist-snapshots/20261117-040629-30d1235a/matched_op.request.json",
+      "dir": "/home/ubuntu/GitHub/sg13g2-lna/.loom/worktrees/issue-337/sim/lna-characterization/corners/20261117-040629-30d1235a/set/matched_op",
+      "status": "pass",
+      "job_id": "klt-sim-2d9fc27d9f51",
+      "job_ids": [
+        "klt-sim-2d9fc27d9f51"
+      ],
+      "attempts": 1
+    }
+  ]
+}
