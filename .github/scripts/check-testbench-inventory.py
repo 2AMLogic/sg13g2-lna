@@ -33,6 +33,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -83,7 +84,8 @@ SIM_MENTION = re.compile(r"(?<![A-Za-z0-9_-]/)(?<![A-Za-z0-9_.-])sim/([A-Za-z0-9
 
 MECHANICAL_CHECKS = [
     "the coverage index parses and every claim carries the required fields and a known classification",
-    "every listed path is a tracked, existing file (runners invoked directly are mode 100755)",
+    "every listed path is a tracked, existing file (a listed file invoked as "
+    "a cold-start command's bare command word is mode 100755)",
     "every sim/<dir>/ is an indexed family or an explicitly named support directory",
     "every tracked non-evidence file in an indexed family is listed by a claim or excluded with a reason",
     "every tracked record, view, corners and netlist-snapshots id in an indexed family belongs to a claim",
@@ -130,6 +132,25 @@ def norm_ws(text):
     """Join backslash continuations and collapse whitespace."""
     text = re.sub(r"\\\s*\n", " ", text)
     return " ".join(text.split())
+
+
+def command_word(cmd):
+    """First word of a cold-start command, after skipping leading VAR=val
+    environment assignments. Quote-aware: 'V="a b" prog' is one assignment
+    token followed by the command, not a stray 'a' fragment between them
+    (whitespace normalization would otherwise split the quoted value). The
+    word returned is what a shell would exec, so a path here names the file
+    directly; an interpreter word (python3, bash, ...) means the file after
+    it is only an argument and need not carry the executable bit."""
+    try:
+        tokens = shlex.split(norm_ws(cmd))
+    except ValueError:
+        tokens = norm_ws(cmd).split()
+    for tok in tokens:
+        if re.match(r"[A-Za-z_][A-Za-z0-9_]*=", tok):
+            continue
+        return tok
+    return None
 
 
 def load_json(audit, rel, what):
@@ -349,10 +370,11 @@ def build(root, audit):
                     "claim %s: cold-start command does not name a listed runner/reducer/"
                     "derivation/replay path: %s" % (cid, cmd)
                 )
-            for t in cmd_paths:
-                if t in claim.get("runners", []) and t in tracked and t.endswith(".sh"):
-                    if tracked[t][0] != "100755":
-                        audit.err("claim %s: runner %s is invoked directly but is not executable" % (cid, t))
+            word = command_word(cmd)
+            if word in code and word in tracked and tracked[word][0] != "100755":
+                audit.err(
+                    "claim %s: %s is invoked directly but is not executable" % (cid, word)
+                )
 
     # ---- family file accountability
     all_listed = set().union(*claim_files.values()) if claim_files else set()
