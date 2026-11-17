@@ -95,12 +95,11 @@ else
 fi
 
 run_deck() {
-  local stem="$1" rc=0
-  ( cd "${CORNERS_OUT}" && ngspice -b "${SNAPSHOTS_OUT}/${stem}.spice" > "${CORNERS_OUT}/${stem}.log" 2>&1 ) || rc=$?
-  if (( rc != 0 )) || ! grep -q '^BENCH_COMPLETE' "${CORNERS_OUT}/${stem}.log"; then
-    echo "run_dc_reference_study.sh: ${stem} FAILED (rc=${rc}) -- see corners/${RECORD_ID}/${stem}.log" >&2
-    return 1
-  fi
+  # run_deck <stem>: one ngspice -b, cwd = the corners dir, log beside it.
+  # Returns 1 on a failed deck; the caller accumulates it via
+  # || FAILED+=(...) instead of aborting the sweep.
+  local stem="$1"
+  sim_run_deck "${stem}" "${CORNERS_OUT}/${stem}.log" "corners/${RECORD_ID}/${stem}.log"
 }
 
 if [[ "${STAGE}" == gen || "${STAGE}" == all ]]; then

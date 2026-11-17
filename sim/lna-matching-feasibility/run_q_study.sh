@@ -83,17 +83,14 @@ BUDGET=16
 N_RUN=0
 run_deck() {
   # run_deck <stem> [logpath]: one ngspice -b, cwd = the corners dir.
-  local stem="$1" log="${2:-${CORNERS_OUT}/$1.log}" rc=0
+  # A failed deck is fatal, as is exceeding the deck budget.
+  local stem="$1" log="${2:-${CORNERS_OUT}/$1.log}"
   N_RUN=$(( N_RUN + 1 ))
   if (( N_RUN > BUDGET )); then
     echo "run_q_study.sh: deck budget ${BUDGET} exceeded at ${stem}" >&2
     exit 1
   fi
-  ( cd "${CORNERS_OUT}" && ngspice -b "${SNAPSHOTS_OUT}/${stem}.spice" > "${log}" 2>&1 ) || rc=$?
-  if (( rc != 0 )) || ! grep -q '^BENCH_COMPLETE' "${log}"; then
-    echo "run_q_study.sh: ${stem} FAILED (rc=${rc}) -- see ${log}" >&2
-    exit 1
-  fi
+  sim_run_deck "${stem}" "${log}" "${log}" || exit 1
 }
 stems() { "${Q[@]}" stems --snapdir "${SNAPSHOTS_OUT}" "$1"; }
 
