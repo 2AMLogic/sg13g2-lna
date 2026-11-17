@@ -1,0 +1,14 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:4bc81e2791333e03d7e409cf16bcb6452205f6b28cbb8e6accae4895954fd3f6",
+      "path": "measurements/characterization-report.json"
+    }
+  },
+  "schema_version": 1,
+  "source": "measurements/characterization-report.json via .github/scripts/characterization-report",
+  "status": "fail",
+  "summary": "Characterization report for klt-sim record 20261117-054141-bdebb4d: 7/8 graded ratified rows pass (nf fail), 2 declared gaps (iip3, supply). The status is derived mechanically from the per-row verdicts, never hand-set; a failing row keeps item 8 unmet until the design meets the ratified row.",
+  "t1_item": 8
+}

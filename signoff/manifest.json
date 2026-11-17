@@ -50,7 +50,11 @@
           "nf"
         ]
       }
-    ]
+    ],
+    "8": {
+      "file": "signoff/characterization.envelope.json",
+      "content_hash": "sha256:4bc81e2791333e03d7e409cf16bcb6452205f6b28cbb8e6accae4895954fd3f6"
+    }
   },
   "kind": "analog",
   "spec_rows": {
