@@ -12,6 +12,12 @@
 #      messages (the gate reports every skew, not just the first)
 #   7. klayout-tools== string drifting from KLT_RELEASE          -> FAILS
 #   8. pin quoted differently (single quotes)         -> FAILS (fail closed)
+#   9. klayout-tools== drift in README.md prose (issue #320)      -> FAILS
+#  10. klayout== drift in layout/README.md prose (issue #320)     -> FAILS
+#  11. historical dev-build string (0.9.2.dev1022+g…) in
+#      layout/README.md prose leaves the gate green               -> passes
+#  12. both README pins drifted in one run -> FAILS with both
+#      messages (the gate reports every skew, not just the first)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-klt-pin.sh"
@@ -29,6 +35,11 @@ mkroot() { # mkroot <name> [klt-in-runner] [klayout-in-runner] [klayout-in-flow]
   for f in .github/workflows/signoff.yml .github/scripts/check-signoff.sh signoff/README.md; do
     printf 'python3 -m pip install "klayout-tools==%s"\n' "$KLT" > "$d/$f"
   done
+  printf 'uvx --isolated --from klayout-tools==%s --with klayout==%s klt\n' "$KLT" "$klay_f" > "$d/README.md"
+  {
+    printf 'python3 -m venv .venv && .venv/bin/pip install klayout==%s\n' "$klay_f"
+    printf '`run_flow.sh` runs klt as the **PyPI release** `klayout-tools==%s`,\n' "$KLT"
+  } > "$d/layout/README.md"
 }
 run() { # run <label> <want 0|1> <name> [required-output-substring]
   label="$1"; want="$2"; d="$TMP/$3"; pat="${4:-}"
@@ -84,6 +95,36 @@ run "klayout-tools== drift from KLT_RELEASE still fails" 1 tools_skew \
 
 mkroot quoted; sed -i "s/^KLAYOUT_PIN=\"$KLAY\"$/KLAYOUT_PIN='$KLAY'/" "$TMP/quoted/layout/run_flow.sh"
 run "differently quoted pin reads as missing (fail closed)" 1 quoted "no KLAYOUT_PIN in layout/run_flow.sh"
+
+mkroot readme_tools_skew
+sed -i "s/klayout-tools==$KLT/klayout-tools==0.8.0/" "$TMP/readme_tools_skew/README.md"
+run "klayout-tools== drift in README.md prose still fails" 1 readme_tools_skew \
+  "README.md pins 'klayout-tools==0.8.0 ', layout/run_flow.sh KLT_RELEASE is $KLT"
+
+mkroot readme_klay_skew
+sed -i "s/klayout==$KLAY/klayout==0.29.0/" "$TMP/readme_klay_skew/layout/README.md"
+run "klayout== drift in layout/README.md prose still fails" 1 readme_klay_skew \
+  "layout/README.md pins KLayout 'klayout==0.29.0 ', layout/run_flow.sh KLAYOUT_PIN is $KLAY"
+
+mkroot dev_prose
+printf '`is_release: false`; at the 0.9.2 bump it was `0.9.2.dev1022+g2a9c52b27ce7`).\n' \
+  >> "$TMP/dev_prose/layout/README.md"
+run "dev-build version prose in layout/README.md does not trip the gate" 0 dev_prose \
+  "ok: klt pin $KLT is consistent"
+
+# one run, both README pins drifted: every skew reported, not just the first
+mkroot readme_both_skew
+sed -i "s/klayout-tools==$KLT/klayout-tools==0.8.0/" "$TMP/readme_both_skew/README.md"
+sed -i "s/klayout==$KLAY/klayout==0.29.0/" "$TMP/readme_both_skew/layout/README.md"
+if out="$(bash "$CHECKER" --root "$TMP/readme_both_skew" 2>&1)"; then got=0; else got=1; fi
+if [ "$got" -eq 1 ] \
+   && printf '%s\n' "$out" | grep -qF "README.md pins 'klayout-tools==0.8.0 ', layout/run_flow.sh KLT_RELEASE is $KLT" \
+   && printf '%s\n' "$out" | grep -qF "layout/README.md pins KLayout 'klayout==0.29.0 ', layout/run_flow.sh KLAYOUT_PIN is $KLAY" \
+   && [ "$(printf '%s\n' "$out" | grep -c 'FAIL:')" -eq 2 ]; then
+  echo "PASS: both README pins drifted in one run are both reported"; pass=$((pass+1))
+else
+  echo "FAIL: both README pins drifted in one run (exit-class $got, output below)"; printf '%s\n' "$out" | sed 's/^/    /'; fail=$((fail+1))
+fi
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
