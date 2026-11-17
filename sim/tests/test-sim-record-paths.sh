@@ -12,8 +12,16 @@
 #   3. existing netlist-snapshots/<id>, corners/<id>, records-only
 #      records/<id>.md / records/<id>-x.csv: each rejected, bytes unchanged,
 #      no paths returned, nothing extra created or removed
-#   4. directory-creation failures: a file where corners/ should be; and
-#      (non-root) an unwritable corners/ -> reservation released
+#   4. directory-creation failures (issue #311): the two failure modes are
+#      separate, correctly attributed messages carrying the failing mkdir's
+#      errno and the caller PID -- a file where corners/ should be, and
+#      (non-root) an unwritable corners/ -- and the reservation is retained
+#      in both (monotonic)
+#   5. lost race (issue #311's CI shape): corners/<id> appears between the
+#      pre-check and the holder's exclusive mkdir -> corners/<id>-mode
+#      message, nothing removed; the next second's id still mints
+#   6. SIM_PDK_PROVENANCE_JSON set: mint succeeds, sidecar written (the
+#      provenance failure rollback is untouched by this change)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ENV_SH="$(cd "$HERE/.." && pwd)/env.sh"
@@ -36,11 +44,12 @@ echo abc1234
 STUB
 chmod +x "$STUBS/date" "$STUBS/git"
 
-# run_srp <experiment-dir>: call sim_record_paths in a fresh subshell and
-# print "OK <RECORD_ID> <SNAPSHOTS_OUT> <CORNERS_OUT> <RECORDS_DIR>".
+# run_srp <experiment-dir> [stubs-dir]: call sim_record_paths in a fresh
+# subshell and print "OK <RECORD_ID> <SNAPSHOTS_OUT> <CORNERS_OUT> <RECORDS_DIR>".
 run_srp() {
   (
-    PATH="$STUBS:$PATH"
+    # shellcheck disable=SC2030  # intentional: stubs shadow PATH in this subshell only
+    PATH="${2:-$STUBS}:$PATH"
     # shellcheck disable=SC1090
     source "$ENV_SH" >/dev/null 2>&1
     # shellcheck disable=SC2034  # read by sim_record_paths
@@ -110,13 +119,19 @@ reject_case "records-only records/<id>.md" sh -c "mkdir records && echo old > re
 reject_case "records-only records/<id>-x.csv" sh -c "mkdir records && echo old > records/$ID-x.csv"
 reject_case "dangling symlink at corners/<id>" sh -c "mkdir corners && ln -s nowhere corners/$ID"
 
-# 4. creation failures
+# 4. creation failures (issue #311): each mode gets its own message naming
+#    the call that actually failed, with its errno and the caller PID, and
+#    the reservation is retained (monotonic) in both.
 E4="$TMP/e4"; mkdir -p "$E4"; echo blocker > "$E4/corners"
 out="$(run_srp "$E4" 2>"$TMP/err4")"; rc=$?
-if [ "$rc" -ne 0 ] && [ -z "$out" ] && [ -s "$TMP/err4" ] && [ ! -e "$E4/netlist-snapshots/$ID" ] \
-   && [ "$(cat "$E4/corners")" = blocker ]; then
-  ok "directory-creation failure (corners is a file): rejected, no id dir left"
-else bad "creation failure (rc=$rc out=$out)"; fi
+if [ "$rc" -ne 0 ] && [ -z "$out" ] && [ -s "$TMP/err4" ] \
+   && [ -d "$E4/netlist-snapshots/$ID" ] \
+   && [ "$(cat "$E4/corners")" = blocker ] \
+   && grep -q "shared record parents $E4/corners" "$TMP/err4" \
+   && grep -q "pid " "$TMP/err4" \
+   && ! grep -q "cannot exclusively create" "$TMP/err4"; then
+  ok "directory-creation failure (corners is a file): rejected, parents-mode message, reservation retained"
+else bad "creation failure (rc=$rc out=$out err=[$(cat "$TMP/err4" 2>/dev/null)])"; fi
 
 E5="$TMP/e5"; mkdir -p "$E5/corners" "$E5/netlist-snapshots" "$E5/records"
 chmod a-w "$E5/corners"
@@ -124,10 +139,83 @@ if [ -w "$E5/corners" ]; then
   echo "SKIP: unwritable corners/ (running as a user that ignores modes)"
 else
   out="$(run_srp "$E5" 2>"$TMP/err5")"; rc=$?
-  if [ "$rc" -ne 0 ] && [ -z "$out" ] && [ ! -e "$E5/netlist-snapshots/$ID" ] && [ -z "$(ls -A "$E5/corners")" ]; then
-    ok "partial failure (corners unwritable): own reservation released"
-  else bad "partial failure (rc=$rc out=$out)"; fi
+  if [ "$rc" -ne 0 ] && [ -z "$out" ] && [ -d "$E5/netlist-snapshots/$ID" ] \
+     && [ -z "$(ls -A "$E5/corners")" ] \
+     && grep -q "cannot exclusively create $E5/corners/$ID" "$TMP/err5" \
+     && grep -q "Permission denied" "$TMP/err5" \
+     && grep -q "pid " "$TMP/err5" \
+     && ! grep -q "shared record parents" "$TMP/err5"; then
+    ok "partial failure (corners unwritable): rejected, corners/<id>-mode message, reservation retained"
+  else bad "partial failure (rc=$rc out=$out err=[$(cat "$TMP/err5" 2>/dev/null)])"; fi
 fi
+
+# 5. lost race, issue #311's CI shape: another caller's corners/<id> comes
+#    into existence between this holder's pre-check and its exclusive
+#    mkdir. A mkdir stub in a dedicated stubs dir pre-creates the directory
+#    and then delegates to the real mkdir, so the real mkdir fails EEXIST
+#    deterministically -- no sleeps, no real race. The holder must reject
+#    with the corners/<id>-mode message and remove NOTHING (the reservation
+#    is monotonic), and the fixture must still mint the next second's id.
+REAL_MKDIR="$(command -v mkdir)"
+STUBS_RACE="$TMP/stubs-race"; mkdir -p "$STUBS_RACE"
+cp "$STUBS/date" "$STUBS/git" "$STUBS_RACE/"
+cat > "$STUBS_RACE/mkdir" <<STUB
+#!/bin/sh
+for a in "\$@"; do
+  case "\$a" in
+    */corners/$ID) "$REAL_MKDIR" -p "\$a" ;;
+  esac
+done
+exec "$REAL_MKDIR" "\$@"
+STUB
+chmod +x "$STUBS_RACE/mkdir"
+E6="$TMP/e6"; mkdir -p "$E6/netlist-snapshots" "$E6/corners" "$E6/records"
+out="$(run_srp "$E6" "$STUBS_RACE" 2>"$TMP/err6")"; rc=$?
+if [ "$rc" -ne 0 ] && [ -z "$out" ] \
+   && [ -d "$E6/netlist-snapshots/$ID" ] && [ -d "$E6/corners/$ID" ] \
+   && grep -q "cannot exclusively create $E6/corners/$ID" "$TMP/err6" \
+   && grep -q "File exists" "$TMP/err6" \
+   && ! grep -q "shared record parents" "$TMP/err6"; then
+  ok "lost race (corners/<id> appears under the holder): rejected, nothing removed, reservation retained"
+else bad "lost race (rc=$rc out=$out err=[$(cat "$TMP/err6" 2>/dev/null)])"; fi
+
+# 5b. a rejected id's leftovers do not block the next second's id
+STUBS2="$TMP/stubs2"; mkdir -p "$STUBS2"
+cat > "$STUBS2/date" <<'STUB'
+#!/bin/sh
+echo 20260101-000001
+STUB
+cp "$STUBS/git" "$STUBS2/git"; chmod +x "$STUBS2/date" "$STUBS2/git"
+ID2="20260101-000001-abc1234"
+out="$(run_srp "$E6" "$STUBS2" 2>"$TMP/err6b")"; rc=$?
+if [ "$rc" -eq 0 ] && [ "$out" = "OK $ID2 $E6/netlist-snapshots/$ID2 $E6/corners/$ID2 $E6/records $E6 abc1234" ] \
+   && [ -d "$E6/netlist-snapshots/$ID2" ] && [ -d "$E6/corners/$ID2" ]; then
+  ok "rejected id's leftovers (empty reservation, another caller's corners/<id>) do not block the next second's id"
+else bad "next-second id (rc=$rc out=$out)"; fi
+
+# 6. behaviour unchanged when SIM_PDK_PROVENANCE_JSON is set: the mint
+#    succeeds and writes the sidecar. (The provenance failure rollback is
+#    only reachable through the same lost-race shape as case 5 and is not
+#    touched by this change; the pre-check already rejects any pre-existing
+#    records/<id>* so a deterministic noclobber collision cannot be staged.)
+E8="$TMP/e8"; mkdir -p "$E8"
+out="$(
+  # shellcheck disable=SC2031  # intentional: same subshell-local stub PATH as run_srp
+  PATH="$STUBS:$PATH"
+  # shellcheck disable=SC1090
+  source "$ENV_SH" >/dev/null 2>&1
+  # shellcheck disable=SC2034  # read by sim_record_paths
+  SIM_PDK_PROVENANCE_JSON='{"stub":true}'
+  # shellcheck disable=SC2034  # read by sim_record_paths
+  SCRIPT_DIR="$E8"
+  sim_record_paths
+  echo "OK ${RECORD_ID} ${SNAPSHOTS_OUT} ${CORNERS_OUT} ${RECORDS_DIR}"
+)" 2>"$TMP/err8"; rc=$?
+if [ "$rc" -eq 0 ] && [ "$out" = "OK $ID $E8/netlist-snapshots/$ID $E8/corners/$ID $E8/records" ] \
+   && [ -d "$E8/netlist-snapshots/$ID" ] && [ -d "$E8/corners/$ID" ] \
+   && [ "$(cat "$E8/records/$ID.pdk-provenance.json")" = '{"stub":true}' ]; then
+  ok "SIM_PDK_PROVENANCE_JSON set: mint succeeds, sidecar written, dirs intact"
+else bad "provenance success path (rc=$rc out=$out err=[$(cat "$TMP/err8" 2>/dev/null)])"; fi
 
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ] && [ "$pass" -ge 10 ]
