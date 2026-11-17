@@ -17,7 +17,7 @@
     "establishes": "that the benches, runners, reducers, pins and documented cold-start invocations of the declared scope are committed, hashed and cross-referenced. It does not establish that any command succeeds, RF compliance, or overall T1.",
     "mechanical_checks": [
       "the coverage index parses and every claim carries the required fields and a known classification",
-      "every listed path is a tracked, existing file (runners invoked directly are mode 100755)",
+      "every listed path is a tracked, existing file (a listed file invoked as a cold-start command's bare command word is mode 100755)",
       "every sim/<dir>/ is an indexed family or an explicitly named support directory",
       "every tracked non-evidence file in an indexed family is listed by a claim or excluded with a reason",
       "every tracked record, view, corners and netlist-snapshots id in an indexed family belongs to a claim",
