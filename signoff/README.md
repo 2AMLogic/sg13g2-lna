@@ -94,10 +94,13 @@ down as follows:
   their per-request result envelopes **are** committed under
   `sim/lna-characterization/corners/`; the fourth
   (`20261114-025351-7a54cc2`) ran on a superseded netlist and is
-  `historical-dut`, so it cannot be cited for the current design — only
-  its record, CSVs and `--batch-set` envelope are committed, and its 24
-  per-request envelopes stayed on the fleet runner
-  (`sim/lna-characterization/README.md` §"The 45-cell record"). The
+  `historical-dut` (it is also a PVT-grid variant study, worded
+  `variant-exploration` in the characterization README — the taxonomy
+  below covers the overlap), so it cannot be cited for the current
+  design — only its record, CSVs and `--batch-set` envelope are
+  committed, and its 24 per-request envelopes stayed on the fleet
+  runner (`sim/lna-characterization/README.md` §"The 45-cell
+  record"). The
   current-DUT envelopes are limits-free —
   `coverage.measurements_with_limits` is `0` and every measurement's
   `limits` and worst-case `margin` are `null` — so their `status: "pass"`
@@ -375,6 +378,14 @@ a result:
 - `data-only-derivation`: derived from committed data with no new
   simulation. This includes the `measurements/` results table, which is a
   summary view and not a new simulated measurement.
+
+The labels are not mutually exclusive: a PVT-grid study of non-committed
+variants whose DUT is also superseded is both a `variant-exploration`
+and a `historical-dut`. In that case the classification is
+`historical-dut`, because that is the label carrying the "must not be
+cited for the current design" consequence; `variant-exploration` then
+describes the study itself, and wording the same record
+`variant-exploration` elsewhere does not contradict this classification.
 
 Campaigns that have not produced a result are listed with `result_status`
 `none-blocked` or `none-unrun`; when one later runs, its `published`
