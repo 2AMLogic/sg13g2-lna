@@ -1199,3 +1199,99 @@ different circuits); treat the corner spread as a statistical (mismatch)
 spread, or call any RF row non-statistical (§Model limitations item 6); or read a `|S22| > 1` / μ count off the summary CSV
 without checking the raw `*.stability.dat` tables, whose ppm-scale residues
 the CSV's six-decimal columns round away.
+
+## Ratified-row signoff envelopes (issue #231)
+
+Record
+[`20261117-054141-bdebb4d`](netlist-snapshots/20261117-054141-bdebb4d/)
+is the T1 item-5 evidence bench: the matched DUT re-run at the full
+ratified corner box **through `klt sim`**, with per-row limits injected
+into the requests, so `signoff/manifest.json` can cite four `klt sim`
+report envelopes for the eight ratified rows (issue #27/#56's 45-cell
+campaign produced the same physics in this repo's own record format,
+which `klt signoff` cannot grade — that gap is what this record closes).
+
+**Deck and request provenance.** The four decks
+(`matched_{op,sp_band,sp_stab,noise}.spice`) are **byte-identical copies**
+of record `20261116-023212-eacd53a`'s — the envelope benches ARE the
+committed matched-DUT benches; only the requests differ. The four requests
+are **generated, not hand-edited**:
+`sim/lna-characterization/gen_spec_envelopes.py` reads every measurement
+expression, analysis and option verbatim from that reference record,
+replaces the corner box, and injects `limits`/`spec_row` taken from
+[`spec/ratified-rows.json`](../../spec/ratified-rows.json) — the ratified
+limit values are parsed and unit-scaled (mW→W, mA→A) with exact decimal
+arithmetic at generation time, never retyped:
+
+| request | ratified rows graded | measurement → limits | `spec_row` tag |
+|---|---|---|---|
+| `matched_op` | `power`, `ic1` | `pdc` < 10 mW (= 0.01 W), `ic1` ≤ 4.5 mA (= 0.0045 A) | `power`, `ic1` |
+| `matched_sp_band` | `gain`, `s11`, `s22` | `s21_db_min` > 15 dB, `s11_db_worst` < −10 dB, `s22_db_worst` < −10 dB | `gain`, `s11`, `s22` |
+| `matched_sp_stab` | `mu`, `negres` | `mu_min` > 1, `s11_mag_max` < 1, `s22_mag_max` < 1 | `mu`, `negres` ×2 |
+| `matched_noise` | `nf` | `nf290_db_worst` < 1.5 dB | **none** (deliberate) |
+
+The `nf` measurement carries its honest limit but no `spec_row` tag on
+purpose: the row is expected to fail at every cell until #58 lands
+(DR-0004), and a failing *tagged* measurement would mark the row
+*uncovered* under `klt signoff`'s derived-coverage rule instead of
+*covered and failing* — the manifest asserts the `nf` row's coverage and
+the envelope's failure shows up as the citation failure that keeps item 5
+`unmet`, which is the truthful reading.
+
+**Corner box.** Process `{typ, bcs, wcs}` × supply `{1.62, 1.80, 1.98} V`
+× temperature `{−40, 27, 125} °C` = **27 cells per analysis** (108
+`klt sim` units total). This is the ratified box narrowed to its three
+real HBT sections: the ratified `sf`/`fs` labels are documented duplicates
+of `typ` at the HBT (`spec/target-spec.md` "Verification corners"), and
+their mos-section-only residue is covered by the committed 45-cell records
+rather than re-run here. The `op` request covers **all three temperatures**,
+which fills the gap the 45-cell verdict recorded (its 125 °C slice ran no
+`op` request, so `pdc`/`ic1` at 125 °C were assembled from the pre-match
+record plus a bleed-current argument; this record measures them).
+
+**Cold start** (batch fleet — a grid submit, never a local loop; per the
+host rules and issue #231 the four requests go through `klt sim
+--backend batch --wait-for-capacity 600`, one invocation per request; a
+request exit of 3 is a *verdict* — the grid ran and at least one corner
+missed its limits, the expected NF result — not a tool failure):
+
+```
+sim/lna-characterization/run_spec_envelopes.sh sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d
+```
+
+Needs: a `klt` with batch-fleet access; no local ngspice, no PDK (the
+fleet stages the pinned models; the requests preload the OSDI models via
+`options.osdi_preload` + `stage_model_inputs`, exactly as the reference
+record's requests do). Bulk per-corner artifacts land under
+`$SIM_ENVELOPE_ARTIFACTS` (default a `/tmp` tree), not in git.
+
+**Replay** (PDK-free, ngspice-free — re-reduces the committed reports and
+byte-compares the verdict files):
+
+```
+python3 -I sim/lna-characterization/reduce_spec_envelopes.py --snapshot-dir sim/lna-characterization/netlist-snapshots/20261117-054141-bdebb4d --check
+```
+
+**Results.** `reports/matched_*.report.json` are the four `klt sim`
+envelopes `signoff/manifest.json` cites for item 5 (one per testbench,
+each with `rows` naming the ratified rows it grades, under a declared
+`spec_rows."5"` set that also declares `iip3` — numeric target NOT
+ratified, DR-0002 — and `supply` — the context row the corner axis itself
+realizes — as gaps). `<record-id>-envelope-verdict.{md,csv}` are the
+per-row verdicts with the binding corner per row, reduced by the replay
+command above. The bench-equivalence anchors against the 45-cell verdict
+(`issue-27-matched-pvt-verdict.md`) are in the verdict `.md`; where the
+benches are equivalent the numbers must agree to the record's printed
+precision, modulo the ngspice 46/47 pairing already flagged for `sim/`
+(two generators and two engine builds coexist; the envelopes' own
+`environment.engine_version` records which one produced each number).
+
+**μ at the 10 MHz floor.** As in the 45-cell verdict, the `mu` row's
+margin over 1 sits at the sweep floor at numerical resolution (~4 × 10⁻⁷,
+identical across cells): the Edwards–Sinsky denominator collapses onto
+|S22| there, so the margin is the low-frequency asymptote of the Q ≈ 10
+lossy output network, not a transistor-physics margin. A μ value below 1
+at that floor is a numerical-resolution event, not a demonstrated
+instability dip — the committed 9911-point fine-resolution probe covers
+that reading.
+
