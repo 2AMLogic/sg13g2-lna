@@ -95,12 +95,12 @@ down as follows:
   `sim/lna-characterization/corners/`; the fourth
   (`20261114-025351-7a54cc2`) ran on a superseded netlist and is
   `historical-dut` (it is also a PVT-grid variant study, worded
-  `variant-exploration` in the characterization README — the taxonomy
-  below covers the overlap), so it cannot be cited for the current
-  design — only its record, CSVs and `--batch-set` envelope are
-  committed, and its 24 per-request envelopes stayed on the fleet
-  runner (`sim/lna-characterization/README.md` §"The 45-cell
-  record"). The
+  `variant-exploration` in the characterization README and in the
+  signoff coverage index — the taxonomy below covers the overlap), so
+  it cannot be cited for the current design — only its record, CSVs
+  and `--batch-set` envelope are committed, and its 24 per-request
+  envelopes stayed on the fleet runner
+  (`sim/lna-characterization/README.md` §"The 45-cell record"). The
   current-DUT envelopes are limits-free —
   `coverage.measurements_with_limits` is `0` and every measurement's
   `limits` and worst-case `margin` are `null` — so their `status: "pass"`
@@ -381,11 +381,18 @@ a result:
 
 The labels are not mutually exclusive: a PVT-grid study of non-committed
 variants whose DUT is also superseded is both a `variant-exploration`
-and a `historical-dut`. In that case the classification is
-`historical-dut`, because that is the label carrying the "must not be
-cited for the current design" consequence; `variant-exploration` then
-describes the study itself, and wording the same record
-`variant-exploration` elsewhere does not contradict this classification.
+and a `historical-dut`. In that case the record's primary Standing word
+is `historical-dut`, because that is the label carrying the "must not
+be cited for the current design" consequence; `variant-exploration`
+then describes the study itself, and wording the same record
+`variant-exploration` elsewhere does not contradict this precedence.
+"Standing" is the sim README's column term, not the coverage index's
+machine-checked `classification` field: the inventory checker binds a
+`classification` of `historical-dut` to a `dut` other than `present`,
+with a `revision_note` required, so a record measured on the DUT
+committed today keeps `classification: variant-exploration` in the
+index — in the overlap case the Standing word and the index field are
+deliberately allowed to differ.
 
 Campaigns that have not produced a result are listed with `result_status`
 `none-blocked` or `none-unrun`; when one later runs, its `published`
