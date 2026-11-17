@@ -530,8 +530,13 @@ class RunnerTest(IdentityFixtureTest):
         self.assertFalse((self.cd / "native_drc_report.json.tmp").exists())
 
     def test_publishes_clean_and_coverage_unknown_runs(self):
-        for rc, status in (("0", "clean"), ("0", "clean_partial"),
-                           ("4", "coverage_unknown"), ("4", "not_checked")):
+        self.assertEqual(run_native_drc.FULL_SCOPE_STATUSES,
+                         ("clean", "violations"))
+        for rc, status, noted in (("0", "clean", False),
+                                  ("0", "clean_partial", True),
+                                  ("3", "violations", False),
+                                  ("4", "coverage_unknown", True),
+                                  ("4", "not_checked", True)):
             with self.subTest(rc=rc, status=status):
                 for p in ("native_drc_report.json", native_drc_identity.NAME):
                     (self.cd / p).unlink(missing_ok=True)
@@ -541,6 +546,11 @@ class RunnerTest(IdentityFixtureTest):
                 self.assertEqual(self.report()["status"], status)
                 self.assertEqual(
                     self.sidecar()["status"], status)
+                note = "is not a full-scope DRC pass"
+                if noted:
+                    self.assertIn(note, r.stdout)
+                else:
+                    self.assertNotIn(note, r.stdout)
 
     def test_klayout_exe_env_fallback(self):
         r = self.run_runner(klayout_exe=False,
