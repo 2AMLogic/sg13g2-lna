@@ -446,6 +446,25 @@ class WrapperPropagation(unittest.TestCase):
         self.assertIn("LNA_TEMPS set", text[:gen_call])
         self.assertIn("TEMPERATURE SLICE", text[summ_call:])
 
+    def test_wrapper_record_smoke_branch_precedes_slice(self):
+        # issue #352: the record's Claim and Reduction chains must consult
+        # LNA_VARIANT_SMOKE before the LNA_TEMPS slice elif, and each smoke
+        # arm must name the single cell and disclose an ignored slice.
+        text = (LNA / "run_lna_variant.sh").read_text()
+        record = text[text.index("# Record ${RECORD_ID}"):]
+        claim = record[record.index("**Claim**"):record.index("**DUT**")]
+        self.assertLess(claim.index("LNA_VARIANT_SMOKE"),
+                        claim.index('elif [[ -n "${LNA_TEMPS:-}" ]]'))
+        self.assertIn("single nominal 27 C", claim)
+        self.assertIn("was ignored", claim)
+        reduction = record[record.index("if (( SUMMARIZE_RC != 0 ))"):record.index("**Headlines")]
+        self.assertLess(reduction.index("SUMMARIZE_RC != 0"),
+                        reduction.index("LNA_VARIANT_SMOKE"))
+        self.assertLess(reduction.index("LNA_VARIANT_SMOKE"),
+                        reduction.index('elif [[ -n "${LNA_TEMPS:-}" ]]'))
+        self.assertIn("single nominal 27 C", reduction)
+        self.assertIn("was ignored", reduction)
+
     def test_cli_exit_code_and_artifacts_retained(self):
         with tempfile.TemporaryDirectory() as d:
             write_reports(d, mutate=lambda v, a, c: c[:-1] if a == "noise" else None)
