@@ -17,32 +17,29 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#27**: design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core)
+- **#228**: T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
+- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
+- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#27**: design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core)
-- **#305**: design/README.md misstates which xschem generated the committed netlist
-- **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence
-- **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift
-- **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323)
-- **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration'
-- **#329**: lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run
+- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
+- **#372**: ci: no guard keeps a documented bare-path .py command executable (class of #367/#369)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#300**: Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh
-- **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins
+- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#332**: chore(loom): resync installed Loom to v0.19.1305
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -55,24 +52,20 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#4**: Gap-to-T1 tracker: artifact-presence checklist (schematic through repo hygiene) *(curated)*
-- **#27**: design: LNA has no input/output matching network — S11 = -2.96 dB, S22 = -0.003 dB, broadband mu < 1 at 45/45 PVT cells (DR-0003 core) *(curated)*
 - **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
 - **#300**: Consolidate five duplicated run_deck() gates in lna-matching-feasibility runners into sim/env.sh *(curated)*
-- **#305**: design/README.md misstates which xschem generated the committed netlist *(curated)*
-- **#311**: test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence *(curated)*
-- **#320**: check-klt-pin.sh's file loop still misses README.md and layout/README.md, so the prose klt/KLayout pins can drift *(curated)*
-- **#321**: run_native_drc.py's not-full-scope NOTE hardcodes a fourth status subset that no test pins *(curated)*
-- **#324**: test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323) *(curated)*
-- **#327**: signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration' *(curated)*
-- **#329**: lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run *(curated)*
+- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core *(curated)*
+- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition *(curated)*
+- **#372**: ci: no guard keeps a documented bare-path .py command executable (class of #367/#369) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)*
 - **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)*
 - **#282**: Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous *(hermit)*
+- **#359**: Consolidate native-DRC pair validation: one implementation instead of three *(hermit)*
 
 ## Epics
 
@@ -84,12 +77,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 1 |
-| Ready (`loom:issue`) | 7 |
+| Important | 3 |
+| Ready (`loom:issue`) | 2 |
 | In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 13 |
-| Architect / Hermit proposals | 3 |
+| Curated | 8 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

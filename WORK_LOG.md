@@ -6,6 +6,37 @@
 
 ### 2026-11-17
 
+- **PR #371**: fix: make rederive_nf_fixed_t0.py executable for record replay command
+- **PR #370**: feat(signoff): generate the item-8 characterization report with a mechanically derived envelope
+- **PR #368**: fix: make lna_variant_campaign.py executable for README reviewer-replay
+- **PR #366**: test+ci: replay-gate the spec-envelope bench and unit-test its generator
+- **PR #365**: docs: correct the nf spec_row rationale to match the pinned klt render
+- **PR #362**: fix: run gated attest/signoff local checks via a pinned uvx klt fallback
+- **PR #361**: sim: cite T1 item 5 with ratified-row klt sim corner envelopes
+- **PR #360**: docs: align audit self-test header with post-#323 klt SKIP/FAIL policy
+- **PR #358**: chore(loom): resync installed Loom to v0.19.1306
+- **PR #356**: docs: note the ngspice-47 maxindex/minindex gap beside the issue-27 probe record reference
+- **PR #355**: docs: mark pre-bleed characterization records superseded in root README
+- **PR #354**: run_lna_variant: smoke-aware Claim/Reduction record lines
+- **PR #353**: sim: matched-DUT two-tone IIP3 on the ratified protocol (93 pts + 45 op corners, 45-cell PVT box)
+- **PR #351**: fix: TEMPERATURE SLICE disclosure names the grid's temperatures, not the requested slice
+- **PR #349**: fix(sim): make sim_record_paths reservation monotonic, split its two mkdir failure modes
+- **PR #348**: signoff: state taxonomy precedence for a variant study on a superseded DUT
+- **Issue #369** (closed): Second instance of #367: rederive_nf_fixed_t0.py documented as a bare-path replay command but not executable
+- **Issue #367** (closed): README reviewer-replay command fails as written: lna_variant_campaign.py is not executable
+- **Issue #364** (closed): Ratified-row envelope bench has no CI replay gate or unit tests, unlike every sibling reducer
+- **Issue #363** (closed): Envelope generator's rationale for the untagged nf measurement is refuted by the pinned klt render
+- **Issue #357** (closed): run-local-checks.sh always skips the attest steps on workers (exact klt version match), hiding stale pinned manifests
+- **Issue #352** (closed): run_lna_variant.sh record Claim/Reduction lines name the requested --temps slice on a smoke run, where the cell is 27 C
+- **Issue #350** (closed): README.md:81,192 group records 20261114-025351-7a54cc2 and 20261101-023246-5bbb70c under 'the matched DUT now on main', but both ran on the superseded pre-bleed netlist
+- **Issue #344** (closed): probe decks: maxindex/minindex unavailable in ngspice-47, so the frequency-attribution print never emits
+- **Issue #337** (closed): post-match IIP3 re-measure on the ratified protocol (owed by #27 Test Plan; binds spec/target-spec.md line 171)
+- **Issue #329** (closed): lna_variant_campaign: TEMPERATURE SLICE disclosure names the wrong temperature on a smoke+slice run
+- **Issue #327** (closed): signoff/README.md:97 calls record 20261114-025351-7a54cc2 'historical-dut' where sim/lna-characterization/README.md calls it 'variant-exploration'
+- **Issue #324** (closed): test-design-source-audit.sh header comment still describes absent klt as SKIP-only (stale after #323)
+- **Issue #311** (closed): test flake / suspected sim_record_paths race: concurrency case fails again (wins=1 losses=7), now with per-caller evidence
+- **Issue #233** (closed): T1 item 8 (characterization): one-command characterization report with generic envelope
+- **Issue #231** (closed): T1 item 5 (corner verification): klt sim corner envelopes for the eight ratified rows
 - **PR #343**: docs: reword the last two bare klt-pin restatements into the gated klayout-tools== form
 - **PR #340**: fix: gate run_native_drc.py's docstring klt pin, restate README pins prefixed only
 - **PR #338**: feat: gate the README prose klt/KLayout pins in check-klt-pin.sh
@@ -340,9 +371,4 @@
 - **Issue #20** (closed): Committed BVCEO / BVCER breakdown-extraction testbench for npn13G2
 - **Issue #18** (closed): sim: S-parameter, NF, stability, and IIP3 testbenches against design/lna.sch
 - **Issue #17** (closed): design/lna.sch: schematic and derived netlist for the ratified bias/supply topology
-
-### 2026-09-16
-
-- **PR #22**: docs(spec): propose a 1.8 V cascode bias/supply topology in decision record 0001
-- **Issue #16** (closed): Decision record: LNA bias/supply topology (cascode vs. single-stage) and supply voltage
 
