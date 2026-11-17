@@ -1158,6 +1158,35 @@ def iip3_mismatch_term_db(s11_db: float) -> float:
     return -10.0 * math.log10(1.0 - mag * mag)
 
 
+def _resolve_iip3_log(recorded, corners_dir):
+    """The corner's ngspice log path, resolved against this checkout.
+
+    `klt sim` reports record `artifacts.log` as an absolute path into the
+    worktree that submitted the run -- a path that stops existing once that
+    worktree is reaped and never existed on any other checkout. When the
+    recorded path is absent, re-root the suffix after `corners/<record-id>/`
+    onto `--corners-dir` (the committed evidence layout). Returns None when
+    neither resolves, so a genuinely missing log still fails loudly as
+    `missing_log_echoes`."""
+    if not recorded:
+        return None
+    p = Path(str(recorded))
+    if p.is_file():
+        return p
+    cdir = Path(corners_dir)
+    if not p.is_absolute():
+        cand = cdir / p
+        if cand.is_file():
+            return cand
+    parts = p.parts
+    for i in range(len(parts) - 2):
+        if parts[i] == "corners" and parts[i + 1] == cdir.name:
+            cand = cdir.joinpath(*parts[i + 2:])
+            if cand.is_file():
+                return cand
+    return None
+
+
 def cmd_summarize_iip3(a):
     cdir = Path(a.corners_dir)
     variant = a.variant
@@ -1214,15 +1243,18 @@ def cmd_summarize_iip3(a):
                             detail=f"fft_df {vals['fft_df']!r} != 1/(N*tstep) {IIP3_DF!r}")
                 continue
             # The per-corner ngspice log keeps the template's OP/DFT echoes.
-            log_file = (cell["artifacts"] or {}).get("log")
+            # The report records it as an absolute path into the submitting
+            # worktree; re-root onto --corners-dir when that path is gone.
+            recorded_log = (cell["artifacts"] or {}).get("log")
+            log_file = _resolve_iip3_log(recorded_log, cdir)
             parsed_log = {}
             npts = None
-            if log_file and os.path.isfile(str(log_file)):
+            if log_file:
                 parsed_log = _sweep.parse_iip3_log(str(log_file))
                 npts = parsed_log.get("npts")
             if not parsed_log:
                 _iip3_issue(issues, "missing_log_echoes", amp=label, cell=key,
-                            detail=f"OP/NPTS/DFT echoes unreadable ({log_file})")
+                            detail=f"OP/NPTS/DFT echoes unreadable ({recorded_log})")
                 continue
             bad_log = [k for k in IIP3_LOG_OP_KEYS
                        if not _is_finite_number(parsed_log.get(k))]

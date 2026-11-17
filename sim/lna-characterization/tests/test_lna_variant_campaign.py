@@ -753,6 +753,24 @@ def klt_corner_dirname(label, temp, vdd):
     return f"{label}_{vv}V_{tt}"
 
 
+def reroot_report_logs(root):
+    """Rewrite every report's artifacts.log into the shape the committed klt
+    reports carry: an absolute path into the (since-reaped) submitting
+    worktree, embedding corners/<record-id>/ ahead of the committed-layout
+    suffix -- dead on any later replay, exercising the reducer's re-rooting."""
+    for rp in sorted(root.glob("matched_iip3_*.report.json")):
+        doc = json.loads(rp.read_text())
+        for c in doc["corners"]:
+            log = (c.get("artifacts") or {}).get("log")
+            if not log:
+                continue
+            suffix = Path(log).relative_to(root / "set")
+            c["artifacts"]["log"] = str(
+                Path("/gone/.loom/worktrees/issue-337/sim/lna-characterization/corners")
+                / root.name / "set" / suffix)
+        rp.write_text(json.dumps(doc, indent=1) + "\n")
+
+
 def fft_values(tone=0.01023, im3=2.0e-9):
     v = {"fft_df": V.IIP3_DF, "tone1": tone, "tone2": tone * 1.0005,
          "im3l": im3, "im3h": im3 * 1.005,
@@ -868,9 +886,12 @@ class Iip3Generation(unittest.TestCase):
 
 class Iip3Reduction(unittest.TestCase):
     def run_reduce(self, cells, amps="0.001,0.002", extras="", s11=None,
-                   op=True, extra_report=None, grid=V.GRID_SMOKE):
+                   op=True, extra_report=None, grid=V.GRID_SMOKE,
+                   reroot_logs=False):
         """cells: {(label, temp, vdd): {"a1": (tone, im3), "a2": (tone, im3)}};
-        a missing level key makes that point genuinely missing."""
+        a missing level key makes that point genuinely missing. With
+        reroot_logs=True the reports' artifacts.log paths are rewritten into
+        the dead absolute-worktree shape the committed klt reports carry."""
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             for key, lv in cells.items():
@@ -882,6 +903,8 @@ class Iip3Reduction(unittest.TestCase):
                                  key[0], key[1], key[2], amp, fft_values(tone, im3))
             if extra_report:
                 synth_report(root / extra_report, "typ", 27, 1.8, 4e-3, fft_values())
+            if reroot_logs:
+                reroot_report_logs(root)
             op_path = ""
             if op:
                 op_cells = []
@@ -944,6 +967,53 @@ class Iip3Reduction(unittest.TestCase):
                                float(s["iip3_dbm_a2mv"]) - term, places=4)
         self.assertIn("Draft > 0 dBm value", md)
         self.assertIn("stays DRAFT", md)
+
+    def test_dead_recorded_log_path_reroots_onto_corners_dir(self):
+        # The committed klt reports record artifacts.log as an absolute path
+        # into the submitting worktree, reaped long since; the replay must
+        # still reduce every point by re-rooting the suffix after
+        # corners/<record-id>/ onto --corners-dir (the committed layout)
+        # instead of taking the missing_log_echoes branch.
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (tone / 2, im3 / 8), "a2": (tone, im3)}},
+            s11={("typ", 27, 1.80): -12.0}, reroot_logs=True)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(srows[0]["iip3_validity"], "valid")
+        self.assertIn("The 3:1 IM3 slope assumption holds at every cell", md)
+        self.assertNotIn("missing_log_echoes", md)
+
+    def test_log_unreachable_everywhere_still_fails_loudly(self):
+        # Neither the recorded absolute path nor the committed-layout re-root
+        # finds the log: the point must still fail as missing_log_echoes -- a
+        # genuinely missing log never silently reduces.
+        tone, im3 = 0.01023, 2.0e-9
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for tag, amp, t, i3 in (("a1", 1e-3, tone / 2, im3 / 8),
+                                    ("a2", 2e-3, tone, im3)):
+                synth_report(root / f"matched_iip3_{tag}mv.report.json",
+                             "typ", 27, 1.8, amp, fft_values(t, i3))
+            reroot_report_logs(root)
+            (root / "set" / "matched_iip3_a2mv" / klt_corner_dirname("typ", 27, 1.8)
+             / "ngspice.log").unlink()
+            out = root / "iip3.csv"
+            a = argparse.Namespace(corners_dir=d, iip3_csv=str(out),
+                                   summary_csv=str(root / "s.csv"),
+                                   headlines_md=str(root / "h.md"),
+                                   variant="matched", amps="0.001,0.002",
+                                   amps_nominal_only="", op_report="",
+                                   s11_csv="", slope_tol=0.15,
+                                   grid=V.GRID_SMOKE, temps="")
+            rc = V.cmd_summarize_iip3(a)
+            self.assertEqual(rc, 2)
+            md = (root / "h.md").read_text()
+            self.assertIn("missing_log_echoes", md)
+            # the healthy a1mv point still reduces; only the dead one is dropped
+            rows = list(csv.DictReader(open(out)))
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0]["point_id"].endswith("a1mv"))
 
     def test_invalid_slope_gets_no_intercept_but_raw_rows_survive(self):
         # 2x amplitude per 2x drive = slope 1: the cell is invalid. Validity is
