@@ -243,15 +243,23 @@ sim_record_paths() {
   #
   # The ID has one-second resolution, so two runs can mint the same one.
   # The reservation is the exclusive creation of netlist-snapshots/<id>
-  # (plain `mkdir`, no -p: exactly one concurrent caller succeeds). A
-  # candidate ID is rejected, with a message on stderr and exit 4 BEFORE any
-  # path is returned, if corners/<id> or any records/<id>* already exists,
-  # or if the reservation is lost. Existing artifacts are never modified or
-  # removed. On a partial creation failure only the directories THIS call
-  # created are removed (rmdir, so never non-empty); a loser never touches
-  # the winner's reservation. Rejected? Wait for the next second and rerun.
+  # (plain `mkdir`, no -p: exactly one concurrent caller succeeds) and is
+  # monotonic through the output-directory steps below: once won it is
+  # never released while corners/<id> and records/ are created, so a mint
+  # failing there leaves its empty netlist-snapshots/<id> behind -- an
+  # append-only record that the id was taken; it wedges nothing, because
+  # the candidate-ID pre-check gates on corners/<id> and records/<id>*,
+  # never on netlist-snapshots/<id>. No reservation-rejection path contains
+  # a removal, so a loser structurally cannot touch the winner's
+  # reservation (the sole release point left is the PDK-provenance rollback
+  # at the end, which removes only the directories THIS caller created
+  # while still holding the reservation). A candidate ID is rejected, with
+  # a message on stderr and exit 4 BEFORE any path is returned, if
+  # corners/<id> or any records/<id>* already exists, or if the reservation
+  # is lost. Existing artifacts are never modified or removed. Rejected?
+  # Wait for the next second and rerun.
   local __srp_dir="${SCRIPT_DIR}"
-  local __srp_sha __srp_id __srp_snap __srp_corn __srp_rec
+  local __srp_sha __srp_id __srp_snap __srp_corn __srp_rec __srp_err
   __srp_sha="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
   __srp_id="$(date -u +%Y%m%d-%H%M%S)-${__srp_sha}"
   __srp_snap="${__srp_dir}/netlist-snapshots/${__srp_id}"
@@ -268,15 +276,21 @@ sim_record_paths() {
     echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot create output directories under ${__srp_dir}" >&2
     exit 4
   fi
-  # The reservation: exclusive, atomic. Failure means someone else owns it
-  # (or it cannot be created); either way we remove nothing.
-  if ! mkdir "${__srp_snap}" 2>/dev/null; then
-    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: record id ${__srp_id} is already reserved or cannot be reserved (${__srp_snap}); refusing to reuse it. Wait for the next second and rerun." >&2
+  # The reservation: exclusive, atomic, monotonic (never released). Failure
+  # means someone else owns it (or it cannot be created); either way we
+  # remove nothing. The caller PID and the failing mkdir's stderr are kept
+  # in the message so a recurrence can tell a lost race (EEXIST from
+  # another holder) from a non-exclusive mkdir (issue #311).
+  __srp_err="$(mkdir "${__srp_snap}" 2>&1)" || {
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: record id ${__srp_id} is already reserved or cannot be reserved (${__srp_snap}) [pid ${BASHPID:-$$}]: ${__srp_err:-unknown mkdir failure}. Wait for the next second and rerun." >&2
+    exit 4
+  }
+  if ! __srp_err="$(mkdir -p "${__srp_dir}/corners" "${__srp_rec}" 2>&1)"; then
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot create shared record parents ${__srp_dir}/corners ${__srp_rec} for record id ${__srp_id} [pid ${BASHPID:-$$}]: ${__srp_err:-unknown mkdir failure}; reservation for this id is retained. Wait for the next second and rerun." >&2
     exit 4
   fi
-  if ! mkdir -p "${__srp_dir}/corners" "${__srp_rec}" || ! mkdir "${__srp_corn}" 2>/dev/null; then
-    rmdir "${__srp_snap}" 2>/dev/null
-    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot create ${__srp_corn} for record id ${__srp_id} (exists or not writable); reservation released. Wait for the next second and rerun." >&2
+  if ! __srp_err="$(mkdir "${__srp_corn}" 2>&1)"; then
+    echo "${SIM_SCRIPT_NAME:-sim_record_paths}: cannot exclusively create ${__srp_corn} for record id ${__srp_id} [pid ${BASHPID:-$$}]: ${__srp_err:-unknown mkdir failure}; reservation for this id is retained. Wait for the next second and rerun." >&2
     exit 4
   fi
 
