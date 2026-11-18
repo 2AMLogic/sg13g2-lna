@@ -149,9 +149,9 @@
       "sha256": "sha256:3ccef5e35bd8004e3d4d3009a542534e0fa261eda13aa08ebfb85ab6c802499e"
     },
     ".github/scripts/native_drc_pair.py": {
-      "bytes": 8697,
+      "bytes": 9248,
       "role": "the one native-DRC pair check: loaded by path by the layout-freshness gate and the layout scripts (issue #359), so it is hashed like the gate that executes it",
-      "sha256": "sha256:88b605c71376465f5c0a6d7827bac87c96fa176582f402c51f99590b29e7cb9d"
+      "sha256": "sha256:5d67689f7178cb83988f4be820fe72a8cdedddc6629ebf6d62bbcaa141876d7e"
     },
     ".github/scripts/signoff_common.py": {
       "bytes": 10623,

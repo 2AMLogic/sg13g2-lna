@@ -189,6 +189,14 @@ class IdentityFixtureTest(unittest.TestCase):
         return json.loads(
             (self.cd / native_drc_identity.NAME).read_text())
 
+    def resync_sidecar_digest(self):
+        """Re-record the report digest after rewriting the report, so the
+        defect under test is the pair's only fault (issue #386)."""
+        side = self.sidecar()
+        side["report_sha256"] = sha(
+            (self.cd / "native_drc_report.json").read_bytes())
+        (self.cd / native_drc_identity.NAME).write_text(json.dumps(side))
+
     def validate(self):
         return native_drc_identity.validate(self.cd, self.gds)
 
@@ -321,6 +329,58 @@ class IdentityValidateTest(IdentityFixtureTest):
                 problems = self.validate()
                 self.assertEqual(len(problems), 1)
                 self.assertIn(f"{key} differs", problems[0])
+
+    def test_non_dict_provenance_is_named_not_raised(self):
+        # issue #386: a provenance that is not a JSON object used to crash
+        # check_pair with AttributeError; every caller must reject it with
+        # the shared "missing provenance.input" message instead.
+        for value in ("x", [1], 7, None):
+            with self.subTest(provenance=value):
+                self.seed_pair()
+                rep_path = self.cd / "native_drc_report.json"
+                rep = json.loads(rep_path.read_text())
+                rep["provenance"] = value
+                rep_path.write_text(json.dumps(rep))
+                self.resync_sidecar_digest()
+                problems = self.validate()
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn("missing provenance.input", problems[0])
+
+    def test_non_dict_sidecar_bindings_are_rejected(self):
+        # issue #386: the sidecar field validation checked presence only,
+        # so null bindings passed when the report lacked the objects too.
+        for key in ("deck_binding", "pdk_binding"):
+            with self.subTest(key=key):
+                self.seed_pair()
+                side = self.sidecar()
+                side[key] = None
+                (self.cd / native_drc_identity.NAME).write_text(
+                    json.dumps(side))
+                problems = self.validate()
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn(f"{key} missing or malformed", problems[0])
+
+    def test_report_without_deck_or_pdk_object_is_named(self):
+        # issue #386: a report whose provenance lacks a deck/pdk object must
+        # be rejected with _report_facts' wording, not accepted because
+        # None == None against a null binding.
+        for key, want in (
+                ("deck", "report provenance has no deck object"),
+                ("pdk", "report provenance has no pdk object"
+                        " (--pdk must be given)")):
+            for mutate in (lambda d, k=key: d["provenance"].pop(k),
+                           lambda d, k=key:
+                           d["provenance"].__setitem__(k, "x")):
+                with self.subTest(key=key, mutate=mutate):
+                    self.seed_pair()
+                    rep_path = self.cd / "native_drc_report.json"
+                    rep = json.loads(rep_path.read_text())
+                    mutate(rep)
+                    rep_path.write_text(json.dumps(rep))
+                    self.resync_sidecar_digest()
+                    problems = self.validate()
+                    self.assertEqual(len(problems), 1, problems)
+                    self.assertIn(want, problems[0])
 
     def test_status_mismatch(self):
         self.seed_pair(status="violations")
