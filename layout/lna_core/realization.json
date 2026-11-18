@@ -154,6 +154,191 @@
       },
       "role": "output series cap rfout -> xout",
       "realization_note": "Schematic 0.346489 pF; one cmim 15.145 x 15.145 um: 346.48 fF at the cap_typ coefficients. Top = xout, bottom = rfout."
+    },
+    "XMb": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton: diode-connected PMOS (nc_b)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "XQb": {
+      "pcell": "npn13G2",
+      "params": {
+        "Nx": 8
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton: Nx=8 PTAT branch device"
+    },
+    "Rp": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "12.885u"
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton: PTAT emitter resistor (nc_e -> vss)",
+      "realization_note": "Schematic value is an ideal 3.4 kOhm. Realized as rppd w=1u l=12.885u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=3400.1 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "XMa": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton: mirror leg into XQa (nc_a)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "XQa": {
+      "pcell": "npn13G2",
+      "params": {
+        "Nx": 1
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton: diode-connected Nx=1 branch device"
+    },
+    "Rseed": {
+      "pcell": "rhigh",
+      "params": {
+        "w": "0.5u",
+        "l": "98.82u",
+        "b": "33"
+      },
+      "role": "DR-0003 reference core Stage-1 skeleton startup seed (vdd -> nc_a)",
+      "realization_note": "Schematic value is an ideal 10 MOhm. rppd would need ~19 mm of poly at 260 ohm/sq, so it is drawn as an rhigh (1360 ohm/sq class) meander: w=0.5u, 34 segments of l=98.82u (bends b=33). The PyCell's own readout for that geometry is r=9.99996 MOhm. The meander is one resistor between the two end pads (vdd, nc_a). klt's extraction of the drawn meander reports r=10.049 MOhm (+0.49 %: corner/bend contributions the PyCell readout omits) with L=3398.82 um (total path), so the LVS reference card carries the per-segment L and the parameter is not compared (device.geometry_not_compared)."
+    },
+    "XMv": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core Kuijk sum branch: PMOS mirror leg into Rsum (vbg)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "Rsum": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "70.925u"
+      },
+      "role": "DR-0003 reference core Kuijk sum branch: vbg -> cb3",
+      "realization_note": "Schematic value is an ideal 18.4 kOhm. Realized as rppd w=1u l=70.925u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=18400.5 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "XQc": {
+      "pcell": "npn13G2",
+      "params": {
+        "Nx": 1
+      },
+      "role": "DR-0003 reference core Kuijk sum branch: diode-connected Nx=1 device (cb3)"
+    },
+    "XMnp1": {
+      "pcell": "nmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core amp-servo loop: NMOS pair device (gate vbg, drain gsvo)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "XMnp2": {
+      "pcell": "nmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core amp-servo loop: NMOS pair device (gate vl, drain dn)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "Rtail": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "36.605u"
+      },
+      "role": "DR-0003 reference core amp-servo loop: NMOS pair tail resistor (es -> vss)",
+      "realization_note": "Schematic value is an ideal 9.53 kOhm. Realized as rppd w=1u l=36.605u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=9530.5 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "XMld": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core amp-servo loop: diode-connected PMOS load (dn)",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "XMlm": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "10u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core amp-servo loop: PMOS load mirror leg into gsvo",
+      "realization_note": "Schematic is ng=1 w=10u l=1u; drawn as one 10u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "XMref": {
+      "pcell": "pmosHV",
+      "params": {
+        "w": "40u",
+        "l": "1u",
+        "ng": "1"
+      },
+      "role": "DR-0003 reference core amp-servo loop: PMOS reference leg (gate gsvo, drain vl)",
+      "realization_note": "Schematic is ng=1 w=40u l=1u; drawn as one 40u x 1 um finger (single PyCell, no deviation from the schematic geometry)."
+    },
+    "Rl": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "100.33u"
+      },
+      "role": "DR-0003 reference core V_BG/Rl transduction (vl -> vss)",
+      "realization_note": "Schematic value is an ideal 26 kOhm. Realized as rppd w=1u l=100.33u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=26000.2 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "R2a": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "3.6u"
+      },
+      "role": "cascode-base bias divider upper leg (vdd -> vb2)",
+      "realization_note": "Schematic value is an ideal 1 kOhm. Realized as rppd w=1u l=3.6u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=1000.4 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "R2b": {
+      "pcell": "rppd",
+      "params": {
+        "w": "1u",
+        "l": "42.29u"
+      },
+      "role": "cascode-base bias divider lower leg (vb2 -> vss)",
+      "realization_note": "Schematic value is an ideal 11 kOhm. Realized as rppd w=1u l=42.29u (length on the 0.005 um grid); the PyCell's own model-formula readout for that geometry is r=10999.8 ohm (R = l/(w+lwd)*Rspec + 2*Rzspec/w, Rspec=260 ohm/sq, lwd=6 nm, Rzspec=35 ohm*um), a layout-time realization, not a re-sizing."
+    },
+    "Cbyp2": {
+      "pcell": "cmim",
+      "params": {
+        "w": "64.5u",
+        "l": "64.5u"
+      },
+      "count": 16,
+      "role": "cascode-base (vb2) bypass cap",
+      "realization_note": "Schematic 100 pF; realized as 16 parallel 64.5 x 64.5 um cmim units (same unit and arithmetic as Cbref): 100.0 pF at the cap_typ coefficients. Top plates = vb2, bottom plates (one merged Metal5 sheet) = vss."
+    },
+    "Cvdd": {
+      "pcell": "cmim",
+      "params": {
+        "w": "64.5u",
+        "l": "64.5u"
+      },
+      "count": 16,
+      "role": "supply decoupling cap",
+      "realization_note": "Schematic 100 pF; realized as 16 parallel 64.5 x 64.5 um cmim units (same unit and arithmetic as Cbref): 100.0 pF at the cap_typ coefficients. Top plates = vdd, bottom plates (one merged Metal5 sheet) = vss."
     }
   },
   "modeled_in_device": {
@@ -173,26 +358,5 @@
       "reason": "Rlb is the Q = 10 loss of Lb (in series with it), a bench-model element with no physical device (sim/models/SOURCE.md: the drawn inductor's own series R / substrate loss is the physical counterpart). Drawing a resistor would change the design's Q, a design change not layout."
     }
   },
-  "out_of_scope": {
-    "Cbyp2": "cascode-base (vb2) bypass cap: belongs with the R2a/R2b divider, not drawn in this bring-up",
-    "Cvdd": "supply decoupling cap: a pad-ring / supply-network item, not this bring-up",
-    "R2a": "cascode-base bias divider (vb2): left as a port of this cell",
-    "R2b": "cascode-base bias divider (vb2): left as a port of this cell",
-    "XMb": "DR-0003 reference core (Stage-1 skeleton)",
-    "XQb": "DR-0003 reference core (Stage-1 skeleton)",
-    "Rp": "DR-0003 reference core (Stage-1 skeleton)",
-    "XMa": "DR-0003 reference core (Stage-1 skeleton)",
-    "XQa": "DR-0003 reference core (Stage-1 skeleton)",
-    "Rseed": "DR-0003 reference core (Stage-1 skeleton startup seed)",
-    "XMv": "DR-0003 reference core (Kuijk sum branch)",
-    "Rsum": "DR-0003 reference core (Kuijk sum branch)",
-    "XQc": "DR-0003 reference core (Kuijk sum branch)",
-    "XMnp1": "DR-0003 reference core (amp-servo loop)",
-    "XMnp2": "DR-0003 reference core (amp-servo loop)",
-    "Rtail": "DR-0003 reference core (amp-servo loop)",
-    "XMld": "DR-0003 reference core (amp-servo loop)",
-    "XMlm": "DR-0003 reference core (amp-servo loop)",
-    "XMref": "DR-0003 reference core (amp-servo loop)",
-    "Rl": "DR-0003 reference core (V_BG/Rl transduction)"
-  }
+  "out_of_scope": {}
 }

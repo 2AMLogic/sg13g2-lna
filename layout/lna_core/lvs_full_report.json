@@ -87,7 +87,7 @@
     {
       "class": "cap_cmim",
       "device_kind": "capacitor",
-      "layout_devices": 6,
+      "layout_devices": 8,
       "reference_devices": 0,
       "compared": [
         "C"
@@ -131,9 +131,36 @@
       ]
     },
     {
+      "class": "rhigh",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 0,
+      "compared": [
+        "R"
+      ],
+      "not_compared": [
+        {
+          "parameter": "L",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "W",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
       "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 2,
+      "layout_devices": 8,
       "reference_devices": 0,
       "compared": [
         "R"
@@ -158,33 +185,32 @@
       ]
     }
   ],
-  "mismatch_count": 24,
-  "error_count": 14,
+  "mismatch_count": 25,
+  "error_count": 15,
   "category_counts": {
-    "device.combine_parameter_corrected": 1,
-    "device.geometry_not_compared": 4,
+    "device.geometry_not_compared": 5,
     "net.supply_fragmented": 2,
     "reference.unresolved_subckt_call": 6,
-    "topology": 10,
+    "topology": 11,
     "topology.hierarchy_mismatch": 1
   },
   "category_error_counts": {
     "reference.unresolved_subckt_call": 6,
-    "topology": 8
+    "topology": 9
   },
   "counts": {
     "nets": {
-      "layout": 23,
+      "layout": 34,
       "reference": 23,
       "matched": 0
     },
     "devices": {
-      "layout": 9,
+      "layout": 26,
       "reference": 32,
       "matched": 0
     },
     "pins": {
-      "layout": 23,
+      "layout": 34,
       "reference": 0,
       "matched": 0
     }
@@ -204,7 +230,7 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+    "layout_sha256": "4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
     "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "extracted_netlist": null
   },
@@ -220,52 +246,12 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+      "content_hash": "sha256:4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
       "role": "layout"
     },
     "klayout_version_mismatch": false
   },
   "mismatches": [
-    {
-      "category": "device.combine_parameter_corrected",
-      "severity": "warning",
-      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10), lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10), lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
-      "side": "layout",
-      "net": null,
-      "device": null,
-      "property": null,
-      "details": {
-        "corrected": [
-          {
-            "circuit": "lna_core",
-            "device": null,
-            "class": "cap_cmim",
-            "parameter": "C",
-            "before": 6.250695e-12,
-            "after": 1.0001111999999999e-10
-          },
-          {
-            "circuit": "lna_core",
-            "device": null,
-            "class": "cap_cmim",
-            "parameter": "C",
-            "before": 6.250695e-12,
-            "after": 1.0001111999999999e-10
-          },
-          {
-            "circuit": "lna_core",
-            "device": null,
-            "class": "cap_cmim",
-            "parameter": "C",
-            "before": 6.250695e-12,
-            "after": 1.0001111999999999e-10
-          }
-        ]
-      },
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
@@ -315,7 +301,7 @@
           "A",
           "P"
         ],
-        "layout_devices": 6,
+        "layout_devices": 8,
         "reference_devices": 0
       },
       "circuit": null,
@@ -355,6 +341,36 @@
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
+      "description": "device class 'rhigh' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rhigh"
+      },
+      "property": null,
+      "details": {
+        "device_kind": "resistor",
+        "compared_parameters": [
+          "R"
+        ],
+        "not_compared_parameters": [
+          "A",
+          "L",
+          "P",
+          "W"
+        ],
+        "layout_devices": 1,
+        "reference_devices": 0
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.geometry_not_compared",
+      "severity": "warning",
       "description": "device class 'rppd' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
       "side": "both",
       "net": null,
@@ -375,7 +391,7 @@
           "P",
           "W"
         ],
-        "layout_devices": 2,
+        "layout_devices": 8,
         "reference_devices": 0
       },
       "circuit": null,
@@ -385,7 +401,7 @@
     {
       "category": "net.supply_fragmented",
       "severity": "warning",
-      "description": "supply 'VDD' spans 2 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
+      "description": "supply 'VDD' spans 3 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
       "side": "layout",
       "net": {
         "layout": "VDD",
@@ -395,7 +411,7 @@
       "property": null,
       "details": {
         "supply": "VDD",
-        "fragment_count": 2
+        "fragment_count": 3
       },
       "circuit": {
         "layout": "lna_core",
@@ -625,6 +641,23 @@
         "layout": null,
         "reference": null,
         "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "device class could not be mapped to a counterpart: 'rhigh'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rhigh"
       },
       "property": null,
       "details": null,

@@ -2,19 +2,19 @@
   "reports": {
     "lvs_full_report.json": {
       "gds": "layout/lna_core/lna_core.gds",
-      "gds_sha256": "58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+      "gds_sha256": "4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
       "reference": "design/netlist/lna.spice",
       "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
-      "report_sha256": "5b77898b5f45b343e29de580ac2bd097fb696128d170ebd389da73edcfe0a1fe",
+      "report_sha256": "fc92acb250054f97e8848c7552cfc03ff91f4784a26cb2aecbc981aed151ebee",
       "request": "lvs_full_request.json",
       "request_sha256": "c747cdeff0a6fcf26c7203674e55d5b80057799631616dd0ede4b136f6e9bb42"
     },
     "lvs_report.json": {
       "gds": "layout/lna_core/lna_core.gds",
-      "gds_sha256": "58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+      "gds_sha256": "4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
       "reference": "layout/lna_core/lna_core.lvs_reference.spice",
-      "reference_sha256": "4aec6ccf387223121ed3ff911b2ea17faabc9023270822c01067efafcc6b8e49",
-      "report_sha256": "3f53939e286183396390b5703466604edf93a60318404c8f0032843c5004fc7b",
+      "reference_sha256": "1a73b18709f50845c165f79fde5932f4a01b4c7a407bf7b6b23c755a52a7bcd8",
+      "report_sha256": "de0e19b71dfbdec87d68b56b8bb1f68872cbbde9ae784b3e97eab87276057454",
       "request": "lvs_request.json",
       "request_sha256": "d14b2a9f6cd3a73f7fbc9dc86552904a11ba34e9d79168ecbd0ef634ea2be76f"
     }
