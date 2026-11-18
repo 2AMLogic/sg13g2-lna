@@ -15,6 +15,8 @@
 #   9. native DRC pair (issue #185): absent passes; one-sided, mutated
 #      report/GDS/deck/pdk/status bindings, or an executable below its
 #      recorded minimum -> FAIL, naming the relationship
+#      (issue #386 adds: non-dict provenance and null / object-less
+#      deck/pdk bindings -> FAIL with a message, not a traceback)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -291,6 +293,47 @@ named nat-noargv "argv"
 mknative nat-nodeck; natmut nat-nodeck 'del d["deck_binding"]'
 run nat-nodeck 1 "native sidecar without deck binding"
 named nat-nodeck "missing deck_binding"
+
+# --- issue #386: non-dict provenance, and null deck/pdk bindings ---
+# Report mutations resync the sidecar's recorded digest, so the provenance
+# defect under test is the pair's only fault (mirrors natmut, on the report).
+natrep() { # natrep <case> <python statement on d (the native report)>
+  python3 -I - "$TMP/$1/$C/native_drc_report.json" \
+    "$TMP/$1/$C/native_drc_inputs.json" "$2" <<'PY'
+import hashlib, json, sys
+rp, sp, stmt = sys.argv[1], sys.argv[2], sys.argv[3]
+d = json.load(open(rp)); exec(stmt)
+json.dump(d, open(rp, "w"), indent=2)
+s = json.load(open(sp))
+s["report_sha256"] = hashlib.sha256(open(rp, "rb").read()).hexdigest()
+json.dump(s, open(sp, "w"), indent=2)
+PY
+}
+mknative nat-provstr; natrep nat-provstr 'd["provenance"] = "x"'
+run nat-provstr 1 "non-dict provenance (string)"
+named nat-provstr "missing provenance.input"
+mknative nat-provlist; natrep nat-provlist 'd["provenance"] = [1]'
+run nat-provlist 1 "non-dict provenance (list)"
+named nat-provlist "missing provenance.input"
+mknative nat-provnum; natrep nat-provnum 'd["provenance"] = 7'
+run nat-provnum 1 "non-dict provenance (number)"
+named nat-provnum "missing provenance.input"
+mknative nat-provnull; natrep nat-provnull 'd["provenance"] = None'
+run nat-provnull 1 "null provenance"
+named nat-provnull "missing provenance.input"
+mknative nat-nullboth; natmut nat-nullboth \
+  'd["deck_binding"] = None; d["pdk_binding"] = None'
+run nat-nullboth 1 "null deck and pdk bindings"
+named nat-nullboth "deck_binding missing or malformed"
+mknative nat-nulldeck; natmut nat-nulldeck 'd["deck_binding"] = None'
+run nat-nulldeck 1 "null deck binding only"
+named nat-nulldeck "deck_binding missing or malformed"
+mknative nat-nodeckobj; natrep nat-nodeckobj 'del d["provenance"]["deck"]'
+run nat-nodeckobj 1 "report without a deck object"
+named nat-nodeckobj "report provenance has no deck object"
+mknative nat-nopdkobj; natrep nat-nopdkobj 'del d["provenance"]["pdk"]'
+run nat-nopdkobj 1 "report without a pdk object"
+named nat-nopdkobj "no pdk object (--pdk must be given)"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

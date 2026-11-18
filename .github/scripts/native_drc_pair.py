@@ -125,6 +125,9 @@ def check_pair(cell_dir, root, rel_prefix, gds, gds_sha, fail,
         if k not in side:
             fail(rel, f"missing {k}")
             return
+        if not isinstance(side[k], dict):
+            fail(rel, f"{k} missing or malformed")
+            return
     if side["report"] != report_name:
         fail(rel, f"report is {side['report']!r}, want {report_name!r}")
         return
@@ -154,7 +157,7 @@ def check_pair(cell_dir, root, rel_prefix, gds, gds_sha, fail,
              f"rerun layout/run_native_drc.py")
     # the report itself must pin the committed GDS and carry the recorded verdict
     prov = rep.get("provenance") if isinstance(rep, dict) else None
-    inp = (prov or {}).get("input")
+    inp = prov.get("input") if isinstance(prov, dict) else None
     if not isinstance(inp, dict):
         fail(nrep_rel, "missing provenance.input")
     else:
@@ -170,11 +173,17 @@ def check_pair(cell_dir, root, rel_prefix, gds, gds_sha, fail,
         fail(nrep_rel, f"status is {got!r}, want one of {list(STATUSES)}")
     elif side["status"] != rep["status"]:
         fail(rel, f"status {side['status']!r} != report status {rep['status']!r}")
-    # deck / pdk bindings must equal what the report itself records
+    # deck / pdk bindings must equal what the report itself records; a
+    # report without a deck/pdk object is refused outright (issue #386:
+    # a null binding paired with a missing object used to pass None == None),
+    # in _report_facts' wording so record() and the gate name the same defect
     if isinstance(prov, dict):
-        for k, want in (("deck_binding", prov.get("deck")),
-                        ("pdk_binding", prov.get("pdk"))):
-            if side[k] != want:
+        for k, key in (("deck_binding", "deck"), ("pdk_binding", "pdk")):
+            want = prov.get(key)
+            if not isinstance(want, dict):
+                fail(nrep_rel, f"report provenance has no {key} object"
+                     + (" (--pdk must be given)" if key == "pdk" else ""))
+            elif side[k] != want:
                 fail(rel, f"{k} differs from the report's provenance; "
                      f"rerun layout/run_native_drc.py")
     # recorded executable must satisfy the recorded minimum
