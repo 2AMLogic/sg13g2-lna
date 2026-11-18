@@ -53,8 +53,19 @@ class RouterPinCollision(unittest.TestCase):
         self.assertIn("1", msg)
         self.assertEqual(cv.calls, 0)
 
-    def test_exactly_touching_pitch_is_legal(self):
+    def test_exactly_touching_pitch_is_rejected(self):
+        # 0.4 um: stub boxes share an edge; klt extract merges them (#412).
         _, rt = _router([("a", 1.0), ("a", 5.0), ("b", 1.4), ("b", 6.0)])
+        with self.assertRaises(SystemExit):
+            rt.check_pin_collisions()
+
+    def test_below_metal2_space_margin_raises(self):
+        _, rt = _router([("a", 1.0), ("a", 5.0), ("b", 1.6), ("b", 6.0)])  # 0.6 < 0.61
+        with self.assertRaises(SystemExit):
+            rt.check_pin_collisions()
+
+    def test_at_metal2_space_margin_is_legal(self):
+        _, rt = _router([("a", 1.0), ("a", 5.0), ("b", 1.62), ("b", 6.0)])
         rt.check_pin_collisions()
 
     def test_just_inside_pitch_raises(self):
