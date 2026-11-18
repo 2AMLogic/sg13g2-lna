@@ -25,7 +25,6 @@ import hashlib
 import io
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -95,29 +94,23 @@ raise SystemExit(int(os.environ.get("STUB_RC", "3")))
 
 
 class VersionHelpersTest(unittest.TestCase):
-    def test_identity_and_runner_copies_agree(self):
-        samples = ["KLayout 0.28.16 (2023-12-30) abc", "0.29", "0.30.30",
-                   "no digits here", "", None, "v1.2.3.4-rc1"]
-        for s in samples:
-            with self.subTest(sample=s):
-                self.assertEqual(native_drc_identity.version_tuple(s),
-                                 run_native_drc.version_tuple(s))
-
-    def test_statuses_copies_agree(self):
-        """All three STATUSES copies move together (issue #290): the
-        runner, the identity module, and NATIVE_STATUSES in the freshness
-        gate .github/scripts/check-layout-freshness."""
-        self.assertEqual(native_drc_identity.STATUSES,
-                         run_native_drc.STATUSES)
-        gate = (LAYOUT.parent / ".github" / "scripts"
-                / "check-layout-freshness").read_text()
-        m = re.search(r"^NATIVE_STATUSES\s*=\s*\(([^)]*)\)", gate, re.M)
-        self.assertIsNotNone(
-            m, "NATIVE_STATUSES not found in "
-               ".github/scripts/check-layout-freshness")
-        tokens = tuple(t.strip().strip("'\"")
-                       for t in m.group(1).split(","))
-        self.assertEqual(native_drc_identity.STATUSES, tokens)
+    def test_runner_and_identity_expose_the_shared_pair_module(self):
+        """The runner and the identity module load and re-export the one
+        pair-check module, .github/scripts/native_drc_pair.py (operator
+        ruling, issue #359: a single implementation beside the freshness
+        gate, loaded by file path), so a vocabulary change is one edit and
+        object identity — not a sync test — proves the copies are gone."""
+        pair_path = str(LAYOUT.parent / ".github" / "scripts"
+                        / "native_drc_pair.py")
+        for mod in (native_drc_identity, run_native_drc):
+            with self.subTest(module=mod.__name__):
+                self.assertEqual(mod.native_drc_pair.__file__, pair_path)
+                self.assertIs(mod.STATUSES, mod.native_drc_pair.STATUSES)
+                self.assertIs(mod.version_tuple,
+                              mod.native_drc_pair.version_tuple)
+                self.assertIs(mod.version_at_least,
+                              mod.native_drc_pair.version_at_least)
+        self.assertIs(native_drc_identity.STATUSES, run_native_drc.STATUSES)
 
     def test_tuple(self):
         self.assertEqual(native_drc_identity.version_tuple(
@@ -355,7 +348,9 @@ class IdentityValidateTest(IdentityFixtureTest):
         rep["status"] = "bananas"
         rep_path.write_text(json.dumps(rep))
         problems = self.validate()
-        self.assertTrue(any("not one of" in p for p in problems), problems)
+        # the shared pair check's reference wording (issue #359 unified
+        # validate() with the freshness gate's message text)
+        self.assertTrue(any("want one of" in p for p in problems), problems)
 
     def test_report_input_repinned(self):
         self.seed_pair()
@@ -364,7 +359,7 @@ class IdentityValidateTest(IdentityFixtureTest):
         rep["provenance"]["input"]["content_hash"] = "sha256:" + "f" * 64
         rep_path.write_text(json.dumps(rep))
         problems = self.validate()
-        self.assertTrue(any("not this GDS" in p for p in problems))
+        self.assertTrue(any("committed GDS" in p for p in problems))
 
     def test_malformed_and_missing_fields(self):
         self.seed_pair()
