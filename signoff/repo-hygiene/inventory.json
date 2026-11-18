@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 14871,
+      "bytes": 16230,
       "role": "script of a declared CI command",
-      "sha256": "sha256:16172ebd89308ccc3a15854950be87875150e625cdd3a95b825d223048195297"
+      "sha256": "sha256:329bdecba386d8a83ddc75e7de3af7e6153617e380fc3a79a71999d68cc777bd"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 19101,
+      "bytes": 19669,
       "role": "script of a declared CI command",
-      "sha256": "sha256:e210bc5ba42fb4d52c53c0abea613f544387d5643f080e5eae3c851d28e82f1a"
+      "sha256": "sha256:c757dbe57298b18bb2db7f0c54a562a7dda68330e16f9783e2f2060b431c4a50"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,
@@ -281,9 +281,9 @@
       "sha256": "sha256:ed1ed23e3049b460f22e872c6775440a6bfda69d492a2549ef2fb944ede5be5b"
     },
     ".github/scripts/inductance_lowfreq.py": {
-      "bytes": 1139,
+      "bytes": 1862,
       "role": "the low-frequency inductance extraction: loaded by path by the layout-freshness gate (issue #359 ruling), so it is hashed like the gate that executes it",
-      "sha256": "sha256:7eceb0fc4e9e8f4d754724f8f594effbb5a45585f6bf2be166e6f3ae6e5c2d93"
+      "sha256": "sha256:5cbce61d4bd53fb6e07154d2f6b1b3645f477860bffa71a7167ef65b595992e5"
     },
     ".github/scripts/native_drc_pair.py": {
       "bytes": 9248,
