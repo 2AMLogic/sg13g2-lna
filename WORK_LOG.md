@@ -6,6 +6,12 @@
 
 ### 2026-11-18
 
+- **PR #417**: chore(hygiene): hash eleven more CI-run gate self-tests in the item-10 envelope
+- **Issue #414** (closed): repo-hygiene: 10 more CI-run gate self-tests are undeclared and unhashed (the #411 class)
+- **PR #415**: fix(layout): reject router pin pairs closer than stub pitch plus Metal2 space
+- **Issue #412** (closed): Router pin-collision guard accepts different-net stubs abutting at exactly the stub pitch
+- **PR #407**: feat: gate re-derives netlist_H and drawn_over_netlist in inductance report
+- **Issue #403** (closed): check-layout-freshness: the netlist half of inductance_report.json is still ungated
 - **PR #413**: chore(hygiene): hash the layout-freshness self-test in the item-10 envelope
 - **Issue #411** (closed): repo-hygiene: test-check-layout-freshness.sh is run by CI but absent from DECLARED_COMMANDS
 - **PR #409**: feat: Router fails loudly when different-net Metal2 stubs would overlap

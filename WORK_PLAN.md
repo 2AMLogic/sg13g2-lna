@@ -1,6 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
+_Generated: 2026-11-18T22:01:20Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -11,28 +12,25 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
+_None._
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-- **#228**: T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up *(held)*
-- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
+- **#228**: T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
-- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
+- **#228**: T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#391**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 
 ## PRs Awaiting Review
 
@@ -54,16 +52,15 @@ Issues carrying `loom:curated`.
 - **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)* *(held)*
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)* *(held)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)* *(held)*
+- **#228**: T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up *(curated)*
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
-- **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core *(curated)*
-- **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition *(curated)*
-- **#391**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)* *(held)*
 - **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)* *(held)*
 - **#282**: Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous *(hermit)* *(held)*
+
 ## Epics
 
 _None._
@@ -73,13 +70,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 1 |
-| Very important | 1 |
-| Important | 2 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
-| In Progress (`loom:building`) | 2 |
+| Very important | 0 |
+| Important | 1 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 8 |
+| Curated | 6 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
