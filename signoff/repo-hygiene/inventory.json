@@ -59,9 +59,9 @@
       "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 12328,
+      "bytes": 12797,
       "role": "script of a declared CI command",
-      "sha256": "sha256:5d426f1ef1b978f7b018bcc8c0318a3d2dd1f24de76f249522c3e7fcee5492bb"
+      "sha256": "sha256:4c5d3a38fa070350f2347266334e88d449edab45273afed0ca480e3f44c2e19c"
     },
     ".github/scripts/test-run-local-checks.sh": {
       "bytes": 11704,
