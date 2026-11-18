@@ -6,6 +6,8 @@
 
 ### 2026-11-18
 
+- **PR #399**: feat(layout): draw the matching network and add a modeled_in_device scope category
+- **Issue #347** (closed): T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
 - **PR #397**: fix: blank lines in a run: block no longer truncate its collected commands
 - **Issue #395** (closed): check-repo-hygiene.py: a blank line truncates a block-scalar run: body
 - **PR #394**: ci: report required checks on merge-group runs
