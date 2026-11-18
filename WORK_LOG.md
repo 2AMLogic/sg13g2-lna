@@ -6,6 +6,8 @@
 
 ### 2026-11-18
 
+- **PR #394**: ci: report required checks on merge-group runs
+- **Issue #391** (closed): Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 - **PR #389**: fix: native-DRC pair check rejects non-dict provenance and null bindings
 - **Issue #386** (closed): native-DRC pair check: non-dict provenance crashes, and null deck/pdk bindings are accepted
 - **PR #385**: refactor: one native-DRC pair check, path-loaded by gate and layout
