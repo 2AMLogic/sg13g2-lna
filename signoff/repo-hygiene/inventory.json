@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11304,
+      "bytes": 11415,
       "role": "script of a declared CI command",
-      "sha256": "sha256:bef97e9fcc97aac7c5ce3a59c46b3cd3fabe9046edde0e903d13f698d46a6209"
+      "sha256": "sha256:442ca3963e00375c70a0aa4a84695f4e07b0f276f7cd5ccce826993b380e5690"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -52,6 +52,11 @@
       "bytes": 28009,
       "role": "script of a declared CI command",
       "sha256": "sha256:113ad302c817ee5a0c1afe37252b39ef0cc681c485e9d1307a132544f1bb7ecf"
+    },
+    ".github/scripts/test-check-layout-freshness.sh": {
+      "bytes": 19101,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:e210bc5ba42fb4d52c53c0abea613f544387d5643f080e5eae3c851d28e82f1a"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
       "bytes": 9537,
@@ -112,6 +117,12 @@
       "script": ".github/scripts/check-layout-freshness"
     },
     {
+      "command": ".github/scripts/test-check-layout-freshness.sh",
+      "job": "layout-freshness",
+      "keeps_valid": "layout-freshness gate self-test",
+      "script": ".github/scripts/test-check-layout-freshness.sh"
+    },
+    {
       "command": "sim/models/check_sources.sh",
       "job": "model-provenance",
       "keeps_valid": "vendored models match recorded sha256",
@@ -144,9 +155,9 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11304,
+      "bytes": 11415,
       "role": "this audit",
-      "sha256": "sha256:bef97e9fcc97aac7c5ce3a59c46b3cd3fabe9046edde0e903d13f698d46a6209"
+      "sha256": "sha256:442ca3963e00375c70a0aa4a84695f4e07b0f276f7cd5ccce826993b380e5690"
     },
     ".github/scripts/inductance_lowfreq.py": {
       "bytes": 1139,
