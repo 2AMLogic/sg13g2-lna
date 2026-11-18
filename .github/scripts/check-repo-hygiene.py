@@ -64,6 +64,10 @@ HYGIENE_FILES = {
         "the one native-DRC pair check: loaded by path by the layout-freshness "
         "gate and the layout scripts (issue #359), so it is hashed like the "
         "gate that executes it",
+    ".github/scripts/inductance_lowfreq.py":
+        "the low-frequency inductance extraction: loaded by path by the "
+        "layout-freshness gate (issue #359 ruling), so it is hashed like the "
+        "gate that executes it",
     ".github/scripts/test-check-repo-hygiene.sh": "this audit's self-test",
 }
 
