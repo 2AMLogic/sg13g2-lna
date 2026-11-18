@@ -79,6 +79,7 @@ DECLARED_COMMANDS = [
     ("testbench-inventory", "python3 -I .github/scripts/check-testbench-inventory.py", "item-9 inventory freshness"),
     ("netlist-freshness", "python3 -I .github/scripts/check-netlist-freshness", "netlist matches schematic inventory"),
     ("layout-freshness", ".github/scripts/check-layout-freshness", "layout evidence agrees with its provenance"),
+    ("layout-freshness", ".github/scripts/test-check-layout-freshness.sh", "layout-freshness gate self-test"),
     ("model-provenance", "sim/models/check_sources.sh", "vendored models match recorded sha256"),
     ("sim-append-only", '.github/scripts/check-sim-append-only --base "$BASE"',
      "committed sim/ evidence is append-only (pull_request and merge_group)"),
