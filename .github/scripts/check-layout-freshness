@@ -26,7 +26,10 @@
 #      the realization's inductor2 instances, each with geometry_um equal to
 #      the realization params and drawn_lowfreq_H equal to the low-frequency
 #      L re-evaluated here (inductance_lowfreq.py, beside this gate; kept
-#      equal to layout/inductance_report.py by a layout/tests case)
+#      equal to layout/inductance_report.py by a layout/tests case); and
+#      netlist_H equal to the value re-parsed from the inductor2 cards of the
+#      realization's netlist, drawn_over_netlist equal to the rounded ratio
+#      (issue #403)
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -78,6 +81,7 @@ else:
     sys.modules["inductance_lowfreq"] = _ind
     _ind_spec.loader.exec_module(_ind)
 l_lowfreq = _ind.l_lowfreq
+netlist_values = _ind.netlist_values
 
 def fail(rel, msg):
     errs.append(f"layout-freshness: {rel}: {msg}")
@@ -276,6 +280,10 @@ def check_inductance_report():
     if set(rows) != set(want):
         fail(rel, f"inductors {sorted(rows)} != inductor2 instances in "
              f"realization.json {sorted(want)}; rerun layout/run_flow.sh")
+    nl_rel = rz.get("netlist")
+    nl_vals = {}
+    if isinstance(nl_rel, str) and nl_rel and (root / nl_rel).is_file():
+        nl_vals = netlist_values((root / nl_rel).read_text(), set(want))
     for inst in sorted(set(rows) & set(want)):
         row, par = rows[inst], want[inst].get("params") or {}
         try:
@@ -299,6 +307,24 @@ def check_inductance_report():
                 or abs(rec - lval) > 1e-9 * abs(lval):
             fail(rel, f"{inst}: drawn_lowfreq_H {rec!r} != {lval!r} recomputed from "
                  "realization.json geometry; rerun layout/run_flow.sh")
+            continue
+        # netlist_H and drawn_over_netlist (issue #403)
+        nl = nl_vals.get(inst)
+        if nl is None:
+            fail(rel, f"{inst}: no parsable inductor2 card in netlist {nl_rel!r}; "
+                 "cannot verify netlist_H")
+            continue
+        rnl = row.get("netlist_H")
+        if not isinstance(rnl, (int, float)) or isinstance(rnl, bool) \
+                or abs(rnl - nl) > 1e-9 * abs(nl):
+            fail(rel, f"{inst}: netlist_H {rnl!r} != {nl!r} re-parsed from {nl_rel}; "
+                 "rerun layout/run_flow.sh")
+            continue
+        ratio = row.get("drawn_over_netlist")
+        if not isinstance(ratio, (int, float)) or isinstance(ratio, bool) \
+                or abs(ratio - round(lval / nl, 5)) > 1e-9:
+            fail(rel, f"{inst}: drawn_over_netlist {ratio!r} != {round(lval / nl, 5)!r} "
+                 "(round(drawn_lowfreq_H / netlist_H, 5)); rerun layout/run_flow.sh")
 
 check_inductance_report()
 

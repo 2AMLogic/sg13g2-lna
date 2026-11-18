@@ -24,3 +24,22 @@ def l_lowfreq(nr_r: int, w_um: float, s_um: float, d_um: float) -> float:
     davg = (d + dout) / 2
     fill = (dout - d) / (dout + d)
     return kem_l * 2.25 * MU0 * n * n * davg / (1 + 3.55 * fill)
+
+
+def netlist_values(netlist_text: str, inductors) -> dict:
+    """Henries of each named inductor2 card, parsed as build() does (issue #403).
+
+    ``layout/inductance_report.py`` ``build()``: token 3 of the card, lowercased,
+    trailing ``n`` -> 1e-9, else ``float``. Only names in ``inductors`` are read.
+    A card whose value does not parse is omitted (the caller reports it).
+    """
+    out = {}
+    for line in netlist_text.splitlines():
+        t = line.split()
+        if t and t[0] in inductors and len(t) > 3:
+            v = t[3].lower()
+            try:
+                out[t[0]] = float(v.rstrip("n")) * 1e-9 if v.endswith("n") else float(v)
+            except ValueError:
+                pass
+    return out

@@ -374,6 +374,16 @@ mk ind-nogeo; indmut ind-nogeo 'del d["inductors"]["Lb"]["geometry_um"]'
 run ind-nogeo 1 "inductor row without geometry_um"
 mk ind-nonnum; indmut ind-nonnum 'd["inductors"]["Lb"]["drawn_lowfreq_H"] = "x"'
 run ind-nonnum 1 "non-numeric drawn_lowfreq_H"
+mk ind-nlH; indmut ind-nlH 'd["inductors"]["Lb"]["netlist_H"] *= 2'
+run ind-nlH 1 "doubled netlist_H"
+named ind-nlH "netlist_H"
+mk ind-ratio; indmut ind-ratio 'd["inductors"]["Lb"]["drawn_over_netlist"] = 999.0'
+run ind-ratio 1 "drawn_over_netlist = 999.0"
+named ind-ratio "drawn_over_netlist"
+# netlist inductor value edited, report not regenerated (issue #403)
+mk ind-nledit; sub 's/^\(Lb [^ ]* [^ ]* \)[^ ]*/\1 5.5n/' "$TMP/ind-nledit/design/netlist/lna.spice"
+run ind-nledit 1 "netlist inductor edit without regeneration"
+named ind-nledit "inductance_report.json"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
