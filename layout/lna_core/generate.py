@@ -208,6 +208,9 @@ def draw_matching(cv: Canvas, rz: dict) -> None:
     small_cap(cv, dict(rz["Csout"]["params"]), 290.0, -330.0, "xout", "rfout")
 
 
+STUB_HALF_WIDTH = 0.2  # um; Router Metal2 stubs / Metal3 trunks are drawn x +- this
+
+
 class Router:
     """Channel router for the bias island: every terminal pin drops a Metal2
     stub straight down to its net's Metal3 trunk (one horizontal track per
@@ -223,8 +226,26 @@ class Router:
     def pin(self, net: str, x: float, y: float, metal2: bool = False) -> None:
         self.pins.setdefault(net, []).append((x, y, metal2))
 
+    def check_pin_collisions(self) -> None:
+        """Fail loudly if stubs of two *different* nets would overlap in x.
+        Stubs span x +- STUB_HALF_WIDTH, so |dx| < 2 * STUB_HALF_WIDTH merges
+        them on Metal2. Same-net pins sharing an x are legal. Covers the
+        stub box only; the Metal2 via-pad half-width is not included (see PR)."""
+        pitch = 2 * STUB_HALF_WIDTH
+        pts = sorted((x, net) for net, pins in self.pins.items() for x, _y, _m in pins)
+        for i, (xa, na) in enumerate(pts):
+            for xb, nb in pts[i + 1 :]:
+                if xb - xa >= pitch - 1e-9:
+                    break
+                if nb != na:
+                    raise SystemExit(
+                        f"generate: bias pins of nets {na} and {nb} collide at x={xa:g}/{xb:g} "
+                        f"(|dx|={xb - xa:g} < stub pitch {pitch:g}); Metal2 stubs would short"
+                    )
+
     def route(self) -> dict[str, float]:
         cv, tracks = self.cv, {}
+        self.check_pin_collisions()
         for i, (net, pins) in enumerate(self.pins.items()):
             if len(pins) < 2:
                 raise SystemExit(f"generate: bias net {net} has a single pin {pins}")
@@ -233,7 +254,7 @@ class Router:
             for x, y, metal2 in pins:
                 if not metal2:
                     via_stack(cv, x, y, "Metal2")
-                cv.box(METAL2, x - 0.2, min(y, yt) - 0.2, x + 0.2, max(y, yt) + 0.2)
+                cv.box(METAL2, x - STUB_HALF_WIDTH, min(y, yt) - STUB_HALF_WIDTH, x + STUB_HALF_WIDTH, max(y, yt) + STUB_HALF_WIDTH)
                 via_stack(cv, x, yt, "Metal3", b="Metal2")
             xs = [p[0] for p in pins]
             cv.box(METAL3, min(xs) - 0.2, yt - 0.2, max(xs) + 0.2, yt + 0.2)
