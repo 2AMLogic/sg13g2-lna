@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11073,
+      "bytes": 11304,
       "role": "script of a declared CI command",
-      "sha256": "sha256:a52cb78d8e50a02083a15c968b4a0b826be25abcc0d546498297478c8fdf5397"
+      "sha256": "sha256:bef97e9fcc97aac7c5ce3a59c46b3cd3fabe9046edde0e903d13f698d46a6209"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -144,9 +144,14 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11073,
+      "bytes": 11304,
       "role": "this audit",
-      "sha256": "sha256:a52cb78d8e50a02083a15c968b4a0b826be25abcc0d546498297478c8fdf5397"
+      "sha256": "sha256:bef97e9fcc97aac7c5ce3a59c46b3cd3fabe9046edde0e903d13f698d46a6209"
+    },
+    ".github/scripts/inductance_lowfreq.py": {
+      "bytes": 1862,
+      "role": "the low-frequency inductance extraction: loaded by path by the layout-freshness gate (issue #359 ruling), so it is hashed like the gate that executes it",
+      "sha256": "sha256:5cbce61d4bd53fb6e07154d2f6b1b3645f477860bffa71a7167ef65b595992e5"
     },
     ".github/scripts/native_drc_pair.py": {
       "bytes": 9248,
