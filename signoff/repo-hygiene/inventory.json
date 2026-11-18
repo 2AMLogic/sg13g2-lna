@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10942,
+      "bytes": 11073,
       "role": "script of a declared CI command",
-      "sha256": "sha256:b1505090d5d1d3ae9e5b8dd75fb35a5877646c19d9b1689aeccb9623c01ff81c"
+      "sha256": "sha256:a52cb78d8e50a02083a15c968b4a0b826be25abcc0d546498297478c8fdf5397"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -54,9 +54,9 @@
       "sha256": "sha256:113ad302c817ee5a0c1afe37252b39ef0cc681c485e9d1307a132544f1bb7ecf"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 8223,
+      "bytes": 9537,
       "role": "script of a declared CI command",
-      "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
+      "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
     },
     ".github/scripts/test-check-signoff.sh": {
       "bytes": 12328,
@@ -144,9 +144,9 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10942,
+      "bytes": 11073,
       "role": "this audit",
-      "sha256": "sha256:b1505090d5d1d3ae9e5b8dd75fb35a5877646c19d9b1689aeccb9623c01ff81c"
+      "sha256": "sha256:a52cb78d8e50a02083a15c968b4a0b826be25abcc0d546498297478c8fdf5397"
     },
     ".github/scripts/native_drc_pair.py": {
       "bytes": 9248,
@@ -159,9 +159,9 @@
       "sha256": "sha256:3d94ddeb0278f6db024ee4cdd659eda2cf7a92ccabcec0e54c1b5ffea52efdaf"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 8223,
+      "bytes": 9537,
       "role": "this audit's self-test",
-      "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
+      "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
     },
     ".github/workflows/signoff.yml": {
       "bytes": 30154,
