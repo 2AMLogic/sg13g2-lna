@@ -17,6 +17,9 @@
 #      recorded minimum -> FAIL, naming the relationship
 #      (issue #386 adds: non-dict provenance and null / object-less
 #      deck/pdk bindings -> FAIL with a message, not a traceback)
+#  10. inductance_report.json (issue #400): mutated realization geometry,
+#      stale drawn_lowfreq_H, missing / malformed report, missing or extra
+#      inductor -> FAIL, naming inductance_report.json
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -32,7 +35,7 @@ C=layout/lna_core
 mk() { # mk <name>: repo-shaped copy of the inputs
   d="$TMP/$1"; mkdir -p "$d/$C" "$d/design/netlist"
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
-  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice} "$d/$C/"
+  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice,inductance_report.json} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
   cp "$SRC/$C"/{lvs_request.json,lvs_full_request.json} "$d/$C/"
   cp "$SRC/layout/lvs_identity.py" "$d/layout/"
@@ -334,6 +337,43 @@ named nat-nodeckobj "report provenance has no deck object"
 mknative nat-nopdkobj; natrep nat-nopdkobj 'del d["provenance"]["pdk"]'
 run nat-nopdkobj 1 "report without a pdk object"
 named nat-nopdkobj "no pdk object (--pdk must be given)"
+
+# --- issue #400: inductance report vs realization geometry ---
+indmut() { # indmut <case> <python statement on d (the report)>
+  python3 -I - "$TMP/$1/$C/inductance_report.json" "$2" <<'PY'
+import json, sys
+p, stmt = sys.argv[1], sys.argv[2]
+d = json.load(open(p)); exec(stmt)
+json.dump(d, open(p, "w"), indent=2)
+PY
+}
+mk ind-geom; python3 -I - "$TMP/ind-geom/$C/realization.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["in_scope"]["Lb"]["params"]["d"] = "99.5u"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run ind-geom 1 "inductor geometry changed, report not regenerated"
+named ind-geom "inductance_report.json"
+mk ind-stale; indmut ind-stale 'd["inductors"]["Lb"]["drawn_lowfreq_H"] *= 1.01'
+run ind-stale 1 "stale drawn_lowfreq_H"
+named ind-stale "drawn_lowfreq_H"
+mk ind-missing; rm "$TMP/ind-missing/$C/inductance_report.json"
+run ind-missing 1 "missing inductance_report.json"
+named ind-missing "inductance_report.json"
+mk ind-badjson; echo '{not json' > "$TMP/ind-badjson/$C/inductance_report.json"
+run ind-badjson 1 "unparseable inductance_report.json"
+mk ind-noobj; echo '{"inductors": 3}' > "$TMP/ind-noobj/$C/inductance_report.json"
+run ind-noobj 1 "report without inductors object"
+mk ind-dropped; indmut ind-dropped 'del d["inductors"]["Lb"]'
+run ind-dropped 1 "inductor missing from report"
+named ind-dropped "inductance_report.json"
+mk ind-extra; indmut ind-extra 'd["inductors"]["Lx"] = d["inductors"]["Lb"]'
+run ind-extra 1 "extra inductor in report"
+mk ind-nogeo; indmut ind-nogeo 'del d["inductors"]["Lb"]["geometry_um"]'
+run ind-nogeo 1 "inductor row without geometry_um"
+mk ind-nonnum; indmut ind-nonnum 'd["inductors"]["Lb"]["drawn_lowfreq_H"] = "x"'
+run ind-nonnum 1 "non-numeric drawn_lowfreq_H"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
