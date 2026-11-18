@@ -8,6 +8,7 @@
 #   1. layout/tools/fetch-pcell-deps.sh   pinned PyCell shims (idempotent)
 #   2. layout/lna_core/generate.py        lna_core.gds + .provenance.json
 #   3. layout/lvs_reference.py            lna_core.lvs_reference.spice
+#      layout/inductance_report.py        inductance_report.json (drawn vs netlist L, issue #347)
 #   4. klt drc     --deck sg13g2          drc_report.json
 #   5. klt extract --deck sg13g2          extract_report.json + lna_core.extracted.spice
 #   6. klt lvs     lvs_request.json       lvs_report.json      (scoped reference)
@@ -69,6 +70,7 @@ run_lvs() {
 "${LAYOUT_DIR}/tools/fetch-pcell-deps.sh"
 "${PYTHON}" "${CELL_DIR}/generate.py" "${NX_ARGS[@]}"
 python3 -I "${LAYOUT_DIR}/lvs_reference.py" "${CELL_DIR}"
+"${PYTHON}" "${LAYOUT_DIR}/inductance_report.py" "${CELL_DIR}"
 
 "${KLT_CMD[@]}" version --format json > "${CELL_DIR}/klt_version.json"
 run_klt "${CELL_DIR}/drc_report.json" drc lna_core.gds --deck sg13g2

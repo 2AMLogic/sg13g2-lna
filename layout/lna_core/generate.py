@@ -121,6 +121,82 @@ def via_stack(cv: Canvas, x, y, top: str, cols=1, rows=1, tcols=1, trows=1):
     return cv.pcell("via_stack", params, x, y)
 
 
+def cap_bank(cv: Canvas, cp: dict, count: int, x0: float, ytop: float, top_net: str, bot_net: str, ncol: int = 4):
+    """A ``count``-unit cmim bank (same arithmetic as Cbref): merged Metal5
+    bottom sheet (net ``bot_net``, brought to Metal1 by a via stack on a west
+    stub, labelled there) and TopMetal1 top-plate straps (net ``top_net``,
+    labelled on TopMetal1)."""
+    side = float(cp["w"].rstrip("u"))
+    nrow = count // ncol
+    if ncol * nrow != count:
+        raise SystemExit("generate: cap bank assumes a full ncol grid")
+    pitch = side + 2.0
+    centers = []
+    for j in range(nrow):
+        for i in range(ncol):
+            x, y = x0 + pitch * i, ytop - side - pitch * j
+            cv.pcell("cmim", cp, x, y)
+            centers.append((x + side / 2, y + side / 2))
+    x1 = x0 + pitch * (ncol - 1) + side
+    y0 = ytop - side - pitch * (nrow - 1)
+    cv.box(METAL5, x0 - 0.6, y0 - 0.6, x1 + 0.6, ytop + 0.6)
+    ymid = (y0 + ytop) / 2
+    cv.box(METAL5, x0 - 6.0, ymid - 1.5, x0 - 0.5, ymid + 1.5)
+    via_stack(cv, x0 - 4.0, ymid, "Metal5", cols=2, rows=2)
+    cv.label(METAL1_TEXT, bot_net, x0 - 4.0, ymid)
+    strap = 4.0
+    for j in range(nrow):
+        yc = centers[j * ncol][1]
+        cv.box(TOPMETAL1, centers[j * ncol][0], yc - strap / 2, centers[j * ncol + ncol - 1][0], yc + strap / 2)
+    xc0 = centers[0][0]
+    cv.box(TOPMETAL1, xc0 - strap / 2, centers[-ncol][1], xc0 + strap / 2, centers[0][1])
+    cv.label(TOPMETAL1_TEXT, top_net, xc0, centers[0][1])
+
+
+def small_cap(cv: Canvas, cp: dict, x: float, y: float, top_net: str, bot_net: str) -> None:
+    """One cmim: top plate labelled on TopMetal1, bottom plate (the PyCell's
+    own Metal5) strapped west to a via stack and labelled on Metal1."""
+    side = float(cp["w"].rstrip("u"))
+    cv.pcell("cmim", cp, x, y)
+    cv.label(TOPMETAL1_TEXT, top_net, x + side / 2, y + side / 2)
+    cv.box(METAL5, x - 6.0, y + side / 2 - 1.5, x - 0.3, y + side / 2 + 1.5)
+    via_stack(cv, x - 4.0, y + side / 2, "Metal5", cols=2, rows=2)
+    cv.label(METAL1_TEXT, bot_net, x - 4.0, y + side / 2)
+
+
+def inductor(cv: Canvas, spec: dict, cx: float, y0: float, la: str, lb: str) -> None:
+    """PDK inductor2 PyCell, origin at the bottom-centre of its pin edge.
+    Its TopMetal1 pins LA (west) / LB (east) are labelled with the schematic
+    nets on TopMetal1.text (positions read from the drawn cell's pin shapes)."""
+    cell = cv.pcell("inductor2", dict(spec["params"]), cx, y0)
+    pin = cv.ly.layer(126, 2)
+    boxes = sorted((s.bbox() for s in cell.shapes(pin).each()), key=lambda b: b.center().x)
+    if len(boxes) != 2:
+        raise SystemExit(f"generate: inductor2 {spec['params']} has {len(boxes)} TopMetal1 pins, expected 2")
+    for b, net in zip(boxes, (la, lb)):
+        cv.label(TOPMETAL1_TEXT, net, cx + b.center().x * cv.ly.dbu, y0 + 3.0)
+
+
+def draw_matching(cv: Canvas, rz: dict) -> None:
+    """Issue #347: matching-network devices (inductors, coupling/shunt caps).
+    Floorplan (um): inductor row north of the core at y=50 (Le x=-250, Lc
+    x=100, Lb x=470); cap banks Cin / Cout east of the Cbref bank at
+    x=160 / x=480 (top y=-14); the three small caps below them at y=-330.
+    Inter-block wiring is deliberately NOT drawn: every terminal carries a
+    net-name label on the metal layer klt reads, and the shared names
+    (e1 vss vdd outn b1 xout) join these devices to the core's nets at
+    extraction; routing is pad-ring / top-level assembly (#228)."""
+    y_ind = 50.0
+    inductor(cv, rz["Le"], -250.0, y_ind, "e1", "vss")
+    inductor(cv, rz["Lc"], 100.0, y_ind, "vdd", "outn")
+    inductor(cv, rz["Lb"], 470.0, y_ind, "xin", "rfin")
+    cap_bank(cv, dict(rz["Cin"]["params"]), int(rz["Cin"]["count"]), 160.0, -14.0, "b1", "xin")
+    cap_bank(cv, dict(rz["Cout"]["params"]), int(rz["Cout"]["count"]), 480.0, -14.0, "outn", "xout")
+    small_cap(cv, dict(rz["Cpin"]["params"]), 170.0, -330.0, "xin", "vss")
+    small_cap(cv, dict(rz["Cpout"]["params"]), 230.0, -330.0, "xout", "vss")
+    small_cap(cv, dict(rz["Csout"]["params"]), 290.0, -330.0, "xout", "rfout")
+
+
 def draw(pya, nx: int, realization: dict) -> Canvas:
     rz = realization["in_scope"]
     cv = Canvas(pya, realization["top_cell"])
@@ -265,6 +341,7 @@ def draw(pya, nx: int, realization: dict) -> Canvas:
     # bref Metal1 from the via stack to Q3's riser (riser spans y>=-4.2).
     cv.box(METAL1, xc0 - 0.5, -4.20, -23.00, -3.80)
 
+    draw_matching(cv, rz)
     return cv
 
 

@@ -1,7 +1,7 @@
 {
   "_comment": "Written by layout/lna_core/generate.py alongside the GDS; regenerate both together.",
   "gds": "lna_core.gds",
-  "gds_sha256": "ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+  "gds_sha256": "58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
   "top_cell": "lna_core",
   "nx": 8,
   "klayout_python": "0.30.10",
@@ -13,9 +13,9 @@
     "pycell4klayout-api": "IHP-GmbH/pycell4klayout-api@4c463c43991fb0967a824906518b66047bfb33c4"
   },
   "bbox_um": [
-    -165.0,
+    -395.128,
     -396.6,
-    124.6,
-    29.2
+    744.6,
+    350.23
   ]
 }

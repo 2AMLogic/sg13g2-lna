@@ -2,16 +2,30 @@
 
 * cell lna_core
 * pin b1
+* pin b1
 * pin bref
 * pin gsvo
+* pin outn
+* pin rfout
 * pin vdd
 * pin vss
+* pin vss
+* pin vss
+* pin xin
+* pin xin
+* pin xout
+* pin xout
+* pin xout
 * pin xout
 * pin e1
 * pin vb2
 * pin casc
 * pin outn
-.SUBCKT lna_core b1 bref gsvo vdd vss xout e1 vb2 casc outn
+* pin outn,vdd
+* pin e1,vss
+* pin rfin,xin
+.SUBCKT lna_core b1 b1$1 bref gsvo outn rfout vdd vss vss$1 vss$2 xin xin$1
++ xout xout$1 xout$2 xout$3 e1 vb2 casc outn$1 outn|vdd e1|vss rfin|xin
 * device instance $1 r0 *1 -69.16,18 pfet
 M$1 bref gsvo vdd vdd pfet L=1U W=16U AS=5.44P AD=3.04P PS=32.68U PD=16.38U
 * device instance $2 r0 *1 -67.78,18 pfet
@@ -76,40 +90,110 @@ M$30 vdd gsvo bref vdd pfet L=1U W=16U AS=3.04P AD=3.04P PS=16.38U PD=16.38U
 M$31 bref gsvo vdd vdd pfet L=1U W=16U AS=3.04P AD=3.04P PS=16.38U PD=16.38U
 * device instance $32 r0 *1 -26.38,18 pfet
 M$32 vdd gsvo bref vdd pfet L=1U W=16U AS=3.04P AD=5.44P PS=16.38U PD=32.68U
-* device instance $33 r0 *1 -107.75,-245.75 cap_cmim
-C$33 vss bref 6.250695e-12
-* device instance $34 r0 *1 -41.25,-245.75 cap_cmim
-C$34 vss bref 6.250695e-12
-* device instance $35 r0 *1 25.25,-245.75 cap_cmim
-C$35 vss bref 6.250695e-12
-* device instance $36 r0 *1 91.75,-245.75 cap_cmim
-C$36 vss bref 6.250695e-12
-* device instance $37 r0 *1 -107.75,-179.25 cap_cmim
-C$37 vss bref 6.250695e-12
-* device instance $38 r0 *1 -41.25,-179.25 cap_cmim
-C$38 vss bref 6.250695e-12
-* device instance $39 r0 *1 25.25,-179.25 cap_cmim
-C$39 vss bref 6.250695e-12
-* device instance $40 r0 *1 91.75,-179.25 cap_cmim
-C$40 vss bref 6.250695e-12
-* device instance $41 r0 *1 -107.75,-112.75 cap_cmim
-C$41 vss bref 6.250695e-12
-* device instance $42 r0 *1 -41.25,-112.75 cap_cmim
-C$42 vss bref 6.250695e-12
-* device instance $43 r0 *1 25.25,-112.75 cap_cmim
-C$43 vss bref 6.250695e-12
-* device instance $44 r0 *1 91.75,-112.75 cap_cmim
-C$44 vss bref 6.250695e-12
-* device instance $45 r0 *1 -107.75,-46.25 cap_cmim
-C$45 vss bref 6.250695e-12
-* device instance $46 r0 *1 -41.25,-46.25 cap_cmim
-C$46 vss bref 6.250695e-12
-* device instance $47 r0 *1 25.25,-46.25 cap_cmim
-C$47 vss bref 6.250695e-12
-* device instance $48 r0 *1 91.75,-46.25 cap_cmim
-C$48 vss bref 6.250695e-12
-* device instance $49 r0 *1 -160,-202.175 rppd
-X$49 xout vss vss rppd r=99999.4234592 L=386.65U W=1U
-* device instance $50 r0 *1 -12.503,-1.14 rppd
-X$50 bref b1 vss rppd r=329.741550696 L=1.005U W=1U
+* device instance $33 r0 *1 180.187,-319.813 cap_cmim
+C$33 vss xin 6.259709375e-13
+* device instance $34 r0 *1 239.14,-320.86 cap_cmim
+C$34 vss$1 xout$2 5.041624e-13
+* device instance $35 r0 *1 297.572,-322.428 cap_cmim
+C$35 rfout xout$1 3.464797375e-13
+* device instance $36 r0 *1 -107.75,-245.75 cap_cmim
+C$36 vss$2 bref 6.250695e-12
+* device instance $37 r0 *1 -41.25,-245.75 cap_cmim
+C$37 vss$2 bref 6.250695e-12
+* device instance $38 r0 *1 25.25,-245.75 cap_cmim
+C$38 vss$2 bref 6.250695e-12
+* device instance $39 r0 *1 91.75,-245.75 cap_cmim
+C$39 vss$2 bref 6.250695e-12
+* device instance $40 r0 *1 -107.75,-179.25 cap_cmim
+C$40 vss$2 bref 6.250695e-12
+* device instance $41 r0 *1 -41.25,-179.25 cap_cmim
+C$41 vss$2 bref 6.250695e-12
+* device instance $42 r0 *1 25.25,-179.25 cap_cmim
+C$42 vss$2 bref 6.250695e-12
+* device instance $43 r0 *1 91.75,-179.25 cap_cmim
+C$43 vss$2 bref 6.250695e-12
+* device instance $44 r0 *1 -107.75,-112.75 cap_cmim
+C$44 vss$2 bref 6.250695e-12
+* device instance $45 r0 *1 -41.25,-112.75 cap_cmim
+C$45 vss$2 bref 6.250695e-12
+* device instance $46 r0 *1 25.25,-112.75 cap_cmim
+C$46 vss$2 bref 6.250695e-12
+* device instance $47 r0 *1 91.75,-112.75 cap_cmim
+C$47 vss$2 bref 6.250695e-12
+* device instance $48 r0 *1 -107.75,-46.25 cap_cmim
+C$48 vss$2 bref 6.250695e-12
+* device instance $49 r0 *1 -41.25,-46.25 cap_cmim
+C$49 vss$2 bref 6.250695e-12
+* device instance $50 r0 *1 25.25,-46.25 cap_cmim
+C$50 vss$2 bref 6.250695e-12
+* device instance $51 r0 *1 91.75,-46.25 cap_cmim
+C$51 vss$2 bref 6.250695e-12
+* device instance $52 r0 *1 192.25,-245.75 cap_cmim
+C$52 xin$1 b1 6.250695e-12
+* device instance $53 r0 *1 258.75,-245.75 cap_cmim
+C$53 xin$1 b1 6.250695e-12
+* device instance $54 r0 *1 325.25,-245.75 cap_cmim
+C$54 xin$1 b1 6.250695e-12
+* device instance $55 r0 *1 391.75,-245.75 cap_cmim
+C$55 xin$1 b1 6.250695e-12
+* device instance $56 r0 *1 192.25,-179.25 cap_cmim
+C$56 xin$1 b1 6.250695e-12
+* device instance $57 r0 *1 258.75,-179.25 cap_cmim
+C$57 xin$1 b1 6.250695e-12
+* device instance $58 r0 *1 325.25,-179.25 cap_cmim
+C$58 xin$1 b1 6.250695e-12
+* device instance $59 r0 *1 391.75,-179.25 cap_cmim
+C$59 xin$1 b1 6.250695e-12
+* device instance $60 r0 *1 192.25,-112.75 cap_cmim
+C$60 xin$1 b1 6.250695e-12
+* device instance $61 r0 *1 258.75,-112.75 cap_cmim
+C$61 xin$1 b1 6.250695e-12
+* device instance $62 r0 *1 325.25,-112.75 cap_cmim
+C$62 xin$1 b1 6.250695e-12
+* device instance $63 r0 *1 391.75,-112.75 cap_cmim
+C$63 xin$1 b1 6.250695e-12
+* device instance $64 r0 *1 192.25,-46.25 cap_cmim
+C$64 xin$1 b1 6.250695e-12
+* device instance $65 r0 *1 258.75,-46.25 cap_cmim
+C$65 xin$1 b1 6.250695e-12
+* device instance $66 r0 *1 325.25,-46.25 cap_cmim
+C$66 xin$1 b1 6.250695e-12
+* device instance $67 r0 *1 391.75,-46.25 cap_cmim
+C$67 xin$1 b1 6.250695e-12
+* device instance $68 r0 *1 512.25,-245.75 cap_cmim
+C$68 xout$3 outn 6.250695e-12
+* device instance $69 r0 *1 578.75,-245.75 cap_cmim
+C$69 xout$3 outn 6.250695e-12
+* device instance $70 r0 *1 645.25,-245.75 cap_cmim
+C$70 xout$3 outn 6.250695e-12
+* device instance $71 r0 *1 711.75,-245.75 cap_cmim
+C$71 xout$3 outn 6.250695e-12
+* device instance $72 r0 *1 512.25,-179.25 cap_cmim
+C$72 xout$3 outn 6.250695e-12
+* device instance $73 r0 *1 578.75,-179.25 cap_cmim
+C$73 xout$3 outn 6.250695e-12
+* device instance $74 r0 *1 645.25,-179.25 cap_cmim
+C$74 xout$3 outn 6.250695e-12
+* device instance $75 r0 *1 711.75,-179.25 cap_cmim
+C$75 xout$3 outn 6.250695e-12
+* device instance $76 r0 *1 512.25,-112.75 cap_cmim
+C$76 xout$3 outn 6.250695e-12
+* device instance $77 r0 *1 578.75,-112.75 cap_cmim
+C$77 xout$3 outn 6.250695e-12
+* device instance $78 r0 *1 645.25,-112.75 cap_cmim
+C$78 xout$3 outn 6.250695e-12
+* device instance $79 r0 *1 711.75,-112.75 cap_cmim
+C$79 xout$3 outn 6.250695e-12
+* device instance $80 r0 *1 512.25,-46.25 cap_cmim
+C$80 xout$3 outn 6.250695e-12
+* device instance $81 r0 *1 578.75,-46.25 cap_cmim
+C$81 xout$3 outn 6.250695e-12
+* device instance $82 r0 *1 645.25,-46.25 cap_cmim
+C$82 xout$3 outn 6.250695e-12
+* device instance $83 r0 *1 711.75,-46.25 cap_cmim
+C$83 xout$3 outn 6.250695e-12
+* device instance $84 r0 *1 -160,-202.175 rppd
+X$84 xout vss$2 vss$2 rppd r=99999.4234592 L=386.65U W=1U
+* device instance $85 r0 *1 -12.503,-1.14 rppd
+X$85 bref b1$1 vss$2 rppd r=329.741550696 L=1.005U W=1U
 .ENDS lna_core
