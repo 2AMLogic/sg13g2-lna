@@ -4,6 +4,11 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-18
+
+- **PR #385**: refactor: one native-DRC pair check, path-loaded by gate and layout
+- **Issue #359** (closed): Consolidate native-DRC pair validation: one implementation instead of three
+
 ### 2026-11-17
 
 - **PR #315**: refactor: consolidate five run_deck() deck gates into one sim_run_deck helper
@@ -366,15 +371,4 @@
 - **Issue #26** (closed): design: replace Q1's placeholder resistive base-bias divider — measured I_C1 spans 25 uA..14.7 mA over PVT
 - **Issue #25** (closed): sim: hbt-characterization's NF bench does not pin the source reference temperature (ngspice per-instance temp= is ignored for resistor noise)
 - **Issue #19** (closed): spec: ratify spec/target-spec.md via the fleet two-key mechanism
-
-### 2026-09-18
-
-- **PR #29**: feat(sim): committed BVCEO/BVCER/BVCES breakdown-extraction testbench for npn13G2
-- **PR #28**: sim: circuit-level S-parameter, NF, stability and IIP3 campaign against design/lna.sch
-- **PR #24**: feat(sim): full Nx=8 corner grid + V_CE=0.6 V point for hbt-characterization
-- **PR #23**: feat(design): add cascode LNA schematic and derived netlist
-- **Issue #21** (closed): Extend hbt-characterization: full Nx=8 corner grid and V_CE=0.6 V point
-- **Issue #20** (closed): Committed BVCEO / BVCER breakdown-extraction testbench for npn13G2
-- **Issue #18** (closed): sim: S-parameter, NF, stability, and IIP3 testbenches against design/lna.sch
-- **Issue #17** (closed): design/lna.sch: schematic and derived netlist for the ratified bias/supply topology
 
