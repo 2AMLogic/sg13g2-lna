@@ -8,16 +8,18 @@
   "top": "lna_core",
   "dbu_um": 0.001,
   "netlist_path": "lna_core.extracted.spice",
-  "netlist_sha256": "e969988164975d4333d887a3aa4e62909dfd77ddf970cb450dd38ca630ab3988",
-  "netlist_normalized_sha256": "5a1ed371b10606302eb4e6c6c01a5f581a6513d9fa4a0110f8935f5268b6b1f4",
+  "netlist_sha256": "0bb32e6845d0d7da8965625039b1c8499fde91e71284b15128b7eaa41b378068",
+  "netlist_normalized_sha256": "a487fb61aa2c4473337f5d10329cc8620ff40aa045fd3ff72144d54ca0b5b5c8",
   "status": "extracted",
-  "device_count": 85,
-  "net_count": 23,
-  "pin_count": 23,
+  "device_count": 132,
+  "net_count": 34,
+  "pin_count": 34,
   "device_counts": {
-    "cap_cmim": 51,
-    "pfet": 32,
-    "rppd": 2
+    "cap_cmim": 83,
+    "nfet": 2,
+    "pfet": 38,
+    "rhigh": 1,
+    "rppd": 8
   },
   "dummy_devices_dropped": 0,
   "ignored_layers": [
@@ -34,7 +36,7 @@
     {
       "layer": 5,
       "datatype": 2,
-      "shapes": 1
+      "shapes": 4
     },
     {
       "layer": 5,
@@ -69,12 +71,12 @@
     {
       "layer": 31,
       "datatype": 2,
-      "shapes": 1
+      "shapes": 2
     },
     {
       "layer": 32,
       "datatype": 0,
-      "shapes": 1
+      "shapes": 2
     },
     {
       "layer": 33,
@@ -84,7 +86,7 @@
     {
       "layer": 40,
       "datatype": 0,
-      "shapes": 3
+      "shapes": 7
     },
     {
       "layer": 50,
@@ -94,17 +96,17 @@
     {
       "layer": 51,
       "datatype": 0,
-      "shapes": 82
+      "shapes": 88
     },
     {
       "layer": 52,
       "datatype": 0,
-      "shapes": 4
+      "shapes": 150
     },
     {
       "layer": 63,
       "datatype": 0,
-      "shapes": 21
+      "shapes": 33
     },
     {
       "layer": 67,
@@ -141,7 +143,7 @@
     {
       "layer": 8,
       "datatype": 2,
-      "shapes": 13
+      "shapes": 36
     },
     {
       "layer": 10,
@@ -161,7 +163,7 @@
     {
       "layer": 28,
       "datatype": 0,
-      "shapes": 2
+      "shapes": 10
     },
     {
       "layer": 36,
@@ -171,7 +173,7 @@
     {
       "layer": 44,
       "datatype": 0,
-      "shapes": 1
+      "shapes": 4
     },
     {
       "layer": 46,
@@ -181,12 +183,12 @@
     {
       "layer": 111,
       "datatype": 0,
-      "shapes": 6
+      "shapes": 28
     },
     {
       "layer": 128,
       "datatype": 0,
-      "shapes": 2
+      "shapes": 75
     },
     {
       "layer": 129,
@@ -208,24 +210,24 @@
   "devices": [
     {
       "name": "$1",
-      "class": "pfet",
+      "class": "nfet",
       "nets": {
-        "s": "vdd",
-        "g": "gsvo",
-        "d": "bref",
-        "b": "vdd"
+        "s": "es",
+        "g": "vbg",
+        "d": "gsvo",
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 16.0,
-        "as_um2": 5.44,
-        "ad_um2": 3.04,
-        "ps_um": 32.68,
-        "pd_um": 16.38
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "pmosHV",
+          "cell": "nmosHV",
           "array_index": null
         }
       ]
@@ -255,6 +257,196 @@
       ]
     },
     {
+      "name": "$100",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$101",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$102",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$103",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$104",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$105",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$106",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$107",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$108",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$109",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
       "name": "$11",
       "class": "pfet",
       "nets": {
@@ -274,6 +466,196 @@
       "instance_path": [
         {
           "cell": "pmosHV",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$110",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$111",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$112",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$113",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$114",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$115",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$116",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$117",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$118",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$119",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
           "array_index": null
         }
       ]
@@ -303,6 +685,214 @@
       ]
     },
     {
+      "name": "$120",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$121",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$122",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$123",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xout",
+        "b": "outn"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$124",
+      "class": "rppd",
+      "nets": {
+        "a": "xout",
+        "b": "vss",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 99999.423459,
+        "l_um": 386.65,
+        "w_um": 1.0,
+        "area_um2": 386.65,
+        "perimeter_um": 775.3
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$1",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$125",
+      "class": "rppd",
+      "nets": {
+        "a": "bref",
+        "b": "b1",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 329.741551,
+        "l_um": 1.005,
+        "w_um": 1.0,
+        "area_um2": 1.005,
+        "perimeter_um": 4.01
+      },
+      "instance_path": [
+        {
+          "cell": "rppd",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$126",
+      "class": "rppd",
+      "nets": {
+        "a": "vb2",
+        "b": "vdd",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 1000.417495,
+        "l_um": 3.6,
+        "w_um": 1.0,
+        "area_um2": 3.6,
+        "perimeter_um": 9.2
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$2",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$127",
+      "class": "rppd",
+      "nets": {
+        "a": "vss",
+        "b": "vb2",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 10999.821074,
+        "l_um": 42.29,
+        "w_um": 1.0,
+        "area_um2": 42.29,
+        "perimeter_um": 86.58
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$3",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$128",
+      "class": "rppd",
+      "nets": {
+        "a": "vss",
+        "b": "nce",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 3400.119284,
+        "l_um": 12.885,
+        "w_um": 1.0,
+        "area_um2": 12.885,
+        "perimeter_um": 27.77
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$4",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$129",
+      "class": "rppd",
+      "nets": {
+        "a": "cb3",
+        "b": "vbg",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 18400.516899,
+        "l_um": 70.925,
+        "w_um": 1.0,
+        "area_um2": 70.925,
+        "perimeter_um": 143.85
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$5",
+          "array_index": null
+        }
+      ]
+    },
+    {
       "name": "$13",
       "class": "pfet",
       "nets": {
@@ -322,6 +912,72 @@
       "instance_path": [
         {
           "cell": "pmosHV",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$130",
+      "class": "rppd",
+      "nets": {
+        "a": "vss",
+        "b": "es",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 9530.536779,
+        "l_um": 36.605,
+        "w_um": 1.0,
+        "area_um2": 36.605,
+        "perimeter_um": 75.21
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$6",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$131",
+      "class": "rppd",
+      "nets": {
+        "a": "vss",
+        "b": "vl",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 26000.218688,
+        "l_um": 100.33,
+        "w_um": 1.0,
+        "area_um2": 100.33,
+        "perimeter_um": 202.66
+      },
+      "instance_path": [
+        {
+          "cell": "rppd$7",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$132",
+      "class": "rhigh",
+      "nets": {
+        "a": "nca",
+        "b": "vdd",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 10049005.217391,
+        "l_um": 3398.82,
+        "w_um": 0.5,
+        "area_um2": 1699.41,
+        "perimeter_um": 6798.64
+      },
+      "instance_path": [
+        {
+          "cell": "rhigh",
           "array_index": null
         }
       ]
@@ -472,24 +1128,24 @@
     },
     {
       "name": "$2",
-      "class": "pfet",
+      "class": "nfet",
       "nets": {
-        "s": "bref",
-        "g": "gsvo",
-        "d": "vdd",
-        "b": "vdd"
+        "s": "es",
+        "g": "vl",
+        "d": "dn",
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 16.0,
-        "as_um2": 3.04,
-        "ad_um2": 3.04,
-        "ps_um": 16.38,
-        "pd_um": 16.38
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "pmosHV",
+          "cell": "nmosHV",
           "array_index": null
         }
       ]
@@ -746,9 +1402,9 @@
       "params": {
         "l_um": 1.0,
         "w_um": 16.0,
-        "as_um2": 3.04,
+        "as_um2": 5.44,
         "ad_um2": 3.04,
-        "ps_um": 16.38,
+        "ps_um": 32.68,
         "pd_um": 16.38
       },
       "instance_path": [
@@ -819,6 +1475,54 @@
         "l_um": 1.0,
         "w_um": 16.0,
         "as_um2": 3.04,
+        "ad_um2": 3.04,
+        "ps_um": 16.38,
+        "pd_um": 16.38
+      },
+      "instance_path": [
+        {
+          "cell": "pmosHV",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$33",
+      "class": "pfet",
+      "nets": {
+        "s": "vdd",
+        "g": "gsvo",
+        "d": "bref",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 16.0,
+        "as_um2": 3.04,
+        "ad_um2": 3.04,
+        "ps_um": 16.38,
+        "pd_um": 16.38
+      },
+      "instance_path": [
+        {
+          "cell": "pmosHV",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$34",
+      "class": "pfet",
+      "nets": {
+        "s": "bref",
+        "g": "gsvo",
+        "d": "vdd",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 16.0,
+        "as_um2": 3.04,
         "ad_um2": 5.44,
         "ps_um": 16.38,
         "pd_um": 32.68
@@ -831,134 +1535,121 @@
       ]
     },
     {
-      "name": "$33",
-      "class": "cap_cmim",
-      "nets": {
-        "a": "vss",
-        "b": "xin"
-      },
-      "params": {
-        "c_f": 6.25970938e-13,
-        "area_um2": 415.140625,
-        "perimeter_um": 81.5
-      },
-      "instance_path": [
-        {
-          "cell": "cmim$1",
-          "array_index": null
-        }
-      ]
-    },
-    {
-      "name": "$34",
-      "class": "cap_cmim",
-      "nets": {
-        "a": "vss",
-        "b": "xout"
-      },
-      "params": {
-        "c_f": 5.041624e-13,
-        "area_um2": 334.1584,
-        "perimeter_um": 73.12
-      },
-      "instance_path": [
-        {
-          "cell": "cmim$2",
-          "array_index": null
-        }
-      ]
-    },
-    {
       "name": "$35",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "rfout",
-        "b": "xout"
+        "s": "vdd",
+        "g": "ncb",
+        "d": "ncb",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 3.46479737e-13,
-        "area_um2": 229.371025,
-        "perimeter_um": 60.58
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "cmim$3",
+          "cell": "pmosHV$1",
           "array_index": null
         }
       ]
     },
     {
       "name": "$36",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "s": "vdd",
+        "g": "ncb",
+        "d": "nca",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "pmosHV$1",
           "array_index": null
         }
       ]
     },
     {
       "name": "$37",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "s": "vdd",
+        "g": "ncb",
+        "d": "vbg",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "pmosHV$1",
           "array_index": null
         }
       ]
     },
     {
       "name": "$38",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "s": "vdd",
+        "g": "dn",
+        "d": "dn",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "pmosHV$1",
           "array_index": null
         }
       ]
     },
     {
       "name": "$39",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "s": "vdd",
+        "g": "dn",
+        "d": "gsvo",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 3.4,
+        "ad_um2": 3.4,
+        "ps_um": 20.68,
+        "pd_um": 20.68
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "pmosHV$1",
           "array_index": null
         }
       ]
@@ -989,19 +1680,24 @@
     },
     {
       "name": "$40",
-      "class": "cap_cmim",
+      "class": "pfet",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "s": "vdd",
+        "g": "gsvo",
+        "d": "vl",
+        "b": "vdd"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "l_um": 1.0,
+        "w_um": 40.0,
+        "as_um2": 13.6,
+        "ad_um2": 13.6,
+        "ps_um": 80.68,
+        "pd_um": 80.68
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "pmosHV$2",
           "array_index": null
         }
       ]
@@ -1011,16 +1707,16 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "xin"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "c_f": 6.25970938e-13,
+        "area_um2": 415.140625,
+        "perimeter_um": 81.5
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "cmim$1",
           "array_index": null
         }
       ]
@@ -1030,16 +1726,16 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "xout"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "c_f": 5.041624e-13,
+        "area_um2": 334.1584,
+        "perimeter_um": 73.12
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "cmim$2",
           "array_index": null
         }
       ]
@@ -1048,17 +1744,17 @@
       "name": "$43",
       "class": "cap_cmim",
       "nets": {
-        "a": "vss",
-        "b": "bref"
+        "a": "rfout",
+        "b": "xout"
       },
       "params": {
-        "c_f": 6.250695e-12,
-        "area_um2": 4160.25,
-        "perimeter_um": 258.0
+        "c_f": 3.46479737e-13,
+        "area_um2": 229.371025,
+        "perimeter_um": 60.58
       },
       "instance_path": [
         {
-          "cell": "cmim",
+          "cell": "cmim$3",
           "array_index": null
         }
       ]
@@ -1068,7 +1764,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1087,7 +1783,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1106,7 +1802,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1125,7 +1821,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1144,7 +1840,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1163,7 +1859,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1206,7 +1902,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1225,7 +1921,7 @@
       "class": "cap_cmim",
       "nets": {
         "a": "vss",
-        "b": "bref"
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1243,8 +1939,8 @@
       "name": "$52",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1262,8 +1958,8 @@
       "name": "$53",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1281,8 +1977,8 @@
       "name": "$54",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1300,8 +1996,8 @@
       "name": "$55",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1319,8 +2015,8 @@
       "name": "$56",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1338,8 +2034,8 @@
       "name": "$57",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1357,8 +2053,8 @@
       "name": "$58",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1376,8 +2072,8 @@
       "name": "$59",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vb2"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1419,8 +2115,8 @@
       "name": "$60",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1438,8 +2134,8 @@
       "name": "$61",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1457,8 +2153,8 @@
       "name": "$62",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1476,8 +2172,8 @@
       "name": "$63",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1495,8 +2191,8 @@
       "name": "$64",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1514,8 +2210,8 @@
       "name": "$65",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1533,8 +2229,8 @@
       "name": "$66",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1552,8 +2248,8 @@
       "name": "$67",
       "class": "cap_cmim",
       "nets": {
-        "a": "xin",
-        "b": "b1"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1571,8 +2267,8 @@
       "name": "$68",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1590,8 +2286,8 @@
       "name": "$69",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1633,8 +2329,8 @@
       "name": "$70",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1652,8 +2348,8 @@
       "name": "$71",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1671,8 +2367,8 @@
       "name": "$72",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1690,8 +2386,8 @@
       "name": "$73",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1709,8 +2405,8 @@
       "name": "$74",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1728,8 +2424,8 @@
       "name": "$75",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "vdd"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1747,8 +2443,8 @@
       "name": "$76",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1766,8 +2462,8 @@
       "name": "$77",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1785,8 +2481,8 @@
       "name": "$78",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1804,8 +2500,8 @@
       "name": "$79",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1847,8 +2543,8 @@
       "name": "$80",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1866,8 +2562,8 @@
       "name": "$81",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1885,8 +2581,8 @@
       "name": "$82",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1904,8 +2600,8 @@
       "name": "$83",
       "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "outn"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
         "c_f": 6.250695e-12,
@@ -1921,44 +2617,114 @@
     },
     {
       "name": "$84",
-      "class": "rppd",
+      "class": "cap_cmim",
       "nets": {
-        "a": "xout",
-        "b": "vss",
-        "w": "vss"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
-        "r_ohm": 99999.423459,
-        "l_um": 386.65,
-        "w_um": 1.0,
-        "area_um2": 386.65,
-        "perimeter_um": 775.3
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
       },
       "instance_path": [
         {
-          "cell": "rppd$1",
+          "cell": "cmim",
           "array_index": null
         }
       ]
     },
     {
       "name": "$85",
-      "class": "rppd",
+      "class": "cap_cmim",
       "nets": {
-        "a": "bref",
-        "b": "b1",
-        "w": "vss"
+        "a": "vss",
+        "b": "bref"
       },
       "params": {
-        "r_ohm": 329.741551,
-        "l_um": 1.005,
-        "w_um": 1.0,
-        "area_um2": 1.005,
-        "perimeter_um": 4.01
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
       },
       "instance_path": [
         {
-          "cell": "rppd",
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$86",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$87",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$88",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$89",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
           "array_index": null
         }
       ]
@@ -1986,6 +2752,196 @@
           "array_index": null
         }
       ]
+    },
+    {
+      "name": "$90",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$91",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "vss",
+        "b": "bref"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$92",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$93",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$94",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$95",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$96",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$97",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$98",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$99",
+      "class": "cap_cmim",
+      "nets": {
+        "a": "xin",
+        "b": "b1"
+      },
+      "params": {
+        "c_f": 6.250695e-12,
+        "area_um2": 4160.25,
+        "perimeter_um": 258.0
+      },
+      "instance_path": [
+        {
+          "cell": "cmim",
+          "array_index": null
+        }
+      ]
     }
   ],
   "nets": [
@@ -1993,7 +2949,7 @@
       "name": "b1",
       "pin": true,
       "device_count": 16,
-      "net_id": 9,
+      "net_id": 11,
       "pin_index": 0,
       "label_positions_um": [
         {
@@ -2021,7 +2977,7 @@
       "name": "bref",
       "pin": true,
       "device_count": 49,
-      "net_id": 8,
+      "net_id": 10,
       "pin_index": 2,
       "label_positions_um": [
         {
@@ -2040,8 +2996,8 @@
       "name": "casc",
       "pin": true,
       "device_count": 0,
-      "net_id": 22,
-      "pin_index": 18,
+      "net_id": 23,
+      "pin_index": 29,
       "label_positions_um": [
         {
           "text": "casc",
@@ -2051,11 +3007,59 @@
       ]
     },
     {
+      "name": "cb3",
+      "pin": true,
+      "device_count": 1,
+      "net_id": 25,
+      "pin_index": 3,
+      "label_positions_um": [
+        {
+          "text": "cb3",
+          "x_um": -873.6,
+          "y_um": 104.0
+        },
+        {
+          "text": "cb3",
+          "x_um": -771.005,
+          "y_um": 100.5
+        }
+      ]
+    },
+    {
+      "name": "dn",
+      "pin": true,
+      "device_count": 4,
+      "net_id": 28,
+      "pin_index": 4,
+      "label_positions_um": [
+        {
+          "text": "dn",
+          "x_um": -981.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "dn",
+          "x_um": -980.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "dn",
+          "x_um": -975.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "dn",
+          "x_um": -952.47,
+          "y_um": 100.6
+        }
+      ]
+    },
+    {
       "name": "e1",
       "pin": true,
       "device_count": 0,
-      "net_id": 17,
-      "pin_index": 16,
+      "net_id": 18,
+      "pin_index": 27,
       "label_positions_um": [
         {
           "text": "e1",
@@ -2068,8 +3072,8 @@
       "name": "e1|vss",
       "pin": true,
       "device_count": 0,
-      "net_id": 25,
-      "pin_index": 21,
+      "net_id": 39,
+      "pin_index": 32,
       "label_positions_um": [
         {
           "text": "e1",
@@ -2084,11 +3088,35 @@
       ]
     },
     {
+      "name": "es",
+      "pin": true,
+      "device_count": 3,
+      "net_id": 27,
+      "pin_index": 5,
+      "label_positions_um": [
+        {
+          "text": "es",
+          "x_um": -959.85,
+          "y_um": 100.6
+        },
+        {
+          "text": "es",
+          "x_um": -953.85,
+          "y_um": 100.6
+        },
+        {
+          "text": "es",
+          "x_um": -652.915,
+          "y_um": 100.5
+        }
+      ]
+    },
+    {
       "name": "gsvo",
       "pin": true,
       "device_count": 32,
-      "net_id": 18,
-      "pin_index": 3,
+      "net_id": 19,
+      "pin_index": 6,
       "label_positions_um": [
         {
           "text": "gsvo",
@@ -2098,11 +3126,117 @@
       ]
     },
     {
+      "name": "gsvo",
+      "pin": true,
+      "device_count": 3,
+      "net_id": 29,
+      "pin_index": 7,
+      "label_positions_um": [
+        {
+          "text": "gsvo",
+          "x_um": -974.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "gsvo",
+          "x_um": -969.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "gsvo",
+          "x_um": -958.47,
+          "y_um": 100.6
+        }
+      ]
+    },
+    {
+      "name": "nca",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 32,
+      "pin_index": 8,
+      "label_positions_um": [
+        {
+          "text": "nca",
+          "x_um": -992.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "nca",
+          "x_um": -919.75,
+          "y_um": 102.86
+        },
+        {
+          "text": "nca",
+          "x_um": -888.6,
+          "y_um": 104.0
+        },
+        {
+          "text": "nca",
+          "x_um": -510.675,
+          "y_um": 99.59
+        }
+      ]
+    },
+    {
+      "name": "ncb",
+      "pin": true,
+      "device_count": 4,
+      "net_id": 31,
+      "pin_index": 9,
+      "label_positions_um": [
+        {
+          "text": "ncb",
+          "x_um": -999.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "ncb",
+          "x_um": -998.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "ncb",
+          "x_um": -993.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "ncb",
+          "x_um": -987.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "ncb",
+          "x_um": -920.95,
+          "y_um": 105.13
+        }
+      ]
+    },
+    {
+      "name": "nce",
+      "pin": true,
+      "device_count": 1,
+      "net_id": 26,
+      "pin_index": 10,
+      "label_positions_um": [
+        {
+          "text": "nce",
+          "x_um": -936.0,
+          "y_um": 104.0
+        },
+        {
+          "text": "nce",
+          "x_um": -780.445,
+          "y_um": 100.5
+        }
+      ]
+    },
+    {
       "name": "outn",
       "pin": true,
       "device_count": 16,
-      "net_id": 10,
-      "pin_index": 4,
+      "net_id": 12,
+      "pin_index": 11,
       "label_positions_um": [
         {
           "text": "outn",
@@ -2115,8 +3249,8 @@
       "name": "outn",
       "pin": true,
       "device_count": 0,
-      "net_id": 23,
-      "pin_index": 19,
+      "net_id": 24,
+      "pin_index": 30,
       "label_positions_um": [
         {
           "text": "outn",
@@ -2129,8 +3263,8 @@
       "name": "outn|vdd",
       "pin": true,
       "device_count": 0,
-      "net_id": 24,
-      "pin_index": 20,
+      "net_id": 35,
+      "pin_index": 31,
       "label_positions_um": [
         {
           "text": "outn",
@@ -2148,8 +3282,8 @@
       "name": "rfin|xin",
       "pin": true,
       "device_count": 0,
-      "net_id": 26,
-      "pin_index": 22,
+      "net_id": 40,
+      "pin_index": 33,
       "label_positions_um": [
         {
           "text": "rfin",
@@ -2167,8 +3301,8 @@
       "name": "rfout",
       "pin": true,
       "device_count": 1,
-      "net_id": 7,
-      "pin_index": 5,
+      "net_id": 6,
+      "pin_index": 12,
       "label_positions_um": [
         {
           "text": "rfout",
@@ -2180,9 +3314,33 @@
     {
       "name": "vb2",
       "pin": true,
+      "device_count": 18,
+      "net_id": 8,
+      "pin_index": 13,
+      "label_positions_um": [
+        {
+          "text": "vb2",
+          "x_um": -967.75,
+          "y_um": -46.25
+        },
+        {
+          "text": "vb2",
+          "x_um": -859.78,
+          "y_um": 100.5
+        },
+        {
+          "text": "vb2",
+          "x_um": -803.33,
+          "y_um": 100.5
+        }
+      ]
+    },
+    {
+      "name": "vb2",
+      "pin": true,
       "device_count": 0,
-      "net_id": 21,
-      "pin_index": 17,
+      "net_id": 22,
+      "pin_index": 28,
       "label_positions_um": [
         {
           "text": "vb2",
@@ -2192,11 +3350,64 @@
       ]
     },
     {
+      "name": "vbg",
+      "pin": true,
+      "device_count": 3,
+      "net_id": 33,
+      "pin_index": 14,
+      "label_positions_um": [
+        {
+          "text": "vbg",
+          "x_um": -986.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "vbg",
+          "x_um": -959.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "vbg",
+          "x_um": -699.52,
+          "y_um": 100.5
+        }
+      ]
+    },
+    {
+      "name": "vdd",
+      "pin": true,
+      "device_count": 30,
+      "net_id": 9,
+      "pin_index": 15,
+      "label_positions_um": [
+        {
+          "text": "vdd",
+          "x_um": -998.0,
+          "y_um": 141.2
+        },
+        {
+          "text": "vdd",
+          "x_um": -855.62,
+          "y_um": 100.5
+        },
+        {
+          "text": "vdd",
+          "x_um": -667.75,
+          "y_um": -46.25
+        },
+        {
+          "text": "vdd",
+          "x_um": -533.115,
+          "y_um": 99.72
+        }
+      ]
+    },
+    {
       "name": "vdd",
       "pin": true,
       "device_count": 64,
-      "net_id": 20,
-      "pin_index": 6,
+      "net_id": 21,
+      "pin_index": 16,
       "label_positions_um": [
         {
           "text": "vdd",
@@ -2206,16 +3417,26 @@
       ]
     },
     {
-      "name": "vss",
+      "name": "vl",
       "pin": true,
-      "device_count": 1,
-      "net_id": 2,
-      "pin_index": 7,
+      "device_count": 3,
+      "net_id": 30,
+      "pin_index": 17,
       "label_positions_um": [
         {
-          "text": "vss",
-          "x_um": 166.0,
-          "y_um": -319.81
+          "text": "vl",
+          "x_um": -968.47,
+          "y_um": 100.6
+        },
+        {
+          "text": "vl",
+          "x_um": -953.16,
+          "y_um": 98.81
+        },
+        {
+          "text": "vl",
+          "x_um": -542.585,
+          "y_um": 100.5
         }
       ]
     },
@@ -2223,8 +3444,8 @@
       "name": "vss",
       "pin": true,
       "device_count": 1,
-      "net_id": 3,
-      "pin_index": 8,
+      "net_id": 2,
+      "pin_index": 18,
       "label_positions_um": [
         {
           "text": "vss",
@@ -2236,10 +3457,69 @@
     {
       "name": "vss",
       "pin": true,
-      "device_count": 19,
-      "net_id": 27,
-      "pin_index": 9,
+      "device_count": 1,
+      "net_id": 7,
+      "pin_index": 19,
       "label_positions_um": [
+        {
+          "text": "vss",
+          "x_um": 166.0,
+          "y_um": -319.81
+        }
+      ]
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 64,
+      "net_id": 41,
+      "pin_index": 20,
+      "label_positions_um": [
+        {
+          "text": "vss",
+          "x_um": -1004.0,
+          "y_um": -146.0
+        },
+        {
+          "text": "vss",
+          "x_um": -890.0,
+          "y_um": 104.0
+        },
+        {
+          "text": "vss",
+          "x_um": -875.0,
+          "y_um": 104.0
+        },
+        {
+          "text": "vss",
+          "x_um": -871.5,
+          "y_um": 97.0
+        },
+        {
+          "text": "vss",
+          "x_um": -846.18,
+          "y_um": 100.5
+        },
+        {
+          "text": "vss",
+          "x_um": -793.89,
+          "y_um": 100.5
+        },
+        {
+          "text": "vss",
+          "x_um": -704.0,
+          "y_um": -146.0
+        },
+        {
+          "text": "vss",
+          "x_um": -690.08,
+          "y_um": 100.5
+        },
+        {
+          "text": "vss",
+          "x_um": -643.475,
+          "y_um": 100.5
+        },
         {
           "text": "vss",
           "x_um": -55.0,
@@ -2251,8 +3531,8 @@
       "name": "xin",
       "pin": true,
       "device_count": 1,
-      "net_id": 5,
-      "pin_index": 10,
+      "net_id": 4,
+      "pin_index": 21,
       "label_positions_um": [
         {
           "text": "xin",
@@ -2265,8 +3545,8 @@
       "name": "xin",
       "pin": true,
       "device_count": 16,
-      "net_id": 11,
-      "pin_index": 11,
+      "net_id": 13,
+      "pin_index": 22,
       "label_positions_um": [
         {
           "text": "xin",
@@ -2280,7 +3560,7 @@
       "pin": true,
       "device_count": 1,
       "net_id": 1,
-      "pin_index": 12,
+      "pin_index": 23,
       "label_positions_um": [
         {
           "text": "xout",
@@ -2293,8 +3573,8 @@
       "name": "xout",
       "pin": true,
       "device_count": 1,
-      "net_id": 4,
-      "pin_index": 13,
+      "net_id": 3,
+      "pin_index": 24,
       "label_positions_um": [
         {
           "text": "xout",
@@ -2307,8 +3587,8 @@
       "name": "xout",
       "pin": true,
       "device_count": 1,
-      "net_id": 6,
-      "pin_index": 14,
+      "net_id": 5,
+      "pin_index": 25,
       "label_positions_um": [
         {
           "text": "xout",
@@ -2321,8 +3601,8 @@
       "name": "xout",
       "pin": true,
       "device_count": 16,
-      "net_id": 12,
-      "pin_index": 15,
+      "net_id": 14,
+      "pin_index": 26,
       "label_positions_um": [
         {
           "text": "xout",
@@ -2333,19 +3613,21 @@
     }
   ],
   "warnings": [
-    "3 candidate 'dantenna' regions match every other drawn-layer predicate of that device class but are missing its device-recognition marker Recog.diode (99/31) -- so this geometry extracted as no device at all rather than as a diode, and the zero device count for this class is not evidence that the layout contains none. Draw the missing layer(s), or run `klt deck devices --deck sg13g2 --class dantenna` for the class's complete marker/requires/excludes set. See docs/cli/extract.md's 'Marker-gated and predicate-gated device classes' section. Note: this geometry also matches SiGe HBT (npn13G2/npn13G2l/npn13G2v), a device family this deck does not model, so it is probably not a diode at all -- see the sg13g2.py docstring section 'SiGe HBTs -- investigated, declined (issue #1232)'.",
+    "6 candidate 'dantenna' regions match every other drawn-layer predicate of that device class but are missing its device-recognition marker Recog.diode (99/31) -- so this geometry extracted as no device at all rather than as a diode, and the zero device count for this class is not evidence that the layout contains none. Draw the missing layer(s), or run `klt deck devices --deck sg13g2 --class dantenna` for the class's complete marker/requires/excludes set. See docs/cli/extract.md's 'Marker-gated and predicate-gated device classes' section. Note: this geometry also matches SiGe HBT (npn13G2/npn13G2l/npn13G2v), a device family this deck does not model, so it is probably not a diode at all -- see the sg13g2.py docstring section 'SiGe HBTs -- investigated, declined (issue #1232)'.",
     "net 'e1|vss' merges 2 distinct labels (e1, vss) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'outn|vdd' merges 2 distinct labels (outn, vdd) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'rfin|xin' merges 2 distinct labels (rfin, xin) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
-    "label 'b1' is drawn on 2 separate nets (net_id 9, 16) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'b1', 'b1$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'e1' is drawn on 2 separate nets (net_id 17, 25) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'e1', 'e1$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'outn' is drawn on 3 separate nets (net_id 10, 23, 24) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'outn', 'outn$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'vdd' is drawn on 2 separate nets (net_id 20, 24) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vdd', 'vdd$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'vss' is drawn on 4 separate nets (net_id 2, 3, 25, 27) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vss', 'vss$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'xin' is drawn on 3 separate nets (net_id 5, 11, 26) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'xin', 'xin$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "label 'xout' is drawn on 4 separate nets (net_id 1, 4, 6, 12) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'xout', 'xout$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
-    "51 drawn capacitors ('cap_cmim') written as a fixed-value 'C' card (the deck's nominal area+perimeter value) -- PDK process corners (e.g. mimcap_ff/mimcap_ss) do not apply to it, so schematic-vs-extracted deltas at non-typical corners include a capacitor-corner term; pass --pdk to bind the PDK capacitor subcircuit instead. See docs/cli/extract.md's 'SPICE model binding' section.",
-    "22 layers (1/20, 1/23, 5/2, 5/23, 8/23, 10/23, 26/0, 27/25, 30/23, 31/2, 32/0, 33/0, 40/0, 50/23, 51/0, 52/0, 63/0, 67/23, 126/2, 126/23, 134/23, 148/0) carrying 175 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+    "label 'b1' is drawn on 2 separate nets (net_id 11, 16) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'b1', 'b1$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'e1' is drawn on 2 separate nets (net_id 18, 39) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'e1', 'e1$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'gsvo' is drawn on 2 separate nets (net_id 19, 29) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'gsvo', 'gsvo$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'outn' is drawn on 3 separate nets (net_id 12, 24, 35) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'outn', 'outn$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'vb2' is drawn on 2 separate nets (net_id 8, 22) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vb2', 'vb2$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'vdd' is drawn on 3 separate nets (net_id 9, 21, 35) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vdd', 'vdd$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'vss' is drawn on 4 separate nets (net_id 2, 7, 39, 41) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vss', 'vss$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'xin' is drawn on 3 separate nets (net_id 4, 13, 40) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'xin', 'xin$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "label 'xout' is drawn on 4 separate nets (net_id 1, 3, 5, 14) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'xout', 'xout$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "83 drawn capacitors ('cap_cmim') written as a fixed-value 'C' card (the deck's nominal area+perimeter value) -- PDK process corners (e.g. mimcap_ff/mimcap_ss) do not apply to it, so schematic-vs-extracted deltas at non-typical corners include a capacitor-corner term; pass --pdk to bind the PDK capacitor subcircuit instead. See docs/cli/extract.md's 'SPICE model binding' section.",
+    "22 layers (1/20, 1/23, 5/2, 5/23, 8/23, 10/23, 26/0, 27/25, 30/23, 31/2, 32/0, 33/0, 40/0, 50/23, 51/0, 52/0, 63/0, 67/23, 126/2, 126/23, 134/23, 148/0) carrying 348 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
@@ -2377,7 +3659,7 @@
     {
       "label": "b1",
       "nets": [
-        9,
+        11,
         16
       ],
       "count": 2
@@ -2385,44 +3667,61 @@
     {
       "label": "e1",
       "nets": [
-        17,
-        25
+        18,
+        39
+      ],
+      "count": 2
+    },
+    {
+      "label": "gsvo",
+      "nets": [
+        19,
+        29
       ],
       "count": 2
     },
     {
       "label": "outn",
       "nets": [
-        10,
-        23,
-        24
+        12,
+        24,
+        35
       ],
       "count": 3
     },
     {
-      "label": "vdd",
+      "label": "vb2",
       "nets": [
-        20,
-        24
+        8,
+        22
       ],
       "count": 2
+    },
+    {
+      "label": "vdd",
+      "nets": [
+        9,
+        21,
+        35
+      ],
+      "count": 3
     },
     {
       "label": "vss",
       "nets": [
         2,
-        3,
-        25,
-        27
+        7,
+        39,
+        41
       ],
       "count": 4
     },
     {
       "label": "xin",
       "nets": [
-        5,
-        11,
-        26
+        4,
+        13,
+        40
       ],
       "count": 3
     },
@@ -2430,9 +3729,9 @@
       "label": "xout",
       "nets": [
         1,
-        4,
-        6,
-        12
+        3,
+        5,
+        14
       ],
       "count": 4
     }
@@ -2465,7 +3764,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+      "content_hash": "sha256:4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
       "role": "layout"
     }
   },
@@ -2473,20 +3772,20 @@
   "spef_path": null,
   "subcircuit": null,
   "metrics": {
-    "extract__device__count": 85,
-    "extract__net__count": 23,
-    "extract__pin__count": 23
+    "extract__device__count": 132,
+    "extract__net__count": 34,
+    "extract__pin__count": 34
   },
   "timing": {
     "stages": {
       "read_layout": 0.002,
-      "device_extraction": 0.64,
+      "device_extraction": 1.212,
       "diagnostics": 0.0,
-      "netlist_write": 0.001,
+      "netlist_write": 0.004,
       "netlist_hash": 0.0,
-      "netlist_normalized_hash": 0.001
+      "netlist_normalized_hash": 0.002
     },
-    "total_seconds": 0.656,
-    "unattributed_seconds": 0.011
+    "total_seconds": 1.242,
+    "unattributed_seconds": 0.022
   }
 }

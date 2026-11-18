@@ -47,6 +47,7 @@ PCELL_CLASS = {
     "pmosHV": ("M", "pfet"),
     "nmosHV": ("M", "nfet"),
     "rppd": ("R", "rppd"),
+    "rhigh": ("R", "rhigh"),
     "cmim": ("C", "cap_cmim"),
     # inductor2: klt 0.9.2's sg13g2 extraction deck has no inductor device
     # class (the spiral extracts as plain TopMetal wire), so there is no class

@@ -55,6 +55,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
+from lvs_reference import parse_netlist  # noqa: E402
 from pcell_env import load_sg13_dev, pcell_lib_digest  # noqa: E402
 
 # GDS layer numbers, from ihp-sg13g2/libs.tech/klayout/tech/sg13g2.lyp.
@@ -65,6 +66,7 @@ METAL1 = (8, 0)
 METAL1_TEXT = (8, 25)
 METAL2 = (10, 0)
 METAL2_TEXT = (10, 25)
+METAL3 = (30, 0)
 NWELL = (31, 0)
 METAL5 = (67, 0)
 TOPMETAL1 = (126, 0)
@@ -113,15 +115,15 @@ class Canvas:
         return cell
 
 
-def via_stack(cv: Canvas, x, y, top: str, cols=1, rows=1, tcols=1, trows=1):
-    """PDK via_stack PyCell from Metal1 up to ``top``, centred on (x, y)."""
-    params = {"b_layer": "Metal1", "t_layer": top, "vn_columns": cols, "vn_rows": rows}
+def via_stack(cv: Canvas, x, y, top: str, cols=1, rows=1, tcols=1, trows=1, b: str = "Metal1"):
+    """PDK via_stack PyCell from ``b`` (default Metal1) up to ``top``, centred on (x, y)."""
+    params = {"b_layer": b, "t_layer": top, "vn_columns": cols, "vn_rows": rows}
     if top == "TopMetal1":
         params.update({"vt1_columns": tcols, "vt1_rows": trows})
     return cv.pcell("via_stack", params, x, y)
 
 
-def cap_bank(cv: Canvas, cp: dict, count: int, x0: float, ytop: float, top_net: str, bot_net: str, ncol: int = 4):
+def cap_bank(cv: Canvas, cp: dict, count: int, x0: float, ytop: float, top_net: str, bot_net: str, ncol: int = 4, wire: bool = False):
     """A ``count``-unit cmim bank (same arithmetic as Cbref): merged Metal5
     bottom sheet (net ``bot_net``, brought to Metal1 by a via stack on a west
     stub, labelled there) and TopMetal1 top-plate straps (net ``top_net``,
@@ -151,6 +153,15 @@ def cap_bank(cv: Canvas, cp: dict, count: int, x0: float, ytop: float, top_net: 
     xc0 = centers[0][0]
     cv.box(TOPMETAL1, xc0 - strap / 2, centers[-ncol][1], xc0 + strap / 2, centers[0][1])
     cv.label(TOPMETAL1_TEXT, top_net, xc0, centers[0][1])
+    if not wire:
+        return None
+    # wire=True (issue #346): bring both plates out as Metal2 pins. Top: the
+    # first-column strap runs north of the Metal5 sheet to a TopMetal1 -> Metal2
+    # via stack (as Cbref does); bottom: the Metal1..Metal5 stack on the west stub.
+    ytap = ytop + 10.0
+    cv.box(TOPMETAL1, xc0 - strap / 2, centers[0][1], xc0 + strap / 2, ytap)
+    via_stack(cv, xc0, ytap, "TopMetal1", cols=2, rows=2, tcols=2, trows=2)
+    return {"top": (xc0, ytap), "bot": (x0 - 4.0, ymid)}
 
 
 def small_cap(cv: Canvas, cp: dict, x: float, y: float, top_net: str, bot_net: str) -> None:
@@ -195,6 +206,186 @@ def draw_matching(cv: Canvas, rz: dict) -> None:
     small_cap(cv, dict(rz["Cpin"]["params"]), 170.0, -330.0, "xin", "vss")
     small_cap(cv, dict(rz["Cpout"]["params"]), 230.0, -330.0, "xout", "vss")
     small_cap(cv, dict(rz["Csout"]["params"]), 290.0, -330.0, "xout", "rfout")
+
+
+class Router:
+    """Channel router for the bias island: every terminal pin drops a Metal2
+    stub straight down to its net's Metal3 trunk (one horizontal track per
+    net, tracks ``pitch`` apart below ``y_top``), joined by Metal2->Metal3
+    via stacks. Pins are unique in x, so stubs never overlap; stubs cross
+    other nets' trunks on a different layer. Metal1 pins get a Metal1->Metal2
+    via first; a pin that is already Metal2 (HBT emitter plate) does not."""
+
+    def __init__(self, cv: Canvas, y_top: float, pitch: float = 1.0):
+        self.cv, self.y_top, self.pitch = cv, y_top, pitch
+        self.pins: dict[str, list[tuple[float, float, bool]]] = {}
+
+    def pin(self, net: str, x: float, y: float, metal2: bool = False) -> None:
+        self.pins.setdefault(net, []).append((x, y, metal2))
+
+    def route(self) -> dict[str, float]:
+        cv, tracks = self.cv, {}
+        for i, (net, pins) in enumerate(self.pins.items()):
+            if len(pins) < 2:
+                raise SystemExit(f"generate: bias net {net} has a single pin {pins}")
+            yt = self.y_top - self.pitch * i
+            tracks[net] = yt
+            for x, y, metal2 in pins:
+                if not metal2:
+                    via_stack(cv, x, y, "Metal2")
+                cv.box(METAL2, x - 0.2, min(y, yt) - 0.2, x + 0.2, max(y, yt) + 0.2)
+                via_stack(cv, x, yt, "Metal3", b="Metal2")
+            xs = [p[0] for p in pins]
+            cv.box(METAL3, min(xs) - 0.2, yt - 0.2, max(xs) + 0.2, yt + 0.2)
+        return tracks
+
+
+def _bias_mos(cv: Canvas, rt: Router, spec: dict, nodes: list[str], x: float, y: float) -> None:
+    """One single-finger pmosHV/nmosHV (netlist order d g s b) at (x, y) =
+    Activ lower-left. PyCell-relative geometry (w x 1 um, ng=1): source Metal1
+    strip x[0.07,0.23] (left), drain strip x[1.45,1.61] (right), both
+    y[0,w]; GatPoly x[0.34,1.34], y[-0.18,w+0.18]. The gate is contacted on a
+    GatPoly stub below the device (the Cont/Metal1 pad XMis uses). Gate and
+    drain are labelled and registered as router pins; the source is the
+    caller's (pmos: vdd rail, nmos: ``es`` pin)."""
+    d, g, _s, _b = nodes
+    cv.pcell(spec["pcell"], dict(spec["params"]), x, y)
+    cv.box(GATPOLY, x + 0.34, y - 1.40, x + 1.34, y - 0.10)
+    gx = x + 0.84
+    cv.box(CONT, gx - 0.08, y - 1.27, gx + 0.08, y - 1.11)
+    cv.box(METAL1, gx - 0.18, y - 1.32, gx + 0.18, y - 1.06)
+    cv.label(METAL1_TEXT, g, gx, y - 1.19)
+    rt.pin(g, gx, y - 1.19)
+    cv.label(METAL1_TEXT, d, x + 1.53, y + 0.6)
+    rt.pin(d, x + 1.53, y + 0.6)
+
+
+def _res_pads(cell, trans) -> list:
+    """The PyCell's two Metal1 end pads in world coordinates, ordered by
+    (x, y) of the *unrotated* cell: terminal a (the netlist's first node) is
+    the lower-left pad, b the other. Read from the drawn cell, so rppd (pads
+    stacked in y) and rhigh (pads side by side) share one path."""
+    ly = cell.layout()
+    boxes = [s.dbbox() for s in cell.shapes(ly.layer(*METAL1)).each()]
+    if len(boxes) != 2:
+        raise SystemExit(f"generate: resistor PyCell has {len(boxes)} Metal1 pads, expected 2")
+    boxes.sort(key=lambda b: (b.center().x, b.center().y))
+    return [trans * b.center() for b in boxes]
+
+
+def draw_bias(cv: Canvas, rz: dict, cards: dict) -> None:
+    """Issue #346: the bias side -- DR-0003 reference core, cascode-base
+    divider and the two 100 pF caps -- west of the core, as ONE row of
+    devices over a routing channel (um; Yr = 100 is the row baseline):
+
+    * pmos x6 (XMb XMa XMv XMld XMlm XMref) in one NWell; a Metal1 ``vdd`` rail
+      over an ntap strip above them joins every source and the well tap.
+    * nmos x2 (XMnp1 XMnp2) over a ptap ``vss`` strip.
+    * HBTs XQb (Nx=8), XQa, XQc (Nx=1, base/collector tied on Metal1).
+    * resistors, rotated 90 deg: rppd for R2a R2b Rp Rsum Rtail Rl, an rhigh
+      meander for Rseed.
+    * channel (y < Yr - 8): one Metal3 trunk per net, Metal2 stubs from every
+      pin (``Router``); Cbyp2 / Cvdd (16-unit cmim banks, Cbref's arithmetic)
+      sit below at y=-14 and reach their trunks by Metal2 stubs.
+
+    Nets are those of design/netlist/lna.spice (read, never retyped). Ports
+    that leave the bias side (vdd vss vb2 gsvo) are net labels; the wiring to
+    the core / matching network is top-level assembly (#228)."""
+    X0, YR = -1000.0, 100.0
+    rt = Router(cv, YR - 8.0)
+
+    def label_net(net: str) -> str:
+        # klt 0.9.2 cannot write a netlist containing a net labelled
+        # ``nc_<letters>`` (klayout-tools#6732); the layout label drops the
+        # underscore (nc_a -> nca). LVS compares topology, not names.
+        return "nc" + net[3:] if net.startswith("nc_") else net
+
+    def nodes(inst: str, lo: int, hi: int) -> list[str]:
+        return [label_net(n) for n in cards[inst][lo:hi]]
+
+    def strap(x0: float, x1: float, yc: float) -> None:
+        """ptap strip + Metal1 rail with a ``vss`` label and router pin."""
+        cv.pcell("ptap1", {"w": f"{x1 - x0 - 2.0:.3f}u", "l": "0.78u"}, x0 + 1.0, yc - 0.39)
+        cv.box(METAL1, x0, yc - 0.5, x1, yc + 0.5)
+        cv.label(METAL1_TEXT, "vss", x1 - 0.5, yc)
+        rt.pin("vss", x1 - 0.5, yc)  # east end: clear of the pin columns at the west end
+
+    # ------------------------------------------------------------- pmos row
+    pm = ["XMb", "XMa", "XMv", "XMld", "XMlm", "XMref"]
+    hmax = max(float(rz[i]["params"]["w"].rstrip("u")) for i in pm)
+    for k, inst in enumerate(pm):
+        x = X0 + 6.0 * k
+        _bias_mos(cv, rt, rz[inst], nodes(inst, 1, 5), x, YR)
+        h = float(rz[inst]["params"]["w"].rstrip("u"))
+        cv.box(METAL1, x + 0.07, YR + h, x + 0.23, YR + hmax + 1.0)  # source -> vdd rail
+    xa, xb = X0, X0 + 6.0 * (len(pm) - 1) + 1.68
+    cv.pcell("ntap1", {"w": f"{xb - xa:.2f}u", "l": "0.78u"}, xa, YR + hmax + 2.0)
+    cv.box(NWELL, xa - 0.62, YR - 0.62, xb + 0.62, YR + hmax + 3.20)
+    cv.box(METAL1, xa - 3.0, YR + hmax + 0.80, xb - 0.07, YR + hmax + 2.69)
+    cv.label(METAL1_TEXT, "vdd", xa + 2.0, YR + hmax + 1.2)
+    rt.pin("vdd", xa - 2.8, YR + hmax + 1.75)
+
+    # ------------------------------------------------------------- nmos row
+    nm = ["XMnp1", "XMnp2"]
+    nx0 = X0 + 40.0
+    for k, inst in enumerate(nm):
+        x = nx0 + 6.0 * k
+        n = nodes(inst, 1, 5)
+        _bias_mos(cv, rt, rz[inst], n, x, YR)
+        cv.label(METAL1_TEXT, n[2], x + 0.15, YR + 0.6)  # source (es)
+        rt.pin(n[2], x + 0.15, YR + 0.6)
+
+    # ------------------------------------------------------------- HBT row
+    yq = YR + 4.0
+    qx = {"XQb": nx0 + 24.0, "XQa": nx0 + 70.0, "XQc": nx0 + 85.0}
+    for inst, x in qx.items():
+        p = dict(rz[inst]["params"])
+        xr_q = HBT_STEP_X * (int(p["Nx"]) - 1)
+        c, b, e, _s = nodes(inst, 1, 5)
+        cv.pcell("npn13G2", p, x, yq)
+        cv.label(METAL2_TEXT, e, x, yq)
+        rt.pin(e, x, yq, metal2=True)
+        if c == b:  # diode-tied: bars joined on a Metal1 riser, one pin
+            cv.box(METAL1, x + xr_q + 0.90, yq - 1.26, x + xr_q + 1.60, yq - 1.02)
+            cv.box(METAL1, x + xr_q + 0.90, yq + 1.01, x + xr_q + 1.60, yq + 1.25)
+            cv.box(METAL1, x + xr_q + 1.20, yq - 1.26, x + xr_q + 1.60, yq + 1.25)
+            cv.label(METAL1_TEXT, c, x + xr_q + 1.40, yq)
+            rt.pin(c, x + xr_q + 1.40, yq)
+        else:  # bars extended east past the emitter plate; separate pin columns
+            cv.box(METAL1, x + xr_q + 0.90, yq + 1.01, x + xr_q + 2.30, yq + 1.25)
+            cv.box(METAL1, x + xr_q + 0.90, yq - 1.26, x + xr_q + 3.40, yq - 1.02)
+            cv.label(METAL1_TEXT, c, x + xr_q + 2.10, yq + 1.13)
+            cv.label(METAL1_TEXT, b, x + xr_q + 3.30, yq - 1.14)
+            rt.pin(c, x + xr_q + 2.10, yq + 1.13)
+            rt.pin(b, x + xr_q + 3.30, yq - 1.14)
+    strap(nx0, qx["XQc"] + 4.0, YR - 3.0)  # one ptap rail under the nmos pair and the HBTs
+
+    # ------------------------------------------------------------- resistors
+    pya = cv.pya
+    xcur = nx0 + 100.0
+    for inst in ["R2a", "R2b", "Rp", "Rsum", "Rtail", "Rl"]:
+        ln = float(rz[inst]["params"]["l"].rstrip("u"))
+        tr = pya.DTrans(1, False, xcur + ln + 0.5, YR)  # rot 90: body x[xcur, xcur+l+1]
+        cell = cv.ly.create_cell("rppd", "SG13_dev", dict(rz[inst]["params"]))
+        cv.top.insert(pya.DCellInstArray(cell.cell_index(), tr))
+        for pt, net in zip(_res_pads(cell, tr), nodes(inst, 1, 3)):
+            cv.label(METAL1_TEXT, net, pt.x, pt.y)
+            rt.pin(net, pt.x, pt.y)
+        xcur += ln + 10.0
+    tr = pya.DTrans(0, False, xcur, YR)
+    cell = cv.ly.create_cell("rhigh", "SG13_dev", dict(rz["Rseed"]["params"]))
+    cv.top.insert(pya.DCellInstArray(cell.cell_index(), tr))
+    for pt, net in zip(_res_pads(cell, tr), nodes("Rseed", 1, 3)):
+        cv.label(METAL1_TEXT, net, pt.x, pt.y)
+        rt.pin(net, pt.x, pt.y)
+
+    # ------------------------------------------------------------- cap banks
+    for inst, x0 in (("Cbyp2", X0), ("Cvdd", X0 + 300.0)):
+        top_net, bot_net = nodes(inst, 1, 3)
+        pins = cap_bank(cv, dict(rz[inst]["params"]), int(rz[inst]["count"]), x0, -14.0, top_net, bot_net, wire=True)
+        rt.pin(top_net, *pins["top"], metal2=True)
+        rt.pin(bot_net, *pins["bot"], metal2=True)
+    rt.route()
 
 
 def draw(pya, nx: int, realization: dict) -> Canvas:
@@ -342,6 +533,8 @@ def draw(pya, nx: int, realization: dict) -> Canvas:
     cv.box(METAL1, xc0 - 0.5, -4.20, -23.00, -3.80)
 
     draw_matching(cv, rz)
+    cards = parse_netlist(HERE.parent.parent / realization["netlist"])
+    draw_bias(cv, rz, cards)
     return cv
 
 
