@@ -231,7 +231,7 @@ t="$(fresh_tree)"
 edit_tree "$t" "$PASS_DRC
 $PASS_LVS"
 run_msg "partial cell with met DRC+LVS rows fails per item" 1 "$t" \
-  "item 3 (DRC clean)" "item 4 (LVS clean)" "7 of 38 instances drawn"
+  "item 3 (DRC clean)" "item 4 (LVS clean)" "15 of 38 instances drawn"
 
 # 6. A passing partial extraction envelope cited for item 2.
 t="$(fresh_tree)"
@@ -272,8 +272,14 @@ t="$(fresh_tree)"
 edit_tree "$t" 'r = rd(L + "/realization.json"); r["out_of_scope"]["ZZstale"] = "x"; wr(L + "/realization.json", r)'
 run_msg "instance not in netlist fails" 1 "$t" "does not partition" "ZZstale"
 t="$(fresh_tree)"
-edit_tree "$t" 'r = rd(L + "/realization.json"); r["out_of_scope"].pop("Le"); wr(L + "/realization.json", r)'
-run_msg "unassigned netlist instance fails" 1 "$t" "does not partition" "Le"
+edit_tree "$t" 'r = rd(L + "/realization.json"); r["out_of_scope"].pop("Cvdd"); wr(L + "/realization.json", r)'
+run_msg "unassigned netlist instance fails" 1 "$t" "does not partition" "Cvdd"
+t="$(fresh_tree)"
+edit_tree "$t" 'r = rd(L + "/realization.json"); r["modeled_in_device"]["XQ1"] = {"of": "x", "reason": "x"}; wr(L + "/realization.json", r)'
+run_msg "instance in in_scope and modeled_in_device fails" 1 "$t" "does not partition" "XQ1"
+t="$(fresh_tree)"
+edit_tree "$t" 'r = rd(L + "/realization.json"); r["modeled_in_device"].pop("Rle"); wr(L + "/realization.json", r)'
+run_msg "unassigned modeled instance fails" 1 "$t" "does not partition" "Rle"
 t="$(fresh_tree)"
 edit_tree "$t" 'r = rd(L + "/realization.json"); r["out_of_scope"]["XQ1"] = "x"; wr(L + "/realization.json", r)'
 run_msg "instance in both lists fails" 1 "$t" "does not partition" "XQ1"

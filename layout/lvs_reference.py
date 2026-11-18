@@ -19,8 +19,9 @@ scope. It is a projection of the design netlist, never a hand-edited one:
 
 * every in-scope instance keeps its own nodes and its own schematic value;
 * the partition is exact -- every netlist instance must appear in exactly one
-  of ``in_scope``/``out_of_scope`` in realization.json, or this script
-  fails (a new netlist device cannot silently fall out of both);
+  of ``in_scope``/``modeled_in_device``/``out_of_scope`` in realization.json
+  (``modeled_in_device``: bench-model loss elements with no physical device,
+  issue #347), or this script fails (a new netlist device cannot silently fall out of both);
 * the only things taken from realization.json are the device *class* each
   ideal element is realized as (330 ohm -> ``rppd``, 100 pF -> ``cap_cmim``)
   and that realization's drawn geometry (``rppd`` L/W).
@@ -47,6 +48,11 @@ PCELL_CLASS = {
     "nmosHV": ("M", "nfet"),
     "rppd": ("R", "rppd"),
     "cmim": ("C", "cap_cmim"),
+    # inductor2: klt 0.9.2's sg13g2 extraction deck has no inductor device
+    # class (the spiral extracts as plain TopMetal wire), so there is no class
+    # to compare against; the instance is drawn and reported
+    # (inductance_report.json) but emits no reference card. See layout/README.md.
+    "inductor2": None,
 }
 
 
@@ -88,10 +94,13 @@ def build(cell_dir: Path, repo: Path = REPO) -> Path:
     cards = parse_netlist(netlist)
 
     in_scope = rz["in_scope"]
+    modeled = rz.get("modeled_in_device", {})
     out_scope = rz["out_of_scope"]
-    both = set(in_scope) & set(out_scope)
-    missing = set(cards) - set(in_scope) - set(out_scope)
-    stale = (set(in_scope) | set(out_scope)) - set(cards)
+    # exactly one of the three lists per instance (#347)
+    lists = (in_scope, modeled, out_scope)
+    both = {n for i, a in enumerate(lists) for b in lists[i + 1 :] for n in set(a) & set(b)}
+    missing = set(cards) - set(in_scope) - set(modeled) - set(out_scope)
+    stale = (set(in_scope) | set(modeled) | set(out_scope)) - set(cards)
     if both or missing or stale:
         raise SystemExit(
             "lvs_reference: realization.json does not partition the netlist: "
@@ -106,11 +115,15 @@ def build(cell_dir: Path, repo: Path = REPO) -> Path:
         "* Plain-element form, klt sg13g2 extraction-deck classes. Values are the",
         "* schematic's own; drawn geometry (rppd L/W) is the realization's.",
     ]
+    if modeled:
+        out_lines.insert(3, f"* modeled_in_device (no card): {', '.join(modeled)}")
     for inst in cards:  # netlist order
         if inst not in in_scope:
             continue
         toks = cards[inst]
         spec = in_scope[inst]
+        if PCELL_CLASS[spec["pcell"]] is None:
+            continue  # drawn but not extractable as a device class
         letter, cls = PCELL_CLASS[spec["pcell"]]
         name = letter + (inst[1:] if inst[0].upper() == "X" else inst)
         p = _params(toks)

@@ -87,7 +87,7 @@
     {
       "class": "cap_cmim",
       "device_kind": "capacitor",
-      "layout_devices": 1,
+      "layout_devices": 6,
       "reference_devices": 0,
       "compared": [
         "C"
@@ -158,11 +158,12 @@
       ]
     }
   ],
-  "mismatch_count": 22,
+  "mismatch_count": 24,
   "error_count": 14,
   "category_counts": {
     "device.combine_parameter_corrected": 1,
     "device.geometry_not_compared": 4,
+    "net.supply_fragmented": 2,
     "reference.unresolved_subckt_call": 6,
     "topology": 10,
     "topology.hierarchy_mismatch": 1
@@ -173,17 +174,17 @@
   },
   "counts": {
     "nets": {
-      "layout": 10,
+      "layout": 23,
       "reference": 23,
       "matched": 0
     },
     "devices": {
-      "layout": 4,
+      "layout": 9,
       "reference": 32,
       "matched": 0
     },
     "pins": {
-      "layout": 10,
+      "layout": 23,
       "reference": 0,
       "matched": 0
     }
@@ -203,7 +204,7 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+    "layout_sha256": "58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
     "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "extracted_netlist": null
   },
@@ -219,7 +220,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+      "content_hash": "sha256:58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -228,13 +229,29 @@
     {
       "category": "device.combine_parameter_corrected",
       "severity": "warning",
-      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
+      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10), lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10), lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
       "side": "layout",
       "net": null,
       "device": null,
       "property": null,
       "details": {
         "corrected": [
+          {
+            "circuit": "lna_core",
+            "device": null,
+            "class": "cap_cmim",
+            "parameter": "C",
+            "before": 6.250695e-12,
+            "after": 1.0001111999999999e-10
+          },
+          {
+            "circuit": "lna_core",
+            "device": null,
+            "class": "cap_cmim",
+            "parameter": "C",
+            "before": 6.250695e-12,
+            "after": 1.0001111999999999e-10
+          },
           {
             "circuit": "lna_core",
             "device": null,
@@ -298,7 +315,7 @@
           "A",
           "P"
         ],
-        "layout_devices": 1,
+        "layout_devices": 6,
         "reference_devices": 0
       },
       "circuit": null,
@@ -362,6 +379,50 @@
         "reference_devices": 0
       },
       "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.supply_fragmented",
+      "severity": "warning",
+      "description": "supply 'VDD' spans 2 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
+      "side": "layout",
+      "net": {
+        "layout": "VDD",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": {
+        "supply": "VDD",
+        "fragment_count": 2
+      },
+      "circuit": {
+        "layout": "lna_core",
+        "reference": null
+      },
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.supply_fragmented",
+      "severity": "warning",
+      "description": "supply 'VSS' spans 4 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
+      "side": "layout",
+      "net": {
+        "layout": "VSS",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": {
+        "supply": "VSS",
+        "fragment_count": 4
+      },
+      "circuit": {
+        "layout": "lna_core",
+        "reference": null
+      },
       "instance": null,
       "subcircuit": null
     },
