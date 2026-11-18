@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11415,
+      "bytes": 12641,
       "role": "script of a declared CI command",
-      "sha256": "sha256:442ca3963e00375c70a0aa4a84695f4e07b0f276f7cd5ccce826993b380e5690"
+      "sha256": "sha256:ed1ed23e3049b460f22e872c6775440a6bfda69d492a2549ef2fb944ede5be5b"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -53,10 +53,50 @@
       "role": "script of a declared CI command",
       "sha256": "sha256:113ad302c817ee5a0c1afe37252b39ef0cc681c485e9d1307a132544f1bb7ecf"
     },
+    ".github/scripts/test-characterization-report.sh": {
+      "bytes": 13306,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:479308bba17b2625767c814cf642e82a5c21ea5d15eb849e797b2169da46c786"
+    },
+    ".github/scripts/test-check-artifact-manifests.sh": {
+      "bytes": 2793,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:fb448b6dc07f54ce2be25f99475fd350b4050cd35af91b31d25f1ee95ac9c6f7"
+    },
+    ".github/scripts/test-check-floating-nodes.sh": {
+      "bytes": 1465,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:5a60df306f80e26f6957b2980f9f6dcdf9cca1362fa0a253a2c791248c83e57d"
+    },
+    ".github/scripts/test-check-klt-pin.sh": {
+      "bytes": 10080,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
+    },
     ".github/scripts/test-check-layout-freshness.sh": {
       "bytes": 19101,
       "role": "script of a declared CI command",
       "sha256": "sha256:e210bc5ba42fb4d52c53c0abea613f544387d5643f080e5eae3c851d28e82f1a"
+    },
+    ".github/scripts/test-check-model-sources.sh": {
+      "bytes": 2891,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:240fe2dd44724bb609b0abf22227686cceb29fcabdf521e4a10e81a708927098"
+    },
+    ".github/scripts/test-check-netlist-freshness.sh": {
+      "bytes": 1691,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:081be3cf469df98434db59716e9a56323806521bc7d4e177ca898cc775261004"
+    },
+    ".github/scripts/test-check-netlist-regen.sh": {
+      "bytes": 7639,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:f47b32e3d1b3ff703a690cdc63adacb84398c5d794dc706625b4986c35894994"
+    },
+    ".github/scripts/test-check-record-citations.sh": {
+      "bytes": 1700,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:d41d09cb72bc80e8776053b4f95cbbdff9ad6e5c267228511369963350f4cef9"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
       "bytes": 9537,
@@ -67,6 +107,21 @@
       "bytes": 13180,
       "role": "script of a declared CI command",
       "sha256": "sha256:249dcd9fa1c7f0da5104f05d6f57b8cf17d2cdc4cb878c96b08bb4531c116722"
+    },
+    ".github/scripts/test-check-sim-append-only.sh": {
+      "bytes": 4539,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:970bbfd6af7a115fa843b1b62c68462aac0ed7ddfcfbfae35e87eace466c1ba4"
+    },
+    ".github/scripts/test-check-testbench-inventory.sh": {
+      "bytes": 16189,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:e08fab9a5fa7d31d536b7fe8cea9c97041aae6f316c44803622e123bc33cb919"
+    },
+    ".github/scripts/test-design-source-audit.sh": {
+      "bytes": 9563,
+      "role": "script of a declared CI command",
+      "sha256": "sha256:02bd227d242c6b9287310ffbbfd5956c4f35ea9d4eadceef614f041f7e060fd1"
     },
     ".github/scripts/test-run-local-checks.sh": {
       "bytes": 11704,
@@ -135,6 +190,72 @@
       "script": ".github/scripts/check-sim-append-only"
     },
     {
+      "command": ".github/scripts/test-check-klt-pin.sh",
+      "job": "signoff",
+      "keeps_valid": "klt pin checker self-test",
+      "script": ".github/scripts/test-check-klt-pin.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-record-citations.sh",
+      "job": "record-citations",
+      "keeps_valid": "record-citations gate self-test",
+      "script": ".github/scripts/test-check-record-citations.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-testbench-inventory.sh",
+      "job": "testbench-inventory",
+      "keeps_valid": "testbench-inventory gate self-test",
+      "script": ".github/scripts/test-check-testbench-inventory.sh"
+    },
+    {
+      "command": ".github/scripts/test-characterization-report.sh",
+      "job": "characterization-report",
+      "keeps_valid": "characterization-report gate self-test",
+      "script": ".github/scripts/test-characterization-report.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-artifact-manifests.sh",
+      "job": "artifact-manifests",
+      "keeps_valid": "artifact-manifests gate self-test",
+      "script": ".github/scripts/test-check-artifact-manifests.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-netlist-freshness.sh",
+      "job": "netlist-freshness",
+      "keeps_valid": "netlist-freshness gate self-test",
+      "script": ".github/scripts/test-check-netlist-freshness.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-floating-nodes.sh",
+      "job": "netlist-freshness",
+      "keeps_valid": "floating-nodes gate self-test",
+      "script": ".github/scripts/test-check-floating-nodes.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-netlist-regen.sh --require-tools",
+      "job": "netlist-regen",
+      "keeps_valid": "netlist-regen gate self-test",
+      "script": ".github/scripts/test-check-netlist-regen.sh"
+    },
+    {
+      "command": ".github/scripts/test-design-source-audit.sh",
+      "job": "design-source-audit",
+      "keeps_valid": "design-source audit self-test",
+      "script": ".github/scripts/test-design-source-audit.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-sim-append-only.sh",
+      "job": "sim-append-only",
+      "keeps_valid": "sim append-only gate self-test",
+      "script": ".github/scripts/test-check-sim-append-only.sh"
+    },
+    {
+      "command": ".github/scripts/test-check-model-sources.sh",
+      "job": "model-provenance",
+      "keeps_valid": "model-provenance gate self-test",
+      "script": ".github/scripts/test-check-model-sources.sh"
+    },
+    {
       "command": ".github/scripts/test-run-local-checks.sh",
       "job": "local-checks-drift",
       "keeps_valid": "local runner mirrors the workflow",
@@ -155,9 +276,9 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 11415,
+      "bytes": 12641,
       "role": "this audit",
-      "sha256": "sha256:442ca3963e00375c70a0aa4a84695f4e07b0f276f7cd5ccce826993b380e5690"
+      "sha256": "sha256:ed1ed23e3049b460f22e872c6775440a6bfda69d492a2549ef2fb944ede5be5b"
     },
     ".github/scripts/inductance_lowfreq.py": {
       "bytes": 1139,
