@@ -26,13 +26,13 @@ Human-approved issues (`loom:issue`) ready for implementation — excluding held
 
 - **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
 - **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
-- **#391**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
+- **#391**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 
 ## PRs Awaiting Review
 
@@ -75,8 +75,8 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 2 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 3 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 8 |
