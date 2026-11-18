@@ -76,8 +76,8 @@ DECLARED_COMMANDS = [
     ("netlist-freshness", "python3 -I .github/scripts/check-netlist-freshness", "netlist matches schematic inventory"),
     ("layout-freshness", ".github/scripts/check-layout-freshness", "layout evidence agrees with its provenance"),
     ("model-provenance", "sim/models/check_sources.sh", "vendored models match recorded sha256"),
-    ("sim-append-only", '.github/scripts/check-sim-append-only --base "origin/${{ github.base_ref }}"',
-     "committed sim/ evidence is append-only (pull_request only)"),
+    ("sim-append-only", '.github/scripts/check-sim-append-only --base "$BASE"',
+     "committed sim/ evidence is append-only (pull_request and merge_group)"),
     ("local-checks-drift", ".github/scripts/test-run-local-checks.sh", "local runner mirrors the workflow"),
     ("repo-hygiene", ".github/scripts/test-check-repo-hygiene.sh", "this audit's self-test"),
     ("repo-hygiene", "python3 -I .github/scripts/check-repo-hygiene.py", "this audit"),
@@ -89,7 +89,7 @@ MECHANICAL_CHECKS = [
     "spec/target-spec.md contains a markdown table with a header, a separator and at least one data row",
     "LICENSE is non-empty",
     "every declared command's script is tracked and present, and is hashed",
-    "every declared command appears verbatim as a single-line `run:` in its named CI job",
+    "every declared command appears verbatim as a `run:` command (a single-line `run:` or a block-scalar body line) in its named CI job",
     "the committed inventory equals the recomputed one; the envelope binds its hash",
 ]
 
@@ -101,22 +101,37 @@ NOT_CHECKED = [
 
 
 def workflow_runs(text):
-    """Map job id -> list of single-line `run:` commands (block scalars are skipped)."""
+    """Map job id -> list of `run:` commands. A single-line `run:` contributes
+    its command; a block scalar (`run: |` / `run: >`) contributes its
+    non-blank, non-comment body lines, trimmed (issue #391: the
+    sim-append-only gate resolves its base from the event in a short block
+    and ends in the checker invocation)."""
     jobs, cur, in_jobs = {}, None, False
+    block_indent = -1
     for line in text.splitlines():
         if re.match(r"^jobs:\s*$", line):
             in_jobs = True
             continue
         if not in_jobs:
             continue
+        indent = len(line) - len(line.lstrip(" "))
+        if block_indent >= 0:
+            if indent <= block_indent:
+                block_indent = -1
+            elif line.strip() and not line.strip().startswith("#"):
+                jobs[cur].append(line.strip())
+                continue
         m = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
         if m:
             cur = m.group(1)
             jobs[cur] = []
             continue
         m = re.match(r"^\s+(?:- )?run:\s+(\S.*?)\s*$", line)
-        if m and cur and m.group(1) not in ("|", ">", "|-", ">-"):
-            jobs[cur].append(m.group(1))
+        if m and cur:
+            if m.group(1) in ("|", ">", "|-", ">-"):
+                block_indent = indent
+            else:
+                jobs[cur].append(m.group(1))
     return jobs
 
 
