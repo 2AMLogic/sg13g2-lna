@@ -89,15 +89,27 @@ def _drawn_labels(gds: Path) -> list[dict]:
     return out
 
 
+def _netlist_values(text: str, names) -> dict:
+    """Henries of each named card: token 3, lowercased, trailing ``n`` -> 1e-9, else float.
+
+    Raises ValueError on an unparsable value (and IndexError on a card shorter
+    than 4 tokens); the gate copy in .github/scripts/inductance_lowfreq.py skips
+    those instead (pinned in TestGateCopy).
+    """
+    out = {}
+    for line in text.splitlines():
+        t = line.split()
+        if t and t[0] in names:
+            v = t[3].lower()
+            out[t[0]] = float(v.rstrip("n")) * 1e-9 if v.endswith("n") else float(v)
+    return out
+
+
 def build(cell_dir: Path) -> Path:
     rz = json.loads((cell_dir / "realization.json").read_text())
-    netlist = (Path(__file__).resolve().parent.parent / rz["netlist"]).read_text().splitlines()
-    nl_val = {}
-    for line in netlist:
-        t = line.split()
-        if t and t[0] in rz["in_scope"] and rz["in_scope"][t[0]]["pcell"] == "inductor2":
-            v = t[3].lower()
-            nl_val[t[0]] = float(v.rstrip("n")) * 1e-9 if v.endswith("n") else float(v)
+    netlist = (Path(__file__).resolve().parent.parent / rz["netlist"]).read_text()
+    inductors = {n for n, sp in rz["in_scope"].items() if sp["pcell"] == "inductor2"}
+    nl_val = _netlist_values(netlist, inductors)
     drawn = _drawn_labels(cell_dir / f"{rz['top_cell']}.gds")
     rows = {}
     for inst, spec in rz["in_scope"].items():
