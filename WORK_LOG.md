@@ -6,6 +6,8 @@
 
 ### 2026-11-18
 
+- **PR #397**: fix: blank lines in a run: block no longer truncate its collected commands
+- **Issue #395** (closed): check-repo-hygiene.py: a blank line truncates a block-scalar run: body
 - **PR #394**: ci: report required checks on merge-group runs
 - **Issue #391** (closed): Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 - **PR #389**: fix: native-DRC pair check rejects non-dict provenance and null bindings
