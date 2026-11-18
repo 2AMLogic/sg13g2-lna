@@ -61,6 +61,47 @@ class TestGateCopy(unittest.TestCase):
         for args in [(1, 8.22, 3.29, 47.65), (4, 8.22, 3.74, 141.975), (5, 6.1, 3.29, 110.11)]:
             self.assertEqual(gate.l_lowfreq(*args), ir.l_lowfreq(*args))
 
+    def _gate(self):
+        root = Path(__file__).resolve().parent.parent.parent
+        spec = importlib.util.spec_from_file_location(
+            "inductance_lowfreq", root / ".github" / "scripts" / "inductance_lowfreq.py")
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        return gate
+
+    def test_netlist_values_parity(self):
+        """Gate netlist_values == ir._netlist_values on good input.
+
+        Value grammar both share today: bare float (incl. exponent form such as
+        1e-9) and a trailing n/N (nanohenries). p/u suffixes are NOT handled by
+        either copy (float("5p") raises).
+        """
+        gate = self._gate()
+        text = "\n".join([
+            "* comment",
+            "L1 a b 1.5",
+            "L2 a b 2.2n",
+            "L3 a b 3.3N",
+            "L4 a b 1e-9",
+            "R1 a b 5n",
+            "L9 a b 7n",
+        ])
+        names = {"L1", "L2", "L3", "L4", "R1_not_inductor"}  # L9 absent from scope
+        got = ir._netlist_values(text, names)
+        self.assertEqual(got, gate.netlist_values(text, names))
+        self.assertEqual(set(got), {"L1", "L2", "L3", "L4"})
+        self.assertAlmostEqual(got["L3"], 3.3e-9)
+        # Non-inductor2 card excluded by scope selection (R1 not in names).
+        self.assertNotIn("R1", got)
+
+    def test_netlist_values_bad_value_divergence(self):
+        """Documented divergence: build() raises where the gate copy skips."""
+        gate = self._gate()
+        text = "L1 a b 5p\nL2 a b 2n"
+        with self.assertRaises(ValueError):
+            ir._netlist_values(text, {"L1", "L2"})
+        self.assertEqual(gate.netlist_values(text, {"L1", "L2"}), {"L2": 2e-9})
+
 
 if __name__ == "__main__":
     unittest.main()
