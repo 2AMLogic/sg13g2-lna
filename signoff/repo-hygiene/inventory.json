@@ -6,7 +6,7 @@
       "spec/target-spec.md contains a markdown table with a header, a separator and at least one data row",
       "LICENSE is non-empty",
       "every declared command's script is tracked and present, and is hashed",
-      "every declared command appears verbatim as a single-line `run:` in its named CI job",
+      "every declared command appears verbatim as a `run:` command (a single-line `run:` or a block-scalar body line) in its named CI job",
       "the committed inventory equals the recomputed one; the envelope binds its hash"
     ],
     "not_checked": [
@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10281,
+      "bytes": 10942,
       "role": "script of a declared CI command",
-      "sha256": "sha256:3ccef5e35bd8004e3d4d3009a542534e0fa261eda13aa08ebfb85ab6c802499e"
+      "sha256": "sha256:b1505090d5d1d3ae9e5b8dd75fb35a5877646c19d9b1689aeccb9623c01ff81c"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -64,9 +64,9 @@
       "sha256": "sha256:5d426f1ef1b978f7b018bcc8c0318a3d2dd1f24de76f249522c3e7fcee5492bb"
     },
     ".github/scripts/test-run-local-checks.sh": {
-      "bytes": 9466,
+      "bytes": 11704,
       "role": "script of a declared CI command",
-      "sha256": "sha256:f02e5bd89e9c1c116d2db18758636cacda9c3be91e20407cc84a019db1cb11be"
+      "sha256": "sha256:7ef9f3104e83e2547dc9356a1cca44892990e2b1f413ddde1e08ad55d2bb2d32"
     },
     "sim/models/check_sources.sh": {
       "bytes": 1830,
@@ -118,9 +118,9 @@
       "script": "sim/models/check_sources.sh"
     },
     {
-      "command": ".github/scripts/check-sim-append-only --base \"origin/${{ github.base_ref }}\"",
+      "command": ".github/scripts/check-sim-append-only --base \"$BASE\"",
       "job": "sim-append-only",
-      "keeps_valid": "committed sim/ evidence is append-only (pull_request only)",
+      "keeps_valid": "committed sim/ evidence is append-only (pull_request and merge_group)",
       "script": ".github/scripts/check-sim-append-only"
     },
     {
@@ -144,9 +144,9 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10281,
+      "bytes": 10942,
       "role": "this audit",
-      "sha256": "sha256:3ccef5e35bd8004e3d4d3009a542534e0fa261eda13aa08ebfb85ab6c802499e"
+      "sha256": "sha256:b1505090d5d1d3ae9e5b8dd75fb35a5877646c19d9b1689aeccb9623c01ff81c"
     },
     ".github/scripts/native_drc_pair.py": {
       "bytes": 9248,
@@ -164,9 +164,9 @@
       "sha256": "sha256:e2e9e2cafa6c26924f609efe9608044dbe1429dc583f88cf959cfddcee980229"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 29353,
+      "bytes": 30154,
       "role": "CI workflow",
-      "sha256": "sha256:9ad97b8d5296d1ab2a6090c06abda73e53d0a892877335e9b90df47625762098"
+      "sha256": "sha256:1aa6b8f41cd409180a0ac90887adf83f2fc9c716aac1c5b71a75b32745a1ffa2"
     },
     "LICENSE": {
       "bytes": 11358,

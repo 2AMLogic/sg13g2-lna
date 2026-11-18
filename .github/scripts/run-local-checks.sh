@@ -9,7 +9,9 @@
 #
 # Usage: .github/scripts/run-local-checks.sh [--base <ref>]
 #   --base <ref>  also run the sim-append-only check against <ref>
-#                 (CI uses origin/<pull-request base branch>, full history).
+#                 (CI uses origin/<pull-request base branch> on a PR and the
+#                 merge queue's trial-merge base_sha on a merge-group run;
+#                 full history).
 # The workflow stays the authority; .github/scripts/test-run-local-checks.sh
 # fails if any workflow command is not run here by a `step` exactly as CI
 # runs it (whole-command match, workflow order).
@@ -21,7 +23,7 @@ while [ $# -gt 0 ]; do
     --base)
       [ $# -ge 2 ] || { echo "usage: $0 [--base <ref>]" >&2; exit 2; }
       base="$2"; shift 2 ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     *) echo "usage: $0 [--base <ref>]" >&2; exit 2 ;;
   esac
 done
@@ -227,7 +229,8 @@ fi
 step "design-source-audit: self-test" .github/scripts/test-design-source-audit.sh
 step "design-source-audit: check" .github/scripts/design-source-audit check
 
-# --- job: sim-append-only (CI: pull_request only)
+# --- job: sim-append-only (CI: pull_request and merge_group; this runner's
+# --base flag stands in for the event-derived base of both)
 step "sim-append-only: self-test" .github/scripts/test-check-sim-append-only.sh
 if [ -n "$base" ]; then
   step "sim-append-only: check --base $base" .github/scripts/check-sim-append-only --base "$base"

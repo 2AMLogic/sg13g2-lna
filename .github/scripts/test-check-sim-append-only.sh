@@ -13,6 +13,11 @@
 #  10. mode-only change on a records/ file             -> FAILS
 #  11. modify an evidence path containing spaces       -> FAILS
 #  12. retarget a committed symlink under corners/     -> FAILS
+# Merge-group shapes (issue #391: CI passes the raw event SHA):
+#  13. raw-SHA base, clean add of a record             -> passes
+#  14. raw-SHA base, modify an existing record         -> FAILS
+#  15. empty --base (event payload empty)              -> exit 2
+#  16. non-existent SHA base (pruned/unavailable)      -> exit 2
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-sim-append-only"
@@ -41,7 +46,9 @@ mk() { # mk <dir> ; repo with committed evidence on branch "base", HEAD on "work
 }
 commit() { g add -A; g commit -q -m change; }
 run() { # run <name> <expect 0|1|2> <dir> [base]
-  "$CHECKER" --root "$3" --base "${4:-base}" >/dev/null 2>&1; got=$?
+  # ${4-base} (not :-): an explicitly empty --base must pass through as the
+  # merge-group empty-payload case; only an absent 4th arg means "base".
+  "$CHECKER" --root "$3" --base "${4-base}" >/dev/null 2>&1; got=$?
   if [ "$got" -eq "$2" ]; then echo "PASS: $1"; pass=$((pass+1))
   else echo "FAIL: $1 (exit $got, wanted $2)"; fail=$((fail+1)); fi
 }
@@ -70,6 +77,16 @@ mk space; echo more >> "$d/sim/x/records/with space/$ID notes.md"; commit
 run "modify path with spaces" 1 "$d"
 mk symlink; ln -sfn ../../run_x.sh "$d/sim/x/corners/$ID/link.csv"; commit
 run "retarget symlink in corners/" 1 "$d"
+
+# merge-group shapes (issue #391): CI passes the raw merge_group.base_sha,
+# so the base is a SHA, not a branch name.
+mk mgadd; echo new > "$d/sim/x/records/$NEW.md"; commit
+run "merge-group: raw-SHA base, clean add" 0 "$d" "$(g rev-parse base)"
+mk mgmod; echo more >> "$d/sim/x/records/$ID.md"; commit
+run "merge-group: raw-SHA base, evidence modify" 1 "$d" "$(g rev-parse base)"
+run "merge-group: empty base fails closed" 2 "$d" ""
+run "merge-group: non-existent SHA base fails closed" 2 "$d" \
+  0000000000000000000000000000000000000000
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
