@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 15685,
+      "bytes": 11496,
       "role": "script of a declared CI command",
-      "sha256": "sha256:398f39ccaee0f551dbd7f3cc967834aba7feaa7f35a5620d61c21a1f783f5e87"
+      "sha256": "sha256:3df6f5e7d803be02ecc5869cba027d2c9f9f21bbd3c6f3171d37c543172892e7"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -34,9 +34,9 @@
       "sha256": "sha256:4628509ddbcb3f0a1c9cd255c25aff6d9aada63607981a1072cceac0f26e3269"
     },
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10047,
+      "bytes": 10281,
       "role": "script of a declared CI command",
-      "sha256": "sha256:f934d3ed3e706ccd908d1b5474af31b408a8a0c6838c7188b3ba0a23f25f5067"
+      "sha256": "sha256:3ccef5e35bd8004e3d4d3009a542534e0fa261eda13aa08ebfb85ab6c802499e"
     },
     ".github/scripts/check-signoff.sh": {
       "bytes": 4947,
@@ -144,9 +144,14 @@
   ],
   "files": {
     ".github/scripts/check-repo-hygiene.py": {
-      "bytes": 10047,
+      "bytes": 10281,
       "role": "this audit",
-      "sha256": "sha256:f934d3ed3e706ccd908d1b5474af31b408a8a0c6838c7188b3ba0a23f25f5067"
+      "sha256": "sha256:3ccef5e35bd8004e3d4d3009a542534e0fa261eda13aa08ebfb85ab6c802499e"
+    },
+    ".github/scripts/native_drc_pair.py": {
+      "bytes": 8697,
+      "role": "the one native-DRC pair check: loaded by path by the layout-freshness gate and the layout scripts (issue #359), so it is hashed like the gate that executes it",
+      "sha256": "sha256:88b605c71376465f5c0a6d7827bac87c96fa176582f402c51f99590b29e7cb9d"
     },
     ".github/scripts/signoff_common.py": {
       "bytes": 10623,

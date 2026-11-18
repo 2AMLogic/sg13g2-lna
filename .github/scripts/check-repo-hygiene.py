@@ -60,6 +60,10 @@ HYGIENE_FILES = {
     WORKFLOW: "CI workflow",
     ".github/scripts/check-repo-hygiene.py": "this audit",
     ".github/scripts/signoff_common.py": "shared helpers this audit and the item-9 audit load",
+    ".github/scripts/native_drc_pair.py":
+        "the one native-DRC pair check: loaded by path by the layout-freshness "
+        "gate and the layout scripts (issue #359), so it is hashed like the "
+        "gate that executes it",
     ".github/scripts/test-check-repo-hygiene.sh": "this audit's self-test",
 }
 

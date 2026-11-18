@@ -75,7 +75,7 @@ atomically only after the report has been validated against the GDS hash.
 No native verdict exists in this tree until issue #201 runs this on an
 evidence host; see layout/README.md for scope and honest-status caveats.
 """
-import argparse, hashlib, json, os, re, shlex, shutil, subprocess, sys, time
+import argparse, hashlib, importlib.util, json, os, shlex, shutil, subprocess, sys, time
 from pathlib import Path
 
 LAYOUT_DIR = Path(__file__).resolve().parent
@@ -87,9 +87,6 @@ KLT_RELEASE = "0.9.2"  # keep in sync with layout/run_flow.sh (check-klt-pin.sh)
 # version klt declares as klayout_version_expected (klayout-tools#5601). Keep
 # the two in sync (check-klt-pin.sh).
 KLAYOUT_PIN = "0.30.12"
-REPORT_NAME = "native_drc_report.json"
-SIDE_NAME = "native_drc_inputs.json"
-STAGING = REPORT_NAME + ".tmp"
 # The completed-run status tokens this gate accepts, from klt's total
 # coverage rollup via rollup_status(success="clean",
 # failure="violations"): each carries an exit code COMPLETED_RC already
@@ -98,13 +95,35 @@ STAGING = REPORT_NAME + ".tmp"
 # klayout-tools 0.9.2 (issue #312) the klayout engine never populates
 # coverage.skipped, so --engine klayout emits four of the five today —
 # clean_partial is accepted for forward compatibility and would arrive
-# with exit 0 the moment klt populates skipped. The
-# vocabulary exists in three places that must move together: here, the
-# identity copy in native_drc_identity.py, and NATIVE_STATUSES in the
-# freshness gate .github/scripts/check-layout-freshness — test_native_drc.py
-# pins all three equal.
-STATUSES = ("clean", "clean_partial", "violations",
-            "coverage_unknown", "not_checked")
+# with exit 0 the moment klt populates skipped. The vocabulary itself, the
+# version helpers below and the whole native pair check live once in
+# .github/scripts/native_drc_pair.py beside the freshness gate — operator
+# ruling (rjwalters, 2026-11-17, issue #359), reversing the copy-and-pin
+# arrangement this file used to document (the runner, native_drc_identity.py
+# and the gate each kept a copy, pinned equal by test_native_drc.py's sync
+# tests): the gate must not import the logic it judges with from layout/,
+# so the shared module lives beside it and every consumer loads it by
+# explicit path, which works under `python3 -I` (`-I` does not put a
+# script's directory on sys.path) and stays stdlib-only.
+sys.dont_write_bytecode = True
+_pair_path = str(REPO_ROOT / ".github" / "scripts" / "native_drc_pair.py")
+# Register in sys.modules (the documented spec_from_file_location pattern):
+# several consumers in one process — the test suite imports the identity
+# module and this runner together — must execute and re-export one module
+# object.
+if "native_drc_pair" in sys.modules:
+    native_drc_pair = sys.modules["native_drc_pair"]
+else:
+    _pair_spec = importlib.util.spec_from_file_location("native_drc_pair",
+                                                        _pair_path)
+    native_drc_pair = importlib.util.module_from_spec(_pair_spec)
+    sys.modules["native_drc_pair"] = native_drc_pair
+    _pair_spec.loader.exec_module(native_drc_pair)
+REPORT_NAME, SIDE_NAME = native_drc_pair.REPORT, native_drc_pair.SIDE
+STAGING = REPORT_NAME + ".tmp"
+STATUSES = native_drc_pair.STATUSES
+version_tuple = native_drc_pair.version_tuple
+version_at_least = native_drc_pair.version_at_least
 # The full-scope tokens, derived: the published-run NOTE below fires on
 # "not in" this tuple instead of restating the complement of STATUSES, so
 # the partition is total and a token added to STATUSES defaults to the
@@ -119,27 +138,6 @@ E_PUBLISHED, E_USAGE, E_NO_EXE, E_BAD_VERSION, E_OLD_VERSION, E_RUN, E_SELFCHECK
 
 def say(msg):
     print(f"run_native_drc: {msg}")
-
-
-# Version helpers, duplicated from native_drc_identity.py on purpose: `python3
-# -I` does not put this script's directory on sys.path, so the runner cannot
-# import its sibling. test_native_drc.py pins both copies to the same contract.
-_VERSION_RE = re.compile(r"\d+(?:\.\d+)+")
-
-
-def version_tuple(s):
-    if not isinstance(s, str):
-        return None
-    m = _VERSION_RE.search(s)
-    return tuple(int(x) for x in m.group(0).split(".")) if m else None
-
-
-def version_at_least(got, minimum):
-    a, b = version_tuple(got), version_tuple(minimum)
-    if a is None or b is None:
-        return False
-    n = max(len(a), len(b))
-    return a + (0,) * (n - len(a)) >= b + (0,) * (n - len(b))
 
 
 def die(code, msg):
