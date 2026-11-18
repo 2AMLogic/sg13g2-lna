@@ -22,6 +22,11 @@
 #      report's exact bytes and the committed GDS, match the report's own
 #      status and provenance deck/pdk, and record a standalone executable
 #      version >= its recorded minimum
+#   7. inductance_report.json (issue #400): the committed report has exactly
+#      the realization's inductor2 instances, each with geometry_um equal to
+#      the realization params and drawn_lowfreq_H equal to the low-frequency
+#      L re-evaluated here (inductance_lowfreq.py, beside this gate; kept
+#      equal to layout/inductance_report.py by a layout/tests case)
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -62,6 +67,17 @@ else:
     sys.modules["native_drc_pair"] = _pair
     _pair_spec.loader.exec_module(_pair)
 check_pair = _pair.check_pair
+
+# Same rule, same reason, for the low-frequency inductor model (issue #400).
+if "inductance_lowfreq" in sys.modules:
+    _ind = sys.modules["inductance_lowfreq"]
+else:
+    _ind_spec = importlib.util.spec_from_file_location(
+        "inductance_lowfreq", os.path.join(sys.argv[3], "inductance_lowfreq.py"))
+    _ind = importlib.util.module_from_spec(_ind_spec)
+    sys.modules["inductance_lowfreq"] = _ind
+    _ind_spec.loader.exec_module(_ind)
+l_lowfreq = _ind.l_lowfreq
 
 def fail(rel, msg):
     errs.append(f"layout-freshness: {rel}: {msg}")
@@ -235,6 +251,56 @@ if side is not None:
 #    exists in this tree until issue #201 supplies one. One-sided or
 #    inconsistent: fails, naming it.
 check_pair(cd, root, f"layout/{cell}", gds, gds_sha, fail)
+
+# 7. inductance report vs realization geometry (issue #400). Recomputes the
+# low-frequency L of every inductor2 in realization.json and compares it to
+# the committed report, so a geometry edit not followed by layout/run_flow.sh
+# cannot leave the report stale with CI green.
+def check_inductance_report():
+    rel = f"layout/{cell}/inductance_report.json"
+    p = cd / "inductance_report.json"
+    if not p.is_file():
+        fail(rel, "missing (regenerate with layout/run_flow.sh)")
+        return
+    rep = load(p)
+    if rep is None:
+        return
+    rows = rep.get("inductors") if isinstance(rep, dict) else None
+    if not isinstance(rows, dict):
+        fail(rel, "malformed (no 'inductors' object)")
+        return
+    if rz is None or not isinstance(rz.get("in_scope"), dict):
+        return  # unreadable realization already reported by step 2
+    want = {k: v for k, v in rz["in_scope"].items()
+            if isinstance(v, dict) and v.get("pcell") == "inductor2"}
+    if set(rows) != set(want):
+        fail(rel, f"inductors {sorted(rows)} != inductor2 instances in "
+             f"realization.json {sorted(want)}; rerun layout/run_flow.sh")
+    for inst in sorted(set(rows) & set(want)):
+        row, par = rows[inst], want[inst].get("params") or {}
+        try:
+            geo = {"w": float(str(par["w"]).rstrip("uU")),
+                   "s": float(str(par["s"]).rstrip("uU")),
+                   "d": float(str(par["d"]).rstrip("uU")),
+                   "turns": int(par["nr_r"])}
+        except (KeyError, ValueError, TypeError) as ex:
+            fail(f"layout/{cell}/realization.json", f"{inst}: unusable inductor2 params ({ex!r})")
+            continue
+        got = row.get("geometry_um") if isinstance(row, dict) else None
+        if not isinstance(got, dict) or any(
+                not isinstance(got.get(k), (int, float)) or isinstance(got.get(k), bool)
+                or abs(got[k] - v) > 1e-9 for k, v in geo.items()):
+            fail(rel, f"{inst}: geometry_um {got!r} != realization.json params {geo}; "
+                 "rerun layout/run_flow.sh")
+            continue
+        lval = l_lowfreq(geo["turns"], geo["w"], geo["s"], geo["d"])
+        rec = row.get("drawn_lowfreq_H")
+        if not isinstance(rec, (int, float)) or isinstance(rec, bool) \
+                or abs(rec - lval) > 1e-9 * abs(lval):
+            fail(rel, f"{inst}: drawn_lowfreq_H {rec!r} != {lval!r} recomputed from "
+                 "realization.json geometry; rerun layout/run_flow.sh")
+
+check_inductance_report()
 
 if errs:
     print("\n".join(errs), file=sys.stderr)
