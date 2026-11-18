@@ -6,6 +6,8 @@
 
 ### 2026-11-18
 
+- **PR #389**: fix: native-DRC pair check rejects non-dict provenance and null bindings
+- **Issue #386** (closed): native-DRC pair check: non-dict provenance crashes, and null deck/pdk bindings are accepted
 - **PR #385**: refactor: one native-DRC pair check, path-loaded by gate and layout
 - **Issue #359** (closed): Consolidate native-DRC pair validation: one implementation instead of three
 
