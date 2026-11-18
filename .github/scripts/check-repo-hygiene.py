@@ -105,7 +105,8 @@ def workflow_runs(text):
     its command; a block scalar (`run: |` / `run: >`) contributes its
     non-blank, non-comment body lines, trimmed (issue #391: the
     sim-append-only gate resolves its base from the event in a short block
-    and ends in the checker invocation)."""
+    and ends in the checker invocation). Blank lines inside the block never
+    end it (issue #395); only a non-blank dedent does."""
     jobs, cur, in_jobs = {}, None, False
     block_indent = -1
     for line in text.splitlines():
@@ -116,9 +117,11 @@ def workflow_runs(text):
             continue
         indent = len(line) - len(line.lstrip(" "))
         if block_indent >= 0:
+            if not line.strip():
+                continue
             if indent <= block_indent:
                 block_indent = -1
-            elif line.strip() and not line.strip().startswith("#"):
+            elif not line.strip().startswith("#"):
                 jobs[cur].append(line.strip())
                 continue
         m = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)

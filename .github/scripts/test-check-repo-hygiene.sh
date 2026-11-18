@@ -12,6 +12,8 @@
 #   4. README lacks spec section / reproduction index /
 #      block name; spec has no table; LICENSE empty      -> FAILS, --write refuses
 #   5. declared command no longer run by its CI job      -> FAILS, --write refuses
+#      blank lines in a run: block never drop the next
+#      command; a real dedent after one still ends it    -> passes / FAILS
 #   6. hygiene file changed without refreshing           -> FAILS (stale hash)
 #   7. stale envelope (named field), missing envelope,
 #      unparsable envelope                               -> FAILS
@@ -152,6 +154,24 @@ run_check "$T" --write
 
 T="$(case_tree)"; edit "$T" .github/workflows/signoff.yml 's.replace("run: sim/models/check_sources.sh", "run: sim/models/check_sources.sh --skip")'
 expect "declared command altered in CI fails" 1 "$T" "not run by CI job 'model-provenance'"
+
+# 5a. a blank line inside a block-scalar run: body does not end the block
+# (issue #395): the declared sim-append-only command, preceded in its run:
+# body by an empty line and a whitespace-only line, is still collected --
+# --write rebinds the workflow hash and check mode then passes.
+T="$(case_tree)"
+edit "$T" .github/workflows/signoff.yml 's.replace("\n          .github/scripts/check-sim-append-only", "\n\n          \n          .github/scripts/check-sim-append-only")'
+run_check "$T" --write
+[ "$RC" -eq 0 ] && ok "--write accepts blank lines inside a run: block" || bad "--write refused after blank lines inside a run: block (rc=$RC)"
+run_check "$T"
+[ "$RC" -eq 0 ] && ok "declared command after blank lines is still found" || bad "blank line truncated the run: block (rc=$RC)"
+
+# 5b. a real dedent still ends the block even right after a blank line
+# (issue #395): skipping blank lines must not make them transparent to
+# the dedent rule.
+T="$(case_tree)"
+edit "$T" .github/workflows/signoff.yml 's.replace("\n          if [ \"$EVENT\"", "\n\n      if [ \"$EVENT\"")'
+expect "dedent after a blank line still ends the run: block" 1 "$T" "not run by CI job 'sim-append-only'"
 
 # 6. stale hash: any inventoried file or command script changed
 for f in README.md LICENSE spec/target-spec.md .github/scripts/check-signoff.sh sim/models/check_sources.sh; do
