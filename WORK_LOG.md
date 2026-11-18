@@ -6,6 +6,16 @@
 
 ### 2026-11-18
 
+- **PR #413**: chore(hygiene): hash the layout-freshness self-test in the item-10 envelope
+- **Issue #411** (closed): repo-hygiene: test-check-layout-freshness.sh is run by CI but absent from DECLARED_COMMANDS
+- **PR #409**: feat: Router fails loudly when different-net Metal2 stubs would overlap
+- **Issue #406** (closed): layout: Router asserts no two bias pins share an x, but never checks it
+- **PR #408**: chore(signoff): hash inductance_lowfreq.py in the repo-hygiene inventory
+- **Issue #404** (closed): repo-hygiene: inductance_lowfreq.py is not in HYGIENE_FILES, unlike native_drc_pair.py
+- **PR #405**: feat(layout): draw the bias side with routed intra-block wiring
+- **Issue #346** (closed): T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
+- **PR #402**: feat: gate verifies inductance report against realization geometry
+- **Issue #400** (closed): check-layout-freshness does not cover inductance_report.json
 - **PR #399**: feat(layout): draw the matching network and add a modeled_in_device scope category
 - **Issue #347** (closed): T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
 - **PR #397**: fix: blank lines in a run: block no longer truncate its collected commands

@@ -209,6 +209,9 @@ def draw_matching(cv: Canvas, rz: dict) -> None:
 
 
 STUB_HALF_WIDTH = 0.2  # um; Router Metal2 stubs / Metal3 trunks are drawn x +- this
+# um; sg13g2 Metal2 minimum space, `klt drc --list-rules --deck sg13g2`
+# rule metal2.space.1 threshold_um (klt 0.9.3.dev1601+gf6e067c8, klayout 0.30.12).
+METAL2_MIN_SPACE = 0.21
 
 
 class Router:
@@ -227,11 +230,16 @@ class Router:
         self.pins.setdefault(net, []).append((x, y, metal2))
 
     def check_pin_collisions(self) -> None:
-        """Fail loudly if stubs of two *different* nets would overlap in x.
-        Stubs span x +- STUB_HALF_WIDTH, so |dx| < 2 * STUB_HALF_WIDTH merges
-        them on Metal2. Same-net pins sharing an x are legal. Covers the
-        stub box only; the Metal2 via-pad half-width is not included (see PR)."""
-        pitch = 2 * STUB_HALF_WIDTH
+        """Fail loudly if stubs of two *different* nets are too close in x.
+        Stubs span x +- STUB_HALF_WIDTH, so |dx| <= 2 * STUB_HALF_WIDTH makes
+        them overlap or abut, and `klt extract` merges abutting Metal2 into
+        one net (measured at exactly 0.4 um: merged_net_labels a|b, while
+        `klt drc` reported 0 violations). The bound is therefore the stub
+        pitch plus METAL2_MIN_SPACE (0.61 um). Same-net pins sharing an x are
+        legal. Covers the stub box only: the Metal2 via-pad half-width is
+        0.145 um (measured from via_stack), narrower than STUB_HALF_WIDTH, so
+        the stub box dominates."""
+        pitch = 2 * STUB_HALF_WIDTH + METAL2_MIN_SPACE
         pts = sorted((x, net) for net, pins in self.pins.items() for x, _y, _m in pins)
         for i, (xa, na) in enumerate(pts):
             for xb, nb in pts[i + 1 :]:
@@ -240,7 +248,7 @@ class Router:
                 if nb != na:
                     raise SystemExit(
                         f"generate: bias pins of nets {na} and {nb} collide at x={xa:g}/{xb:g} "
-                        f"(|dx|={xb - xa:g} < stub pitch {pitch:g}); Metal2 stubs would short"
+                        f"(|dx|={xb - xa:g} < stub pitch + Metal2 space {pitch:g}); Metal2 stubs would short"
                     )
 
     def route(self) -> dict[str, float]:
@@ -257,7 +265,7 @@ class Router:
                 cv.box(METAL2, x - STUB_HALF_WIDTH, min(y, yt) - STUB_HALF_WIDTH, x + STUB_HALF_WIDTH, max(y, yt) + STUB_HALF_WIDTH)
                 via_stack(cv, x, yt, "Metal3", b="Metal2")
             xs = [p[0] for p in pins]
-            cv.box(METAL3, min(xs) - 0.2, yt - 0.2, max(xs) + 0.2, yt + 0.2)
+            cv.box(METAL3, min(xs) - STUB_HALF_WIDTH, yt - STUB_HALF_WIDTH, max(xs) + STUB_HALF_WIDTH, yt + STUB_HALF_WIDTH)
         return tracks
 
 
