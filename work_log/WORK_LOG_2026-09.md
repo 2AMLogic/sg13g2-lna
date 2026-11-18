@@ -2,6 +2,17 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-18
+
+- **PR #29**: feat(sim): committed BVCEO/BVCER/BVCES breakdown-extraction testbench for npn13G2
+- **PR #28**: sim: circuit-level S-parameter, NF, stability and IIP3 campaign against design/lna.sch
+- **PR #24**: feat(sim): full Nx=8 corner grid + V_CE=0.6 V point for hbt-characterization
+- **PR #23**: feat(design): add cascode LNA schematic and derived netlist
+- **Issue #21** (closed): Extend hbt-characterization: full Nx=8 corner grid and V_CE=0.6 V point
+- **Issue #20** (closed): Committed BVCEO / BVCER breakdown-extraction testbench for npn13G2
+- **Issue #18** (closed): sim: S-parameter, NF, stability, and IIP3 testbenches against design/lna.sch
+- **Issue #17** (closed): design/lna.sch: schematic and derived netlist for the ratified bias/supply topology
+
 ### 2026-09-16
 
 - **PR #22**: docs(spec): propose a 1.8 V cascode bias/supply topology in decision record 0001
