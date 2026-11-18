@@ -32,7 +32,7 @@ Human-approved issues (`loom:issue`) ready for implementation — excluding held
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#359**: Consolidate native-DRC pair validation: one implementation instead of three
+- **#386**: native-DRC pair check: non-dict provenance crashes, and null deck/pdk bindings are accepted
 
 ## PRs Awaiting Review
 
@@ -57,7 +57,7 @@ Issues carrying `loom:curated`.
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
 - **#346**: T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core *(curated)*
 - **#347**: T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition *(curated)*
-- **#359**: Consolidate native-DRC pair validation: one implementation instead of three *(curated)*
+- **#386**: native-DRC pair check: non-dict provenance crashes, and null deck/pdk bindings are accepted *(curated)*
 
 ## Proposed (Architect / Hermit)
 
