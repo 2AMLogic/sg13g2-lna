@@ -85,6 +85,13 @@ class TestCards(Base):
         self.assertEqual(lines[5], "MM2 d g s b nfet L=0.5U W=2U")
         self.assertTrue(lines[6].startswith("RR1 a b 1k rppd"))
 
+    def test_rhigh_meander_card(self):
+        # issue #346: a 10 MOhm seed resistor is an rhigh meander, class rhigh
+        nl = "Rseed vdd nc_a 10meg m=1\n"
+        spec = {"Rseed": {"pcell": "rhigh", "params": {"l": "98.82u", "w": "0.5u", "b": "33"}}}
+        lines = self.run_build(nl, ["Rseed"], spec=spec)
+        self.assertEqual(lines[5], "RRseed vdd nc_a 10meg rhigh L=98.82U W=0.5U")
+
     def test_nx_defaults_to_one(self):
         lines = self.run_build("XQ1 c b e s npn13G2\n", ["XQ1"])
         self.assertEqual(lines[5], "QQ1 c b e s npn13G2 NE=1")

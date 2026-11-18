@@ -45,6 +45,7 @@
       "1/20",
       "5/0",
       "6/0",
+      "7/0",
       "7/21",
       "8/0",
       "10/0",
@@ -127,10 +128,16 @@
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
       "nwell.enclosing.pactiv.1",
       "nwell.enclosing.pactiv.dig.1",
       "nwell.enclosing.pactiv.hv.1",
       "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
       "nwell.space.pactiv.1",
       "nwell.space.pactiv.dig.1",
       "nwell.space.pactiv.hv.1",
@@ -158,14 +165,7 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "rules_skipped": [
-      "nwell.enclosing.nactiv.1",
-      "nwell.enclosing.nactiv.dig.1",
-      "nwell.enclosing.nactiv.hv.1",
-      "nwell.space.nactiv.1",
-      "nwell.space.nactiv.dig.1",
-      "nwell.space.nactiv.hv.1"
-    ],
+    "rules_skipped": [],
     "voltage_domain_warnings": [
       {
         "marker": "44/0",
@@ -248,10 +248,16 @@
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
       "nwell.enclosing.pactiv.1",
       "nwell.enclosing.pactiv.dig.1",
       "nwell.enclosing.pactiv.hv.1",
       "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
       "nwell.space.pactiv.1",
       "nwell.space.pactiv.dig.1",
       "nwell.space.pactiv.hv.1",
@@ -280,32 +286,7 @@
       "via4.width.1"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "nwell.enclosing.nactiv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.enclosing.nactiv.dig.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.enclosing.nactiv.hv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.dig.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.hv.1",
-        "reason": "no_applicable_geometry"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
     "nothing_checked_reasons": []
@@ -322,7 +303,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:58d39a9e746271be7959a335dbac00904f7bc1a0a95f43c1f74362120c269dd5",
+      "content_hash": "sha256:4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
       "role": "layout"
     },
     "klayout_version_mismatch": false
