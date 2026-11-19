@@ -6,6 +6,8 @@
 
 ### 2026-11-18
 
+- **PR #419**: refactor: extract netlist value parse and pin parity with gate copy
+- **Issue #410** (closed): inductance_lowfreq.py: netlist_values() is a second gate-side copy with no parity pin (unlike l_lowfreq)
 - **PR #417**: chore(hygiene): hash eleven more CI-run gate self-tests in the item-10 envelope
 - **Issue #414** (closed): repo-hygiene: 10 more CI-run gate self-tests are undeclared and unhashed (the #411 class)
 - **PR #415**: fix(layout): reject router pin pairs closer than stub pitch plus Metal2 space
