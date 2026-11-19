@@ -6,6 +6,7 @@
 
 ### 2026-11-18
 
+- **Issue #82** (closed): Auditor Capability Request: Python 3 unavailable on audit host
 - **PR #419**: refactor: extract netlist value parse and pin parity with gate copy
 - **Issue #410** (closed): inductance_lowfreq.py: netlist_values() is a second gate-side copy with no parity pin (unlike l_lowfreq)
 - **PR #417**: chore(hygiene): hash eleven more CI-run gate self-tests in the item-10 envelope
