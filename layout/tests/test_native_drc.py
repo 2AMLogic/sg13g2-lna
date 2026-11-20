@@ -632,22 +632,34 @@ class RunnerTest(IdentityFixtureTest):
         self.assertEqual(self.pair_exists(), (True, True))
 
     def test_usage_errors(self):
+        # Seed a previous pair first: against an empty cell dir the
+        # no-archive assertion below is vacuous — nothing exists for
+        # segregate_old_pair() to move (issue #452). A usage error must
+        # leave the previous pair in place and never segregate it.
+
+        def pair_untouched():
+            self.assertEqual(self.pair_exists(), (True, True))
+            self.assertEqual(self.seg(), [])  # usage errors never archive
+
+        self.seed_pair()
         r = self.run_runner(min_version=None)
         self.assertEqual(r.returncode, 2)
+        pair_untouched()
         r = self.run_runner(min_version="banana")
         self.assertEqual(r.returncode, 2)
         self.assertIn("not a dotted version", r.stderr)
+        pair_untouched()
         self.gds.unlink()
         r = self.run_runner()
         self.assertEqual(r.returncode, 2)
         self.assertIn("never regenerates", r.stderr)
+        pair_untouched()
         self.gds.write_bytes(self.gds_bytes)
         r = self.run_runner("--expect-rule-categories", "3",
                             "--expect-rule-categories-file", "f")
         self.assertEqual(r.returncode, 2)
         self.assertIn("mutually exclusive", r.stderr)
-        self.assertEqual(self.pair_exists(), (False, False))
-        self.assertEqual(self.seg(), [])  # usage errors never archive
+        pair_untouched()
 
     def test_missing_executable_is_class_3(self):
         r = self.run_runner(
