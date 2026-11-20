@@ -59,6 +59,10 @@
       "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
       "file": "layout/lna_core/item2.envelope.json"
     },
+    "3": {
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
+      "file": "layout/lna_core/drc_report.json"
+    },
     "11": [
       {
         "file": "layout/lna_core/erc_report.json",

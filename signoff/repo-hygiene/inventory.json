@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 21026,
+      "bytes": 24445,
       "role": "script of a declared CI command",
-      "sha256": "sha256:cf8bd5a60b1dcfae6635c2fd5f6a0054efebd63377716a9fe498c4a17dc879a5"
+      "sha256": "sha256:5b1cb986c112f2125ec14211bffed66bad423129c949065404060b89a10f480b"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 22235,
+      "bytes": 24147,
       "role": "script of a declared CI command",
-      "sha256": "sha256:2182228903b4ef9fe1aee35b3358549ee11075fbdcec6348c98ff660ea6ab7cf"
+      "sha256": "sha256:5b55ca80b2b61a044e3fb60559a5febd58b96b78fe06b8c1d8f83cc23e438b1e"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,
@@ -311,9 +311,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 16937,
+      "bytes": 17298,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e"
+      "sha256": "sha256:9e5d0bec3d8a88fb611dd953244b04e7b20e1349c70ab8cc86840a786d7c77a6"
     },
     "spec/target-spec.md": {
       "bytes": 34193,

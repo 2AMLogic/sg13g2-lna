@@ -5,14 +5,21 @@ A SiGe HBT low-noise amplifier on IHP SG13G2 on
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: core schematic and simulation campaigns committed.** The cascode
-core lives in [`design/`](design/), with characterization benches and records
-under [`sim/`](sim/). Input/output matching remains open in issue #27. The
-block's layout is still pending: [`layout/`](layout/) holds only a partial
-bring-up of the cascode core and the DR-0003 bias island, whose DRC and LVS
-are not clean (issue #63). The committed [`T1 report`](signoff/t1-report.json)
-currently records three of 11 T1 items met (item 1, design sources; item 9,
-shipped testbenches; item 10, repo hygiene), each attested by
+**Status: design sources, simulation campaigns, and full-block layout
+committed.** The cascode core lives in [`design/`](design/), with
+characterization benches and records under [`sim/`](sim/). The layout in
+[`layout/`](layout/) covers the full block:
+[`layout/lna_core/realization.json`](layout/lna_core/realization.json)
+partitions all 38 instances of the
+[`design/netlist/lna.spice`](design/netlist/lna.spice) netlist — 35 in scope,
+three modeled within devices, none out of scope. On the full-block GDS the
+`klt` SG13G2 rule deck reports zero DRC violations
+([`layout/lna_core/drc_report.json`](layout/lna_core/drc_report.json)); the
+native PDK deck has no recorded verdict for that GDS (issue #201).
+Full-netlist LVS still reports a mismatch
+([`layout/lna_core/lvs_full_report.json`](layout/lna_core/lvs_full_report.json),
+issue #230). The committed [`T1 report`](signoff/t1-report.json) records the
+current status of each T1 item, each attested by
 `klt signoff --attest` over the inventories in [`signoff/attest/`](signoff/attest/);
 these artifacts do not establish signoff.
 
