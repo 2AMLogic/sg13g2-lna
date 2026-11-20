@@ -1,0 +1,19 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
+      "path": "layout/lna_core/lna_core.gds",
+      "role": "layout"
+    },
+    "regeneration": {
+      "generator": "python3 layout/lna_core/generate.py",
+      "regenerated_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615"
+    }
+  },
+  "schema_version": 1,
+  "source": "layout/lna_core/lna_core.gds via layout/lna_core/generate.py (layout/run_flow.sh)",
+  "status": "pass",
+  "summary": "Full-block LNA layout. realization.json partitions design/netlist/lna.spice with an empty out_of_scope list (every instance drawn), and the committed GDS re-hashes to lna_core.provenance.json's gds_sha256, which this envelope pins. The regeneration claim's hash is the one this flow's own generate.py run produced. Scope metadata confirms instance coverage only; DRC/LVS are items 3 and 4 and are not claimed here.",
+  "t1_item": 2
+}

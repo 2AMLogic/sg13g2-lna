@@ -2,6 +2,15 @@
   "_comment": "Layout scope and device realization for layout/lna_core (issue #63). Read by generate.py (what to draw) and layout/lvs_reference.py (what the LVS reference contains). 'in_scope' maps each design/netlist/lna.spice instance this bring-up draws to the PDK PyCell that realizes it; 'out_of_scope' lists every other instance with the reason it is not drawn. 'modeled_in_device' (#347) lists netlist elements that are bench-model loss of a drawn device and have no physical realization of their own. lvs_reference.py fails if in_scope, modeled_in_device and out_of_scope do not partition the netlist exactly, so a netlist change cannot silently fall out of both.",
   "netlist": "design/netlist/lna.spice",
   "top_cell": "lna_core",
+  "ports": {
+    "_comment": "The block's .subckt ports (design/netlist/lna.spice *.iopin lines), each drawn as a PDK bondpad PyCell on TopMetal2 and labelled on 134/25 by the top-level assembly (issue #228). generate.py fails if this list is not exactly the netlist's port list.",
+    "list": [
+      "vdd",
+      "vss",
+      "rfin",
+      "rfout"
+    ]
+  },
   "parameters": {
     "nx": {
       "default": 8,
