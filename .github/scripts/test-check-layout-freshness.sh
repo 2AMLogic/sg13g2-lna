@@ -20,6 +20,11 @@
 #  10. inductance_report.json (issue #400): mutated realization geometry,
 #      stale drawn_lowfreq_H, missing / malformed report, missing or extra
 #      inductor -> FAIL, naming inductance_report.json
+#  11. extract_report.json connectivity (issue #424): restored historical
+#      split, unexpected merge, missing expected merge, missing / malformed
+#      fields, malformed merge entry -> FAIL, naming the report, the field
+#      and the offending or missing group or split; reordered merge rows
+#      still pass
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -192,6 +197,32 @@ run ex-abs 1 "absolute netlist_path"; named ex-abs "absolute"
 mk ex-sub; mkdir "$TMP/ex-sub/$C/sub"; mv "$TMP/ex-sub/$C/lna_core.extracted.spice" "$TMP/ex-sub/$C/sub/"
 exmut ex-sub 'd["netlist_path"] = "sub/lna_core.extracted.spice"'
 run ex-sub 0 "output resolved relative to report directory"
+
+# --- issue #424: extraction connectivity (split / merged net labels) ---
+# The historical gsvo split row is the pre-assembly report's own, verbatim
+# (label + net ids), as committed before the #228 assembly joined the nets.
+mk con-split; exmut con-split 'd["split_net_labels"] = [{"label": "gsvo", "nets": [19, 29], "count": 2}]'
+run con-split 1 "restored historical gsvo split"
+named con-split "split_net_labels non-empty.*gsvo"
+mk con-extra; exmut con-extra 'd["merged_net_labels"].append({"net": "b1|vb2", "labels": ["b1", "vb2"]})'
+run con-extra 1 "unexpected merge group"
+named con-extra "unexpected merge group.*b1|vb2"
+mk con-miss; exmut con-miss 'd["merged_net_labels"] = [e for e in d["merged_net_labels"] if e["net"] != "e1|vss"]'
+run con-miss 1 "missing expected merge group"
+named con-miss "missing expected merge group.*e1|vss"
+mk con-nosplit; exmut con-nosplit 'del d["split_net_labels"]'
+run con-nosplit 1 "missing split_net_labels"
+named con-nosplit "split_net_labels missing or malformed"
+mk con-nomerge; exmut con-nomerge 'del d["merged_net_labels"]'
+run con-nomerge 1 "missing merged_net_labels"
+named con-nomerge "merged_net_labels missing or malformed"
+mk con-badsplit; exmut con-badsplit 'd["split_net_labels"] = "none"'
+run con-badsplit 1 "non-list split_net_labels"
+mk con-badmerge; exmut con-badmerge 'd["merged_net_labels"] = ["e1|vss"]'
+run con-badmerge 1 "string merge entry"
+named con-badmerge "merged_net_labels entry malformed"
+mk con-order; exmut con-order 'd["merged_net_labels"] = list(reversed(d["merged_net_labels"]))'
+run con-order 0 "reordered merge rows"
 
 # --- issue #185: native DRC report/sidecar pair ---
 # Fixture pairs are built by the real recorder (layout/native_drc_identity.py)

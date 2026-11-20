@@ -30,6 +30,15 @@
 #      netlist_H equal to the value re-parsed from the inductor2 cards of the
 #      realization's netlist, drawn_over_netlist equal to the rounded ratio
 #      (issue #403)
+#   8. extract_report.json connectivity (issue #424), lna_core only:
+#      split_net_labels must be empty (the assembled layout joins every
+#      labelled net) and merged_net_labels exactly the three known spiral
+#      merge groups e1|vss, outn|vdd, rfin|xin (the sg13g2 extraction deck
+#      has no inductor class — layout/README.md "Friction"), order-
+#      independent. The expected set lives here, not in the report under
+#      test, so a regressed report cannot redefine its own expectation.
+#      Scoped to lna_core: the merge groups are this cell's assembly facts;
+#      other --cell values do not inherit its net names.
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -191,6 +200,65 @@ def check_extract_output():
              f"netlist_sha256 {nsha}; rerun layout/run_flow.sh")
 
 check_extract_output()
+
+# 8. extraction connectivity (issue #424): an opened net is currently
+# silent everywhere else — DRC sees shorts not opens, the assembly test
+# drives a recording canvas, and the LVS counts are already mismatch by
+# expectation (#230). split_net_labels and merged_net_labels are the
+# strongest regression signal the flow already records, so gate them here.
+EXPECTED_MERGED_NETS = ("e1|vss", "outn|vdd", "rfin|xin")
+
+def check_extract_connectivity():
+    if cell != "lna_core":
+        return  # expected merge groups are an lna_core assembly fact (#424)
+    rel = f"layout/{cell}/extract_report.json"
+    p = cd / "extract_report.json"
+    if not p.is_file():
+        return  # missing report already reported by check 3
+    rep = load(p)
+    if not isinstance(rep, dict):
+        return  # unreadable JSON already reported
+    splits = rep.get("split_net_labels")
+    if not isinstance(splits, list):
+        fail(rel, f"split_net_labels missing or malformed ({splits!r}); want a list")
+    else:
+        named = []
+        for s in splits:
+            if isinstance(s, dict) and isinstance(s.get("label"), str) \
+                    and isinstance(s.get("nets"), list):
+                named.append(f"{s['label']} (nets "
+                             + ", ".join(str(n) for n in s["nets"]) + ")")
+            else:
+                named.append(repr(s))
+        if named:
+            fail(rel, "split_net_labels non-empty: " + "; ".join(named)
+                 + "; the assembled layout must join every labelled net; "
+                 "rerun layout/run_flow.sh")
+    merged = rep.get("merged_net_labels")
+    if not isinstance(merged, list):
+        fail(rel, f"merged_net_labels missing or malformed ({merged!r}); want a list")
+        return
+    got = []
+    for e in merged:
+        if isinstance(e, dict) and isinstance(e.get("net"), str) \
+                and isinstance(e.get("labels"), list) \
+                and all(isinstance(x, str) for x in e["labels"]):
+            got.append(e["net"])
+        else:
+            fail(rel, f"merged_net_labels entry malformed ({e!r}); want an "
+                 "object with a 'net' name and a 'labels' array of strings")
+    missing = [n for n in EXPECTED_MERGED_NETS if n not in got]
+    extra = sorted(set(got) - set(EXPECTED_MERGED_NETS))
+    if missing:
+        fail(rel, f"merged_net_labels missing expected merge group(s) {missing}; "
+             "the sg13g2 deck merges exactly the three inductor spirals "
+             "(layout/README.md \"Friction\"); rerun layout/run_flow.sh")
+    if extra:
+        fail(rel, f"merged_net_labels has unexpected merge group(s) {extra}; a "
+             "new merge is a short the assembled layout must not have; "
+             "rerun layout/run_flow.sh")
+
+check_extract_connectivity()
 
 # 4. LVS input identity sidecar (written by layout/lvs_identity.py)
 def sha(p):
