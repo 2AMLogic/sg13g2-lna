@@ -11,6 +11,13 @@ Companion to run_lna_variant.sh / run_lna_iip3.sh. Subcommands:
                 testbench/tb_lna_iip3.spice.tmpl protocol as a `klt sim`
                 request; template unchanged) plus the variant's op request,
                 for the drive levels run_lna_sweep.sh's phase 2 uses
+  collect-set   the single reader of a `klt sim --batch-set` envelope shared
+                by run_lna_variant.sh and run_lna_iip3.sh (issue #454): copy
+                each member's report to the per-request path the reducers
+                read and list the failed members. stdout is the failure list
+                (`<stem> <exit_code>` per failed member, envelope order),
+                stderr the per-member diagnostics; exit 1 only when the
+                envelope itself cannot be read
   summarize     turn the `klt sim` JSON reports under corners/<record-id>/
                 into records/<record-id>-{summary,compare}.csv and the
                 headline numbers the record .md quotes
@@ -57,6 +64,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -1509,6 +1517,57 @@ def apply_temps(spec: str) -> None:
     TEMPS = [t for t in TEMPS_ALL if t in want]
 
 
+def collect_batch_set(runner, envelope, corners_out):
+    """Collect one `klt sim --batch-set` run's member reports (issue #454).
+
+    The single reader of the set envelope on the batch path of
+    run_lna_variant.sh and run_lna_iip3.sh. For each member of the
+    envelope's `requests` list, in envelope order: derive the request stem
+    ONCE (basename with the whole ".request.json" suffix removed, so
+    `ideal_noise.request.json` -> `ideal_noise` and the dot inside
+    `matched_iip3_a0.5mv` survives), copy the member's report to
+    <corners_out>/<stem>.report.json -- the path the reducers, the coverage
+    validator and the record provenance read, identical to what the serial
+    (non-set) loop writes -- and print a missing-report diagnostic to stderr
+    when there is nothing to copy. The source path is the envelope's own
+    requests[].report field, never a guessed directory name: klt names a
+    member's directory after the request file with only the LAST suffix
+    removed, so `ideal_noise.request.json` lands in `ideal_noise.request/`,
+    not `ideal_noise/`.
+
+    Returns the per-member failure entries [(stem, exit_code), ...] in
+    envelope order: a non-zero member exit is a failure even when the set as
+    a whole returned 0. Raises SystemExit(1) with the runner-tagged
+    diagnostic when the envelope itself cannot be read -- before any report
+    is copied.
+    """
+    try:
+        with open(envelope) as f:
+            d = json.load(f)
+    except Exception as exc:
+        raise SystemExit(f"{runner}: cannot read set envelope {envelope}: {exc}")
+    entries = []
+    for r in d.get("requests") or []:
+        stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
+        if stem:
+            src = r.get("report")
+            if src and os.path.isfile(src):
+                shutil.copyfile(src, os.path.join(corners_out, f"{stem}.report.json"))
+            else:
+                print(f"{runner}: {stem}: no report to collect "
+                      f"({'missing ' + src if src else 'member never produced one'})",
+                      file=sys.stderr)
+        if r.get("exit_code"):
+            entries.append((stem or "<unknown>", r["exit_code"]))
+    return entries
+
+
+def cmd_collect_set(a):
+    for stem, rc in collect_batch_set(a.runner, a.envelope, a.corners_out):
+        print("%s %s" % (stem, rc))
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     temps_help = ("temperature slice, e.g. --temps=125 (default: all of -40,27,125). Pass the same "
@@ -1542,6 +1601,14 @@ def main():
     gi.add_argument("--backend", default="")
     gi.add_argument("--temps", default="", help=temps_help)
     gi.set_defaults(fn=cmd_gen_iip3)
+    cs = sub.add_parser("collect-set")
+    cs.add_argument("--runner", required=True,
+                    help="runner label for the diagnostics (e.g. run_lna_variant.sh)")
+    cs.add_argument("--envelope", required=True,
+                    help="the klt sim --batch-set set-report.json to read")
+    cs.add_argument("--corners-out", required=True,
+                    help="record corners dir to materialise <stem>.report.json into")
+    cs.set_defaults(fn=cmd_collect_set)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
     s.add_argument("--summary-csv", required=True)
@@ -1579,7 +1646,9 @@ def main():
     si.add_argument("--temps", default="", help=temps_help)
     si.set_defaults(fn=cmd_summarize_iip3)
     a = p.parse_args()
-    apply_temps(a.temps)
+    # collect-set reads no temperature slice; every temperature-aware
+    # subcommand (gen, gen-iip3, summarize, summarize-iip3) carries --temps.
+    apply_temps(getattr(a, "temps", ""))
     sys.exit(a.fn(a) or 0)
 
 

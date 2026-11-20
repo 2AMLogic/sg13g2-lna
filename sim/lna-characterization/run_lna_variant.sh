@@ -136,50 +136,32 @@ if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
     --max-in-flight "${MAX_IN_FLIGHT}" --capacity-retries "${CAPACITY_RETRIES}" \
     --wait-for-capacity "${CAPACITY_WAIT}" --format json \
     > "${SET_REPORT}" 2> "${SET_ERRLOG}" || set_rc=$?
-  # Materialise each member's report at the per-request path the reducer reads.
-  # The source path comes from the envelope's own `requests[].report` field, not
-  # from a guessed directory name: klt names a member's directory after the
-  # request file with only the LAST suffix removed, so `ideal_noise.request.json`
-  # lands in `ideal_noise.request/`, not `ideal_noise/`.
-  python3 -I - "${SET_REPORT}" "${CORNERS_OUT}" <<'PYEOF'
-import json, os, re, shutil, sys
-envelope, corners_out = sys.argv[1], sys.argv[2]
-try:
-    d = json.load(open(envelope))
-except Exception as exc:
-    sys.exit(f"run_lna_variant.sh: cannot read set envelope {envelope}: {exc}")
-for r in d.get("requests") or []:
-    src = r.get("report")
-    stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
-    if not stem:
-        continue
-    if src and os.path.isfile(src):
-        shutil.copyfile(src, os.path.join(corners_out, f"{stem}.report.json"))
-    else:
-        print(f"run_lna_variant.sh: {stem}: no report to collect "
-              f"({'missing ' + src if src else 'member never produced one'})",
-              file=sys.stderr)
-PYEOF
+  # Collect the set in ONE read of the envelope (issue #454): the campaign
+  # module's collect-set subcommand materialises each member's report at the
+  # per-request path the reducer reads (the source path is the envelope's own
+  # `requests[].report` field, not a guessed directory name -- klt names a
+  # member's directory after the request file with only the LAST suffix
+  # removed, so `ideal_noise.request.json` lands in `ideal_noise.request/`,
+  # not `ideal_noise/`), prints missing-report diagnostics to stderr, and
+  # lists the failed members on stdout (`<stem> <exit_code>`, envelope
+  # order). The shell checks the collector's exit status before consuming
+  # the entries: exit 1 means the envelope itself was unreadable and the
+  # collector has already said why -- stop before consuming anything.
+  SET_FAILURES="${CORNERS_OUT}/set-failures.txt"
+  collect_rc=0
+  python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" collect-set \
+    --runner run_lna_variant.sh --envelope "${SET_REPORT}" \
+    --corners-out "${CORNERS_OUT}" > "${SET_FAILURES}" || collect_rc=$?
+  if (( collect_rc != 0 )); then
+    exit 1
+  fi
   # Per-member status from the aggregate envelope: a non-zero member exit is a
   # failure even when the set as a whole returned 0.
   while read -r stem rc; do
     [[ -z "${stem}" ]] && continue
     echo "run_lna_variant.sh: ${stem} exited ${rc} (see ${SET_ERRLOG}, ${SET_REPORT})" >&2
     FAILED+=("${stem}:${rc}")
-  done < <(python3 -I - "${SET_REPORT}" <<'PYEOF'
-import json, os, re, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception:
-    sys.exit(0)
-for r in d.get("requests") or []:
-    if r.get("exit_code"):
-        # strip the whole ".request.json" suffix, not just ".json", so the
-        # label matches the <variant>_<analysis> stem used everywhere else
-        stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
-        print("%s %s" % (stem or "<unknown>", r["exit_code"]))
-PYEOF
-  )
+  done < "${SET_FAILURES}"
   if (( set_rc != 0 )) && [[ ${#FAILED[@]} -eq 0 ]]; then
     FAILED+=("batch-set:${set_rc}")
     echo "run_lna_variant.sh: --batch-set exited ${set_rc} with no per-request failure (see ${SET_ERRLOG})" >&2
