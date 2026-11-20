@@ -1270,42 +1270,21 @@ def cmd_summarize_iip3(a):
                 _iip3_issue(issues, "invalid_log_echoes", amp=label, cell=key,
                             detail="; ".join(bad_log))
                 continue
-            pin = _sweep.avail_power_dbm(amp)
-            fft_t = (vals["tone1"] + vals["tone2"]) / 2.0
-            fft_i3 = (vals["im3l"] + vals["im3h"]) / 2.0
-            pout = _sweep.out_power_dbm(fft_t)
-            pim3 = _sweep.out_power_dbm(fft_i3)
-            iip3 = _sweep.iip3_from(pin, pout, pim3)
-            dft_t = (parsed_log["dft_tone1"] + parsed_log["dft_tone2"]) / 2.0
-            dft_i3 = (parsed_log["dft_im3l"] + parsed_log["dft_im3h"]) / 2.0
-            iip3_dft = _sweep.iip3_from(pin, _sweep.out_power_dbm(dft_t),
-                                        _sweep.out_power_dbm(dft_i3))
-            im5 = (vals["im5l"] + vals["im5h"]) / 2.0
-            rows.append({
+            fields, iip3, iip3_dft = _sweep.iip3_measurement_fields(
+                amp, vals, parsed_log)
+            row = {
                 "point_id": f"iip3_{variant}_{key[0]}_{key[1]:g}c_vdd{key[2]:.2f}v_{label}",
                 "variant": variant,
                 "corner_label": key[0], "temp_c": key[1], "vdd_v": key[2],
-                "amp_v_peak_per_tone": f"{amp:.6e}",
-                "src_tone_v_peak_measured": f"{vals['src1']:.6e}",
-                "pin_avail_dbm_per_tone": f"{pin:.4f}",
-                "pout_dbm_per_tone": f"{pout:.4f}",
-                "pim3_dbm": f"{pim3:.4f}",
-                "gain_db": f"{pout - pin:.4f}",
-                "iip3_dbm": f"{iip3:.4f}",
-                "oip3_dbm": f"{iip3 + pout - pin:.4f}",
-                "iip3_dbm_dft_crosscheck": f"{iip3_dft:.4f}",
-                "dft_fft_iip3_agreement_db": f"{abs(iip3 - iip3_dft):.4f}",
-                "v_tone1_out_v": f"{vals['tone1']:.6e}",
-                "v_tone2_out_v": f"{vals['tone2']:.6e}",
-                "v_im3l_out_v": f"{vals['im3l']:.6e}",
-                "v_im3h_out_v": f"{vals['im3h']:.6e}",
-                "v_im5_out_v": f"{im5:.6e}",
-                "im3_over_im5_db": f"{_sweep.db20(fft_i3 / im5):.2f}" if im5 > 0 else "",
-                "ic1_a": f"{parsed_log['ic1']:.6e}",
-                "idd_a": f"{parsed_log['idd']:.6e}",
-                "fft_npts": str(npts),
-                "fft_df_hz": f"{vals['fft_df']:.6e}",
-            })
+            }
+            for name, value in fields.items():
+                row[name] = value
+                if name == "iip3_dbm_dft_crosscheck":
+                    # the campaign-only agreement column follows the
+                    # cross-check it compares, and keeps the unrounded
+                    # intercepts as its inputs
+                    row["dft_fft_iip3_agreement_db"] = f"{abs(iip3 - iip3_dft):.4f}"
+            rows.append(row)
     # Extra (non-declared) reports present on disk are reported, not folded in.
     declared = {f"{variant}_iip3_{iip3_amp_label(x)}.report.json"
                 for x in grid_amps + extra_amps}
