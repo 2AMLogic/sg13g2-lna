@@ -804,10 +804,11 @@ def reroot_report_logs(root):
         rp.write_text(json.dumps(doc, indent=1) + "\n")
 
 
-def fft_values(tone=0.01023, im3=2.0e-9):
+def fft_values(tone=0.01023, im3=2.0e-9, im5=None):
     v = {"fft_df": V.IIP3_DF, "tone1": tone, "tone2": tone * 1.0005,
          "im3l": im3, "im3h": im3 * 1.005,
-         "im5l": 7.13e-11, "im5h": 7.36e-11,
+         "im5l": 7.13e-11 if im5 is None else im5 * 0.98,
+         "im5h": 7.36e-11 if im5 is None else im5 * 1.02,
          "src1": 0.001999, "src2": 0.001998}
     return v
 
@@ -917,14 +918,31 @@ class Iip3Generation(unittest.TestCase):
                                      "matched_iip3_a2mv.request.json", "matched_iip3_a2mv.spice"])
 
 
+# The per-point iip3.csv column contract, in order, copied verbatim from the
+# committed record header (records/20261117-040629-30d1235a-iip3.csv): five
+# identifier columns, the shared measurement block, dft_fft_iip3_agreement_db
+# between iip3_dbm_dft_crosscheck and v_tone1_out_v, then the FFT witnesses.
+IIP3_CSV_COLUMNS = [
+    "point_id", "variant", "corner_label", "temp_c", "vdd_v",
+    "amp_v_peak_per_tone", "src_tone_v_peak_measured",
+    "pin_avail_dbm_per_tone", "pout_dbm_per_tone", "pim3_dbm",
+    "gain_db", "iip3_dbm", "oip3_dbm", "iip3_dbm_dft_crosscheck",
+    "dft_fft_iip3_agreement_db", "v_tone1_out_v", "v_tone2_out_v",
+    "v_im3l_out_v", "v_im3h_out_v", "v_im5_out_v", "im3_over_im5_db",
+    "ic1_a", "idd_a", "fft_npts", "fft_df_hz",
+]
+
+
 class Iip3Reduction(unittest.TestCase):
     def run_reduce(self, cells, amps="0.001,0.002", extras="", s11=None,
                    op=True, extra_report=None, grid=V.GRID_SMOKE,
-                   reroot_logs=False):
+                   reroot_logs=False, im5=None):
         """cells: {(label, temp, vdd): {"a1": (tone, im3), "a2": (tone, im3)}};
         a missing level key makes that point genuinely missing. With
         reroot_logs=True the reports' artifacts.log paths are rewritten into
-        the dead absolute-worktree shape the committed klt reports carry."""
+        the dead absolute-worktree shape the committed klt reports carry.
+        im5 is forwarded to fft_values (None keeps its default bins; 0.0
+        makes every point a zero-IM5 case)."""
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             for key, lv in cells.items():
@@ -933,7 +951,8 @@ class Iip3Reduction(unittest.TestCase):
                         continue
                     tone, im3 = lv[tag]
                     synth_report(root / f"matched_iip3_{tag}mv.report.json",
-                                 key[0], key[1], key[2], amp, fft_values(tone, im3))
+                                 key[0], key[1], key[2], amp,
+                                 fft_values(tone, im3, im5))
             if extra_report:
                 synth_report(root / extra_report, "typ", 27, 1.8, 4e-3, fft_values())
             if reroot_logs:
@@ -970,9 +989,21 @@ class Iip3Reduction(unittest.TestCase):
                                    slope_tol=_sweep.IIP3_SLOPE_TOL,
                                    grid=grid, temps="")
             rc = V.cmd_summarize_iip3(a)
-            rows = list(csv.DictReader(open(out)))
+            with open(out, newline="") as fh:
+                reader = csv.DictReader(fh)
+                # The writer derives its fieldnames from the first row's key
+                # order, so a moved/renamed/dropped/added column must fail
+                # here even when the numeric assertions of every caller pass.
+                self.assertEqual(reader.fieldnames, IIP3_CSV_COLUMNS)
+                rows = list(reader)
             srows = list(csv.DictReader(open(summ)))
             return rc, rows, srows, head.read_text()
+
+    def test_csv_header_is_the_committed_record_contract(self):
+        rc, _rows, _srows, _md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (0.01023 / 2, 2.0e-9 / 8),
+                                 "a2": (0.01023, 2.0e-9)}})
+        self.assertEqual(rc, 0)
 
     def test_nominal_cell_valid_and_arithmetic_matches_the_definition(self):
         tone, im3 = 0.01023, 2.0e-9
@@ -1000,6 +1031,21 @@ class Iip3Reduction(unittest.TestCase):
                                float(s["iip3_dbm_a2mv"]) - term, places=4)
         self.assertIn("Draft > 0 dBm value", md)
         self.assertIn("stays DRAFT", md)
+
+    def test_zero_im5_point_leaves_the_im3_over_im5_ratio_empty(self):
+        # A point whose IM5 bins read zero is valid evidence for IIP3; the
+        # shared measurement keeps im3_over_im5_db empty rather than -inf.
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, _md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (tone / 2, im3 / 8), "a2": (tone, im3)}},
+            im5=0.0)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(rows), 2)
+        for r in rows:
+            self.assertEqual(r["im3_over_im5_db"], "")
+            self.assertEqual(float(r["v_im5_out_v"]), 0.0)
+        # the 3:1 slope check reads IM3, not IM5: the cell stays valid
+        self.assertEqual(srows[0]["iip3_validity"], "valid")
 
     def test_dead_recorded_log_path_reroots_onto_corners_dir(self):
         # The committed klt reports record artifacts.log as an absolute path

@@ -111,13 +111,17 @@ echo "run_flow: klt erc -> erc_report.json (exit ${erc_rc})"
 # Negative controls: one broken copy per declared tie. A clean supply verdict
 # is only evidence if the same invocation rejects a stream whose tap has lost its contacts,
 # so erc_control.py fails the flow when a control does not move the verdict.
+# What each break removes and where is declared once, in erc_control.py's
+# CONTROLS (#438): the loop below consumes `erc_control.py --print-controls`
+# (name<TAB>layer<TAB>box per control), so the layer handed to erc_break.py
+# and the break_layer recorded in erc_control.json are the same value.
 ERC_SCRATCH="${LAYOUT_DIR}/build/erc"
 mkdir -p "${ERC_SCRATCH}"
 erc_one_control() {
-  local name="$1" box="$2"
+  local name="$1" layer="$2" box="$3"
   local broken="${ERC_SCRATCH}/broken_${name}.gds"
   "${PYTHON}" "${LAYOUT_DIR}/erc_break.py" \
-    layout/lna_core/lna_core.gds "${broken}" 6/0 "${box}" > /dev/null
+    layout/lna_core/lna_core.gds "${broken}" "${layer}" "${box}" > /dev/null
   local crc=0
   "${KLT_CMD[@]}" erc "${broken}" "${ERC_SPEC}" --top lna_core \
     --deck sg13g2 --format json > "${ERC_SCRATCH}/control_${name}.json" || crc=$?
@@ -126,9 +130,13 @@ erc_one_control() {
     exit "${crc}"
   fi
 }
-erc_one_control substrate "-59.5,-8.9,22.5,-7.1"
-erc_one_control well      "-1000.5,141.5,-967.5,143.2"
-python3 -I "${LAYOUT_DIR}/erc_control.py" "${REPO_ROOT}" \
-  "${ERC_SCRATCH}/control_substrate.json" "${ERC_SCRATCH}/control_well.json"
+ERC_CONTROLS="${ERC_SCRATCH}/controls.tsv"
+python3 -I "${LAYOUT_DIR}/erc_control.py" --print-controls > "${ERC_CONTROLS}"
+ERC_CONTROL_ENVS=()
+while IFS=$'\t' read -r name layer box; do
+  erc_one_control "${name}" "${layer}" "${box}"
+  ERC_CONTROL_ENVS+=("${ERC_SCRATCH}/control_${name}.json")
+done < "${ERC_CONTROLS}"
+python3 -I "${LAYOUT_DIR}/erc_control.py" "${REPO_ROOT}" "${ERC_CONTROL_ENVS[@]}"
 
 echo "run_flow: done (repo ${REPO_ROOT})"

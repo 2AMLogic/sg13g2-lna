@@ -662,6 +662,55 @@ machine-emitted field in the same report `check-signoff.sh` already
 byte-compares, rather than resting on a human keeping three numbers in
 sync by hand.
 
+## The T1 met-regression gate (issue #446)
+
+Byte-consistency alone lets a PR that *loses* a T1 item pass CI as long
+as it faithfully regenerates the record of its own regression: the drift
+gate guarantees the record is honest, not that the evidence is intact.
+That was PR #444's shape — `t1_met_count` 5 → 4 with item 9
+`unmet`/`stale_evidence`, CI green. On pull requests and merge-group
+runs CI therefore invokes the checker with a base
+(`.github/scripts/check-signoff.sh --base <ref>`; PR:
+`origin/<base branch>`, merge queue: the trial-merge
+`merge_group.base_sha`, both over a full-history checkout). The checker
+reads the committed `t1-report.json` at the merge base and compares T1
+rows by numeric `id` against the validated fresh render: any item that
+was `met` there and is not `met` now fails the run, named by id with its
+new status and reason. A gain on another item cannot cancel a loss, and
+an unchanged met *count* with a different met set still fails. A
+baseline that cannot be resolved, read or parsed is a failure with a
+diagnostic, never a silent skip. Pushes to main and standalone freshness
+checks run the checker without `--base` and compare against nothing.
+
+Reproduce locally:
+
+```bash
+.github/scripts/run-local-checks.sh --base origin/main
+# or directly:
+.github/scripts/check-signoff.sh --base origin/main
+```
+
+### Acknowledging a deliberate downgrade
+
+A deliberate downgrade is opt-in, in the same spirit as
+`check-defaults-version-bump.sh --forbid-bump`: the regenerated record
+alone must not be self-authorising. To accept a loss, add a NEW entry
+under the **Acknowledged T1 downgrades** heading below, in the same
+commit as the downgrade, one entry per lost item:
+
+```markdown
+- T1 item <id> (<item title>): <why this loss is accepted>. (issue #N)
+```
+
+The item title is optional. After the colon, write the reason for accepting
+the loss. CI prints that reason even if another loss fails the gate.
+Each entry covers its own item and must be new since the merge base.
+If a repaired item regresses again, add a fresh entry.
+
+## Acknowledged T1 downgrades
+
+None currently. Add entries under this heading using the format above.
+
 ## Layout scope guard
 
 A byte-consistent report can still overclaim: a layout envelope for a

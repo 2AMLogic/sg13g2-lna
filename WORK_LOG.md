@@ -6,6 +6,20 @@
 
 ### 2026-11-20
 
+- **Issue #454** (closed): Share batch-set report collection between the variant and IIP3 runners
+- **PR #464**: refactor(sim): share the batch-set report collector between the variant and IIP3 runners
+- **Issue #433** (closed): docs: README.md:3-4 lede duplicates the PDK name ("on IHP SG13G2 on [IHP SG13G2]")
+- **PR #462**: docs: name the PDK once in the README and CLAUDE.md ledes
+- **Issue #439** (closed): Share the per-point IIP3 measurement calculation across both reducers
+- **PR #444**: refactor: share the per-point IIP3 measurement across both reducers
+- **Issue #446** (closed): check-signoff.sh does not gate on a T1 met-count regression
+- **PR #455**: feat: gate check-signoff.sh on T1 met-item regressions vs the merge base
+- **Issue #452** (closed): test_usage_errors' seg() == [] assertion is vacuous: class 2's non-archival is still unguarded
+- **PR #457**: test: seed a previous pair so usage errors' no-archive assertion can fail
+- **Issue #447** (closed): Pin the campaign IIP3 CSV column order in a test (the agreement-column splice is unguarded)
+- **PR #453**: test: pin the campaign iip3.csv column order against the committed record header
+- **Issue #443** (closed): No test covers native DRC exit class 7 (E_SELFCHECK), whose non-archival invariant is now a set-membership test
+- **PR #451**: test: cover native DRC exit class 7's non-archival invariant
 - **Issue #35** (closed): T1 item 11 (power delivery, structural): klt erc supply spec + LVS supply pairing — unmet until layout exists
 - **PR #434**: feat(signoff): T1 item-11 power-delivery ERC evidence -- supply spec, negative controls, compound citation
 - **Issue #425** (closed): Reuse the validated S-parameter log for the 290 K noise-figure cross-check

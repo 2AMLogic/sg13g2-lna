@@ -1,6 +1,6 @@
 # sg13g2-lna
 
-A SiGe HBT low-noise amplifier on IHP SG13G2 on
+A SiGe HBT low-noise amplifier on
 [IHP SG13G2](https://github.com/IHP-GmbH/IHP-Open-PDK), IHP's open-source 130 nm SiGe BiCMOS PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.

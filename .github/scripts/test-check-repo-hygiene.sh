@@ -146,8 +146,10 @@ expect "spec without a table fails" 1 "$T" "contains no markdown table"
 T="$(case_tree)"; edit "$T" LICENSE '""'
 expect "empty LICENSE fails" 1 "$T" "LICENSE is empty"
 
-# 5. declared command not run by CI
-T="$(case_tree)"; edit "$T" .github/workflows/signoff.yml 's.replace("run: .github/scripts/check-signoff.sh", "run: true")'
+# 5. declared command not run by CI. Issue #446 moved the checker into an
+# event-selected run block; the declared command is the bare no-base body
+# line (the push-to-main branch), so the mutation drops that line.
+T="$(case_tree)"; edit "$T" .github/workflows/signoff.yml 's.replace("\n            .github/scripts/check-signoff.sh\n", "\n            true\n")'
 expect "declared command dropped from CI fails" 1 "$T" "not run by CI job 'signoff'"
 run_check "$T" --write
 [ "$RC" -eq 1 ] && ok "--write refuses a declared command CI does not run" || bad "--write accepted a dropped CI command"
