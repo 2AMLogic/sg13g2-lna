@@ -7,6 +7,15 @@ name: signoff
 # manifest citation whose artifact has since changed fails rather than
 # rotting (issue #30).
 #
+# On pull requests and merge-group runs the same checker also gates on T1
+# met-item regressions (issue #446): any T1 item that was `met` at the
+# merge base and is not `met` in the fresh render fails the run, named by
+# id with its new status and reason — a gain on another item cannot
+# cancel the loss, and regenerating the record of your own regression is
+# not enough. A deliberate downgrade needs a NEW entry under "##
+# Acknowledged T1 downgrades" in signoff/README.md (same commit). Pushes
+# to main run the checker without a base.
+#
 # Headless and PDK-free like the repo's other checks: `klt signoff
 # --manifest` on the current manifest grades only committed files, so
 # this runner needs nothing but bash, python3 (stdlib) and the pinned
@@ -111,8 +120,13 @@ jobs:
     needs: attest
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      # Full history: the T1 met-regression comparison (issue #446) reads
+      # the committed report at the merge base of the event-selected base
+      # ref, like the sim-append-only job below.
+      - name: Check out repository (full history for the merge base)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pinned klt
         run: python3 -m pip install "klayout-tools==0.9.2"
@@ -126,8 +140,25 @@ jobs:
       - name: Drift-checker self-test
         run: .github/scripts/test-check-signoff.sh
 
+      # T1 met-regression gate (issue #446): PR and merge-group runs
+      # compare against the merge base (merge_group: the trial-merge
+      # base_sha; pull_request: origin/<base branch>); pushes to main have
+      # no base and run the freshness check only. The bare invocation in
+      # the else branch is the declared command check-repo-hygiene.py
+      # pins.
       - name: T1 verdict of record is current
-        run: .github/scripts/check-signoff.sh
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: origin/${{ github.base_ref }}
+          MG_BASE: ${{ github.event.merge_group.base_sha }}
+        run: |
+          if [ "$EVENT" = "merge_group" ]; then
+            .github/scripts/check-signoff.sh --base "$MG_BASE"
+          elif [ "$EVENT" = "pull_request" ]; then
+            .github/scripts/check-signoff.sh --base "$PR_BASE"
+          else
+            .github/scripts/check-signoff.sh
+          fi
 
   # Unit tests for the lna-characterization result-reduction code (issue
   # #64). Stdlib-only, headless, PDK-free, single process: no ngspice, no
