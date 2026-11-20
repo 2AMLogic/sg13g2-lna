@@ -42,6 +42,8 @@ item 4 and item 5 render `check_failed` (item 5 cites the four issue-#231
 ratified-row envelopes — three pass, and the `nf` row fails at every
 cell), item 8 renders `check_failed` from its cited characterization
 envelope whose mechanically derived status is `fail` for the same `nf` row,
+item 11 renders `lvs_did_not_pass` (its ERC supply evidence is complete
+and clean; only the LVS half is blocked on #230 — see the item-11 bullet),
 and the rest render `no_evidence`. The
 block does have committed evidence:
 the schematic and its derived netlist in `design/`, six `sim/` experiments
@@ -99,7 +101,7 @@ down as follows:
   precondition (full partition) now holds for both cited rows; a future
   netlist change that re-opens the partition fails the guard and the rows
   go stale, not green. See `layout/README.md` → "Signoff citations".
-- **Items 7 and 11 still need more of the block.** Item 2 (Layout) is
+- **Item 7 needs post-layout extraction.** Item 2 (Layout) is
   **cited since #228** on `layout/lna_core/item2.envelope.json`, the
   artifact-anchored generic envelope `layout/item2_envelope.py` writes from
   `layout/run_flow.sh`'s own regeneration: it pins the committed GDS by
@@ -108,8 +110,29 @@ down as follows:
   re-hash to its provenance and the realization partition must be full
   (`out_of_scope` empty; the layout-scope guard's precondition), or the
   writer fails and the row goes stale rather than green.
-  Item 7 needs a `klt pex` run, and item 11 a supply spec, of a complete
-  layout.
+  Item 7 needs a `klt pex` run of the complete layout. Item 11 is
+  **cited since #35** — see its bullet below.
+- **Item 11 (power delivery, structural) is cited on its compound set
+  since #35**: the ERC part is `layout/lna_core/erc_report.json`, the
+  `klt erc --format json` envelope of the supply spec
+  `layout/lna_core/erc_spec.json` run against the committed full-block GDS
+  (`erc_status: "clean"`, both supplies one electrical island, both tie
+  declarations checked, zero findings — see `layout/README.md` →
+  "ERC supply evidence (issue #35)" for the spec, the assertion forms it
+  uses, and the two contact-removal controls for the substrate and well taps); the LVS
+  part is item 4's own `lvs_full_report.json`, re-cited by the item-11
+  entry as the grading's compound set requires. Both parts pin the same
+  GDS hash. The row renders `unmet`/`lvs_did_not_pass`, with
+  `detail.power_delivery.supply_nets: ["vdd", "vss"]` naming the supplies
+  the ERC run proved: the ERC half is complete and continuous, and only
+  the LVS half is unavailable, because the compare is still `mismatch`
+  (LVS-clean is #230's; the analog column's item-11 rules gate `met` on
+  item 4 passing, so no ERC evidence can carry this row to `met` before
+  that lands). That is the honest split the grading rules exist to make:
+  "rails proven continuous and tied; compare has disclosed, tracked
+  defects" — not "power delivery unverified". When #230 closes, re-running
+  `layout/run_flow.sh` (which regenerates the LVS reports beside the ERC
+  evidence) and re-rendering flips the row to `met` with no hand edit.
 - **Item 5 accepts only a `klt sim` envelope** for this analog block, and
   no committed envelope carries the per-row pass/fail it needs. The
   current RF and DC records above are ngspice + bash + CSV/Markdown
@@ -260,14 +283,20 @@ down as follows:
   **Regenerate** after any change that moves the GDS (a generator edit, a
   realization/netlist change) — `layout/run_flow.sh` rewrites
   `layout/lna_core/item2.envelope.json` with the new hash and its own
-  regeneration claim; then refresh `evidence."2".content_hash` (and
-  `evidence."4".content_hash`, whose report re-pins the GDS too) in
+  regeneration claim; then refresh the GDS hashes for items 2, 3 and 4 and
+  both parts of item 11 in
   `manifest.json` and re-render:
 
   ```bash
   uvx --from "klayout-tools==0.9.2" klt signoff --manifest signoff/manifest.json \
     --tiers-doc signoff/design-evidence-tiers.md --format json > signoff/t1-report.json
   ```
+
+  The same flow step also rewrites the item-11 ERC evidence
+  (`erc_report.json` + `erc_control.json`; the spec `erc_spec.json` is an
+  input — update its boxes when the taps move, the re-run fails otherwise),
+  so a GDS-moving change refreshes items 2, 3, 4 and 11 in one
+  `layout/run_flow.sh` pass.
 
   The old item-1 regeneration block follows; it is kept for item 1's own
   inputs:
@@ -312,8 +341,9 @@ the item just to make a row go green.
   no RTL, no partition boundary. A `mixed-signal` declaration would be
   wrong here.
 - **`evidence`** — the map from item id to evidence entry. It currently
-  holds item 4 (failing, see above), items 1 and 10, and item 9, the audited
-  testbench inventory. Cite honestly:
+  holds item 4 (failing, see above), items 1 and 10, item 9 (the audited
+  testbench inventory), items 2, 3, 5 and 8 (see their bullets), and item 11's
+  compound `[erc, lvs]` set (see its bullet). Cite honestly:
   - **File-backed** — `{"file": "<repo-root-relative path>", "content_hash": "sha256:<hash>"}`.
     Every citation MUST pin `content_hash` to the committed artifact it
     was produced against (`provenance.input.content_hash` of the cited
@@ -335,26 +365,24 @@ the item just to make a row go green.
   - **Item 7 accepts only a `klt pex` report** — unlike every other
     item, it rejects any other evidence kind; a clean DRC or pre-layout
     sim renders `wrong_kind` (#30's "Things that will bite").
-  - **Item 11 stays uncited — no evidence exists, not a tooling gap.**
-    Under the previous `0.5.0` pin this item additionally had to stay
+  - **Item 11 is cited since #35 on its compound set — historical note on
+    why it stayed uncited before that.** Under the previous `0.5.0` pin
+    this item had to stay
     uncited on tooling grounds: the item-11 grading rules
     (klayout-tools#2057, plus the per-item build-grading guard of #2201)
     were on klayout-tools `main` but not in any release, so a citation
     under the pinned 0.5.0 build would have fallen through to rules that
     did not exist in the running build and could have rendered `met` from
     nothing. **`klt 0.6.0` ships both #2057 and #2201** (klayout-tools
-    `CHANGELOG.md@v0.6.0`), which retires that specific risk — a genuine
-    item-11 citation under the current pin now grades against real rules,
+    `CHANGELOG.md@v0.6.0`), which retired that specific risk — a genuine
+    item-11 citation under the current pin grades against real rules,
     not a silent fall-through. The rendered report's per-row
     `graded_by_build: true` field (also new in 0.6.0) is the machine-checkable
-    confirmation of that fact. What has not changed: this repo has no
-    layout of the block, only issue #63's partial core + island cell, so
-    there is no `klt erc` supply-spec run to cite. Item 11 stays uncited
-    for the same reason items 2 and 7 do (no artifact for the block exists
-    yet), and renders `unmet`/`no_evidence`, the exact "has a row, even if
-    unmet" state issue #30 requires. Item 11's blocking work (the actual
-    layout and supply-spec evidence) is tracked in the companion issue #35;
-    the load-bearing upstream frictions for this block are already on file
+    confirmation of that fact. Until #228 assembled the full block there
+    was also no layout to run a supply spec against; since #35 there is
+    (see the item-11 bullet above for the cited set and its
+    `lvs_did_not_pass` render); the load-bearing upstream frictions for
+    this block are already on file
     (SiGe-HBT recognition permanently declined — klayout-tools#1242,
     documented for this PDK in `sg13g2-bandgap#4`; tap declaration by
     assertion or disclosure — klayout-tools#2240, shipped in 0.6.0).

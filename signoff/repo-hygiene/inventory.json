@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 19649,
+      "bytes": 25461,
       "role": "script of a declared CI command",
-      "sha256": "sha256:47e51b38e1a3496042a9bf48fde47da1097aac71221824247ab333529366f948"
+      "sha256": "sha256:7d57d28c7ca557e7c7a03f4e8dc4e49681a12cdb36268f1081078a1ef3e70f8d"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 21581,
+      "bytes": 25126,
       "role": "script of a declared CI command",
-      "sha256": "sha256:b4b5cf0fc3de5abe1cea62cb754d661d3e6373d2f94219fe7594f83d0faf8893"
+      "sha256": "sha256:af02a097bd1272a876ca6c3a80be193eb1d5eb1a1ea1c300934b1bbebcf5c539"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,
@@ -104,9 +104,9 @@
       "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 13180,
+      "bytes": 13406,
       "role": "script of a declared CI command",
-      "sha256": "sha256:249dcd9fa1c7f0da5104f05d6f57b8cf17d2cdc4cb878c96b08bb4531c116722"
+      "sha256": "sha256:b75a3a6619bbc54ef13dc0e3503a438bc2b3bb120a6a40cd7310c5acee0cfaa9"
     },
     ".github/scripts/test-check-sim-append-only.sh": {
       "bytes": 4539,

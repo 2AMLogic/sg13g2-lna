@@ -1017,27 +1017,29 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
 
     invalid_logs: list[dict] = []
 
-    def state(point_id: str, dats: tuple[str, ...]) -> str:
+    def state(point_id: str, dats: tuple[str, ...]) -> tuple[str, dict | None]:
+        """(state, measurements): the strict log check's parse is handed back
+        so callers never re-read the log (None unless the log validated)."""
         log = os.path.join(corners_dir, point_id + ".log")
         if not os.path.isfile(log):
-            return "missing"
+            return "missing", None
         if not is_complete(log):
-            return "failed"
+            return "failed", None
         if any(not os.path.isfile(os.path.join(corners_dir, point_id + d)) for d in dats):
-            return "failed"
+            return "failed", None
         check = validate_sp_log if point_id in man["sp"] else validate_iip3_log
-        _, reasons = check(log)
+        parsed, reasons = check(log)
         for reason in reasons:
             invalid_logs.append({"point": point_id, "artifact": point_id + ".log",
                                  "reason": reason})
-        return "invalid" if reasons else "completed"
+        return ("invalid" if reasons else "completed"), parsed
 
     states: dict[str, str] = {}
     invalid_grids: list[dict] = []
     for pid in man["sp"]:
         dats = (".inband.dat", ".stability.dat") + (
             (".nf290.dat",) if "nf290" in man.get("grids", {}) else ())
-        states[pid] = state(pid, dats)
+        states[pid], parsed = state(pid, dats)
         if states[pid] == "completed" and man.get("grids"):
             for kind in man["grids"]:
                 ext = SCALE_COLS[kind][2]
@@ -1045,8 +1047,7 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
                 reasons = validate_table(tbl, kind, man["grids"][kind])
                 if kind == "nf290" and not reasons:
                     reasons = nf_crosscheck(
-                        read_nf_grid(tbl),
-                        parse_sp_log(os.path.join(corners_dir, pid + ".log"))["nf290"])
+                        read_nf_grid(tbl), parsed["nf290"])
                 for reason in reasons:
                     invalid_grids.append(
                         {"point": pid, "artifact": pid + ext, "reason": reason}
@@ -1054,7 +1055,7 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
             if any(g["point"] == pid for g in invalid_grids):
                 states[pid] = "invalid"
     for pid in man["iip3"]:
-        states[pid] = state(pid, ())
+        states[pid], _ = state(pid, ())
     expected = list(man["sp"]) + list(man["iip3"])
     broken_pairs = []
     for pair in man["pairs"]:
