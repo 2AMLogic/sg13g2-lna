@@ -4,6 +4,11 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-20
+
+- **PR #423**: feat(layout): assemble the full LNA block -- pads, inter-block routing, T1 item-2 evidence
+- **Issue #228** (closed): T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
+
 ### 2026-11-18
 
 - **Issue #82** (closed): Auditor Capability Request: Python 3 unavailable on audit host
