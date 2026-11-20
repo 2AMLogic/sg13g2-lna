@@ -703,22 +703,26 @@ class RunnerTest(IdentityFixtureTest):
             if stale.is_dir() else []
 
     def test_failed_rerun_segregates_previous_pair(self):
-        for env in ({"STUB_RC": "7"}, {"STUB_KLAYOUT_V": "KLayout 0.28.16 x"},
-                    {}):
-            tag = env.get("STUB_RC", env.get("STUB_KLAYOUT_V", "no-exe"))
+        # Every pre-publication failure class archives the previous pair
+        # byte for byte — including the klt identity probe: a missing $KLT
+        # bypassed the branch-local archive calls (issue #435).
+        cases = [
+            ("deck-crash", {"STUB_RC": "7"}, 6, "failed (exit 7)", {}),
+            ("old-version", {"STUB_KLAYOUT_V": "KLayout 0.28.16 x"}, 5,
+             "below the required minimum", {}),
+            ("missing-klt", {"KLT": str(self.root / "missing-klt")}, 6,
+             "could not execute klt", {}),
+            ("no-exe", {"KLAYOUT_EXE": str(self.root / "nope" / "klayout")},
+             3, "not found", {"klayout_exe": False}),
+        ]
+        for tag, env, rc, err, kwargs in cases:
             with self.subTest(failure=tag):
                 self.seed_pair()
                 old_report = (self.cd / "native_drc_report.json").read_bytes()
                 old_side = (self.cd / native_drc_identity.NAME).read_bytes()
-                if env.get("STUB_RC") is None and \
-                        env.get("STUB_KLAYOUT_V") is None:
-                    r = self.run_runner(
-                        klayout_exe=False,
-                        env_extra={"KLAYOUT_EXE": str(
-                            self.root / "nope" / "klayout")})
-                else:
-                    r = self.run_runner(env_extra=env)
-                self.assertNotEqual(r.returncode, 0)
+                r = self.run_runner(env_extra=env, **kwargs)
+                self.assertEqual(r.returncode, rc)
+                self.assertIn(err, r.stderr)
                 self.assertEqual(self.pair_exists(), (False, False))
                 self.assertEqual(self.seg(),
                                  ["native_drc_inputs.json",

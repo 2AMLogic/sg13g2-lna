@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 16230,
+      "bytes": 19649,
       "role": "script of a declared CI command",
-      "sha256": "sha256:329bdecba386d8a83ddc75e7de3af7e6153617e380fc3a79a71999d68cc777bd"
+      "sha256": "sha256:47e51b38e1a3496042a9bf48fde47da1097aac71221824247ab333529366f948"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -49,9 +49,9 @@
       "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
     },
     ".github/scripts/check-testbench-inventory.py": {
-      "bytes": 28009,
+      "bytes": 27874,
       "role": "script of a declared CI command",
-      "sha256": "sha256:113ad302c817ee5a0c1afe37252b39ef0cc681c485e9d1307a132544f1bb7ecf"
+      "sha256": "sha256:456c4a8f4ffc14b62b3f9003b9ee60c3b2493923359fe404f49e998b643948bf"
     },
     ".github/scripts/test-characterization-report.sh": {
       "bytes": 13306,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 19669,
+      "bytes": 21581,
       "role": "script of a declared CI command",
-      "sha256": "sha256:c757dbe57298b18bb2db7f0c54a562a7dda68330e16f9783e2f2060b431c4a50"
+      "sha256": "sha256:b4b5cf0fc3de5abe1cea62cb754d661d3e6373d2f94219fe7594f83d0faf8893"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,
@@ -114,9 +114,9 @@
       "sha256": "sha256:970bbfd6af7a115fa843b1b62c68462aac0ed7ddfcfbfae35e87eace466c1ba4"
     },
     ".github/scripts/test-check-testbench-inventory.sh": {
-      "bytes": 16189,
+      "bytes": 18474,
       "role": "script of a declared CI command",
-      "sha256": "sha256:e08fab9a5fa7d31d536b7fe8cea9c97041aae6f316c44803622e123bc33cb919"
+      "sha256": "sha256:95f02207f9a55548555d57aafd4ae40fd72c37e25b43f92eeadea3ff1d495d50"
     },
     ".github/scripts/test-design-source-audit.sh": {
       "bytes": 9563,
@@ -311,9 +311,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 16937,
+      "bytes": 17298,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e"
+      "sha256": "sha256:9e5d0bec3d8a88fb611dd953244b04e7b20e1349c70ab8cc86840a786d7c77a6"
     },
     "spec/target-spec.md": {
       "bytes": 34193,
