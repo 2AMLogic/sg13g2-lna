@@ -39,9 +39,9 @@
       "sha256": "sha256:ed1ed23e3049b460f22e872c6775440a6bfda69d492a2549ef2fb944ede5be5b"
     },
     ".github/scripts/check-signoff.sh": {
-      "bytes": 4947,
+      "bytes": 11548,
       "role": "script of a declared CI command",
-      "sha256": "sha256:e8d3bf8e30108d30c83b0763c895421ad76ae09dcb59f58fd76d3e10007caeda"
+      "sha256": "sha256:1c9fb56846ac8b07b5b39bdc02f2e1facecfb3261cdefa6ff6df7ae84e8524c7"
     },
     ".github/scripts/check-sim-append-only": {
       "bytes": 2915,
@@ -99,14 +99,14 @@
       "sha256": "sha256:d41d09cb72bc80e8776053b4f95cbbdff9ad6e5c267228511369963350f4cef9"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 9537,
+      "bytes": 9738,
       "role": "script of a declared CI command",
-      "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
+      "sha256": "sha256:1259e1a2a8b169204c5f6400d86d50a3f52a1a17a4e8f98939b801bf2d34d7cf"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 13406,
+      "bytes": 22508,
       "role": "script of a declared CI command",
-      "sha256": "sha256:b75a3a6619bbc54ef13dc0e3503a438bc2b3bb120a6a40cd7310c5acee0cfaa9"
+      "sha256": "sha256:6ceb78cfade0dae09c76807cff7f44848ed6c229e28c674bf218ed8176bf1b2d"
     },
     ".github/scripts/test-check-sim-append-only.sh": {
       "bytes": 4539,
@@ -124,9 +124,9 @@
       "sha256": "sha256:02bd227d242c6b9287310ffbbfd5956c4f35ea9d4eadceef614f041f7e060fd1"
     },
     ".github/scripts/test-run-local-checks.sh": {
-      "bytes": 11704,
+      "bytes": 14477,
       "role": "script of a declared CI command",
-      "sha256": "sha256:7ef9f3104e83e2547dc9356a1cca44892990e2b1f413ddde1e08ad55d2bb2d32"
+      "sha256": "sha256:41f9497d2cb50f53f0222bce369732ff61910e9742e2fcf6f2afcb14ac34a987"
     },
     "sim/models/check_sources.sh": {
       "bytes": 1830,
@@ -296,14 +296,14 @@
       "sha256": "sha256:3d94ddeb0278f6db024ee4cdd659eda2cf7a92ccabcec0e54c1b5ffea52efdaf"
     },
     ".github/scripts/test-check-repo-hygiene.sh": {
-      "bytes": 9537,
+      "bytes": 9738,
       "role": "this audit's self-test",
-      "sha256": "sha256:58d49ccbe0cf60b50870d1664422b713aa043f37e4ef9158d05a487761c298df"
+      "sha256": "sha256:1259e1a2a8b169204c5f6400d86d50a3f52a1a17a4e8f98939b801bf2d34d7cf"
     },
     ".github/workflows/signoff.yml": {
-      "bytes": 30540,
+      "bytes": 32155,
       "role": "CI workflow",
-      "sha256": "sha256:cd71ddb5cdddeec0ba045a10f0dce47efa0c9a5f35ec25584c77db140a58c8cc"
+      "sha256": "sha256:e66ec711b64507d056895a35ed6197b99aaa32fca957104c9ae0f2fb6eb06ce8"
     },
     "LICENSE": {
       "bytes": 11358,
@@ -311,9 +311,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 17298,
+      "bytes": 17284,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:9e5d0bec3d8a88fb611dd953244b04e7b20e1349c70ab8cc86840a786d7c77a6"
+      "sha256": "sha256:956c6330770d196ff8be6fb4f9588609b03b2e171f84f58c0322b74fd63ab61c"
     },
     "spec/target-spec.md": {
       "bytes": 34193,

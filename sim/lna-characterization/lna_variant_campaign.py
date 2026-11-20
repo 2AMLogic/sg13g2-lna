@@ -11,6 +11,13 @@ Companion to run_lna_variant.sh / run_lna_iip3.sh. Subcommands:
                 testbench/tb_lna_iip3.spice.tmpl protocol as a `klt sim`
                 request; template unchanged) plus the variant's op request,
                 for the drive levels run_lna_sweep.sh's phase 2 uses
+  collect-set   the single reader of a `klt sim --batch-set` envelope shared
+                by run_lna_variant.sh and run_lna_iip3.sh (issue #454): copy
+                each member's report to the per-request path the reducers
+                read and list the failed members. stdout is the failure list
+                (`<stem> <exit_code>` per failed member, envelope order),
+                stderr the per-member diagnostics; exit 1 only when the
+                envelope itself cannot be read
   summarize     turn the `klt sim` JSON reports under corners/<record-id>/
                 into records/<record-id>-{summary,compare}.csv and the
                 headline numbers the record .md quotes
@@ -57,6 +64,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -1270,42 +1278,21 @@ def cmd_summarize_iip3(a):
                 _iip3_issue(issues, "invalid_log_echoes", amp=label, cell=key,
                             detail="; ".join(bad_log))
                 continue
-            pin = _sweep.avail_power_dbm(amp)
-            fft_t = (vals["tone1"] + vals["tone2"]) / 2.0
-            fft_i3 = (vals["im3l"] + vals["im3h"]) / 2.0
-            pout = _sweep.out_power_dbm(fft_t)
-            pim3 = _sweep.out_power_dbm(fft_i3)
-            iip3 = _sweep.iip3_from(pin, pout, pim3)
-            dft_t = (parsed_log["dft_tone1"] + parsed_log["dft_tone2"]) / 2.0
-            dft_i3 = (parsed_log["dft_im3l"] + parsed_log["dft_im3h"]) / 2.0
-            iip3_dft = _sweep.iip3_from(pin, _sweep.out_power_dbm(dft_t),
-                                        _sweep.out_power_dbm(dft_i3))
-            im5 = (vals["im5l"] + vals["im5h"]) / 2.0
-            rows.append({
+            fields, iip3, iip3_dft = _sweep.iip3_measurement_fields(
+                amp, vals, parsed_log)
+            row = {
                 "point_id": f"iip3_{variant}_{key[0]}_{key[1]:g}c_vdd{key[2]:.2f}v_{label}",
                 "variant": variant,
                 "corner_label": key[0], "temp_c": key[1], "vdd_v": key[2],
-                "amp_v_peak_per_tone": f"{amp:.6e}",
-                "src_tone_v_peak_measured": f"{vals['src1']:.6e}",
-                "pin_avail_dbm_per_tone": f"{pin:.4f}",
-                "pout_dbm_per_tone": f"{pout:.4f}",
-                "pim3_dbm": f"{pim3:.4f}",
-                "gain_db": f"{pout - pin:.4f}",
-                "iip3_dbm": f"{iip3:.4f}",
-                "oip3_dbm": f"{iip3 + pout - pin:.4f}",
-                "iip3_dbm_dft_crosscheck": f"{iip3_dft:.4f}",
-                "dft_fft_iip3_agreement_db": f"{abs(iip3 - iip3_dft):.4f}",
-                "v_tone1_out_v": f"{vals['tone1']:.6e}",
-                "v_tone2_out_v": f"{vals['tone2']:.6e}",
-                "v_im3l_out_v": f"{vals['im3l']:.6e}",
-                "v_im3h_out_v": f"{vals['im3h']:.6e}",
-                "v_im5_out_v": f"{im5:.6e}",
-                "im3_over_im5_db": f"{_sweep.db20(fft_i3 / im5):.2f}" if im5 > 0 else "",
-                "ic1_a": f"{parsed_log['ic1']:.6e}",
-                "idd_a": f"{parsed_log['idd']:.6e}",
-                "fft_npts": str(npts),
-                "fft_df_hz": f"{vals['fft_df']:.6e}",
-            })
+            }
+            for name, value in fields.items():
+                row[name] = value
+                if name == "iip3_dbm_dft_crosscheck":
+                    # the campaign-only agreement column follows the
+                    # cross-check it compares, and keeps the unrounded
+                    # intercepts as its inputs
+                    row["dft_fft_iip3_agreement_db"] = f"{abs(iip3 - iip3_dft):.4f}"
+            rows.append(row)
     # Extra (non-declared) reports present on disk are reported, not folded in.
     declared = {f"{variant}_iip3_{iip3_amp_label(x)}.report.json"
                 for x in grid_amps + extra_amps}
@@ -1530,6 +1517,57 @@ def apply_temps(spec: str) -> None:
     TEMPS = [t for t in TEMPS_ALL if t in want]
 
 
+def collect_batch_set(runner, envelope, corners_out):
+    """Collect one `klt sim --batch-set` run's member reports (issue #454).
+
+    The single reader of the set envelope on the batch path of
+    run_lna_variant.sh and run_lna_iip3.sh. For each member of the
+    envelope's `requests` list, in envelope order: derive the request stem
+    ONCE (basename with the whole ".request.json" suffix removed, so
+    `ideal_noise.request.json` -> `ideal_noise` and the dot inside
+    `matched_iip3_a0.5mv` survives), copy the member's report to
+    <corners_out>/<stem>.report.json -- the path the reducers, the coverage
+    validator and the record provenance read, identical to what the serial
+    (non-set) loop writes -- and print a missing-report diagnostic to stderr
+    when there is nothing to copy. The source path is the envelope's own
+    requests[].report field, never a guessed directory name: klt names a
+    member's directory after the request file with only the LAST suffix
+    removed, so `ideal_noise.request.json` lands in `ideal_noise.request/`,
+    not `ideal_noise/`.
+
+    Returns the per-member failure entries [(stem, exit_code), ...] in
+    envelope order: a non-zero member exit is a failure even when the set as
+    a whole returned 0. Raises SystemExit(1) with the runner-tagged
+    diagnostic when the envelope itself cannot be read -- before any report
+    is copied.
+    """
+    try:
+        with open(envelope) as f:
+            d = json.load(f)
+    except Exception as exc:
+        raise SystemExit(f"{runner}: cannot read set envelope {envelope}: {exc}")
+    entries = []
+    for r in d.get("requests") or []:
+        stem = re.sub(r"\.request\.json$", "", os.path.basename(r.get("request") or ""))
+        if stem:
+            src = r.get("report")
+            if src and os.path.isfile(src):
+                shutil.copyfile(src, os.path.join(corners_out, f"{stem}.report.json"))
+            else:
+                print(f"{runner}: {stem}: no report to collect "
+                      f"({'missing ' + src if src else 'member never produced one'})",
+                      file=sys.stderr)
+        if r.get("exit_code"):
+            entries.append((stem or "<unknown>", r["exit_code"]))
+    return entries
+
+
+def cmd_collect_set(a):
+    for stem, rc in collect_batch_set(a.runner, a.envelope, a.corners_out):
+        print("%s %s" % (stem, rc))
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     temps_help = ("temperature slice, e.g. --temps=125 (default: all of -40,27,125). Pass the same "
@@ -1563,6 +1601,14 @@ def main():
     gi.add_argument("--backend", default="")
     gi.add_argument("--temps", default="", help=temps_help)
     gi.set_defaults(fn=cmd_gen_iip3)
+    cs = sub.add_parser("collect-set")
+    cs.add_argument("--runner", required=True,
+                    help="runner label for the diagnostics (e.g. run_lna_variant.sh)")
+    cs.add_argument("--envelope", required=True,
+                    help="the klt sim --batch-set set-report.json to read")
+    cs.add_argument("--corners-out", required=True,
+                    help="record corners dir to materialise <stem>.report.json into")
+    cs.set_defaults(fn=cmd_collect_set)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
     s.add_argument("--summary-csv", required=True)
@@ -1600,7 +1646,9 @@ def main():
     si.add_argument("--temps", default="", help=temps_help)
     si.set_defaults(fn=cmd_summarize_iip3)
     a = p.parse_args()
-    apply_temps(a.temps)
+    # collect-set reads no temperature slice; every temperature-aware
+    # subcommand (gen, gen-iip3, summarize, summarize-iip3) carries --temps.
+    apply_temps(getattr(a, "temps", ""))
     sys.exit(a.fn(a) or 0)
 
 
