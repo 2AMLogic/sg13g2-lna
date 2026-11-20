@@ -114,9 +114,9 @@
       "sha256": "sha256:970bbfd6af7a115fa843b1b62c68462aac0ed7ddfcfbfae35e87eace466c1ba4"
     },
     ".github/scripts/test-check-testbench-inventory.sh": {
-      "bytes": 16189,
+      "bytes": 18474,
       "role": "script of a declared CI command",
-      "sha256": "sha256:e08fab9a5fa7d31d536b7fe8cea9c97041aae6f316c44803622e123bc33cb919"
+      "sha256": "sha256:95f02207f9a55548555d57aafd4ae40fd72c37e25b43f92eeadea3ff1d495d50"
     },
     ".github/scripts/test-design-source-audit.sh": {
       "bytes": 9563,
