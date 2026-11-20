@@ -70,26 +70,13 @@ DESIGN_NETLIST="${REPO_ROOT}/design/netlist/lna.spice"
 DESIGN_NETLIST_SHA="$(sha256sum "${DESIGN_NETLIST}" | awk '{print $1}')"
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
 
-# klt version-floor preflight (same floor as run_lna_variant.sh: the IIP3
-# requests use the same features -- measurements[].expr, options.osdi_preload,
-# options.stage_model_inputs -- recorded in sim/pdk.json under
-# klt_variant_campaign). The batch runner image is checked by klt itself.
-python3 -I - "${SIM_DIR}/pdk.json" "${KLT_VERSION}" <<'PYEOF' || exit 3
-import json, re, sys
-cfg = json.load(open(sys.argv[1]))["klt_variant_campaign"]
-floor_s, feats = cfg["min_version"], cfg["required_features"]
-def triple(s):
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
-    return tuple(int(x) for x in m.groups()) if m else None
-have, floor = triple(sys.argv[2]), triple(floor_s)
-if have is None:
-    sys.exit("run_lna_iip3.sh: cannot parse a version from `klt --version` output "
-             f"{sys.argv[2]!r}; need klt >= {floor_s}.")
-if have < floor:
-    sys.exit(f"run_lna_iip3.sh: klt {'.'.join(map(str, have))} is older than the required "
-             f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). It lacks: "
-             + ", ".join(feats) + ". Use a newer klt; do not run the grid locally.")
-PYEOF
+# klt version-floor preflight: the ONE shared check
+# (lna_variant_campaign.py check-client; issue #475) also used by
+# run_lna_variant.sh and the core-envelope gate runner -- the IIP3 requests
+# use the same features (sim/pdk.json klt_variant_campaign), and the batch
+# runner image is checked by klt itself.
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client "${KLT_VERSION}" \
+  --runner run_lna_iip3.sh || exit 3
 
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --variants "${VARIANT}")
 [[ -n "${LNA_IIP3_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_iip3.sh: LNA_IIP3_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }

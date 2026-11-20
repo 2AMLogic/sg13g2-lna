@@ -427,6 +427,53 @@ def cell_of(i):
     return V.cell_text(V.expected_grid()[i])
 
 
+class ClientFloor(unittest.TestCase):
+    """Issue #475: the single klt client version-floor preflight shared by
+    run_lna_variant.sh, run_lna_iip3.sh and the core-envelope campaigns
+    (previously three copies of the comparison; the floor and its feature
+    diagnostic are recorded once in sim/pdk.json klt_variant_campaign)."""
+
+    FLOOR_CFG = json.loads((LNA.parent / "pdk.json").read_text())["klt_variant_campaign"]
+
+    def test_banners_at_above_and_below_floor(self):
+        V.check_client_floor("klt 0.7.0+gabc", "run_lna_variant.sh")  # at the floor
+        V.check_client_floor("klt 0.10.0")                             # above it
+        with self.assertRaises(SystemExit) as below:
+            V.check_client_floor("klt 0.6.9", "run_lna_variant.sh")
+        msg = str(below.exception)
+        self.assertIn("run_lna_variant.sh:", msg)      # runner-specific context
+        self.assertIn(self.FLOOR_CFG["min_version"], msg)
+        for feat in self.FLOOR_CFG["required_features"]:
+            self.assertIn(feat, msg)
+        with self.assertRaises(SystemExit) as unparsable:
+            V.check_client_floor("no version", "run_lna_variant.sh")
+        self.assertIn("cannot parse", str(unparsable.exception))
+        self.assertIn(self.FLOOR_CFG["min_version"], str(unparsable.exception))
+
+    def test_cli_check_client(self):
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "klt 0.6.9", "--runner", "run_lna_iip3.sh"], capture_output=True, text=True)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("run_lna_iip3.sh:", p.stderr)
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "klt 0.7.0+gabc"], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr)
+
+    def test_wrappers_delegate_and_keep_exit_3(self):
+        # Both shell entry points call the shared check (via the module CLI),
+        # keep their exit-3 mapping, and no longer carry an inline copy of
+        # the comparison (the `def triple` heredoc of the pre-#475 checks).
+        for sh, gen_cmd in (("run_lna_variant.sh", '" gen '),
+                            ("run_lna_iip3.sh", '" gen-iip3 ')):
+            text = (LNA / sh).read_text()
+            self.assertIn('lna_variant_campaign.py" check-client "${KLT_VERSION}"', text, sh)
+            self.assertIn("|| exit 3", text, sh)
+            self.assertNotIn("def triple", text, sh)
+            self.assertLess(text.index("check-client"), text.index("lna_variant_campaign.py" + gen_cmd), sh)
+
+
 class WrapperPropagation(unittest.TestCase):
     """Static + CLI checks; the wrapper itself needs a PDK and klt, so it is
     not executed here (no simulator or fleet run)."""
