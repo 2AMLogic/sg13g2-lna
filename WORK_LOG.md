@@ -6,6 +6,8 @@
 
 ### 2026-11-20
 
+- **Issue #454** (closed): Share batch-set report collection between the variant and IIP3 runners
+- **PR #464**: refactor(sim): share the batch-set report collector between the variant and IIP3 runners
 - **Issue #433** (closed): docs: README.md:3-4 lede duplicates the PDK name ("on IHP SG13G2 on [IHP SG13G2]")
 - **PR #462**: docs: name the PDK once in the README and CLAUDE.md ledes
 - **Issue #439** (closed): Share the per-point IIP3 measurement calculation across both reducers
