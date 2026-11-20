@@ -4,8 +4,8 @@ Layout and DRC/LVS evidence for this block. The first content here was the
 **toolchain bring-up of issue #63** (cascode core + DR-0003 bias island);
 #346 added the bias side, #347 the matching network, and **#228 the
 top-level assembly — pads and inter-block routing — completing the block's
-layout scope** (every netlist instance drawn, see "Scope"). The results
-below are recorded evidence, not signoff verdicts; see "What the evidence
+layout scope** (35 instances drawn and three modeled in their inductors,
+see "Scope"). The results below are recorded evidence, not signoff verdicts; see "What the evidence
 supports" before citing anything.
 
 ```
@@ -369,12 +369,16 @@ reports nothing for them, and klt 0.9.2 still reports nothing. The GDS is
 byte-identical (sha256 `e2d75415…a14f` at the time) and no geometry was changed; the
 verdict change came from the klt/deck upgrade alone. The citation history:
 withdrawn at klt 0.8.0 (issue #235) while the cell was partial, **re-cited
-by #229** now that #228's assembly makes this a verdict on the full block
-(every netlist instance drawn). The committed report reproduces
-byte-identically under the pinned producer (`uvx --isolated --from
-klayout-tools==0.9.2 --with klayout==0.30.12 klt drc lna_core.gds --deck
-sg13g2` re-emit checked at re-cite time). The schema is 3, and the
-coverage fields below are re-quoted from the **0.9.2** envelope.
+by #229** on the full-block GDS. To reproduce the committed JSON report
+byte for byte, run this command from `layout/lna_core/`.
+
+```bash
+uvx --isolated --from klayout-tools==0.9.2 --with klayout==0.30.12 \
+  klt drc lna_core.gds --deck sg13g2 --format json
+```
+
+The report uses schema 3. The coverage fields below are quoted from the
+**0.9.2** envelope.
 
 What 0.9.2's deck changed here (#272), all at `status: "clean"` and
 `rule_counts: {}`: one rule was added to the checked set, `cont.ongrid.1`

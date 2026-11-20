@@ -47,7 +47,7 @@ block does have committed evidence:
 the schematic and its derived netlist in `design/`, six `sim/` experiments
 (indexed in the root `README.md` §"Campaign index and the record of
 record"), a characterization report in `measurements/`, a partially
-ratified `spec/target-spec.md`, and (since issue #63) a partial layout
+ratified `spec/target-spec.md`, and (since #228) the full-block layout
 with `klt` DRC/extract/LVS envelopes in `layout/`.
 
 The engineering evidence for the DR-0003 flat-reference bias core
@@ -647,7 +647,7 @@ For every file cited on item 2 (Layout), 3 (DRC) or 4 (LVS) it requires,
 in the cited file's directory, `realization.json` and
 `<top_cell>.provenance.json`, and then:
 
-- **Scope from the partition.** `in_scope` and `out_of_scope` must
+- **Scope from the partition.** `in_scope`, `modeled_in_device` and `out_of_scope` must
   partition the instances of the netlist `realization.json` names (parsed
   with `layout/lvs_reference.py`'s `parse_netlist`). Scope is `full` only
   when `out_of_scope` is empty; there is no hand-kept completion flag.
@@ -660,13 +660,13 @@ in the cited file's directory, `realization.json` and
 - Missing or malformed scope metadata, a stale partition, or an input-hash
   disagreement is a hard failure, never read as full scope.
 
-Allowed: uncited rows, and failing partial evidence (the current item 4
-stays cited and `unmet`; item 3's `met` is backed by the full-block
-partition since #228, and the guard re-checks that on every render).
+The guard allows uncited rows and failing partial evidence. Items 3 and 4
+both cite the full-block layout. Item 3 renders `met` and item 4 renders
+`unmet` because its LVS comparison reports a mismatch.
 
 Remediation when it fires: either withdraw the partial citation from
 `manifest.json` and refresh the record, or complete the layout so that
-every netlist instance is in `in_scope` (empty `out_of_scope`) and supply
+every netlist instance is in `in_scope` or `modeled_in_device` and supply
 evidence for it. A future full-block layout must therefore ship a
 `realization.json` partitioning its netlist, a `<top_cell>.provenance.json`
 with `gds_sha256`, and klt envelopes whose `provenance.input` is that GDS.
