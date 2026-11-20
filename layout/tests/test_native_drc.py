@@ -92,6 +92,24 @@ sys.stdout.write(json.dumps(rep, indent=2) + "\\n")
 raise SystemExit(int(os.environ.get("STUB_RC", "3")))
 """
 
+STUB_IDENTITY = '''#!/usr/bin/env python3
+"""test stub: native_drc_identity.py stand-in with one injected failure.
+
+The runner runs its identity helper as a subprocess (python3 -I <script>
+record|validate ...), so a post-publication failure cannot be injected by
+monkeypatching: copied_runner swaps this stub in as the helper of a runner
+copy. The injected step ({fail}) exits 1 before doing anything; every other
+step delegates to the real helper via os.execv, so the state the runner has
+reached when it dies is the real one.
+"""
+import os, sys
+argv = sys.argv[1:]
+if argv[:1] == ["{fail}"]:
+    print("stub: injected {fail} failure", file=sys.stderr)
+    raise SystemExit(1)
+os.execv(sys.executable, [sys.executable, "-I", "{real}"] + argv)
+'''
+
 
 class VersionHelpersTest(unittest.TestCase):
     def test_runner_and_identity_expose_the_shared_pair_module(self):
@@ -529,7 +547,7 @@ class RunnerTest(IdentityFixtureTest):
         self.stub_record = self.root / "stub-record.json"
 
     def run_runner(self, *extra, env_extra=None, min_version="0.29.0",
-                   klayout_exe=True):
+                   klayout_exe=True, runner=RUNNER):
         env = dict(os.environ)
         env["KLT"] = f"{sys.executable} {self.stub_klt}"
         env["STUB_KLAYOUT_V"] = "KLayout 0.30.30 (2026-01-01) deadbee"
@@ -542,7 +560,7 @@ class RunnerTest(IdentityFixtureTest):
                 env.pop(k, None)
             else:
                 env[k] = v
-        cmd = [sys.executable, "-I", str(RUNNER), "--cell-dir", str(self.cd),
+        cmd = [sys.executable, "-I", str(runner), "--cell-dir", str(self.cd),
                "--pdk", "stub-pdk"]
         if klayout_exe:
             cmd += ["--klayout-exe", str(self.stub_klayout)]
@@ -614,21 +632,34 @@ class RunnerTest(IdentityFixtureTest):
         self.assertEqual(self.pair_exists(), (True, True))
 
     def test_usage_errors(self):
+        # Seed a previous pair first: against an empty cell dir the
+        # no-archive assertion below is vacuous — nothing exists for
+        # segregate_old_pair() to move (issue #452). A usage error must
+        # leave the previous pair in place and never segregate it.
+
+        def pair_untouched():
+            self.assertEqual(self.pair_exists(), (True, True))
+            self.assertEqual(self.seg(), [])  # usage errors never archive
+
+        self.seed_pair()
         r = self.run_runner(min_version=None)
         self.assertEqual(r.returncode, 2)
+        pair_untouched()
         r = self.run_runner(min_version="banana")
         self.assertEqual(r.returncode, 2)
         self.assertIn("not a dotted version", r.stderr)
+        pair_untouched()
         self.gds.unlink()
         r = self.run_runner()
         self.assertEqual(r.returncode, 2)
         self.assertIn("never regenerates", r.stderr)
+        pair_untouched()
         self.gds.write_bytes(self.gds_bytes)
         r = self.run_runner("--expect-rule-categories", "3",
                             "--expect-rule-categories-file", "f")
         self.assertEqual(r.returncode, 2)
         self.assertIn("mutually exclusive", r.stderr)
-        self.assertEqual(self.pair_exists(), (False, False))
+        pair_untouched()
 
     def test_missing_executable_is_class_3(self):
         r = self.run_runner(
@@ -696,6 +727,64 @@ class RunnerTest(IdentityFixtureTest):
         self.assertEqual(self.seg(),
                          ["native_drc_inputs.json",
                           "native_drc_report.json"])
+
+    def copied_runner(self, fail):
+        """A byte-identical copy of run_native_drc.py inside this fixture's
+        temp layout/ dir, with native_drc_identity.py swapped for a stub
+        that fails the `fail` step.
+
+        The runner resolves its identity helper as LAYOUT_DIR /
+        native_drc_identity.py and runs it as a subprocess (python3 -I),
+        and path-loads .github/scripts/native_drc_pair.py via REPO_ROOT —
+        so the temp tree mirrors both (issue #443): the runner copy is
+        shutil.copyfile of the committed one, the pair module is copied to
+        the temp REPO_ROOT, and the helper is the STUB_IDENTITY stand-in
+        that injects one failure and delegates everything else to the real
+        helper. Nothing under the repo's own layout/ is touched."""
+        copied_layout = self.root / "layout"
+        shutil.copyfile(RUNNER, copied_layout / "run_native_drc.py")
+        (copied_layout / "native_drc_identity.py").write_text(
+            STUB_IDENTITY.format(fail=fail, real=str(IDENTITY)))
+        pair_dst = self.root / ".github" / "scripts" / "native_drc_pair.py"
+        pair_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(LAYOUT.parent / ".github" / "scripts"
+                        / "native_drc_pair.py", pair_dst)
+        return copied_layout / "run_native_drc.py"
+
+    def test_record_failure_after_publication_is_class_7(self):
+        # The binding step runs after the report is published; its failure
+        # must not archive the just-published report. The one-sided pair
+        # stays in place on purpose, to fail the freshness gate loudly
+        # (issue #185's property; coverage added by issue #443).
+        runner = self.copied_runner(fail="record")
+        r = self.run_runner(runner=runner)
+        self.assertEqual(r.returncode, 7)
+        self.assertIn("binding the published report failed", r.stderr)
+        self.assertIn("injected record failure", r.stderr)
+        self.assertEqual(self.pair_exists(), (True, False))
+        self.assertEqual(self.seg(), [])
+        rep = self.report()
+        self.assertEqual(rep["status"], "violations")
+        self.assertEqual(rep["provenance"]["input"]["content_hash"],
+                         "sha256:" + sha(self.gds_bytes))
+        self.assertFalse((self.cd / "native_drc_report.json.tmp").exists())
+
+    def test_validate_failure_after_record_is_class_7(self):
+        # record bound the real pair; the self-check failure that follows
+        # must leave the just-published pair in place byte for byte — the
+        # sidecar written by the delegated record still pins the report
+        # exactly, and nothing is segregated (issue #443).
+        runner = self.copied_runner(fail="validate")
+        r = self.run_runner(runner=runner)
+        self.assertEqual(r.returncode, 7)
+        self.assertIn("published pair failed its self-check", r.stderr)
+        self.assertIn("injected validate failure", r.stderr)
+        self.assertEqual(self.pair_exists(), (True, True))
+        self.assertEqual(self.seg(), [])
+        self.assertEqual(self.sidecar()["status"], "violations")
+        self.assertEqual(self.sidecar()["report_sha256"],
+                         sha((self.cd / "native_drc_report.json").read_bytes()))
+        self.assertEqual(self.validate(), [])
 
     def seg(self):
         stale = self.cd / "native_drc_stale"

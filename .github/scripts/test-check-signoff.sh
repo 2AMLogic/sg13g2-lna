@@ -23,6 +23,29 @@
 #  10. stale netlist partition (extra / unassigned / in both) -> FAILS
 #  11. evidence vs scope input-hash disagreement (report / provenance)
 #                                        -> FAILS
+#
+# T1 met-regression gate (issue #446). Fixtures commit a baseline, apply a
+# candidate edit the real klt render grades, and run the checker with
+# --base at the baseline (12 uses the raw SHA — the merge-group shape).
+# Tamper primitives, graded by the real klt: editing a file bound by
+# item 9's attestation envelope renders item 9 unmet/stale_evidence (the
+# PR #444 loss shape); a violating DRC status renders item 3
+# unmet/check_failed (the pre-#229 shape):
+#  12. lost item fails even though the record faithfully regenerates
+#      (raw-SHA base)                        -> FAILS, names item + reason
+#  13. the same regression without --base    -> passes (no-base contract)
+#  14. one-for-one swap, equal met count     -> FAILS
+#  15. unchanged partial completion          -> passes
+#  16. a gained item                          -> passes
+#  17. reasonless entries fail; a reasoned acknowledgement with a relative
+#      root passes; a second, unacknowledged loss fails and shows both details
+#  18. an entry for a different item          -> FAILS
+#  19. an entry already at the base           -> FAILS
+#  20. drift with an acknowledgement present  -> FAILS (drift gate)
+#  21. baseline report missing at the base    -> FAILS, diagnostic
+#  22. baseline report unparsable             -> FAILS, diagnostic
+#  23. unresolvable --base ref                -> FAILS, diagnostic
+#  24. empty --base (malformed event payload) -> FAILS, diagnostic
 
 set -u
 
@@ -203,6 +226,65 @@ CITE_DRC='m = rd(t + "/signoff/manifest.json"); m["evidence"]["3"] = {"file": "l
 PASS_DRC="$CITE_DRC"'; d = rd(L + "/drc_report.json"); d.update(status="clean", violation_count=0, rule_counts={}, metrics={"drc__error__count": 0}, violations=[]); wr(L + "/drc_report.json", d)'
 PASS_LVS='d = rd(L + "/lvs_full_report.json"); d["status"] = "match"; wr(L + "/lvs_full_report.json", d)'
 
+# --- T1 met-regression gate helpers (issue #446; cases 12-24)
+# Regression fixtures need committed baselines: gt runs git in the scratch
+# tree with a fixture identity (same convention as
+# test-check-sim-append-only.sh).
+gt() { git -C "$1" -c user.name=t -c user.email=t@t -c commit.gpgsign=false "${@:2}"; }
+commit_tree() { # commit_tree <tree> [message]
+  gt "$1" add -A
+  gt "$1" commit -q -m "${2:-fixture}"
+}
+
+# TAMPER9: edit a file item 9's attestation envelope binds -> item 9 renders
+# unmet/stale_evidence (the PR #444 loss shape). REPAIR9 restores it.
+TAMPER9='open(t + "/sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl", "a").write("\n* fixture tamper\n")'
+repair9() { # repair9 <tree>
+  cp "$ROOT/sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl" \
+    "$1/sim/lna-bias-pvt/testbench/tb_lna_biasop.spice.tmpl"
+}
+# VIOL3: a violating DRC status -> item 3 renders unmet/check_failed.
+VIOL3='d = rd(L + "/drc_report.json"); d["status"] = "violations"; d["violation_count"] = 1; wr(L + "/drc_report.json", d)'
+
+# ack <tree> <entry>: add an acknowledgement entry under "## Acknowledged
+# T1 downgrades" in the scratch README (creating the section if the copied
+# README does not carry it). The parser accepts entries anywhere under the
+# heading; inserting directly under it keeps fixtures order-independent.
+ack() {
+  ACK_TREE="$1" ACK_ENTRY="$2" python3 -c '
+import os
+t, entry = os.environ["ACK_TREE"], os.environ["ACK_ENTRY"]
+p = os.path.join(t, "signoff", "README.md")
+head = "## Acknowledged T1 downgrades"
+lines = open(p).read().splitlines()
+if head in lines:
+    lines.insert(lines.index(head) + 1, entry)
+else:
+    lines += ["", head, "", entry]
+open(p, "w").write("\n".join(lines) + "\n")
+'
+}
+
+# run_base <name> <expect 0|1> <tree> <base-ref> [pattern ...]: like run_msg
+# but with --base; every pattern must appear in the checker's stderr in both
+# modes (the regression gate's OK/NOTE/FAIL lines all go to stderr).
+run_base() {
+  name="$1"; expect="$2"; tree="$3"; bref="$4"; shift 4
+  out="$("$CHECKER" --root "$tree" --base "$bref" 2>&1 >/dev/null)"; rc=$?
+  [ "$rc" -gt 1 ] && rc=1
+  ok=1
+  [ "$rc" -eq "$expect" ] || ok=0
+  for pat in "$@"; do
+    printf '%s' "$out" | grep -q -- "$pat" || ok=0
+  done
+  if [ "$ok" -eq 1 ]; then
+    echo "PASS: $name"; pass=$((pass + 1))
+  else
+    echo "FAIL: $name (rc=$rc, expected $expect; wanted: $*)" >&2
+    printf '%s\n' "$out" >&2; fail=$((fail + 1))
+  fi
+}
+
 # 1. Pristine copy passes.
 t="$(fresh_tree)"
 run_case "pristine tree passes" 0 "$t"
@@ -298,6 +380,134 @@ run_msg "scope provenance hash disagreement fails" 1 "$t" "input hash disagreeme
 t="$(fresh_tree)"
 edit_tree "$t" "$CITE_DRC"'; d = rd(L + "/drc_report.json"); d["provenance"]["input"]["content_hash"] = "sha256:" + "0" * 64; wr(L + "/drc_report.json", d)'
 run_msg "report input hash disagreement fails" 1 "$t" "input hash disagreement"
+
+# 12. A lost T1 item fails the gate even though the committed record
+#     faithfully regenerates its own regression (the PR #444 shape:
+#     5/11 -> 4/11, item 9 unmet/stale_evidence). Raw-SHA base: the
+#     merge-group invocation shape.
+t="$(fresh_tree)"
+commit_tree "$t" baseline
+edit_tree "$t" "$TAMPER9"
+commit_tree "$t" candidate
+run_base "regenerated record of a lost T1 item still fails (raw-SHA base)" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" \
+  "item 9" "stale_evidence" "NOT acknowledged" "issue #446"
+
+# 13. Without --base the same tree passes: pushes to main and standalone
+#     freshness checks compare against no baseline (no-base contract).
+run_case "same regression without --base is freshness-only" 0 "$t"
+
+# 14. One-for-one swap: item 9 is repaired, item 3 is lost, the met count
+#     is unchanged (4/11 at both) — an improvement on a different item
+#     cannot cancel the loss.
+t="$(fresh_tree)"
+edit_tree "$t" "$TAMPER9"
+commit_tree "$t" baseline
+repair9 "$t"
+edit_tree "$t" "$VIOL3"
+commit_tree "$t" candidate
+run_base "one-for-one swap fails despite an equal met count" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "item 3" "check_failed"
+
+# 15. Unchanged partial completion: the met set is identical (others stay
+#     unmet) — passes.
+t="$(fresh_tree)"
+edit_tree "$t" "$TAMPER9"
+commit_tree "$t" baseline
+echo fixture > "$t/fixture.txt"
+commit_tree "$t" candidate
+run_base "unchanged partial completion passes" 0 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "no T1 met-item regression"
+
+# 16. A gained item passes (4/11 -> 5/11).
+t="$(fresh_tree)"
+edit_tree "$t" "$TAMPER9"
+commit_tree "$t" baseline
+repair9 "$t"
+edit_tree "$t" 'pass'
+commit_tree "$t" candidate
+run_base "a gained item passes" 0 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "no T1 met-item regression"
+
+# 17. The acknowledgement must supply a reason after the item ID or title.
+t="$(fresh_tree)"
+commit_tree "$t" baseline
+edit_tree "$t" "$TAMPER9"
+ack "$t" "- T1 item 9"
+ack "$t" "- T1 item 9 (Testbenches shipped):   "
+ack "$t" "- T1 item 9: ..."
+run_base "entries without reason text cannot acknowledge a loss" 1 "$t" HEAD \
+  "item 9 .*NOT acknowledged"
+
+ack "$t" "- T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
+commit_tree "$t" candidate
+relative_tree="$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1]))' "$t")"
+run_base "new acknowledgement covers its item with a relative root" 0 \
+  "$relative_tree" HEAD~1 \
+  "item 9" "stale_evidence" "acknowledged by: - T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
+
+edit_tree "$t" "$VIOL3"
+run_base "mixed losses fail and retain the acknowledged item's rationale" 1 "$t" HEAD~1 \
+  "item 3 .*check_failed.*NOT acknowledged" "item 9 .*stale_evidence.*\[acknowledged\]" \
+  "acknowledged by: - T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
+
+# 18. An entry for a different item authorizes nothing.
+t="$(fresh_tree)"
+commit_tree "$t" baseline
+edit_tree "$t" "$TAMPER9"
+ack "$t" "- T1 item 3 (DRC clean): wrong-item fixture entry (self-test)."
+commit_tree "$t" candidate
+run_base "acknowledgement for a different item authorizes nothing" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "item 9" "NOT acknowledged"
+
+# 19. An entry that already exists at the merge base authorizes nothing
+#     (a leftover entry from an earlier, repaired loss).
+t="$(fresh_tree)"
+ack "$t" "- T1 item 9 (Testbenches shipped): stale leftover entry (self-test)."
+commit_tree "$t" baseline
+edit_tree "$t" "$TAMPER9"
+commit_tree "$t" candidate
+run_base "older entry cannot excuse a later loss" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "item 9" "NOT acknowledged"
+
+# 20. Drift still fails with an acknowledgement present: the entry is no
+#     self-authorisation for a stale record either.
+t="$(fresh_tree)"
+commit_tree "$t" baseline
+sed -i.bak 's/"t1_met_count": 5/"t1_met_count": 99/' "$t/signoff/t1-report.json"
+rm -f "$t/signoff/t1-report.json.bak"
+ack "$t" "- T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
+run_base "acknowledgement does not bypass drift" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD)" "does not match the fresh klt render"
+
+# 21. A baseline report missing at the merge base fails closed.
+t="$(fresh_tree)"
+commit_tree "$t" root
+gt "$t" rm -q signoff/t1-report.json
+commit_tree "$t" drop-record
+gt "$t" checkout HEAD~1 -- signoff/t1-report.json
+commit_tree "$t" candidate
+run_base "missing baseline report fails closed" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "has no signoff/t1-report.json"
+
+# 22. A baseline report that does not parse fails closed.
+t="$(fresh_tree)"
+commit_tree "$t" root
+printf '{ oops\n' > "$t/signoff/t1-report.json"
+commit_tree "$t" corrupt-record
+gt "$t" checkout HEAD~1 -- signoff/t1-report.json
+commit_tree "$t" candidate
+run_base "unparsable baseline report fails closed" 1 \
+  "$t" "$(gt "$t" rev-parse HEAD~1)" "did not parse as JSON"
+
+# 23. An unresolvable --base ref fails closed.
+t="$(fresh_tree)"
+commit_tree "$t" baseline
+run_base "unresolvable --base ref fails closed" 1 \
+  "$t" no-such-ref "does not resolve to a commit"
+
+# 24. An empty --base (malformed event payload) fails closed.
+run_base "empty --base fails closed" 1 "$t" "" "non-empty ref"
 
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

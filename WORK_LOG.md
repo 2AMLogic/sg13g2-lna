@@ -6,6 +6,14 @@
 
 ### 2026-11-20
 
+- **Issue #35** (closed): T1 item 11 (power delivery, structural): klt erc supply spec + LVS supply pairing — unmet until layout exists
+- **PR #434**: feat(signoff): T1 item-11 power-delivery ERC evidence -- supply spec, negative controls, compound citation
+- **Issue #425** (closed): Reuse the validated S-parameter log for the 290 K noise-figure cross-check
+- **PR #445**: fix: reuse validated S-parameter measurements for the 290 K NF cross-check
+- **Issue #437** (closed): Item-9 fixture suite has no case that fails when tree_digest's hash input changes
+- **PR #442**: test: pin the item-9 corners tree digest against an independent sha256
+- **Issue #435** (closed): Centralize native DRC cleanup so a failed klt version probe archives the previous report
+- **PR #440**: fix: archive the previous native DRC pair at one exit point, not nine
 - **Issue #428** (closed): Reuse the collected record paths for item 9 tree digests
 - **PR #436**: refactor: reuse the evidence_files paths for item-9 tree digests
 - **Issue #430** (closed): Root README status paragraph is stale: understates T1 met count and still calls the layout a partial bring-up with DRC not clean
