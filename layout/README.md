@@ -5,8 +5,8 @@ Layout and DRC/LVS evidence for this block. The first content here was the
 #346 added the bias side, #347 the matching network, and **#228 the
 top-level assembly — pads and inter-block routing — completing the block's
 layout scope** (35 instances drawn and three modeled in their inductors,
-see "Scope"). The results below are recorded evidence, not signoff verdicts; see "What the evidence
-supports" before citing anything.
+see "Scope"). The results below are recorded evidence, not signoff verdicts;
+see "What the evidence supports" before citing anything.
 
 ```
 layout/
@@ -417,10 +417,11 @@ block, as T1 item 3 requires:
 - `coverage.deck_scope`:
   `["Act", "Cnt", "Gat", "M1", "M2", "M3", "M4", "M5", "MIM", "NW", "TM1", "TM2", "TV1", "TV2", "V1", "V2", "V3", "V4", "pSD", "x"]`
 
-Between the pre- and post-#228 envelopes (both klt 0.9.2, same deck hash)
-the without-rules list grew 32 → 35 entries: the three additions (`9/0`,
-`41/0`, `134/25`) each carry only the four `bondpad` PyCells' own shapes
-(4 shapes each, verified by re-reading the committed GDS).
+The full-block assembly increased the list of layers without rules from
+32 to 35 under the same klt 0.9.2 deck. Each of the four `bondpad`
+instances contributes one shape on `9/0` and one on `41/0`. Layer
+`134/25` contains the four port labels placed by `lna_core`
+(`rfin`, `rfout`, `vdd`, `vss`).
 
 The same block also carries a `voltage_domain_warnings` entry: the curated
 deck applies the LV thresholds to geometry under ThickGateOx (44/0), so
