@@ -31,7 +31,10 @@ spec/
                                    for Q1 (proposed)
                               0004 achievable (gain, NF, P_dc)
                                    envelope on npn13G2 (ruled
-                                   2026-10-08)
+                                   2026-10-08; amendment 2026-11-17
+                                   delegating narrow disclosure-cell
+                                   refreshes to the Builder is
+                                   proposed, pending ratification)
 ```
 
 See [`target-spec.md`](target-spec.md) for the target table (rows ratified
