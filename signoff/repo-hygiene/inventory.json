@@ -311,9 +311,9 @@
       "sha256": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "bytes": 17298,
+      "bytes": 17284,
       "role": "README stating the block, its spec table pointer and the reproduction index",
-      "sha256": "sha256:9e5d0bec3d8a88fb611dd953244b04e7b20e1349c70ab8cc86840a786d7c77a6"
+      "sha256": "sha256:956c6330770d196ff8be6fb4f9588609b03b2e171f84f58c0322b74fd63ab61c"
     },
     "spec/target-spec.md": {
       "bytes": 34193,
