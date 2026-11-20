@@ -1,6 +1,6 @@
 # sg13g2-lna — agent instructions
 
-Open-source canary block: a sige hbt low-noise amplifier on ihp sg13g2,
+Open-source canary block: a sige hbt low-noise amplifier
 on IHP SG13G2, IHP's open-source 130 nm SiGe BiCMOS PDK, designed and verified by AI agents.
 
 - **PDK**: IHP SG13G2 (https://github.com/IHP-GmbH/IHP-Open-PDK). Open-source flow: xschem + ngspice for
