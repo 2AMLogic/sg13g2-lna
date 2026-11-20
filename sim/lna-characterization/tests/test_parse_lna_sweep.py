@@ -192,6 +192,87 @@ class LogReaders(unittest.TestCase):
                 P.read_table(empty, 3)
 
 
+class Iip3MeasurementFields(unittest.TestCase):
+    """The shared per-point measurement (issue #439): the 19 CSV fields both
+    reducers record, in the column order they inherit from it."""
+
+    FF = {"tone1": 0.00187927, "tone2": 0.00187718, "im3l": 6.5763e-09,
+          "im3h": 6.49033e-09, "im5l": 4.95399e-11, "im5h": 7.74664e-11,
+          "src1": 0.000999621, "fft_df": 3.8147e+06}
+    DFT = {"dft_tone1": 0.00187927, "dft_tone2": 0.00187718,
+           "dft_im3l": 6.58348e-09, "dft_im3h": 6.47937e-09,
+           "ic1": 0.0039403, "idd": 0.00471442, "npts": 65536}
+
+    def fields(self, fft=None, dft=None, amp=1e-3):
+        return P.iip3_measurement_fields(amp, fft or self.FF, dft or self.DFT)
+
+    def test_field_order_is_the_shared_csv_contract(self):
+        fields, _iip3, _iip3_dft = self.fields()
+        self.assertEqual(list(fields), [
+            "amp_v_peak_per_tone", "src_tone_v_peak_measured",
+            "pin_avail_dbm_per_tone", "pout_dbm_per_tone", "pim3_dbm",
+            "gain_db", "iip3_dbm", "oip3_dbm", "iip3_dbm_dft_crosscheck",
+            "v_tone1_out_v", "v_tone2_out_v", "v_im3l_out_v", "v_im3h_out_v",
+            "v_im5_out_v", "im3_over_im5_db", "ic1_a", "idd_a", "fft_npts",
+            "fft_df_hz"])
+
+    def test_arithmetic_matches_the_definition(self):
+        # Hand chain over the fixture's bins: Pin = avail(amp),
+        # Pout/PIM3 = out_power_dbm of the averaged pairs,
+        # IIP3 = Pin + (Pout - PIM3)/2, OIP3 = IIP3 + gain.
+        fields, iip3, iip3_dft = self.fields()
+        pin = P.avail_power_dbm(1e-3)
+        t = (self.FF["tone1"] + self.FF["tone2"]) / 2
+        i3 = (self.FF["im3l"] + self.FF["im3h"]) / 2
+        im5 = (self.FF["im5l"] + self.FF["im5h"]) / 2
+        pout, pim3 = P.out_power_dbm(t), P.out_power_dbm(i3)
+        self.assertEqual(fields["pin_avail_dbm_per_tone"], f"{pin:.4f}")
+        self.assertEqual(fields["pout_dbm_per_tone"], f"{pout:.4f}")
+        self.assertEqual(fields["pim3_dbm"], f"{pim3:.4f}")
+        self.assertEqual(fields["gain_db"], f"{pout - pin:.4f}")
+        self.assertAlmostEqual(iip3, P.iip3_from(pin, pout, pim3), places=12)
+        self.assertEqual(fields["iip3_dbm"], f"{iip3:.4f}")
+        self.assertEqual(fields["oip3_dbm"], f"{iip3 + (pout - pin):.4f}")
+        self.assertAlmostEqual(iip3_dft, P.iip3_from(
+            pin,
+            P.out_power_dbm((self.DFT["dft_tone1"] + self.DFT["dft_tone2"]) / 2),
+            P.out_power_dbm((self.DFT["dft_im3l"] + self.DFT["dft_im3h"]) / 2)),
+            places=12)
+        self.assertEqual(fields["im3_over_im5_db"], f"{P.db20(i3 / im5):.2f}")
+
+    def test_zero_im5_leaves_the_ratio_empty(self):
+        fields, _iip3, _iip3_dft = self.fields(dict(self.FF, im5l=0.0, im5h=0.0))
+        self.assertEqual(fields["im3_over_im5_db"], "")
+        self.assertEqual(fields["v_im5_out_v"], "0.000000e+00")
+
+    def test_absent_npts_formats_as_empty(self):
+        dft = dict(self.DFT)
+        del dft["npts"]
+        fields, _iip3, _iip3_dft = self.fields(dft=dft)
+        self.assertEqual(fields["fft_npts"], "")
+
+    def test_zero_im5_log_reduces_to_an_empty_ratio_field(self):
+        with tempfile.TemporaryDirectory() as td:
+            log = os.path.join(td, "iip3_typ_27c_vdd1.80v_a1mv.log")
+            with open(log, "w") as fh:
+                fh.write("OP ic1 0.0039403 ic2 0.00393483 vce1 0.802693 "
+                         "vce2 0.997307 idd 0.00471442\n"
+                         "NPTS 65536\n"
+                         "DFT tone1 0.00187927 tone2 0.00187718 "
+                         "im3l 6.58348E-09 im3h 6.47937E-09 src1 0.000999621\n"
+                         "FFTDF 3.8147E+06\n"
+                         "FFT tone1 0.00187927 tone2 0.00187718 "
+                         "im3l 6.5763E-09 im3h 6.49033E-09 "
+                         "im5l 0.0 im5h 0.0 src1 0.000999621 src2 0.000999618\n"
+                         "BENCH_COMPLETE\n")
+            rows, skipped = P.build_iip3_rows(td)
+            self.assertEqual(skipped, [])
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["im3_over_im5_db"], "")
+            self.assertEqual(rows[0]["v_im5_out_v"], "0.000000e+00")
+            self.assertEqual(rows[0]["fft_npts"], "65536")
+
+
 SP = "sp_typ_27c_vdd1.80v"
 A1 = "iip3_typ_27c_vdd1.80v_a1mv"
 A2 = "iip3_typ_27c_vdd1.80v_a2mv"
