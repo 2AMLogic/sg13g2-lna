@@ -6,6 +6,12 @@
 
 ### 2026-11-20
 
+- **Issue #433** (closed): docs: README.md:3-4 lede duplicates the PDK name ("on IHP SG13G2 on [IHP SG13G2]")
+- **PR #462**: docs: name the PDK once in the README and CLAUDE.md ledes
+- **Issue #439** (closed): Share the per-point IIP3 measurement calculation across both reducers
+- **PR #444**: refactor: share the per-point IIP3 measurement across both reducers
+- **Issue #446** (closed): check-signoff.sh does not gate on a T1 met-count regression
+- **PR #455**: feat: gate check-signoff.sh on T1 met-item regressions vs the merge base
 - **Issue #452** (closed): test_usage_errors' seg() == [] assertion is vacuous: class 2's non-archival is still unguarded
 - **PR #457**: test: seed a previous pair so usage errors' no-archive assertion can fail
 - **Issue #447** (closed): Pin the campaign IIP3 CSV column order in a test (the agreement-column splice is unguarded)
