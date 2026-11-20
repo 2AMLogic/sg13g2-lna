@@ -6,6 +6,10 @@
 
 ### 2026-11-20
 
+- **Issue #461** (closed): Remove the unusable dpkg-deb workaround from the OSDI build error
+- **PR #469**: fix: drop the unusable dpkg-deb workaround from the OSDI build error
+- **Issue #438** (closed): ERC negative-control break layer is declared twice: run_flow.sh hardcodes 6/0, erc_control.py records its own constant
+- **PR #467**: layout: take the ERC control break layer/box from erc_control.py
 - **Issue #454** (closed): Share batch-set report collection between the variant and IIP3 runners
 - **PR #464**: refactor(sim): share the batch-set report collector between the variant and IIP3 runners
 - **Issue #433** (closed): docs: README.md:3-4 lede duplicates the PDK name ("on IHP SG13G2 on [IHP SG13G2]")
