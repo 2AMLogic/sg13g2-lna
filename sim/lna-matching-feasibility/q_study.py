@@ -947,9 +947,9 @@ def cmd_ctl_verify_gen(a):
 
 def _reduced(a, stem) -> dict:
     log = Path(a.corners) / f"{stem}.log"
-    m = ms.reduce_one(Path(a.corners), stem, a.nf_npts)["metrics"]
-    m["convergence"] = ms.classify_convergence(log)
-    return m
+    r = ms.reduce_one(Path(a.corners), stem, a.nf_npts)
+    r["metrics"]["convergence"] = ms.classify_convergence(log)
+    return r
 
 
 def cmd_ctl_verify_check(a):
@@ -964,7 +964,7 @@ def cmd_ctl_verify_check(a):
         except (OSError, ValueError) as ex:
             missing.append(f"{stem}: {ex}")
             continue
-        new = _reduced(a, e["stem"])
+        new = _reduced(a, e["stem"])["metrics"]
         for k in ("nf290_db_worst", "nf290_db_mid", "s11_db_worst", "s22_db_worst", "s21_db_min"):
             d = abs(new[k] - prior[k])
             rows.append((feed, k, new[k], prior[k], d, CONTROL_TOL_DB, d <= CONTROL_TOL_DB))
@@ -1156,13 +1156,13 @@ def cmd_reduce(a):
     for b in mapdoc["boundary"]:
         stem = b["stem"]
         try:
-            m = _reduced(a, stem)
+            red = _reduced(a, stem)
         except (OSError, ValueError) as ex:
             problems.append(f"{stem}: unusable ({ex})")
             bnd.append({"tag": b["boundary_tag"], "arm": b["feed_variant"], "q_in": b["q_in"],
                         "status": "invalid", "reason": str(ex)})
             continue
-        band = ms.reduce_one(corners, stem, a.nf_npts)["band"]
+        m, band = red["metrics"], red["band"]
         v11 = max(ms.nf_reref(x["nf_sp_db"], ms.T_ANALYSIS) for x in band)
         bnd.append({"tag": b["boundary_tag"], "arm": b["feed_variant"], "q_in": b["q_in"],
                     "status": "verified", "pred_nf290_worst_db": b["pred_nf290_worst_db"],
@@ -1189,7 +1189,7 @@ def cmd_reduce(a):
     scan = {"dc_flags": phys["dc_flags"],
             "nfmin290_worst_db": phys["cs"]["q10"]["nfmin290_worst_db"],
             "convergence": {"normal": phys["conv"]["normal"]}}
-    match = _reduced(a, ctlv["stem"])
+    match = _reduced(a, ctlv["stem"])["metrics"]
     rec = fs.recommend(scan, match)
     rec["physical_candidate_pool"] = ["verify_ctl_" + point_id("em5_cmim")]
     rec["note"] = ("Only the unmodified-model em5_cmim control verification is a physical "

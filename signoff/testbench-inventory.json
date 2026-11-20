@@ -2675,7 +2675,7 @@
     "sim/lna-matching-feasibility/le_study.py": "sha256:ff71bdb950ab3d0e2ff84ee525a6294d6fc9f9706f74cc826988130e7bd1b2ee",
     "sim/lna-matching-feasibility/matching_solver.py": "sha256:95ef1c00b7059c1d78dfac248bdfe7cb340bee832617254d5eeebfc213c487fa",
     "sim/lna-matching-feasibility/q-study-declaration.md": "sha256:13d3cf0a1a9048f459b0315a22dd159995e4c5d1ec8d4787c723128a9dc583a7",
-    "sim/lna-matching-feasibility/q_study.py": "sha256:c010532a3bec62293a88411b2ca25c5e6b35f7a29628061bdbf4305f13345889",
+    "sim/lna-matching-feasibility/q_study.py": "sha256:8eb4b09be27e10db8dd37e919903a5ebd431db916f7a59cc5f484bb986b7e025",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-band.csv": "sha256:d3d3607da866858e177bf7b9b252a23d0fc1628a3dd9ceac32e7364b631b4b67",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-candidates.csv": "sha256:4d2949ee325a4f977d2f01c452833a2be5a16392d46773b9c84c0146fd5fe2fe",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c.md": "sha256:c411f89190c992cadec8079b46aef8b56868eb6b2db8c913233fed625482206c",
