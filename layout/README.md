@@ -4,9 +4,9 @@ Layout and DRC/LVS evidence for this block. The first content here was the
 **toolchain bring-up of issue #63** (cascode core + DR-0003 bias island);
 #346 added the bias side, #347 the matching network, and **#228 the
 top-level assembly — pads and inter-block routing — completing the block's
-layout scope** (every netlist instance drawn, see "Scope"). The results
-below are recorded evidence, not signoff verdicts; see "What the evidence
-supports" before citing anything.
+layout scope** (35 instances drawn and three modeled in their inductors,
+see "Scope"). The results below are recorded evidence, not signoff verdicts;
+see "What the evidence supports" before citing anything.
 
 ```
 layout/
@@ -367,10 +367,18 @@ base bars, the rppd terminal heads;
 Under klt 0.8.0 (deck `content_hash` changed, see above) the curated deck
 reports nothing for them, and klt 0.9.2 still reports nothing. The GDS is
 byte-identical (sha256 `e2d75415…a14f` at the time) and no geometry was changed; the
-verdict change came from the klt/deck upgrade alone. **This is a clean verdict
-on a partial cell, not DRC clean for the block** (see "Signoff citations": the
-item-3 citation is withdrawn for that reason). The schema is 3, and the
-coverage fields below are re-quoted from the **0.9.2** envelope.
+verdict change came from the klt/deck upgrade alone. The citation history:
+withdrawn at klt 0.8.0 (issue #235) while the cell was partial, **re-cited
+by #229** on the full-block GDS. To reproduce the committed JSON report
+byte for byte, run this command from `layout/lna_core/`.
+
+```bash
+uvx --isolated --from klayout-tools==0.9.2 --with klayout==0.30.12 \
+  klt drc lna_core.gds --deck sg13g2 --format json
+```
+
+The report uses schema 3. The coverage fields below are quoted from the
+**0.9.2** envelope.
 
 What 0.9.2's deck changed here (#272), all at `status: "clean"` and
 `rule_counts: {}`: one rule was added to the checked set, `cont.ongrid.1`
@@ -395,14 +403,25 @@ The coverage fields below are quoted verbatim from the envelope's `coverage`
 block, as T1 item 3 requires:
 
 - `coverage.layers_in_stream_without_rules`:
-  `["5/2", "8/2", "8/25", "10/2", "10/25", "26/0", "28/0", "31/2", "33/0", "40/0", "44/0", "51/0", "52/0", "111/0", "126/25", "128/0", "129/0"]`
+  `["1/23", "5/2", "5/23", "8/2", "8/23", "8/25", "9/0", "10/2", "10/23", "10/25", "26/0", "27/0", "27/2", "27/25", "28/0", "30/23", "31/2", "33/0", "40/0", "41/0", "44/0", "46/21", "50/23", "51/0", "52/0", "67/23", "111/0", "126/2", "126/23", "126/25", "128/0", "129/0", "134/23", "134/25", "148/0"]`
 - `coverage.rules_skipped`:
-  `["nwell.enclosing.nactiv.1", "nwell.enclosing.nactiv.dig.1", "nwell.enclosing.nactiv.hv.1", "nwell.space.nactiv.1", "nwell.space.nactiv.dig.1", "nwell.space.nactiv.hv.1", "topmetal1.enclosing.topvia2.1", "topmetal2.enclosing.topvia2.1", "topmetal2.space.1", "topmetal2.width.1", "topvia2.space.1", "topvia2.width.1"]`.
-  The same envelope's `coverage.inapplicable` gives each of these the
-  reason `no_applicable_geometry`, because this cell draws no
-  TopVia2/TopMetal2 and no NWell/nActiv pair for the `nwell.*nactiv` rules.
+  `[]`. This was not always empty: at the klt 0.9.2 bump (core + island
+  only, and zero TopMetal2 in the stream) the envelope skipped twelve
+  rules as `no_applicable_geometry` — the six
+  `topvia2.*`/`topmetal2.*`/`topmetal1.enclosing.topvia2.1` rules, which
+  began running when #347's matching network brought the inductors' own
+  TM1/TV2/TM2 stacks (TopMetal2 0 → 39 shapes), and the six
+  `nwell.*nactiv` rules, which began running when #346's bias side drew
+  its first NWell/nActiv pairs. Every rule the deck carries runs on this
+  stream; `coverage.inapplicable` is empty too.
 - `coverage.deck_scope`:
   `["Act", "Cnt", "Gat", "M1", "M2", "M3", "M4", "M5", "MIM", "NW", "TM1", "TM2", "TV1", "TV2", "V1", "V2", "V3", "V4", "pSD", "x"]`
+
+The full-block assembly increased the list of layers without rules from
+32 to 35 under the same klt 0.9.2 deck. Each of the four `bondpad`
+instances contributes one shape on `9/0` and one on `41/0`. Layer
+`134/25` contains the four port labels placed by `lna_core`
+(`rfin`, `rfout`, `vdd`, `vss`).
 
 The same block also carries a `voltage_domain_warnings` entry: the curated
 deck applies the LV thresholds to geometry under ThickGateOx (44/0), so
@@ -410,7 +429,15 @@ XMis's HV-specific gate rules are not checked. nSD, the HBT
 layers (EmWind, TRANS, Activ:mask), PolyRes/SalBlock/EXTBlock and Vmim
 appear only in the without-rules list above (NWell and pSD are in the
 0.9.2 deck scope). None of them is checked, by
-construction.
+construction. Two further holes the envelope itself discloses:
+`coverage.unchecked_rules` holds `NW.b1` (min. PWell width between NWell
+regions of different nets, 1.80 µm) — net-aware, and this engine has no
+net-aware spacing check, so only the geometric `nwell.space.1` (0.62 µm)
+ran; and `coverage.unmodeled_rules` lists the latch-up (`LU.a`, `LU.c`,
+`LU.c1`, `LU.d`, `LU.d1`) and pad (`Pad.a1`, `Pad.aR`, `Pad.bR`, `Pad.d`,
+`Pad.d1R`, `Pad.dR`, `Pad.gR`, `Pad.jR`, `Pad.kR`) rules the curated deck
+does not model at all — relevant to the four bondpads, which no `Pad.*`
+rule therefore checks.
 
 **The PDK's native DRC deck was not run.** `klt drc --engine klayout --pdk
 ihp-sg13g2` failed on this host. The deck aborts in
@@ -502,9 +529,12 @@ publication cannot pass silently.
 
 **Scope.** Since #228 the cell covers all 38 netlist instances (35 drawn +
 3 `modeled_in_device`), so a native verdict on it is a block-level result —
-but there is still no verdict in this tree, and `native_drc_report.json`
-stays uncited in `signoff/manifest.json` until #201 supplies the run and
-#229 re-cites DRC with the disclosure. Real native findings are accepted
+but there is still no verdict in this tree: #201 (a compatible standalone
+KLayout on the evidence workers) is open and blocked, so #229 re-cited DRC
+on the curated deck alone, with the native-deck absence disclosed here and
+in the PR. `native_drc_report.json`
+stays uncited in `signoff/manifest.json` until #201 supplies the run. Real
+native findings are accepted
 only through #201's evidence run.
 
 
@@ -650,10 +680,10 @@ layout 10, reference 10, matched 2; pins pair 10/10.
   kΩ — both ends of the schematic's floating-node DC path, present in the
   extracted netlist. T1 item 2 (Layout) is cited on this basis.
 - **It does not support:**
-  - DRC clean for the block as a signoff claim. The curated status is
-    `clean` for the full assembled cell, but the native deck did not run,
-    and item 3 stays uncited until #229 supplies the disclosure-ready
-    verdict.
+  - DRC clean by the PDK's own ground-truth deck. The curated status is
+    `clean` for the full assembled cell and is cited for T1 item 3 (#229)
+    with the coverage disclosure above, but the native deck did not run
+    (#201), and the curated verdict is not a native-deck pass.
   - LVS match. Both compares are `mismatch`.
   - Any statement about the HBTs' or R3b's connectivity, because klt
     cannot see those devices.
@@ -668,11 +698,13 @@ layout 10, reference 10, matched 2; pins pair 10/10.
 
 `signoff/manifest.json` cites `lvs_full_report.json` for **item 4**, pinned
 to the GDS hash above. It renders `unmet` / `check_failed`, which records
-that the evidence exists and fails. It is not a claim. **Item 3 is no longer
-cited** (first withdrawn at klt 0.8.0, issue #235; still `clean` at 0.9.2):
-`drc_report.json` is `clean`, and since #228 the scope is full — but the
-citation stays withdrawn pending #229's DRC pass (the disclosure of the
-native-deck state travels with that re-cite, not this one). **Item 2 is
+that the evidence exists and fails. It is not a claim. **Item 3 is cited
+since #229** (first withdrawn at klt 0.8.0, issue #235, while the cell was
+partial; re-cited on #228's full-block GDS): `drc_report.json` is `clean`,
+pinned to the same GDS hash and the deck content hash, and the row renders
+`met` with the coverage disclosure in "Evidence, as recorded" above — the
+native-deck absence (#201) travels with this citation as disclosed
+limitation, not as a blocker. **Item 2 is
 cited since #228** on the artifact-anchored generic envelope
 `lna_core/item2.envelope.json` (written by `layout/item2_envelope.py` from
 the flow's own regeneration): it pins the GDS by path and sha256, carries a
@@ -682,7 +714,7 @@ only while the GDS still re-hashes to it. The scope guard's precondition
 partition fails `item2_envelope.py` and the row goes stale, not green.
 
 CI enforces this: `.github/scripts/check-signoff-scope.py` (run by
-`check-signoff.sh`) fails a `met` item 2/3/4 row backed by this partial
+`check-signoff.sh`) fails a `met` item 2/3/4 row backed by a partial
 scope; see `signoff/README.md` "Layout scope guard".
 
 ## CI: layout-freshness
