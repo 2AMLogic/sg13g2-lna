@@ -6,6 +6,14 @@
 
 ### 2026-11-20
 
+- **Issue #428** (closed): Reuse the collected record paths for item 9 tree digests
+- **PR #436**: refactor: reuse the evidence_files paths for item-9 tree digests
+- **Issue #430** (closed): Root README status paragraph is stale: understates T1 met count and still calls the layout a partial bring-up with DRC not clean
+- **PR #431**: docs: refresh stale README status paragraph and regenerate hygiene attest cascade
+- **Issue #424** (closed): Gate extract_report.json connectivity (split_net_labels / merged_net_labels) in CI: an opened net is currently silent
+- **PR #429**: feat: gate extract_report connectivity in the layout-freshness check
+- **Issue #229** (closed): T1 item 3 (DRC clean): clean klt drc on the full-block GDS with coverage disclosed
+- **PR #427**: feat(signoff): re-cite T1 item 3 (DRC clean) on the full-block GDS
 - **PR #423**: feat(layout): assemble the full LNA block -- pads, inter-block routing, T1 item-2 evidence
 - **Issue #228** (closed): T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
 
