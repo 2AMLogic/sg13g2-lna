@@ -37,7 +37,8 @@
 #  14. one-for-one swap, equal met count     -> FAILS
 #  15. unchanged partial completion          -> passes
 #  16. a gained item                          -> passes
-#  17. new acknowledgement covers its item    -> passes, NOTE visible
+#  17. reasonless entries fail; a reasoned acknowledgement with a relative
+#      root passes; a second, unacknowledged loss fails and shows both details
 #  18. an entry for a different item          -> FAILS
 #  19. an entry already at the base           -> FAILS
 #  20. drift with an acknowledgement present  -> FAILS (drift gate)
@@ -148,6 +149,10 @@ def copy_envelope_inputs(rel):
         for sub in e.get("paths") or []:                # 0.9+ multi-path
             if isinstance(sub, dict):
                 copy_rel(rel_of(sub.get("path")))
+    # A `klt erc` envelope names its spec document (item 11's grader re-reads
+    # it for the declared supplies/ties), so a pristine copy carries it too.
+    if isinstance(env.get("spec"), str):
+        copy_rel(env["spec"])
     # Inventoried artifacts the attestation hashed and the render re-hashes.
     for chk in (env.get("attestation") or {}).get("checks") or []:
         if isinstance(chk, dict):
@@ -424,16 +429,27 @@ commit_tree "$t" candidate
 run_base "a gained item passes" 0 \
   "$t" "$(gt "$t" rev-parse HEAD~1)" "no T1 met-item regression"
 
-# 17. A new acknowledgement entry covers exactly its named item; the loss
-#     and the stated reason stay visible (NOTE lines).
+# 17. The acknowledgement must supply a reason after the item ID or title.
 t="$(fresh_tree)"
 commit_tree "$t" baseline
 edit_tree "$t" "$TAMPER9"
+ack "$t" "- T1 item 9"
+ack "$t" "- T1 item 9 (Testbenches shipped):   "
+ack "$t" "- T1 item 9: ..."
+run_base "entries without reason text cannot acknowledge a loss" 1 "$t" HEAD \
+  "item 9 .*NOT acknowledged"
+
 ack "$t" "- T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
 commit_tree "$t" candidate
-run_base "new acknowledgement covers its item" 0 \
-  "$t" "$(gt "$t" rev-parse HEAD~1)" \
+relative_tree="$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1]))' "$t")"
+run_base "new acknowledgement covers its item with a relative root" 0 \
+  "$relative_tree" HEAD~1 \
   "item 9" "stale_evidence" "acknowledged by: - T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
+
+edit_tree "$t" "$VIOL3"
+run_base "mixed losses fail and retain the acknowledged item's rationale" 1 "$t" HEAD~1 \
+  "item 3 .*check_failed.*NOT acknowledged" "item 9 .*stale_evidence.*\[acknowledged\]" \
+  "acknowledged by: - T1 item 9 (Testbenches shipped): fixture-acknowledged loss (self-test)."
 
 # 18. An entry for a different item authorizes nothing.
 t="$(fresh_tree)"

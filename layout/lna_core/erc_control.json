@@ -1,0 +1,82 @@
+{
+  "committed_layout": {
+    "erc_status": "clean",
+    "finding_count": 0,
+    "rules": [],
+    "supply_islands": {
+      "vdd": 1,
+      "vss": 1
+    },
+    "tie_findings": []
+  },
+  "controls": [
+    {
+      "box": [
+        -59.5,
+        -8.9,
+        22.5,
+        -7.1
+      ],
+      "break": "erc_break.py removes the ContAct cuts (6/0) from the core ptap1 strip, disconnecting its diffusion from the vss rail",
+      "break_layer": "6/0",
+      "expected": "erc_status violations with an erc.missing_tie finding naming tie substrate_vss on net vss",
+      "name": "substrate_tie_severed",
+      "rejected": true,
+      "verdict": {
+        "erc_status": "violations",
+        "finding_count": 1,
+        "rules": [
+          "erc.missing_tie"
+        ],
+        "supply_islands": {
+          "vdd": 1,
+          "vss": 1
+        },
+        "tie_findings": [
+          {
+            "net": "vss",
+            "rule": "erc.missing_tie",
+            "tie": "substrate_vss"
+          }
+        ]
+      }
+    },
+    {
+      "box": [
+        -1000.5,
+        141.5,
+        -967.5,
+        143.2
+      ],
+      "break": "erc_break.py removes the ContAct cuts (6/0) from the bias ntap1 strip, disconnecting its diffusion from the vdd rail",
+      "break_layer": "6/0",
+      "expected": "erc_status violations with an erc.missing_tie finding naming tie nwell_vdd on net vdd",
+      "name": "well_tie_severed",
+      "rejected": true,
+      "verdict": {
+        "erc_status": "violations",
+        "finding_count": 1,
+        "rules": [
+          "erc.missing_tie"
+        ],
+        "supply_islands": {
+          "vdd": 1,
+          "vss": 1
+        },
+        "tie_findings": [
+          {
+            "net": "vdd",
+            "rule": "erc.missing_tie",
+            "tie": "nwell_vdd"
+          }
+        ]
+      }
+    }
+  ],
+  "evidence": "the supply verdict is VERIFIED: clean on the committed layout with both tie declarations checked, and rejected (violations, erc.missing_tie naming the severed tie) on each negative control",
+  "file": "layout/lna_core/lna_core.gds",
+  "invocation": "klt erc layout/lna_core/lna_core.gds layout/lna_core/erc_spec.json --top lna_core --deck sg13g2 --format json",
+  "rejected": true,
+  "schema_version": 1,
+  "spec": "layout/lna_core/erc_spec.json"
+}

@@ -53,7 +53,8 @@ fail() {
   exit 1
 }
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$HERE/../.."
 BASE=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -121,7 +122,6 @@ esac
 # Scope guard (issue #80): a met layout/DRC/LVS row must not be backed by
 # evidence for a partial cell. Reads the fresh render only to see whether a
 # row is `met`; never rewrites a verdict. Stdlib python, no PDK.
-HERE="$(cd "$(dirname "$0")" && pwd)"
 python3 -I "$HERE/check-signoff-scope.py" --root . \
   --manifest "$MANIFEST" --report "$tmp" >&2 || \
   fail "layout citation scope guard rejected the signoff evidence (see signoff-scope lines above)"
@@ -132,18 +132,18 @@ python3 -I "$HERE/check-signoff-scope.py" --root . \
 # parsed; the python block does the per-item comparison and the
 # acknowledgement bookkeeping. Prints its own OK/NOTE/FAIL lines to stderr.
 compare_regression() {
-  git -C "$ROOT" rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null 2>&1 \
+  git rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null 2>&1 \
     || fail "--base '$BASE' does not resolve to a commit — fetch it with full history (CI checks out with fetch-depth: 0)"
-  MB="$(git -C "$ROOT" merge-base "$BASE" HEAD 2>/dev/null)" \
+  MB="$(git merge-base "$BASE" HEAD 2>/dev/null)" \
     || fail "no merge base between '$BASE' and HEAD (shallow clone? CI checks out with fetch-depth: 0)"
   base_rep="$(mktemp)"
   base_read="$(mktemp)"
-  git -C "$ROOT" show "$MB:$RECORD" >"$base_rep" 2>/dev/null \
+  git show "$MB:$RECORD" >"$base_rep" 2>/dev/null \
     || fail "merge base ${MB:0:12} of '$BASE' has no $RECORD — a required baseline that cannot be read is a failure, not a skip"
   # A merge base without signoff/README.md simply has no acknowledgement
   # entries; every entry the candidate carries is then new.
-  git -C "$ROOT" show "$MB:$README_REL" >"$base_read" 2>/dev/null || : >"$base_read"
-  python3 - "$base_rep" "$tmp" "$ROOT/$README_REL" "$base_read" "${MB:0:12}" "$BASE" <<'PY' || return 1
+  git show "$MB:$README_REL" >"$base_read" 2>/dev/null || : >"$base_read"
+  python3 - "$base_rep" "$tmp" "$README_REL" "$base_read" "${MB:0:12}" "$BASE" <<'PY' || return 1
 import json, re, sys
 
 base_rep, cand_rep, readme_now, readme_base, mb, base_ref = sys.argv[1:7]
@@ -176,7 +176,7 @@ def t1_map(report, what):
 b, c = t1_map(base, "baseline"), t1_map(cand, "fresh")
 
 ACK_HEADING = "## Acknowledged T1 downgrades"
-ACK_ENTRY = re.compile(r"^[-*] +T1 item ([0-9]+)\b")
+ACK_ENTRY = re.compile(r"^[-*] +T1 item (?P<item>[0-9]+)(?: +\(.+?\))?\s*:(?P<reason>.*)$")
 
 def ack_entries(path):
     """Acknowledgement entry lines under the heading; a missing file has none."""
@@ -188,15 +188,14 @@ def ack_entries(path):
     for ln in lines:
         if ln.startswith("## "):
             under = ln.strip() == ACK_HEADING
-        elif under and ACK_ENTRY.match(ln):
-            out.add(ln.strip())
+        elif under:
+            entry = ACK_ENTRY.fullmatch(ln)
+            if entry and any(ch.isalnum() for ch in entry["reason"]):
+                out.add((int(entry["item"]), ln.rstrip()))
     return out
 
 new_entries = ack_entries(readme_now) - ack_entries(readme_base)
-entry_of = {}
-for e in new_entries:
-    entry_of[int(ACK_ENTRY.match(e).group(1))] = e
-acked = set(entry_of)
+entry_of = dict(sorted(new_entries))
 
 def label(i):
     src = c.get(i) or b.get(i) or {}
@@ -212,16 +211,22 @@ if not losses:
     print(f"OK: no T1 met-item regression vs merge base {mb} of '{base_ref}'", file=sys.stderr)
     sys.exit(0)
 
-def loss_line(i, lab, status, reason):
-    r = f" (reason: {reason})" if reason else ""
-    mark = "acknowledged" if i in acked else "NOT acknowledged"
-    return f"  {lab}: met -> {status or 'missing'}{r} [{mark}]"
-
-unacked = [l for l in losses if l[0] not in acked]
+unacked = any(i not in entry_of for i, *_ in losses)
 if unacked:
     print(f"FAIL: T1 met-item regression vs merge base {mb} of '{base_ref}' (issue #446):", file=sys.stderr)
-    for i, lab, status, reason in losses:
-        print(loss_line(i, lab, status, reason), file=sys.stderr)
+else:
+    print(f"NOTE: {len(losses)} T1 item(s) lost their met status vs merge base {mb} of "
+          f"'{base_ref}'; every loss is acknowledged by a new entry under "
+          f"\"{ACK_HEADING}\" in signoff/README.md:", file=sys.stderr)
+
+for i, lab, status, reason in losses:
+    r = f" (reason: {reason})" if reason else ""
+    mark = "acknowledged" if i in entry_of else "NOT acknowledged"
+    print(f"  {lab}: met -> {status or 'missing'}{r} [{mark}]", file=sys.stderr)
+    if i in entry_of:
+        print(f"    acknowledged by: {entry_of[i]}", file=sys.stderr)
+
+if unacked:
     print("A T1 item that was met at the merge base may not become unmet silently,", file=sys.stderr)
     print("and a gain on another item cannot cancel the loss. If the downgrade is", file=sys.stderr)
     print(f"deliberate, add a NEW entry under \"{ACK_HEADING}\" in signoff/README.md", file=sys.stderr)
@@ -229,13 +234,6 @@ if unacked:
     print("merge base, or one for a different item, authorizes nothing. Otherwise", file=sys.stderr)
     print("repair the evidence and refresh the verdict of record.", file=sys.stderr)
     sys.exit(1)
-
-print(f"NOTE: {len(losses)} T1 item(s) lost their met status vs merge base {mb} of "
-      f"'{base_ref}'; every loss is acknowledged by a new entry under "
-      f"\"{ACK_HEADING}\" in signoff/README.md:", file=sys.stderr)
-for i, lab, status, reason in losses:
-    print(loss_line(i, lab, status, reason), file=sys.stderr)
-    print(f"    acknowledged by: {entry_of[i]}", file=sys.stderr)
 PY
 }
 

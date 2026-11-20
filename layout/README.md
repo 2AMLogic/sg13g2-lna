@@ -15,6 +15,10 @@ layout/
   run_native_drc.py             native PDK DRC runner: version preflight +
                                 provenance (issue #185; evidence via #201)
   native_drc_identity.py        records/validates native_drc_inputs.json (#185)
+  erc_break.py                  negative-control stream editor: deletes one
+                                layer's shapes in a box (#35; scratch only)
+  erc_control.py                assembles/validates erc_control.json, the
+                                item-11 negative-control record (#35)
   tests/                        PDK-free unit tests for the layout tooling
   pcell_env.py                  loads IHP's SG13_dev PyCell library headless
   lvs_reference.py              derives the scoped LVS reference from design/netlist/lna.spice
@@ -23,7 +27,7 @@ layout/
                                 envelope pinning the GDS by hash (issue #228; called by
                                 run_flow.sh, derives its pass, never hand-set)
   tools/fetch-pcell-deps.sh     fetches the two PyCell submodule shims (pinned, sha256-checked)
-  build/                        fetched shims (gitignored, generated)
+  build/                        fetched shims + ERC control scratch (gitignored, generated)
   lna_core/
     realization.json            scope: which netlist instances are drawn, and as which PDK device
     generate.py                 draws lna_core.gds (--nx = issue #58's emitter-count knob)
@@ -41,6 +45,13 @@ layout/
     lna_core.extracted.spice    the netlist that extraction wrote
     lvs_report.json             klt lvs vs the scoped reference
     lvs_full_report.json        klt lvs vs design/netlist/lna.spice
+    erc_spec.json               T1 item-11 supply spec (#35): stackup, vias, the two
+                                supplies, the two tap ties (an input, see
+                                "ERC supply evidence")
+    erc_report.json             klt erc --deck sg13g2 envelope of the supply run (#35):
+                                erc_status clean, both supplies one island
+    erc_control.json            the two negative controls beside the clean run (#35),
+                                written by erc_control.py; rejected: true
     native_drc_report.json      native-deck verdict from run_native_drc.py —
                                 NOT present in this tree (#201)
     native_drc_inputs.json      binding of the native report to the GDS, deck,
@@ -264,9 +275,10 @@ identical across two regenerations).**
   the `met` row.
 
 **Out of scope here** (per the issue): DRC findings beyond the deck's own
-clean verdict (#229 owns DRC work), LVS clean (#230), pex (#232), the
-supply structural check (#35), any spec/netlist change, and ESD/pad-ring
-optimisation beyond the four bondpads the netlist's ports imply.
+clean verdict (#229 owns DRC work), LVS clean (#230), pex (#232), any
+spec/netlist change, and ESD/pad-ring optimisation beyond the four bondpads
+the netlist's ports imply. The supply structural check (#35) landed after
+this assembly — see "ERC supply evidence" below.
 
 ## Provenance
 
@@ -665,6 +677,90 @@ layout 10, reference 10, matched 2; pins pair 10/10.
   vs LV) is not part of the compare at all, because the deck reports both
   as `pfet`. `power_connectivity.status: "unchecked"`.
 
+### ERC supply evidence (`erc_report.json`, issue #35)
+
+`klt erc` builds the supply-connectivity half of T1 item 11: a spec
+(`erc_spec.json`) declares the block's supplies, the stackup they route on,
+and the well/substrate taps; the run proves each declared supply is one
+electrical island with no short, and every declared tap region holds a tap
+that reaches its rail. `layout/run_flow.sh` step 9 regenerates all three
+committed artifacts (`klt erc --validate-spec` first, the run, then the two
+negative controls), from the repo root so the envelope's `file`/`spec`
+paths are repo-relative — `klt signoff`'s grader resolves them from there.
+The envelope's overall `status` is `not_checked` (exit 4, a verdict): the
+run passes no `--pdk` antenna-limit table, because the antenna half is
+item 3's deck evidence, not this spec's subject; item 11 grades
+`erc_status`/`erc_findings`/`erc_coverage`, which are `clean`/0/all-checked.
+
+**The spec.** The stackup is the metal stack the assembly routes on
+(GatPoly gate role with Activ as `active_layer`, then Activ, Metal1–Metal5,
+TopMetal1/TopMetal2, with the label layers this stream actually carries:
+8/25, 10/25, 126/25, 134/25) plus the eight via layers. `--deck sg13g2`
+contributes the device-body carve-outs (the rppd/rhigh resistor bodies are
+subtracted from GatPoly, so a resistor does not conduct between its
+terminals in this graph). Two nets are declared, `vdd` and `vss` — the
+netlist's own supply ports — each `kind: supply`, `islands: 1`, owning the
+seven metal roles (not Activ: the six HBT device bodies sit on unlabeled
+Activ that no supply owns — device territory, not a severed rail; the
+taps' reach is graded by the `ties[]` machinery, not by `roles`). The
+inductor spirals (27/0) are deliberately **not** declared: they are device
+bodies, and excluding them is what keeps `e1`/`outn` from merging into
+`vss`/`vdd` in the supply graph (the extraction report's
+`merged_net_labels` is the deck's full-layer view, a different question).
+
+**Well and substrate ties.** Both ties specify `connect_to: Activ`. From
+the tap diffusion, the supply graph reaches Metal1 through a drawn ContAct
+cut (6/0). Each tie also declares how ERC identifies its well and tap.
+
+- `substrate_vss`: the substrate is not a drawn layer, so the tie uses the
+  native-substrate form (`well_layer: null` + `well_boxes`): two disjoint
+  boxes, one per `ptap1` strip (the core `vss` rail at y≈−8 and the bias
+  `vss` rail at y≈97), so each asserted polygon independently must hold a
+  tap that reaches `vss` — two falsifiable claims, not one. `tap_is_dedicated`
+  is affirmed because the strips *are* the PDK's dedicated `ptap1` cell:
+  every contacted Activ inside them is tap, so no narrowing form can remove
+  anything (a `tap_requires`-only declaration measures degenerate — the
+  strips' Activ is fully pSD-covered). The well side rests on the caller's
+  word, stated as such in `erc_coverage.checked_by_well_assertion`.
+- `nwell_vdd`: the wells are drawn (NWell 31/0 — the two merged banks), but
+  upstream draws no nSD implant over an n-tap (n+ is the family's default
+  doping; klayout-tools#2591 documents the same complement for extraction),
+  so the tap side is asserted with `tap_boxes`: the two `ntap1` strips'
+  Activ, recorded in `erc_coverage.checked_by_assertion`. Both forms are
+  *assertions* in klayout-tools#2240's sense — falsifiable and graded, not
+  `ties_disclosure` unexpressible-limitation disclosures; a `met` item 11
+  would carry both tie names in its `power_delivery` citation fields.
+
+**Disclosed, not declared.** `erc_coverage.layers_in_stream_without_declaration`
+lists five pcell-internal drawing layers this spec does not model — 27/25
+(inductor terminal texts), 40/0 (ptap1/pmosHV internal), 51/0
+(MOS/HBT internal), 52/0 (rhigh/rppd internal), 63/0 (device internal) —
+identified by their owning cells; none routes a supply. The
+`well_assertion_coverage` disclosure reads `uncovered_tap_area_um2: 1081.4
+of 1212.4`: the uncovered Activ is device diffusion (MOS source/drains,
+HBT bodies), and the design draws exactly two substrate taps — both
+asserted (verified against `generate.py`, which instantiates `ptap1` twice
+and `ntap1` twice).
+
+**Negative controls (`erc_control.json`).** The flow removes only the
+ContAct cuts (6/0) from one tap in each scratch GDS. The diffusion and
+overlapping Metal1 remain in place.
+
+| Tap | Contacts removed | Finding |
+| --- | ---: | --- |
+| Core `ptap1` | 476 | `erc.missing_tie` for `substrate_vss` on `vss` |
+| Bias `ntap1` | 186 | `erc.missing_tie` for `nwell_vdd` on `vdd` |
+
+Each run reports exactly one finding and one metal island per supply.
+`erc_control.py` records the verdicts and fails the flow unless each
+broken layout reports its expected tie and net. The control regression
+tests are in `layout/tests/test_erc_control.py`.
+
+The envelope is deterministic for the pinned toolchain (two runs
+byte-identical) and pins both inputs: `provenance.input.content_hash` is
+the GDS sha256 (same hash as items 2 and 4), `provenance.spec.content_hash`
+is the committed spec's.
+
 ## What the evidence supports
 
 - **It does support:** a committed, reproducible, parameterised GDS of all
@@ -678,18 +774,28 @@ layout 10, reference 10, matched 2; pins pair 10/10.
   nets. The Cbref bank extracts to 100.011 pF between `vss` and `bref`, and
   the Rbleed bleed resistor extracts between `xout` and `vss` at 99.99942
   kΩ — both ends of the schematic's floating-node DC path, present in the
-  extracted netlist. T1 item 2 (Layout) is cited on this basis.
+  extracted netlist. T1 item 2 (Layout) is cited on this basis. Since #35
+  it also supports the **supply structural half**: both supplies are one
+  electrical island each over the declared metal stack with no short
+  (metal and substrate-path both checked), no unlabelled conductor on the
+  owned roles, and every declared tap region (two substrate strips, two
+  n-well banks) holds a tap that reaches its rail — proven rejectable by
+  the two negative controls.
 - **It does not support:**
   - DRC clean by the PDK's own ground-truth deck. The curated status is
     `clean` for the full assembled cell and is cited for T1 item 3 (#229)
     with the coverage disclosure above, but the native deck did not run
     (#201), and the curated verdict is not a native-deck pass.
-  - LVS match. Both compares are `mismatch`.
+  - LVS match. Both compares are `mismatch` — so item 11's LVS half (the
+    supplies *participating in a passing compare*) is unavailable, and the
+    row renders `lvs_did_not_pass` rather than `met` until #230 closes.
   - Any statement about the HBTs' or R3b's connectivity, because klt
     cannot see those devices.
   - The inductors' terminals staying distinct in extraction: the deck has
     no inductor class, so each spiral joins its two terminal nets
-    (`merged_net_labels`).
+    (`merged_net_labels`). (The ERC supply graph does keep them distinct —
+    the spirals are undeclared there — but that is a modelling choice, not
+    a physical claim.)
 
   The ground-truth DRC for this PDK is IHP's own deck, and that run is
   still missing.
@@ -712,6 +818,14 @@ regeneration claim whose hash the flow just produced, and is graded `met`
 only while the GDS still re-hashes to it. The scope guard's precondition
 (`out_of_scope` empty) holds; a future netlist change that re-opens the
 partition fails `item2_envelope.py` and the row goes stale, not green.
+**Item 11 is cited since #35** on its compound set: the ERC part is
+`erc_report.json` (clean, both ties checked — see "ERC supply evidence"),
+the LVS part is `lvs_full_report.json` itself; both parts pin the GDS
+hash. The row renders `unmet`/`lvs_did_not_pass` with
+`detail.power_delivery.supply_nets: ["vdd", "vss"]` — the grading's split
+for "ERC half complete and continuous, LVS half blocked on the mismatch"
+(#230 owns the compare; when it closes, re-running `run_flow.sh` and
+re-rendering flips the row with no hand edit).
 
 CI enforces this: `.github/scripts/check-signoff-scope.py` (run by
 `check-signoff.sh`) fails a `met` item 2/3/4 row backed by a partial
@@ -732,20 +846,12 @@ python3 stdlib: no klayout, klt or PDK. It fails, naming the relationship, if:
    catches a netlist edit that leaves a device outside the instance
    partition);
 3. `provenance.input` in any of `drc_report.json`, `lvs_full_report.json`,
-   `extract_report.json` or the scoped-LVS `lvs_report.json` is missing (or the
+   `extract_report.json`, the scoped-LVS `lvs_report.json` or
+   `erc_report.json` is missing (or the
    report file itself is missing/unreadable), has a `role` other than `layout`, or has a `content_hash` that is
    not `sha256:` plus the committed GDS hash. This only pins the extraction and
 scoped-LVS reports to the same GDS; it does not make them block signoff
 evidence (the partial-scope guard above still applies);
-5. the extraction output named by `extract_report.json` does not match the
-   report. `netlist_path` is resolved relative to the report's directory (it
-   must be a relative, repository-local path; absolute or escaping paths are
-   rejected) and the file's raw bytes (not normalized SPICE) must hash to
-   `netlist_sha256` (64 lowercase hex). A missing or malformed
-   `netlist_path`/`netlist_sha256`, a missing output file, or a digest
-   mismatch fails with a diagnostic naming the report and file. No klt or PDK
-   is needed; this checks the committed pair, not that extraction would
-   reproduce it;
 4. `lna_core/lvs_inputs.json` (written by `layout/lvs_identity.py`, called from
    `run_flow.sh` only after a successful `klt lvs` invocation, exit 0 or the
    recorded mismatch exit 3) is missing/malformed, or the current bytes of an
@@ -758,6 +864,15 @@ evidence (the partial-scope guard above still applies);
    `mismatch`) and promotes no signoff row. If a run is interrupted between
    publishing a report and its sidecar entry, the report hash no longer matches
    and the gate fails rather than attesting the old report.
+5. the extraction output named by `extract_report.json` does not match the
+   report. `netlist_path` is resolved relative to the report's directory (it
+   must be a relative, repository-local path; absolute or escaping paths are
+   rejected) and the file's raw bytes (not normalized SPICE) must hash to
+   `netlist_sha256` (64 lowercase hex). A missing or malformed
+   `netlist_path`/`netlist_sha256`, a missing output file, or a digest
+   mismatch fails with a diagnostic naming the report and file. No klt or PDK
+   is needed; this checks the committed pair, not that extraction would
+   reproduce it;
 6. the native DRC pair `native_drc_report.json` + `native_drc_inputs.json`
    (written by `layout/run_native_drc.py` through
    `layout/native_drc_identity.py`, issue #185). Entirely absent is allowed —
@@ -777,6 +892,21 @@ evidence (the partial-scope guard above still applies);
    runner rerun never leaves the old pair in place (it is segregated to
    `native_drc_stale/`), and the pair names are only ever published
    atomically after the report has been validated against the GDS hash.
+7. the inductor instances, geometry or inductances in `inductance_report.json`
+   disagree with the realization or reference netlist;
+8. `lna_core/extract_report.json` records a split net or a set of merged nets
+   other than the three expected spiral groups (`e1|vss`, `outn|vdd`,
+   `rfin|xin`);
+9. the ERC supply evidence (issue #35): `erc_report.json` is bound to the
+   committed GDS by `provenance.input` (item 3's list) *and* to the
+   committed `erc_spec.json` by `provenance.spec.content_hash`; its
+   `file`/`spec` paths are the repo-relative ones the signoff grader
+   resolves; its committed verdict is `erc_status: "clean"`; `erc_spec.json`
+   declares exactly the netlist's two supply ports (`vdd`, `vss`) with
+   `ties[]`; and `erc_control.json` is a schema-1 record with
+   `rejected: true`. It must contain one contact-removal control for each
+   of the substrate and well taps. Each must report `violations` with an
+   `erc.missing_tie` finding naming its expected tie and supply.
 
 Regenerating the GDS and re-running the reports stays a deliberate local
 step (`layout/run_flow.sh`); CI only checks that the committed files agree.

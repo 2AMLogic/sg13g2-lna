@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 19649,
+      "bytes": 25461,
       "role": "script of a declared CI command",
-      "sha256": "sha256:47e51b38e1a3496042a9bf48fde47da1097aac71221824247ab333529366f948"
+      "sha256": "sha256:7d57d28c7ca557e7c7a03f4e8dc4e49681a12cdb36268f1081078a1ef3e70f8d"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -39,9 +39,9 @@
       "sha256": "sha256:ed1ed23e3049b460f22e872c6775440a6bfda69d492a2549ef2fb944ede5be5b"
     },
     ".github/scripts/check-signoff.sh": {
-      "bytes": 11670,
+      "bytes": 11548,
       "role": "script of a declared CI command",
-      "sha256": "sha256:019ffe1328cebd242bd536abea4fd69b68080d4495258db0f3e89a204b8cccfa"
+      "sha256": "sha256:1c9fb56846ac8b07b5b39bdc02f2e1facecfb3261cdefa6ff6df7ae84e8524c7"
     },
     ".github/scripts/check-sim-append-only": {
       "bytes": 2915,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 21581,
+      "bytes": 25126,
       "role": "script of a declared CI command",
-      "sha256": "sha256:b4b5cf0fc3de5abe1cea62cb754d661d3e6373d2f94219fe7594f83d0faf8893"
+      "sha256": "sha256:af02a097bd1272a876ca6c3a80be193eb1d5eb1a1ea1c300934b1bbebcf5c539"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,
@@ -104,9 +104,9 @@
       "sha256": "sha256:1259e1a2a8b169204c5f6400d86d50a3f52a1a17a4e8f98939b801bf2d34d7cf"
     },
     ".github/scripts/test-check-signoff.sh": {
-      "bytes": 21643,
+      "bytes": 22508,
       "role": "script of a declared CI command",
-      "sha256": "sha256:435a80361ef490fbb03f79c21abfda4942c8fdfe8f49deab6b03e2a659c53fb3"
+      "sha256": "sha256:6ceb78cfade0dae09c76807cff7f44848ed6c229e28c674bf218ed8176bf1b2d"
     },
     ".github/scripts/test-check-sim-append-only.sh": {
       "bytes": 4539,

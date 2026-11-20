@@ -1,0 +1,144 @@
+{
+  "stackup": [
+    {
+      "name": "GatPoly",
+      "layer": "5/0",
+      "role": "gate",
+      "active_layer": "1/0"
+    },
+    {
+      "name": "Activ",
+      "layer": "1/0"
+    },
+    {
+      "name": "Metal1",
+      "layer": "8/0",
+      "label_layer": "8/25"
+    },
+    {
+      "name": "Metal2",
+      "layer": "10/0",
+      "label_layer": "10/25"
+    },
+    {
+      "name": "Metal3",
+      "layer": "30/0"
+    },
+    {
+      "name": "Metal4",
+      "layer": "50/0"
+    },
+    {
+      "name": "Metal5",
+      "layer": "67/0"
+    },
+    {
+      "name": "TopMetal1",
+      "layer": "126/0",
+      "label_layer": "126/25"
+    },
+    {
+      "name": "TopMetal2",
+      "layer": "134/0",
+      "label_layer": "134/25"
+    }
+  ],
+  "vias": [
+    {
+      "name": "ContPoly",
+      "layer": "6/0",
+      "between": ["GatPoly", "Metal1"]
+    },
+    {
+      "name": "ContAct",
+      "layer": "6/0",
+      "between": ["Activ", "Metal1"]
+    },
+    {
+      "name": "Via1",
+      "layer": "19/0",
+      "between": ["Metal1", "Metal2"]
+    },
+    {
+      "name": "Via2",
+      "layer": "29/0",
+      "between": ["Metal2", "Metal3"]
+    },
+    {
+      "name": "Via3",
+      "layer": "49/0",
+      "between": ["Metal3", "Metal4"]
+    },
+    {
+      "name": "Via4",
+      "layer": "66/0",
+      "between": ["Metal4", "Metal5"]
+    },
+    {
+      "name": "TopVia1",
+      "layer": "125/0",
+      "between": ["Metal5", "TopMetal1"]
+    },
+    {
+      "name": "TopVia2",
+      "layer": "133/0",
+      "between": ["TopMetal1", "TopMetal2"]
+    }
+  ],
+  "nets": [
+    {
+      "name": "vdd",
+      "kind": "supply",
+      "islands": 1,
+      "roles": [
+        "Metal1",
+        "Metal2",
+        "Metal3",
+        "Metal4",
+        "Metal5",
+        "TopMetal1",
+        "TopMetal2"
+      ]
+    },
+    {
+      "name": "vss",
+      "kind": "supply",
+      "islands": 1,
+      "roles": [
+        "Metal1",
+        "Metal2",
+        "Metal3",
+        "Metal4",
+        "Metal5",
+        "TopMetal1",
+        "TopMetal2"
+      ]
+    }
+  ],
+  "ties": [
+    {
+      "name": "substrate_vss",
+      "well_layer": null,
+      "well_boxes": [
+        [-59.0, -8.39, 21.95, -7.61],
+        [-959.0, 96.61, -872.0, 97.39]
+      ],
+      "tap_layer": "1/0",
+      "tap_requires": ["14/0"],
+      "tap_is_dedicated": true,
+      "connect_to": "Activ",
+      "net": "vss"
+    },
+    {
+      "name": "nwell_vdd",
+      "well_layer": "31/0",
+      "tap_layer": "1/0",
+      "tap_boxes": [
+        [-70.0, 28.0, -25.54, 28.78],
+        [-1000.0, 142.0, -968.32, 142.78]
+      ],
+      "connect_to": "Activ",
+      "net": "vdd"
+    }
+  ]
+}
