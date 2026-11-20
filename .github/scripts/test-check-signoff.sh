@@ -126,6 +126,10 @@ def copy_envelope_inputs(rel):
         for sub in e.get("paths") or []:                # 0.9+ multi-path
             if isinstance(sub, dict):
                 copy_rel(rel_of(sub.get("path")))
+    # A `klt erc` envelope names its spec document (item 11's grader re-reads
+    # it for the declared supplies/ties), so a pristine copy carries it too.
+    if isinstance(env.get("spec"), str):
+        copy_rel(env["spec"])
     # Inventoried artifacts the attestation hashed and the render re-hashes.
     for chk in (env.get("attestation") or {}).get("checks") or []:
         if isinstance(chk, dict):

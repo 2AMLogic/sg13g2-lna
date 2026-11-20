@@ -8,8 +8,8 @@
 #   2. layout/lvs_reference.py regenerated from the current netlist
 #      byte-equals the committed <cell>.lvs_reference.spice
 #   3. provenance.input of drc_report.json, lvs_full_report.json,
-#      extract_report.json and lvs_report.json (scoped LVS) has
-#      role == "layout" and content_hash == sha256:<committed GDS sha256>
+#      extract_report.json, lvs_report.json (scoped LVS) and erc_report.json
+#      has role == "layout" and content_hash == sha256:<committed GDS sha256>
 #   4. lvs_inputs.json (issue #130) binds each LVS report's exact bytes to the
 #      GDS, reference netlist and request bytes of the invocation that made
 #      it; any changed relationship is reported by name
@@ -30,6 +30,14 @@
 #      netlist_H equal to the value re-parsed from the inductor2 cards of the
 #      realization's netlist, drawn_over_netlist equal to the rounded ratio
 #      (issue #403)
+#   8. the ERC supply evidence (issue #35): erc_report.json's
+#      provenance.input pins the committed GDS (step 3's list), its named
+#      spec is the committed erc_spec.json by content hash, its file/spec
+#      paths are repo-relative (what klt signoff's grader resolves), the
+#      committed verdict is erc_status clean, erc_spec.json declares
+#      exactly the netlist's two supply ports with ties[], and
+#      erc_control.json is a schema-1 record with rejected true -- both
+#      negative controls flipped the verdict to violations
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -145,7 +153,8 @@ if rz is not None:
 # (extraction / scoped LVS are pinned to the GDS only; they are not signoff
 # evidence. The extraction output digest is checked separately in step 5.)
 for name in ("drc_report.json", "lvs_full_report.json",
-             "extract_report.json", "lvs_report.json"):
+             "extract_report.json", "lvs_report.json",
+             "erc_report.json"):
     rel = f"layout/{cell}/{name}"
     rep = load(cd / name)
     if rep is None:
@@ -327,6 +336,81 @@ def check_inductance_report():
                  "(round(drawn_lowfreq_H / netlist_H, 5)); rerun layout/run_flow.sh")
 
 check_inductance_report()
+
+# 8. ERC supply evidence (issue #35): the item-11 citation set is
+#    erc_report.json + erc_spec.json + erc_control.json, so the gate binds
+#    all three together. The envelope's provenance.input pin is step 3's
+#    job; here the spec hash, the repo-relative file/spec paths the
+#    signoff grader resolves, the committed clean verdict, and the
+#    negative-control record's shape are checked. Re-deriving the verdicts
+#    needs klt (run_flow's job on a layout host); this gate is PDK-free.
+def check_erc_evidence():
+    rep_rel = f"layout/{cell}/erc_report.json"
+    spec_name, ctrl_name = "erc_spec.json", "erc_control.json"
+    spec_rel, ctrl_rel = f"layout/{cell}/{spec_name}", f"layout/{cell}/{ctrl_name}"
+    rep = load(cd / "erc_report.json") if (cd / "erc_report.json").is_file() else None
+    if rep is None:
+        fail(rep_rel, "missing (regenerate with layout/run_flow.sh)")
+        return
+    spec = load(cd / spec_name) if (cd / spec_name).is_file() else None
+    ctrl = load(cd / ctrl_name) if (cd / ctrl_name).is_file() else None
+    # paths the envelope names must be the repo-relative committed paths:
+    # klt signoff's grader resolves them from the repo root
+    f = rep.get("file")
+    if not (isinstance(f, dict) and f.get("scope") == "repo"
+            and f.get("path") == f"layout/{cell}/{cell}.gds"):
+        fail(rep_rel, f"file is {f!r}, want repo-scope layout/{cell}/{cell}.gds")
+    if rep.get("spec") != f"layout/{cell}/{spec_name}":
+        fail(rep_rel, f"spec is {rep.get('spec')!r}, want {spec_rel}")
+    # the spec the run graded is the committed spec, byte for byte
+    sp = (rep.get("provenance") or {}).get("spec")
+    if not isinstance(sp, dict):
+        fail(rep_rel, "missing provenance.spec")
+    else:
+        ch = sp.get("content_hash")
+        if not isinstance(ch, str) or not ch.startswith("sha256:"):
+            fail(rep_rel, f"provenance.spec.content_hash malformed ({ch!r})")
+        elif (cd / spec_name).is_file() \
+                and ch[len("sha256:"):] != sha(cd / spec_name):
+            fail(rep_rel, f"provenance.spec.content_hash {ch} != sha256 of committed "
+                 f"{spec_rel}; the spec changed after this run -- rerun layout/run_flow.sh")
+    if spec is not None:
+        nets = spec.get("nets")
+        supplies = sorted(n.get("name") for n in nets
+                          if isinstance(n, dict) and n.get("kind") == "supply") \
+            if isinstance(nets, list) else None
+        if supplies != ["vdd", "vss"]:
+            fail(spec_rel, f"declared supply nets are {supplies!r}, want ['vdd', 'vss'] "
+                 "(the netlist's supply ports)")
+        if not spec.get("ties"):
+            fail(spec_rel, "declares no ties[]; item 11 needs the well/substrate taps")
+    if rep.get("erc_status") != "clean":
+        fail(rep_rel, f"erc_status is {rep.get('erc_status')!r}, want 'clean' "
+             "(a violating committed run must not back the item-11 citation)")
+    if ctrl is None:
+        fail(ctrl_rel, "missing (regenerate with layout/run_flow.sh)")
+        return
+    if ctrl.get("schema_version") != 1 or ctrl.get("rejected") is not True:
+        fail(ctrl_rel, "malformed or not rejected: a control that did not flip the "
+             "verdict cannot back the item-11 citation")
+    if (ctrl.get("committed_layout") or {}).get("erc_status") != "clean":
+        fail(ctrl_rel, "committed_layout.erc_status is not 'clean'")
+    controls = ctrl.get("controls")
+    n_controls = len(controls) if isinstance(controls, list) else None
+    if not isinstance(controls, list) or n_controls != 2:
+        fail(ctrl_rel, f"controls is {type(controls).__name__} len "
+             f"{n_controls}, want 2")
+    else:
+        for c in controls:
+            name = c.get("name")
+            if c.get("rejected") is not True \
+                    or (c.get("verdict") or {}).get("erc_status") != "violations":
+                fail(ctrl_rel, f"control {name!r} did not flip to violations")
+    if ctrl.get("file") != f"layout/{cell}/{cell}.gds" \
+            or ctrl.get("spec") != f"layout/{cell}/{spec_name}":
+        fail(ctrl_rel, "file/spec do not name the committed GDS and spec")
+
+check_erc_evidence()
 
 if errs:
     print("\n".join(errs), file=sys.stderr)
