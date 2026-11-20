@@ -236,8 +236,13 @@ TopMetal1 top plates, so no stack can cross there.
 identical across two regenerations).**
 
 - DRC (`drc_report.json`): `clean`, 0 violations — pads, TM2 spines, TM1
-  trunks and all landing stacks included. The TopVia2/TopMetal2 rules are
-  exercised now (the pre-#228 cell drew none, so the deck skipped them).
+  trunks and all landing stacks included. The TopVia2/TopMetal2 rules now
+  run over the assembly's own geometry: TopMetal2 goes 39 -> 138 shapes and
+  TopVia2 346 -> 408 between the two GDS files (the pre-#228 shapes are the
+  PyCells' own stacks, not drawn interconnect). The deck checked those rules
+  before the assembly too — `coverage.rules_skipped` is empty and
+  `coverage.checked` holds the same 63 rules in both reports — so what is new
+  is the geometry under them, not the coverage.
 - Extraction (`extract_report.json`): **`split_net_labels` is empty** —
   every labelled net is one physical net (before #228: `b1 e1 gsvo outn vb2
   vdd xin xout` were each split across 2-3 nets). Net count 34 -> 18.
