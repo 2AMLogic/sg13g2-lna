@@ -25,6 +25,10 @@
 #      fields, malformed merge entry -> FAIL, naming the report, the field
 #      and the offending or missing group or split; reordered merge rows
 #      still pass
+#  12. ERC supply evidence (issue #35): missing ERC report or spec, spec
+#      edited after the run (provenance.spec hash), wrong file/spec paths,
+#      a not-clean committed verdict, wrong declared supplies, or a
+#      missing, duplicate or misidentified contact control -> FAIL, naming the file
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -40,7 +44,7 @@ C=layout/lna_core
 mk() { # mk <name>: repo-shaped copy of the inputs
   d="$TMP/$1"; mkdir -p "$d/$C" "$d/design/netlist"
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
-  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice,inductance_report.json} "$d/$C/"
+  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice,inductance_report.json,erc_spec.json,erc_report.json,erc_control.json} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
   cp "$SRC/$C"/{lvs_request.json,lvs_full_request.json} "$d/$C/"
   cp "$SRC/layout/lvs_identity.py" "$d/layout/"
@@ -415,6 +419,74 @@ named ind-ratio "drawn_over_netlist"
 mk ind-nledit; sub 's/^\(Lb [^ ]* [^ ]* \)[^ ]*/\1 5.5n/' "$TMP/ind-nledit/design/netlist/lna.spice"
 run ind-nledit 1 "netlist inductor edit without regeneration"
 named ind-nledit "inductance_report.json"
+
+# --- 12. ERC supply evidence (issue #35) --------------------------------
+ercmut() { # ercmut <fixture> <expr> [report|control]
+  python3 -I - "$TMP/$1/$C/erc_${3:-report}.json" "$2" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); exec(sys.argv[2])
+json.dump(d, open(p, "w"), indent=2)
+PY
+}
+mk erc-ok; run erc-ok 0 "matching tree (erc evidence present)"
+mk erc-missing; rm "$TMP/erc-missing/$C/erc_report.json"
+run erc-missing 1 "missing erc_report.json"
+named erc-missing "erc_report.json"
+mk erc-nospec; rm "$TMP/erc-nospec/$C/erc_spec.json"
+run erc-nospec 1 "missing erc_spec.json"
+named erc-nospec "erc_spec.json"
+mk erc-specedited; ercmut erc-specedited 'd["provenance"]["spec"]["content_hash"] = "sha256:" + "0" * 64'
+run erc-specedited 1 "spec edited after the erc run"
+named erc-specedited "erc_report.json"
+mk erc-badpath; ercmut erc-badpath 'd["file"] = {"path": "lna_core.gds", "scope": "repo"}'
+run erc-badpath 1 "erc envelope with non-repo-relative file path"
+mk erc-dirty; ercmut erc-dirty 'd["erc_status"] = "violations"'
+run erc-dirty 1 "committed erc run not clean"
+named erc-dirty "erc_status"
+mk erc-specnets; python3 -I - "$TMP/erc-specnets/$C/erc_spec.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["nets"][0]["name"] = "VDD"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-specnets 1 "spec supply names do not match the netlist ports"
+named erc-specnets "erc_spec.json"
+mk erc-noties; python3 -I - "$TMP/erc-noties/$C/erc_spec.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["ties"] = []
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-noties 1 "spec without ties[]"
+mk erc-ctrlmissing; rm "$TMP/erc-ctrlmissing/$C/erc_control.json"
+run erc-ctrlmissing 1 "missing erc_control.json"
+named erc-ctrlmissing "erc_control.json"
+mk erc-ctrlpass; python3 -I - "$TMP/erc-ctrlpass/$C/erc_control.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["rejected"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-ctrlpass 1 "control record that did not reject"
+named erc-ctrlpass "rejected"
+mk erc-ctrlok; python3 -I - "$TMP/erc-ctrlok/$C/erc_control.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["controls"][0]["rejected"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-ctrlok 1 "one control stayed clean"
+mk erc-duplicate; ercmut erc-duplicate 'd["controls"][1] = d["controls"][0]' control
+run erc-duplicate 1 "duplicate substrate control in place of the well control"
+named erc-duplicate "well_tie_severed"
+mk erc-reordered; ercmut erc-reordered 'd["controls"].reverse()' control
+run erc-reordered 0 "both contact controls in reverse record order"
+for pair in 'rule erc.unconnected_net' 'tie substrate_vss' 'net vss'; do
+  read -r field wrong <<< "$pair"
+  name="erc-wrong-$field"
+  mk "$name"
+  ercmut "$name" "d['controls'][1]['verdict']['tie_findings'][0]['$field'] = '$wrong'" control
+  run "$name" 1 "wrong $field in the well contact finding"
+  named "$name" "well_tie_severed"
+done
+mk erc-oldbreak; ercmut erc-oldbreak 'd["controls"][0]["break_layer"] = "1/0"' control
+run erc-oldbreak 1 "substrate control removed diffusion instead of contacts"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
