@@ -23,32 +23,30 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#470**: chore: gitignore the runtime-owned .loom/account-ranking.* state files
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#438**: ERC negative-control break layer is declared twice: run_flow.sh hardcodes 6/0, erc_control.py records its own constant
 - **#449**: Reuse the Q-study boundary reduction for both metrics and band data
 - **#450**: Share the matching-study preflight across the feed, Le and Q runners
 - **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
-- **#461**: Remove the unusable dpkg-deb workaround from the OSDI build error
+- **#468**: Share broadband stability reduction between feed scans and matching verification
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#471**: sim: share the broadband stability table reduction between reducers
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work
-- **#456**: refactor(sim): reuse the q-study reduction's band in the boundary loop
-- **#459**: refactor(sim): share the matching-study preflight across the feed, Le and Q runners
+- **#466**: test: pin that class-2 usage exits publish no DRC pair
 
 ## Proposed
 
@@ -59,8 +57,8 @@ Issues carrying `loom:curated`.
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
-- **#438**: ERC negative-control break layer is declared twice: run_flow.sh hardcodes 6/0, erc_control.py records its own constant *(curated)*
 - **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457) *(curated)*
+- **#470**: chore: gitignore the runtime-owned .loom/account-ranking.* state files *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -82,10 +80,10 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 6 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 3 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 5 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 7 |
 | Architect / Hermit proposals | 6 |
 | Active epics | 0 |
