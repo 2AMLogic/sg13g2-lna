@@ -37,32 +37,28 @@ INVOCATION = (
 
 # One entry per negative control: what the flow breaks, where, and which
 # declared tie the ERC run must name when it rejects the broken stream.
-# The break deletes the tap's own Activ (1/0): the tie machinery wires tap
-# sites to their rail geometrically, so removing the tap diffusion -- not
-# the contacts -- is what `erc.missing_tie` grades, and the supply's metal
-# island is left untouched (the finding names the tie, not the net).
+# Each break removes the ContAct cuts between tap diffusion and Metal1.
+# The tap and rail still overlap, so only a contact-aware tie check can fail.
 CONTROLS = [
     {
         "name": "substrate_tie_severed",
         "break": (
-            "erc_break.py deletes the Activ (1/0) of the core ptap1 strip, so "
-            "the asserted substrate region no longer contains a tap and its "
-            "severed half cannot reach the vss rail"
+            "erc_break.py removes the ContAct cuts (6/0) from the core ptap1 "
+            "strip, disconnecting its diffusion from the vss rail"
         ),
         "box": [-59.5, -8.9, 22.5, -7.1],
-        "break_layer": "1/0",
+        "break_layer": "6/0",
         "expected_tie": "substrate_vss",
         "expected_net": "vss",
     },
     {
         "name": "well_tie_severed",
         "break": (
-            "erc_break.py deletes the Activ (1/0) of the bias ntap1 well tap, "
-            "so the drawn n-well no longer contains a tap that can reach the "
-            "vdd rail"
+            "erc_break.py removes the ContAct cuts (6/0) from the bias ntap1 "
+            "strip, disconnecting its diffusion from the vdd rail"
         ),
         "box": [-1000.5, 141.5, -967.5, 143.2],
-        "break_layer": "1/0",
+        "break_layer": "6/0",
         "expected_tie": "nwell_vdd",
         "expected_net": "vdd",
     },
@@ -72,15 +68,17 @@ CONTROLS = [
 def verdict(env: dict) -> dict:
     """The roll-up half of an ERC envelope, the way the vco's record carries it."""
     findings = env.get("erc_findings") or []
+    rules = [f.get("rule") if isinstance(f, dict) else None for f in findings]
+    valid_rules = all(isinstance(rule, str) and rule for rule in rules)
     return {
         "erc_status": env.get("erc_status"),
         "finding_count": env.get("erc_finding_count"),
-        "rules": sorted({f.get("rule") for f in findings}),
+        "rules": sorted(set(rules)) if valid_rules else None,
         "supply_islands": {n.get("name"): n.get("matched_islands") for n in env.get("nets") or []},
         "tie_findings": [
             {"rule": f.get("rule"), "net": f.get("net"), "tie": f.get("layer")}
             for f in findings
-            if f.get("rule") == "erc.missing_tie"
+            if isinstance(f, dict) and f.get("rule") == "erc.missing_tie"
         ],
     }
 
@@ -107,6 +105,7 @@ def main(argv: list[str]) -> int:
     intact_clean = (
         intact_v["erc_status"] == "clean"
         and intact_v["finding_count"] == 0
+        and intact_v["rules"] == []
         and all(tie_checked(intact, c["expected_tie"]) for c in CONTROLS)
     )
 
@@ -117,7 +116,7 @@ def main(argv: list[str]) -> int:
             t.get("tie") == spec["expected_tie"] and t.get("net") == spec["expected_net"]
             for t in v["tie_findings"]
         )
-        rejected = v["erc_status"] == "violations" and named
+        rejected = v["erc_status"] == "violations" and v["rules"] is not None and named
         controls.append(
             {
                 "name": spec["name"],

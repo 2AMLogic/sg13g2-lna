@@ -17,8 +17,8 @@
         22.5,
         -7.1
       ],
-      "break": "erc_break.py deletes the Activ (1/0) of the core ptap1 strip, so the asserted substrate region no longer contains a tap and its severed half cannot reach the vss rail",
-      "break_layer": "1/0",
+      "break": "erc_break.py removes the ContAct cuts (6/0) from the core ptap1 strip, disconnecting its diffusion from the vss rail",
+      "break_layer": "6/0",
       "expected": "erc_status violations with an erc.missing_tie finding naming tie substrate_vss on net vss",
       "name": "substrate_tie_severed",
       "rejected": true,
@@ -48,8 +48,8 @@
         -967.5,
         143.2
       ],
-      "break": "erc_break.py deletes the Activ (1/0) of the bias ntap1 well tap, so the drawn n-well no longer contains a tap that can reach the vdd rail",
-      "break_layer": "1/0",
+      "break": "erc_break.py removes the ContAct cuts (6/0) from the bias ntap1 strip, disconnecting its diffusion from the vdd rail",
+      "break_layer": "6/0",
       "expected": "erc_status violations with an erc.missing_tie finding naming tie nwell_vdd on net vdd",
       "name": "well_tie_severed",
       "rejected": true,

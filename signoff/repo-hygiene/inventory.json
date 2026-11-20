@@ -19,9 +19,9 @@
   "block": "sg13g2-lna",
   "command_scripts": {
     ".github/scripts/check-layout-freshness": {
-      "bytes": 24445,
+      "bytes": 25461,
       "role": "script of a declared CI command",
-      "sha256": "sha256:5b1cb986c112f2125ec14211bffed66bad423129c949065404060b89a10f480b"
+      "sha256": "sha256:7d57d28c7ca557e7c7a03f4e8dc4e49681a12cdb36268f1081078a1ef3e70f8d"
     },
     ".github/scripts/check-netlist-freshness": {
       "bytes": 7635,
@@ -74,9 +74,9 @@
       "sha256": "sha256:a576f8514980726e84abbd67a4fd070790356251680167575a5e50f252e0dc92"
     },
     ".github/scripts/test-check-layout-freshness.sh": {
-      "bytes": 24147,
+      "bytes": 25126,
       "role": "script of a declared CI command",
-      "sha256": "sha256:5b55ca80b2b61a044e3fb60559a5febd58b96b78fe06b8c1d8f83cc23e438b1e"
+      "sha256": "sha256:af02a097bd1272a876ca6c3a80be193eb1d5eb1a1ea1c300934b1bbebcf5c539"
     },
     ".github/scripts/test-check-model-sources.sh": {
       "bytes": 2891,

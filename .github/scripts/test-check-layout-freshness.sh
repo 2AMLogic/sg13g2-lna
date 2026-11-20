@@ -25,10 +25,10 @@
 #      fields, malformed merge entry -> FAIL, naming the report, the field
 #      and the offending or missing group or split; reordered merge rows
 #      still pass
-#  12. ERC supply evidence (issue #35): missing erc_report.json, spec
+#  12. ERC supply evidence (issue #35): missing ERC report or spec, spec
 #      edited after the run (provenance.spec hash), wrong file/spec paths,
 #      a not-clean committed verdict, wrong declared supplies, or a
-#      control record that did not reject -> FAIL, naming the file
+#      missing, duplicate or misidentified contact control -> FAIL, naming the file
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -421,8 +421,8 @@ run ind-nledit 1 "netlist inductor edit without regeneration"
 named ind-nledit "inductance_report.json"
 
 # --- 12. ERC supply evidence (issue #35) --------------------------------
-ercmut() { # ercmut <name> <expr>: mutate erc_report.json in fixture <name>
-  python3 -I - "$TMP/$1/$C/erc_report.json" "$2" <<'PY'
+ercmut() { # ercmut <fixture> <expr> [report|control]
+  python3 -I - "$TMP/$1/$C/erc_${3:-report}.json" "$2" <<'PY'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p)); exec(sys.argv[2])
 json.dump(d, open(p, "w"), indent=2)
@@ -432,6 +432,9 @@ mk erc-ok; run erc-ok 0 "matching tree (erc evidence present)"
 mk erc-missing; rm "$TMP/erc-missing/$C/erc_report.json"
 run erc-missing 1 "missing erc_report.json"
 named erc-missing "erc_report.json"
+mk erc-nospec; rm "$TMP/erc-nospec/$C/erc_spec.json"
+run erc-nospec 1 "missing erc_spec.json"
+named erc-nospec "erc_spec.json"
 mk erc-specedited; ercmut erc-specedited 'd["provenance"]["spec"]["content_hash"] = "sha256:" + "0" * 64'
 run erc-specedited 1 "spec edited after the erc run"
 named erc-specedited "erc_report.json"
@@ -469,6 +472,21 @@ p = sys.argv[1]; d = json.load(open(p)); d["controls"][0]["rejected"] = False
 json.dump(d, open(p, "w"), indent=2)
 PY
 run erc-ctrlok 1 "one control stayed clean"
+mk erc-duplicate; ercmut erc-duplicate 'd["controls"][1] = d["controls"][0]' control
+run erc-duplicate 1 "duplicate substrate control in place of the well control"
+named erc-duplicate "well_tie_severed"
+mk erc-reordered; ercmut erc-reordered 'd["controls"].reverse()' control
+run erc-reordered 0 "both contact controls in reverse record order"
+for pair in 'rule erc.unconnected_net' 'tie substrate_vss' 'net vss'; do
+  read -r field wrong <<< "$pair"
+  name="erc-wrong-$field"
+  mk "$name"
+  ercmut "$name" "d['controls'][1]['verdict']['tie_findings'][0]['$field'] = '$wrong'" control
+  run "$name" 1 "wrong $field in the well contact finding"
+  named "$name" "well_tie_severed"
+done
+mk erc-oldbreak; ercmut erc-oldbreak 'd["controls"][0]["break_layer"] = "1/0"' control
+run erc-oldbreak 1 "substrate control removed diffusion instead of contacts"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -22,8 +22,8 @@
 #      its provenance and realization.json's out_of_scope is empty)
 #   9. klt erc      layout/lna_core/erc_spec.json  erc_report.json (T1 item-11
 #      supply evidence, #35) + the two negative controls that prove the tie
-#      declarations can fail (erc_break.py copies of the GDS with one tap
-#      diffusion deleted -> erc_control.json, assembled by erc_control.py,
+#      declarations can fail (erc_break.py copies of the GDS with one tap's
+#      contacts removed -> erc_control.json, assembled by erc_control.py,
 #      which fails unless each control flips the verdict to violations)
 #
 # klt: the PyPI *release* named below, run isolated through uvx so the
@@ -109,15 +109,15 @@ fi
 echo "run_flow: klt erc -> erc_report.json (exit ${erc_rc})"
 
 # Negative controls: one broken copy per declared tie. A clean supply verdict
-# is only evidence if the same invocation rejects a stream whose tap is gone,
+# is only evidence if the same invocation rejects a stream whose tap has lost its contacts,
 # so erc_control.py fails the flow when a control does not move the verdict.
 ERC_SCRATCH="${LAYOUT_DIR}/build/erc"
 mkdir -p "${ERC_SCRATCH}"
 erc_one_control() {
-  local name="$1" layer="$2" box="$3"
+  local name="$1" box="$2"
   local broken="${ERC_SCRATCH}/broken_${name}.gds"
   "${PYTHON}" "${LAYOUT_DIR}/erc_break.py" \
-    layout/lna_core/lna_core.gds "${broken}" "${layer}" "${box}" > /dev/null
+    layout/lna_core/lna_core.gds "${broken}" 6/0 "${box}" > /dev/null
   local crc=0
   "${KLT_CMD[@]}" erc "${broken}" "${ERC_SPEC}" --top lna_core \
     --deck sg13g2 --format json > "${ERC_SCRATCH}/control_${name}.json" || crc=$?
@@ -126,8 +126,8 @@ erc_one_control() {
     exit "${crc}"
   fi
 }
-erc_one_control substrate 1/0 "-59.5,-8.9,22.5,-7.1"
-erc_one_control well      1/0 "-1000.5,141.5,-967.5,143.2"
+erc_one_control substrate "-59.5,-8.9,22.5,-7.1"
+erc_one_control well      "-1000.5,141.5,-967.5,143.2"
 python3 -I "${LAYOUT_DIR}/erc_control.py" "${REPO_ROOT}" \
   "${ERC_SCRATCH}/control_substrate.json" "${ERC_SCRATCH}/control_well.json"
 

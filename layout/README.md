@@ -708,9 +708,9 @@ bodies, and excluding them is what keeps `e1`/`outn` from merging into
 `vss`/`vdd` in the supply graph (the extraction report's
 `merged_net_labels` is the deck's full-layer view, a different question).
 
-**The two ties, and which halves rest on caller assertions.** The issue's
-own honesty rule — "record which taps are asserted versus disclosed" —
-applied to what this PDK actually draws:
+**Well and substrate ties.** Both ties specify `connect_to: Activ`. From
+the tap diffusion, the supply graph reaches Metal1 through a drawn ContAct
+cut (6/0). Each tie also declares how ERC identifies its well and tap.
 
 - `substrate_vss`: the substrate is not a drawn layer, so the tie uses the
   native-substrate form (`well_layer: null` + `well_boxes`): two disjoint
@@ -742,18 +742,19 @@ HBT bodies), and the design draws exactly two substrate taps — both
 asserted (verified against `generate.py`, which instantiates `ptap1` twice
 and `ntap1` twice).
 
-**Negative controls (`erc_control.json`).** A clean verdict is only
-evidence if the same invocation rejects a broken stream, so the flow runs
-two: `erc_break.py` deletes the Activ of the core `ptap1` strip in one
-scratch copy (63.14 µm² — the strip exactly) and of the bias `ntap1` in
-the other (24.71 µm²). Each flips `erc_status` to `violations` with
-exactly one finding, `erc.missing_tie` naming the severed tie on its net
-(`substrate_vss`/`vss`, `nwell_vdd`/`vdd`), leaving both supplies' metal
-islands at one — the finding is genuinely about the tie. `erc_control.py`
-writes the side-by-side record and fails the flow unless both controls
-reject; its unit tests (`layout/tests/test_erc_control.py`, PDK-free) pin
-that contract, including the control that stays clean and the one naming
-the wrong tie.
+**Negative controls (`erc_control.json`).** The flow removes only the
+ContAct cuts (6/0) from one tap in each scratch GDS. The diffusion and
+overlapping Metal1 remain in place.
+
+| Tap | Contacts removed | Finding |
+| --- | ---: | --- |
+| Core `ptap1` | 476 | `erc.missing_tie` for `substrate_vss` on `vss` |
+| Bias `ntap1` | 186 | `erc.missing_tie` for `nwell_vdd` on `vdd` |
+
+Each run reports exactly one finding and one metal island per supply.
+`erc_control.py` records the verdicts and fails the flow unless each
+broken layout reports its expected tie and net. The control regression
+tests are in `layout/tests/test_erc_control.py`.
 
 The envelope is deterministic for the pinned toolchain (two runs
 byte-identical) and pins both inputs: `provenance.input.content_hash` is
@@ -903,9 +904,9 @@ evidence (the partial-scope guard above still applies);
    resolves; its committed verdict is `erc_status: "clean"`; `erc_spec.json`
    declares exactly the netlist's two supply ports (`vdd`, `vss`) with
    `ties[]`; and `erc_control.json` is a schema-1 record with
-   `rejected: true` whose two controls each flipped to `violations`. A
-   spec edited after the run, a violating committed run, or a control that
-   stopped rejecting fails here rather than backing the item-11 citation.
+   `rejected: true`. It must contain one contact-removal control for each
+   of the substrate and well taps. Each must report `violations` with an
+   `erc.missing_tie` finding naming its expected tie and supply.
 
 Regenerating the GDS and re-running the reports stays a deliberate local
 step (`layout/run_flow.sh`); CI only checks that the committed files agree.

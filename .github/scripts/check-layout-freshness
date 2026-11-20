@@ -46,7 +46,7 @@
 #      committed verdict is erc_status clean, erc_spec.json declares
 #      exactly the netlist's two supply ports with ties[], and
 #      erc_control.json is a schema-1 record with rejected true -- both
-#      negative controls flipped the verdict to violations
+#      contact controls recorded erc.missing_tie for their own tie and net
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -420,7 +420,7 @@ def check_erc_evidence():
     if rep is None:
         fail(rep_rel, "missing (regenerate with layout/run_flow.sh)")
         return
-    spec = load(cd / spec_name) if (cd / spec_name).is_file() else None
+    spec = load(cd / spec_name)
     ctrl = load(cd / ctrl_name) if (cd / ctrl_name).is_file() else None
     # paths the envelope names must be the repo-relative committed paths:
     # klt signoff's grader resolves them from the repo root
@@ -438,11 +438,12 @@ def check_erc_evidence():
         ch = sp.get("content_hash")
         if not isinstance(ch, str) or not ch.startswith("sha256:"):
             fail(rep_rel, f"provenance.spec.content_hash malformed ({ch!r})")
-        elif (cd / spec_name).is_file() \
-                and ch[len("sha256:"):] != sha(cd / spec_name):
+        elif isinstance(spec, dict) and ch[len("sha256:"):] != sha(cd / spec_name):
             fail(rep_rel, f"provenance.spec.content_hash {ch} != sha256 of committed "
                  f"{spec_rel}; the spec changed after this run -- rerun layout/run_flow.sh")
-    if spec is not None:
+    if not isinstance(spec, dict):
+        fail(spec_rel, "expected a supply spec object")
+    else:
         nets = spec.get("nets")
         supplies = sorted(n.get("name") for n in nets
                           if isinstance(n, dict) and n.get("kind") == "supply") \
@@ -463,17 +464,35 @@ def check_erc_evidence():
              "verdict cannot back the item-11 citation")
     if (ctrl.get("committed_layout") or {}).get("erc_status") != "clean":
         fail(ctrl_rel, "committed_layout.erc_status is not 'clean'")
+    expected_controls = {
+        "substrate_tie_severed": ("substrate_vss", "vss"),
+        "well_tie_severed": ("nwell_vdd", "vdd"),
+    }
     controls = ctrl.get("controls")
     n_controls = len(controls) if isinstance(controls, list) else None
-    if not isinstance(controls, list) or n_controls != 2:
+    if n_controls != len(expected_controls):
         fail(ctrl_rel, f"controls is {type(controls).__name__} len "
              f"{n_controls}, want 2")
     else:
-        for c in controls:
-            name = c.get("name")
-            if c.get("rejected") is not True \
-                    or (c.get("verdict") or {}).get("erc_status") != "violations":
+        for name, (tie, net) in expected_controls.items():
+            matches = [c for c in controls if isinstance(c, dict) and c.get("name") == name]
+            if len(matches) != 1:
+                fail(ctrl_rel, f"expected one {name} control, found {len(matches)}")
+                continue
+            control = matches[0]
+            if control.get("break_layer") != "6/0":
+                fail(ctrl_rel, f"{name} must remove contacts on 6/0")
+            verdict = control.get("verdict")
+            if control.get("rejected") is not True or not isinstance(verdict, dict) \
+                    or verdict.get("erc_status") != "violations":
                 fail(ctrl_rel, f"control {name!r} did not flip to violations")
+                continue
+            findings = verdict.get("tie_findings")
+            if not isinstance(findings, list) or not any(
+                isinstance(f, dict) and f.get("rule") == "erc.missing_tie"
+                and f.get("tie") == tie and f.get("net") == net for f in findings
+            ):
+                fail(ctrl_rel, f"{name} lacks an erc.missing_tie finding for {tie} on {net}")
     if ctrl.get("file") != f"layout/{cell}/{cell}.gds" \
             or ctrl.get("spec") != f"layout/{cell}/{spec_name}":
         fail(ctrl_rel, "file/spec do not name the committed GDS and spec")

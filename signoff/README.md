@@ -119,7 +119,7 @@ down as follows:
   (`erc_status: "clean"`, both supplies one electrical island, both tie
   declarations checked, zero findings — see `layout/README.md` →
   "ERC supply evidence (issue #35)" for the spec, the assertion forms it
-  uses, and the two negative controls that prove it can fail); the LVS
+  uses, and the two contact-removal controls for the substrate and well taps); the LVS
   part is item 4's own `lvs_full_report.json`, re-cited by the item-11
   entry as the grading's compound set requires. Both parts pin the same
   GDS hash. The row renders `unmet`/`lvs_did_not_pass`, with

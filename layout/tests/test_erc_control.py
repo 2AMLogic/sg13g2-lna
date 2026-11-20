@@ -88,6 +88,7 @@ class ErcControlTest(unittest.TestCase):
         self.assertEqual(len(rec["controls"]), 2)
         for c, tie in zip(rec["controls"], ("substrate_vss", "nwell_vdd")):
             self.assertTrue(c["rejected"])
+            self.assertEqual(c["break_layer"], "6/0")
             self.assertEqual(c["verdict"]["tie_findings"][0]["tie"], tie)
         self.assertIn("VERIFIED", rec["evidence"])
         self.assertEqual(rec["file"], "layout/lna_core/lna_core.gds")
@@ -127,6 +128,13 @@ class ErcControlTest(unittest.TestCase):
         rc, _ = self.run_main()
         self.assertEqual(rc, 1)
         self.assertFalse(self.record()["rejected"])
+
+    def test_finding_without_rule_fails_even_with_expected_tie(self):
+        findings = [missing_tie("nwell_vdd", "vdd"), {"net": "vdd"}]
+        self.well_path.write_text(json.dumps(envelope("violations", findings, [])))
+        rc, _ = self.run_main()
+        self.assertEqual(rc, 1)
+        self.assertFalse(self.record()["controls"][1]["rejected"])
 
     def test_intact_run_not_clean_fails(self):
         self.cd.joinpath("erc_report.json").write_text(

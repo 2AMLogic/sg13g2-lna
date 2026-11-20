@@ -126,7 +126,7 @@
       "tap_layer": "1/0",
       "tap_requires": ["14/0"],
       "tap_is_dedicated": true,
-      "connect_to": "Metal1",
+      "connect_to": "Activ",
       "net": "vss"
     },
     {
@@ -137,7 +137,7 @@
         [-70.0, 28.0, -25.54, 28.78],
         [-1000.0, 142.0, -968.32, 142.78]
       ],
-      "connect_to": "Metal1",
+      "connect_to": "Activ",
       "net": "vdd"
     }
   ]
