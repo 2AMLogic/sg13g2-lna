@@ -2,7 +2,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:33668673bfc5b5c324836b03e3e0b60f1139bdb5206b2a81e4e4419330f52f1f",
+      "content_hash": "sha256:c4528bd8ddccc2d9130218e51548a6a6965705d387a5a10e65b9c8bb307a1620",
       "path": "signoff/testbench-inventory.json"
     }
   },
