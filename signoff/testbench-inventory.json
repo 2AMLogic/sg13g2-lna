@@ -2641,7 +2641,7 @@
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
-    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:4bf271b75eb7d931eedfd0b83cf22215550720f6d8f4f3aec90109d4b2bf3db8",
+    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:9cdf81207447ff45d2b3dbecb14b27b5ac29730383b88b818bcc4f4dbe50a854",
     "sim/lna-characterization/tests/test_parse_lna_sweep.py": "sha256:74c51ddb3986ef22621369934904d114aca102a478292a2212c628ab2c4fbbc4",
     "sim/lna-characterization/tests/test_render_results.py": "sha256:dade5ce6c7e80f1b4335f02bc9fe4c3d33c00b6d6c0fe3c16ea618e188291c8c",
     "sim/lna-characterization/views/20260926-122301-088c734-nfmin290.csv": "sha256:f419185943f2d86a25f14b93954d2daca8d3c6358227ad6b14b814d3497eaaf7",
