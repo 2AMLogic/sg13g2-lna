@@ -2734,7 +2734,7 @@
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
     "sim/pdk.json": "sha256:d485b20e5040c061087b6b20b62c5f22d65ed15744175e5075b7a67964bf8175",
     "sim/tests/test-core-envelope-lifecycle.sh": "sha256:a0ca3e20a5e0b3c357bca4692552308d3847804b641eac81b85bf97c18de5ddf",
-    "sim/tools/build-osdi.sh": "sha256:0afd6b491ca988739591a1cf93928e9c9c1a17d23df0dc26c3434c87edb49949",
+    "sim/tools/build-osdi.sh": "sha256:fc971eee41ecf6285afbc2ec1aa34ea856ce0a8ec416cb15d05bce9ed1c94f21",
     "sim/tools/pdk_identity.py": "sha256:49e8ecc6b88970eb8b0ced39d8f7b302e0455d7e4cffe162a8536d8b2416a67b",
     "sim/tools/reducer_common.py": "sha256:3e4a2ba7f79c70bf22544c17ddf76dfefdc08c137b84d79d02601a1f79cc119a",
     "spec/ratified-rows.json": "sha256:b36eb0219c9a23fc450d592c18712ee70457842a94ecf157b56786a9f689eb36"
