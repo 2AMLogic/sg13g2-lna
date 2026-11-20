@@ -1,4 +1,4 @@
-"""Unit tests for layout/erc_control.py (issue #35).
+"""Unit tests for layout/erc_control.py (issues #35, #438).
 
 Pins the negative-control contract: the record is written ``rejected: true``
 and exits 0 only when the committed run is clean with both tie declarations
@@ -7,8 +7,12 @@ checked and each broken stream flipped to violations with an
 shape -- an intact run that is not clean, a control that stayed clean, a
 control whose findings name the wrong tie -- writes ``rejected: false`` and
 exits 1, so a control that cannot fail can never back the item-11 citation.
-Stdlib only: no klt, no klayout, no PDK. Fixtures are minimal stand-in ERC
-envelopes in a temp repo root laid out as <root>/layout/lna_core/.
+Issue #438 adds the single-declaration contract: run_flow.sh must perform
+each break with the layer/box ``--print-controls`` emits from CONTROLS, so
+the ``break_layer`` in erc_control.json is the layer that was broken, not an
+independently edited literal. Stdlib only: no klt, no klayout, no PDK.
+Fixtures are minimal stand-in ERC envelopes in a temp repo root laid out as
+<root>/layout/lna_core/.
 
 Run from the repo root:
     python3 -I -m unittest discover -s layout/tests -v
@@ -19,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -157,6 +162,92 @@ class ErcControlTest(unittest.TestCase):
 
     def test_bad_argument_count_is_usage_error(self):
         self.assertEqual(erc_control.main(["erc_control.py"]), 2)
+
+
+FLOW = Path(__file__).resolve().parent.parent / "run_flow.sh"
+
+
+def erc_break_call(text: str) -> str:
+    """run_flow.sh's erc_break.py invocation as one logical line."""
+    joined = re.sub(r"\\\n\s*", " ", text)
+    lines = [ln for ln in joined.splitlines() if "erc_break.py\"" in ln]
+    return lines[0] if lines else ""
+
+
+def flow_wiring_errors(text: str) -> list[str]:
+    """Why run_flow.sh's control wiring could let the performed break drift
+    from the recorded one (issue #438). The flow must source each control's
+    name/layer/box from erc_control.py's CONTROLS via --print-controls and
+    hand the loop's variables to erc_break.py -- any literal re-declaration
+    is a second source of truth for the break layer."""
+    errors = []
+    if "--print-controls" not in text:
+        errors.append("controls not sourced from erc_control.py --print-controls")
+    call = erc_break_call(text)
+    if not call:
+        errors.append("no erc_break.py invocation")
+        return errors
+    if '"${layer}"' not in call:
+        errors.append("erc_break.py layer is not the loop's ${layer}")
+    if '"${box}"' not in call:
+        errors.append("erc_break.py box is not the loop's ${box}")
+    literal = re.search(r"\d+/\d+", call)
+    if literal:
+        errors.append(f"erc_break.py re-declares layer {literal.group()!r}")
+    return errors
+
+
+class PrintControlsTest(unittest.TestCase):
+    """--print-controls is what run_flow.sh consumes, so its lines must
+    carry exactly what CONTROLS declares, in the form erc_break.py parses."""
+
+    def test_emits_name_layer_box_per_control(self):
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            rc = erc_control.main(["erc_control.py", "--print-controls"])
+        self.assertEqual(rc, 0)
+        lines = stdout.getvalue().splitlines()
+        self.assertEqual(len(lines), len(erc_control.CONTROLS))
+        for line, spec in zip(lines, erc_control.CONTROLS):
+            name, layer, box = line.split("\t")
+            self.assertEqual(name, spec["name"])
+            self.assertEqual(layer, spec["break_layer"])
+            values = box.split(",")
+            self.assertEqual(len(values), 4)
+            for got, want in zip(values, spec["box"]):
+                self.assertEqual(float(got), want)
+
+    def test_unknown_single_argument_is_usage_error(self):
+        self.assertEqual(erc_control.main(["erc_control.py", "--print-boxes"]), 2)
+
+
+class RunFlowWiringTest(unittest.TestCase):
+    """The layer erc_break.py performs must come from erc_control.py's
+    CONTROLS (via --print-controls), so the break_layer written into
+    erc_control.json cannot drift from the break that was performed."""
+
+    def setUp(self):
+        self.flow = FLOW.read_text()
+
+    def test_flow_sources_break_from_controls(self):
+        self.assertEqual(flow_wiring_errors(self.flow), [])
+
+    def test_redeclared_performed_layer_fails(self):
+        # reintroduce the pre-#438 drift: the flow breaks diffusion on 1/0
+        # while CONTROLS -- what erc_control.json records -- says 6/0
+        drifted = self.flow.replace('"${layer}"', "1/0")
+        self.assertNotEqual(drifted, self.flow)
+        self.assertTrue(flow_wiring_errors(drifted))
+
+    def test_flow_without_print_controls_fails(self):
+        drifted = self.flow.replace(" --print-controls", "")
+        self.assertNotEqual(drifted, self.flow)
+        self.assertTrue(flow_wiring_errors(drifted))
+
+    def test_redeclared_performed_box_fails(self):
+        drifted = self.flow.replace('"${box}"', '"-59.5,-8.9,22.5,-7.1"')
+        self.assertNotEqual(drifted, self.flow)
+        self.assertTrue(flow_wiring_errors(drifted))
 
 
 if __name__ == "__main__":

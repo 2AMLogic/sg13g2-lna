@@ -3,6 +3,7 @@
 for the T1 item-11 `klt erc` supply evidence (issue #35).
 
     python3 layout/erc_control.py <repo-root> <control-substrate.json> <control-well.json>
+    python3 layout/erc_control.py --print-controls
 
 A clean supply verdict is only evidence if the same invocation REJECTS a
 stream whose tie is actually severed, so `layout/run_flow.sh` re-runs the
@@ -12,6 +13,13 @@ substrate strip (the tap no longer reaches the `vss` rail) and under the
 bias `ntap1` well tap (no longer reaches `vdd`). This script reads the intact
 envelope (`layout/lna_core/erc_report.json`) plus the two control envelopes
 the flow just produced, and writes the committed side-by-side record.
+
+What each control breaks, and where, is declared once, in `CONTROLS` below:
+run_flow.sh's control loop consumes `--print-controls` (one
+`name<TAB>layer<TAB>box` line per control) and hands those values to
+`erc_break.py`, so the `break_layer` this record writes is the layer the
+flow actually broke (issue #438) -- there is no second, independently
+edited literal to drift out of sync.
 
 `status` is derived, never hand-set: the record is written `rejected: true`
 only when the committed layout is `erc_status: "clean"` with both tie
@@ -92,7 +100,20 @@ def tie_checked(env: dict, tie: str) -> bool:
     return checked and not skipped
 
 
+def print_controls() -> int:
+    """Emit one `name<TAB>layer<TAB>box` line per control -- the single
+    declaration run_flow.sh's control loop consumes (issue #438), so the
+    layer recorded in erc_control.json and the layer handed to erc_break.py
+    are the same value."""
+    for spec in CONTROLS:
+        box = ",".join(str(v) for v in spec["box"])
+        print(f"{spec['name']}\t{spec['break_layer']}\t{box}")
+    return 0
+
+
 def main(argv: list[str]) -> int:
+    if argv[1:] == ["--print-controls"]:
+        return print_controls()
     if len(argv) != 4:
         print(__doc__, file=sys.stderr)
         return 2
