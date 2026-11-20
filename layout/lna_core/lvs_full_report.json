@@ -185,11 +185,10 @@
       ]
     }
   ],
-  "mismatch_count": 25,
+  "mismatch_count": 23,
   "error_count": 15,
   "category_counts": {
     "device.geometry_not_compared": 5,
-    "net.supply_fragmented": 2,
     "reference.unresolved_subckt_call": 6,
     "topology": 11,
     "topology.hierarchy_mismatch": 1
@@ -200,7 +199,7 @@
   },
   "counts": {
     "nets": {
-      "layout": 34,
+      "layout": 18,
       "reference": 23,
       "matched": 0
     },
@@ -210,7 +209,7 @@
       "matched": 0
     },
     "pins": {
-      "layout": 34,
+      "layout": 18,
       "reference": 0,
       "matched": 0
     }
@@ -230,7 +229,7 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
+    "layout_sha256": "c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
     "reference_sha256": "151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "extracted_netlist": null
   },
@@ -246,7 +245,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -395,50 +394,6 @@
         "reference_devices": 0
       },
       "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.supply_fragmented",
-      "severity": "warning",
-      "description": "supply 'VDD' spans 3 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
-      "side": "layout",
-      "net": {
-        "layout": "VDD",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": {
-        "supply": "VDD",
-        "fragment_count": 3
-      },
-      "circuit": {
-        "layout": "lna_core",
-        "reference": null
-      },
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.supply_fragmented",
-      "severity": "warning",
-      "description": "supply 'VSS' spans 4 disconnected layout nets in circuit 'lna_core'; connect the supply grid or configure options.supply_nets for this design's domains. A signal-topology match does not verify power delivery.",
-      "side": "layout",
-      "net": {
-        "layout": "VSS",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": {
-        "supply": "VSS",
-        "fragment_count": 4
-      },
-      "circuit": {
-        "layout": "lna_core",
-        "reference": null
-      },
       "instance": null,
       "subcircuit": null
     },

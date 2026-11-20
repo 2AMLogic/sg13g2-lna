@@ -17,6 +17,9 @@
 #      report to its GDS, reference and request bytes (issue #130). It runs only
 #      after the tool invocation succeeded; set -e means a failed klt never
 #      reaches it, so an old report is never re-attested.
+#   8. layout/item2_envelope.py            item2.envelope.json (T1 item-2 generic
+#      envelope pinning the GDS by hash, #228; fails unless the GDS re-hashes to
+#      its provenance and realization.json's out_of_scope is empty)
 #
 # klt: the PyPI *release* named below, run isolated through uvx so the
 # evidence is graded by a tagged build regardless of whatever klt a host has
@@ -77,5 +80,6 @@ run_klt "${CELL_DIR}/drc_report.json" drc lna_core.gds --deck sg13g2
 run_klt "${CELL_DIR}/extract_report.json" extract lna_core.gds --deck sg13g2 -o lna_core.extracted.spice
 run_lvs lvs_report.json lvs_request.json
 run_lvs lvs_full_report.json lvs_full_request.json
+python3 -I "${LAYOUT_DIR}/item2_envelope.py" "${REPO_ROOT}"
 
 echo "run_flow: done (repo ${REPO_ROOT})"

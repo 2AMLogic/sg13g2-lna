@@ -73,6 +73,7 @@
       "8/2",
       "8/23",
       "8/25",
+      "9/0",
       "10/2",
       "10/23",
       "10/25",
@@ -85,6 +86,7 @@
       "31/2",
       "33/0",
       "40/0",
+      "41/0",
       "44/0",
       "46/21",
       "50/23",
@@ -98,6 +100,7 @@
       "128/0",
       "129/0",
       "134/23",
+      "134/25",
       "148/0"
     ],
     "rules_checked": [
@@ -303,7 +306,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:4e1ef0aec6cc7d706e7eeb1557ba52479dc1b80ae35fa11e5454beacc2348d33",
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
       "role": "layout"
     },
     "klayout_version_mismatch": false
