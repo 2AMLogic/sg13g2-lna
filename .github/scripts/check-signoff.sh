@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # check-signoff.sh — keep the committed klt signoff verdict-of-record
-# honest.
+# honest, and keep its T1 evidence intact.
 #
 # Re-renders the T1-T4 tier report from the committed block manifest and
 # the vendored design-evidence-tiers doc, then compares the fresh render
@@ -25,28 +25,55 @@
 # After the render, check-signoff-scope.py rejects a `met` item 2/3/4 row
 # whose cited layout evidence covers only part of the block (issue #80).
 #
+# With --base REF (CI's pull-request and merge-group runs, issue #446)
+# the gate additionally compares the fresh render's T1 rows against the
+# committed report at the merge base of REF: any T1 item that was `met`
+# there and is not `met` now fails the run, named by id with its new
+# status and reason. A gain on another item cannot cancel a loss, and
+# faithfully regenerating the record of your own regression is not
+# enough (the PR #444 shape). A deliberate downgrade is opt-in: a NEW
+# entry under "## Acknowledged T1 downgrades" in signoff/README.md
+# naming the T1 item and the reason acknowledges exactly that item,
+# once; entries that already exist at the base, and entries for other
+# items, authorize nothing. A baseline that cannot be resolved, read or
+# parsed fails with a diagnostic, never a silent skip. Without --base
+# (pushes to main, standalone freshness checks) no comparison runs.
+#
 # Requirements: klt on PATH (see signoff/README.md for the pinned
 # install). Headless — needs no PDK, no KLayout project, no network
-# beyond the pip install that put klt there.
+# beyond the pip install that put klt there. --base additionally needs
+# the repo's git history (CI checks out with fetch-depth: 0).
 
 set -u
 
 payload_rc=0
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-if [ "${1:-}" = "--root" ] && [ -n "${2:-}" ]; then
-  ROOT="$2"
-  shift 2
-fi
-
-MANIFEST="signoff/manifest.json"
-TIERS_DOC="signoff/design-evidence-tiers.md"
-RECORD="signoff/t1-report.json"
-
 fail() {
   echo "FAIL: $1" >&2
   exit 1
 }
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$HERE/../.."
+BASE=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --root)
+      [ $# -ge 2 ] || fail "usage: $0 [--root DIR] [--base REF]"
+      ROOT="$2"; shift 2 ;;
+    --base)
+      [ $# -ge 2 ] || fail "usage: $0 [--root DIR] [--base REF]"
+      [ -n "$2" ] || fail "--base requires a non-empty ref (an empty event payload fails closed)"
+      BASE="$2"; shift 2 ;;
+    *)
+      fail "unknown argument '$1' (usage: $0 [--root DIR] [--base REF])" ;;
+  esac
+done
+
+MANIFEST="signoff/manifest.json"
+TIERS_DOC="signoff/design-evidence-tiers.md"
+RECORD="signoff/t1-report.json"
+README_REL="signoff/README.md"
 
 command -v klt >/dev/null 2>&1 || \
   fail "klt not on PATH — install the pinned release (see signoff/README.md): python3 -m pip install klayout-tools==0.9.2"
@@ -58,7 +85,9 @@ cd "$ROOT" || fail "cannot cd to $ROOT"
 
 tmp="$(mktemp)"
 err="$(mktemp)"
-trap 'rm -f "$tmp" "$err"' EXIT
+base_rep=""
+base_read=""
+trap 'rm -f "$tmp" "$err" ${base_rep:+"$base_rep"} ${base_read:+"$base_read"}' EXIT
 
 klt signoff --manifest "$MANIFEST" --tiers-doc "$TIERS_DOC" --format json \
   >"$tmp" 2>"$err"
@@ -93,12 +122,125 @@ esac
 # Scope guard (issue #80): a met layout/DRC/LVS row must not be backed by
 # evidence for a partial cell. Reads the fresh render only to see whether a
 # row is `met`; never rewrites a verdict. Stdlib python, no PDK.
-HERE="$(cd "$(dirname "$0")" && pwd)"
 python3 -I "$HERE/check-signoff-scope.py" --root . \
   --manifest "$MANIFEST" --report "$tmp" >&2 || \
   fail "layout citation scope guard rejected the signoff evidence (see signoff-scope lines above)"
 
+# T1 met-regression gate (issue #446): compare the validated fresh render
+# against the committed report at the merge base of $BASE. Bash does the git
+# plumbing and fails closed on any baseline that cannot be resolved, read or
+# parsed; the python block does the per-item comparison and the
+# acknowledgement bookkeeping. Prints its own OK/NOTE/FAIL lines to stderr.
+compare_regression() {
+  git rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null 2>&1 \
+    || fail "--base '$BASE' does not resolve to a commit — fetch it with full history (CI checks out with fetch-depth: 0)"
+  MB="$(git merge-base "$BASE" HEAD 2>/dev/null)" \
+    || fail "no merge base between '$BASE' and HEAD (shallow clone? CI checks out with fetch-depth: 0)"
+  base_rep="$(mktemp)"
+  base_read="$(mktemp)"
+  git show "$MB:$RECORD" >"$base_rep" 2>/dev/null \
+    || fail "merge base ${MB:0:12} of '$BASE' has no $RECORD — a required baseline that cannot be read is a failure, not a skip"
+  # A merge base without signoff/README.md simply has no acknowledgement
+  # entries; every entry the candidate carries is then new.
+  git show "$MB:$README_REL" >"$base_read" 2>/dev/null || : >"$base_read"
+  python3 - "$base_rep" "$tmp" "$README_REL" "$base_read" "${MB:0:12}" "$BASE" <<'PY' || return 1
+import json, re, sys
+
+base_rep, cand_rep, readme_now, readme_base, mb, base_ref = sys.argv[1:7]
+
+def die(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+try:
+    base = json.load(open(base_rep))
+except ValueError as e:
+    die(f"FAIL: baseline signoff/t1-report.json at merge base {mb} of "
+        f"'{base_ref}' did not parse as JSON ({e}) — a required baseline "
+        "that cannot be read is a failure, not a skip")
+try:
+    cand = json.load(open(cand_rep))  # already validated by the payload gates
+except ValueError as e:  # pragma: no cover — the payload gate read it first
+    die(f"FAIL: fresh render did not parse ({e})")
+
+def t1_map(report, what):
+    items = report.get("items") if isinstance(report, dict) else None
+    if not isinstance(items, list):
+        die(f"FAIL: {what} report has no items[] list — cannot compare T1 rows")
+    out = {}
+    for it in items:
+        if isinstance(it, dict) and isinstance(it.get("id"), int):
+            out[it["id"]] = it  # T1 rows carry numeric ids; T2-T4 rows id null
+    return out
+
+b, c = t1_map(base, "baseline"), t1_map(cand, "fresh")
+
+ACK_HEADING = "## Acknowledged T1 downgrades"
+ACK_ENTRY = re.compile(r"^[-*] +T1 item (?P<item>[0-9]+)(?: +\(.+?\))?\s*:(?P<reason>.*)$")
+
+def ack_entries(path):
+    """Acknowledgement entry lines under the heading; a missing file has none."""
+    try:
+        lines = open(path).read().splitlines()
+    except OSError:
+        return set()
+    out, under = set(), False
+    for ln in lines:
+        if ln.startswith("## "):
+            under = ln.strip() == ACK_HEADING
+        elif under:
+            entry = ACK_ENTRY.fullmatch(ln)
+            if entry and any(ch.isalnum() for ch in entry["reason"]):
+                out.add((int(entry["item"]), ln.rstrip()))
+    return out
+
+new_entries = ack_entries(readme_now) - ack_entries(readme_base)
+entry_of = dict(sorted(new_entries))
+
+def label(i):
+    src = c.get(i) or b.get(i) or {}
+    t = src.get("title")
+    return f"item {i} ({t})" if isinstance(t, str) and t else f"item {i}"
+
+losses = []
+for i in sorted(set(b) | set(c)):
+    if b.get(i, {}).get("status") == "met" and c.get(i, {}).get("status") != "met":
+        losses.append((i, label(i), c.get(i, {}).get("status"), c.get(i, {}).get("reason")))
+
+if not losses:
+    print(f"OK: no T1 met-item regression vs merge base {mb} of '{base_ref}'", file=sys.stderr)
+    sys.exit(0)
+
+unacked = any(i not in entry_of for i, *_ in losses)
+if unacked:
+    print(f"FAIL: T1 met-item regression vs merge base {mb} of '{base_ref}' (issue #446):", file=sys.stderr)
+else:
+    print(f"NOTE: {len(losses)} T1 item(s) lost their met status vs merge base {mb} of "
+          f"'{base_ref}'; every loss is acknowledged by a new entry under "
+          f"\"{ACK_HEADING}\" in signoff/README.md:", file=sys.stderr)
+
+for i, lab, status, reason in losses:
+    r = f" (reason: {reason})" if reason else ""
+    mark = "acknowledged" if i in entry_of else "NOT acknowledged"
+    print(f"  {lab}: met -> {status or 'missing'}{r} [{mark}]", file=sys.stderr)
+    if i in entry_of:
+        print(f"    acknowledged by: {entry_of[i]}", file=sys.stderr)
+
+if unacked:
+    print("A T1 item that was met at the merge base may not become unmet silently,", file=sys.stderr)
+    print("and a gain on another item cannot cancel the loss. If the downgrade is", file=sys.stderr)
+    print(f"deliberate, add a NEW entry under \"{ACK_HEADING}\" in signoff/README.md", file=sys.stderr)
+    print("naming the T1 item and the reason — an entry that already exists at the", file=sys.stderr)
+    print("merge base, or one for a different item, authorizes nothing. Otherwise", file=sys.stderr)
+    print("repair the evidence and refresh the verdict of record.", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
 if cmp -s "$tmp" "$RECORD"; then
+  if [ -n "$BASE" ]; then
+    compare_regression || exit 1
+  fi
   met="$(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["t1_met_count"])' "$RECORD")"
   count="$(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["t1_item_count"])' "$RECORD")"
   echo "OK: signoff/t1-report.json matches the fresh klt render (T1: $met/$count items met; tier: $(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tier"])' "$RECORD"))"
