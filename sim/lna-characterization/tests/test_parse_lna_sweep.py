@@ -682,6 +682,35 @@ class Nf290Grid(GridHarness):
         write_nf_table(self.cd / f"{SP}.nf290.dat", nf=nf)  # lo/mid/hi 2.6 != log
         self.assertNotEqual(self.run_main("--strict"), 0)
 
+    def test_coverage_crosscheck_reuses_the_validated_log_parse(self):
+        # Issue #425: the 290 K cross-check consumes the measurements that
+        # validate_sp_log already returned; the lenient parse_sp_log is not
+        # re-run for a completed point (one log read, one parser).
+        calls = []
+        real = P.parse_sp_log
+        P.parse_sp_log = lambda path: calls.append(path) or real(path)
+        try:
+            self.assertEqual(self.run_main("--strict"), 0)
+        finally:
+            P.parse_sp_log = real
+        self.assertEqual(calls, [])
+        self.assertEqual(self.cov()["status"], "complete")
+
+    def test_mismatched_nf_upper_endpoint_names_point_and_table(self):
+        # Issue #425 regression check: a shortened nf290 upper endpoint is
+        # reported against the affected point and its .nf290.dat table.
+        f = grid_freqs("inband")
+        f[-1] = 2.4834e9  # still increasing, but off contract hi by ~4e-5 rel
+        write_nf_table(self.cd / f"{SP}.nf290.dat", freqs=f)
+        self.assertEqual(self.run_main("--strict"), P.STRICT_EXIT_BASE + P.EXIT_GRID)
+        c = self.cov()
+        self.assertEqual(c["status"], "partial")
+        hits = [g for g in c["invalid_grids"] if g["artifact"] == f"{SP}.nf290.dat"]
+        self.assertEqual(len(hits), 2, c["invalid_grids"])
+        self.assertEqual({g["point"] for g in hits}, {SP})
+        self.assertIn("upper endpoint", hits[0]["reason"])
+        self.assertNotIn(SP, c["completed"])
+
     def test_denser_grid_via_manifest(self):
         n = 21
         self.manifest.write_text(
