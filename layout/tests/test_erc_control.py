@@ -23,7 +23,9 @@ from __future__ import annotations
 import contextlib
 import io
 import json
-import re
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -164,39 +166,6 @@ class ErcControlTest(unittest.TestCase):
         self.assertEqual(erc_control.main(["erc_control.py"]), 2)
 
 
-FLOW = Path(__file__).resolve().parent.parent / "run_flow.sh"
-
-
-def erc_break_call(text: str) -> str:
-    """run_flow.sh's erc_break.py invocation as one logical line."""
-    joined = re.sub(r"\\\n\s*", " ", text)
-    lines = [ln for ln in joined.splitlines() if "erc_break.py\"" in ln]
-    return lines[0] if lines else ""
-
-
-def flow_wiring_errors(text: str) -> list[str]:
-    """Why run_flow.sh's control wiring could let the performed break drift
-    from the recorded one (issue #438). The flow must source each control's
-    name/layer/box from erc_control.py's CONTROLS via --print-controls and
-    hand the loop's variables to erc_break.py -- any literal re-declaration
-    is a second source of truth for the break layer."""
-    errors = []
-    if "--print-controls" not in text:
-        errors.append("controls not sourced from erc_control.py --print-controls")
-    call = erc_break_call(text)
-    if not call:
-        errors.append("no erc_break.py invocation")
-        return errors
-    if '"${layer}"' not in call:
-        errors.append("erc_break.py layer is not the loop's ${layer}")
-    if '"${box}"' not in call:
-        errors.append("erc_break.py box is not the loop's ${box}")
-    literal = re.search(r"\d+/\d+", call)
-    if literal:
-        errors.append(f"erc_break.py re-declares layer {literal.group()!r}")
-    return errors
-
-
 class PrintControlsTest(unittest.TestCase):
     """--print-controls is what run_flow.sh consumes, so its lines must
     carry exactly what CONTROLS declares, in the form erc_break.py parses."""
@@ -226,28 +195,78 @@ class RunFlowWiringTest(unittest.TestCase):
     CONTROLS (via --print-controls), so the break_layer written into
     erc_control.json cannot drift from the break that was performed."""
 
-    def setUp(self):
-        self.flow = FLOW.read_text()
+    def test_performed_breaks_match_assembled_record(self):
+        source = Path(erc_control.__file__).parent
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            layout = root / "layout"
+            cell = layout / "lna_core"
+            cell.mkdir(parents=True)
+            shutil.copyfile(source / "run_flow.sh", layout / "run_flow.sh")
 
-    def test_flow_sources_break_from_controls(self):
-        self.assertEqual(flow_wiring_errors(self.flow), [])
+            # Earlier flow steps do not contribute to the ERC record.
+            (layout / "tools").mkdir()
+            (layout / "tools/fetch-pcell-deps.sh").symlink_to(shutil.which("true"))
+            for script in (
+                "lna_core/generate.py",
+                "lvs_reference.py",
+                "inductance_report.py",
+                "lvs_identity.py",
+                "item2_envelope.py",
+            ):
+                (layout / script).touch()
 
-    def test_redeclared_performed_layer_fails(self):
-        # reintroduce the pre-#438 drift: the flow breaks diffusion on 1/0
-        # while CONTROLS -- what erc_control.json records -- says 6/0
-        drifted = self.flow.replace('"${layer}"', "1/0")
-        self.assertNotEqual(drifted, self.flow)
-        self.assertTrue(flow_wiring_errors(drifted))
+            # Use the real printer and assembler. Distinct inputs for the second
+            # control also expose a caller that hardcodes today's production values.
+            (layout / "erc_control.py").write_text(
+                "import runpy, sys\n"
+                f"control = runpy.run_path({str(source / 'erc_control.py')!r})\n"
+                "control['CONTROLS'][1].update(break_layer='7/0', box=[1, 2, 3, 4])\n"
+                "sys.exit(control['main'](sys.argv))\n"
+            )
+            (layout / "erc_break.py").write_text(
+                "import json, sys\n"
+                "from pathlib import Path\n"
+                "_, source, target, layer, box = sys.argv\n"
+                "call = [Path(target).name, layer, [float(v) for v in box.split(',')]]\n"
+                "with open('breaks.jsonl', 'a') as calls:\n"
+                "    print(json.dumps(call), file=calls)\n"
+            )
 
-    def test_flow_without_print_controls_fails(self):
-        drifted = self.flow.replace(" --print-controls", "")
-        self.assertNotEqual(drifted, self.flow)
-        self.assertTrue(flow_wiring_errors(drifted))
+            # Supply the same ERC verdict for each stream even if the loop breaks
+            # the wrong layer. Only the arguments captured above can detect that.
+            for stream, report in (
+                ("lna_core.gds", INTACT),
+                ("broken_substrate_tie_severed.gds", SUBSTRATE_BROKEN),
+                ("broken_well_tie_severed.gds", WELL_BROKEN),
+            ):
+                (root / f"{stream}.json").write_text(json.dumps(report))
+            (root / "stub-klt").write_text(
+                'if [ "$1" = erc ] && [ "$2" != --validate-spec ]; then\n'
+                '    cat "${2##*/}.json"\n'
+                'fi\n'
+            )
+            env = {
+                **os.environ,
+                "KLT": "bash stub-klt",
+                "PYTHON": sys.executable,
+                "PATH": os.pathsep.join((str(root), os.environ["PATH"])),
+            }
+            run = subprocess.run(
+                ["bash", layout / "run_flow.sh"], cwd=root, env=env,
+                capture_output=True, text=True, timeout=30,
+            )
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
-    def test_redeclared_performed_box_fails(self):
-        drifted = self.flow.replace('"${box}"', '"-59.5,-8.9,22.5,-7.1"')
-        self.assertNotEqual(drifted, self.flow)
-        self.assertTrue(flow_wiring_errors(drifted))
+            record = json.loads((cell / "erc_control.json").read_text())
+            self.assertTrue(record["rejected"])
+            with (root / "breaks.jsonl").open() as calls:
+                performed = [json.loads(line) for line in calls]
+            recorded = [
+                [f"broken_{control['name']}.gds", control["break_layer"], control["box"]]
+                for control in record["controls"]
+            ]
+            self.assertCountEqual(performed, recorded)
 
 
 if __name__ == "__main__":
