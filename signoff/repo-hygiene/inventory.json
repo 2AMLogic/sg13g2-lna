@@ -49,9 +49,9 @@
       "sha256": "sha256:02754a5332cbcb1f087fbf1e59ff15f2626cf1478431dd93ea49724511637bc3"
     },
     ".github/scripts/check-testbench-inventory.py": {
-      "bytes": 28009,
+      "bytes": 27874,
       "role": "script of a declared CI command",
-      "sha256": "sha256:113ad302c817ee5a0c1afe37252b39ef0cc681c485e9d1307a132544f1bb7ecf"
+      "sha256": "sha256:456c4a8f4ffc14b62b3f9003b9ee60c3b2493923359fe404f49e998b643948bf"
     },
     ".github/scripts/test-characterization-report.sh": {
       "bytes": 13306,
