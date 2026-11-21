@@ -609,13 +609,12 @@ def _semver(s: str):
 
 
 def check_client_floor(version_text: str) -> None:
-    floor = json.loads(PDK_JSON.read_text())["klt_variant_campaign"]["min_version"]
-    have, need = _semver(version_text), _semver(floor)
-    if have is None:
-        raise SystemExit(f"cannot parse a klt version from {version_text!r}; need >= {floor}")
-    if have < need:
-        raise SystemExit(f"klt {'.'.join(map(str, have))} is older than the floor {floor} "
-                         "(sim/pdk.json klt_variant_campaign.min_version)")
+    # The ONE shared client version-floor preflight lives in
+    # lna_variant_campaign.check_client_floor (issue #475): same floor, same
+    # feature diagnostic, same comparison as run_lna_variant.sh and
+    # run_lna_iip3.sh. The runner label names this campaign's shell entry
+    # point, which maps the nonzero exit to exit 3 before request generation.
+    LVC.check_client_floor(version_text, "run_core_envelope_campaign.sh")
 
 
 def main(argv=None):
