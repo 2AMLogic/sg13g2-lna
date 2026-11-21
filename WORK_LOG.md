@@ -6,6 +6,8 @@
 
 ### 2026-11-20
 
+- **Issue #470** (closed): chore: gitignore the runtime-owned .loom/account-ranking.* state files
+- **PR #473**: chore: ignore runtime-owned .loom/account-ranking.* state files
 - **Issue #461** (closed): Remove the unusable dpkg-deb workaround from the OSDI build error
 - **PR #469**: fix: drop the unusable dpkg-deb workaround from the OSDI build error
 - **Issue #438** (closed): ERC negative-control break layer is declared twice: run_flow.sh hardcodes 6/0, erc_control.py records its own constant
