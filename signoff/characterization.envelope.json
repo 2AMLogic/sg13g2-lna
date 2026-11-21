@@ -2,7 +2,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:b0030e993619af4bde31dabba240bfcc593af23f65234f375a487935599b15ee",
+      "content_hash": "sha256:9b8b304cabc92040cc8fcc77d0d75a52fc76cfa6bbf1f17ddf4ccd1a024fa61f",
       "path": "measurements/characterization-report.json"
     }
   },
