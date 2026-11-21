@@ -15,8 +15,8 @@
 #      on stderr, nothing on stdout, no record artifact created
 #   2. ngspice version floor: an ngspice-42 banner and an unparseable banner
 #      both exit 3 with the exact floor message, before any record dir exists
-#   3. stale declaration, per study identity -> exit 3 with that study's own
-#      module and declaration named in the message
+#   3. each real runner, only its declaration stale -> exit 3 naming its own
+#      module and declaration, no record dirs created
 #   4. missing cornerCAP.lib -> exit 3 with the exact cap-model message
 #   5. edited vendored model (check_sources.sh fails) -> exit 3
 #   6. valid inputs: for each of the three identities, the prelude's output
@@ -27,29 +27,16 @@
 #   7. MATCH_NGSPICE override: baseline and prelude still byte-identical, and
 #      both select the override's ngspice binary
 set -u
+unset MATCH_NGSPICE SDT_VER
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SIM_REAL="$(cd "$HERE/.." && pwd)"
 REPO_REAL="$(cd "$SIM_REAL/.." && pwd)"
 RUNNERS_DIR="$SIM_REAL/lna-matching-feasibility"
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d)" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 pass=0; fail=0
 ok() { echo "PASS: $1"; pass=$((pass+1)); }
 bad() { echo "FAIL: $1"; fail=$((fail+1)); }
-
-# --- 1. invalid MATCH_NGSPICE, against the real runners (no PDK needed:
-# the check is the first thing each runner does) --------------------------
-NOPE="$TMP/nope-ngspice"
-for r in run_feed_study.sh run_le_study.sh run_q_study.sh; do
-  tree_before="$(git -C "$REPO_REAL" status --porcelain 2>/dev/null)"
-  out="$(MATCH_NGSPICE="$NOPE" bash "$RUNNERS_DIR/$r" 2>"$TMP/e-$r")"; rc=$?
-  tree_after="$(git -C "$REPO_REAL" status --porcelain 2>/dev/null)"
-  expect="${r}: MATCH_NGSPICE=${NOPE} is not executable."
-  if [ "$rc" -eq 3 ] && [ -z "$out" ] && [ "$(cat "$TMP/e-$r")" = "$expect" ] \
-     && [ "$tree_before" = "$tree_after" ]; then
-    ok "invalid MATCH_NGSPICE ($r): exit 3, own name on stderr, no record created"
-  else bad "invalid MATCH_NGSPICE $r (rc=$rc out=[$out] err=[$(cat "$TMP/e-$r")])"; fi
-done
 
 # --- fixture repo mirror + fixture PDK + stub ngspice ---------------------
 STUBS="$TMP/stubs"; mkdir -p "$STUBS"
@@ -74,7 +61,7 @@ cp "$SIM_REAL/tools/pdk_identity.py" "$SIM_REAL/tools/artifact_store.py" "$REPO/
 cp "$SIM_REAL/models/check_sources.sh" "$SIM_REAL/models/SOURCE.md" \
    "$SIM_REAL/models/sg13g2_inductor_em.spice" "$REPO/sim/models/"
 cp "$REPO_REAL/design/netlist/lna.spice" "$REPO/design/netlist/lna.spice"
-cp "$RUNNERS_DIR/study_prelude.sh" "$STUDY/study_prelude.sh"
+cp "$RUNNERS_DIR/study_prelude.sh" "$RUNNERS_DIR"/run_{feed,le,q}_study.sh "$STUDY/"
 
 # Three fixture study identities: a module whose `declare` output is fixed,
 # committed as the matching declaration.
@@ -104,6 +91,7 @@ mkpdk() {
   echo 0.3.0 > "$PDKF/ihp-sg13g2/.fetched-version"
 }
 mkpdk
+export PATH="$STUBS:$PATH" PDK_ROOT="$PDKF" PDK=ihp-sg13g2
 
 # --- the differential baseline: the ORIGINAL startup block, verbatim ------
 # Pre-#450 run_feed_study.sh:39-73 (equivalently run_le_study.sh:39-72 /
@@ -162,15 +150,11 @@ dump_state() {
 
 # run_impl <prelude|baseline> <name> <module> <decl>: source one
 # implementation of the startup block in a fresh subshell with the stubbed
-# PATH and fixture PDK, then dump the state it left behind. SDT_VER /
-# MATCH_NGSPICE ride in from the caller's environment.
+# PATH and fixture PDK, then dump the state it left behind.
 run_impl() {
   (
     set -euo pipefail
     cd "$TMP"
-    PATH="$STUBS:$PATH"
-    PDK_ROOT="$PDKF"
-    export PATH PDK_ROOT
     SCRIPT_DIR="$STUDY"
     export SCRIPT_DIR
     if [ "$1" = prelude ]; then
@@ -188,6 +172,16 @@ run_impl() {
 no_record_dirs() {
   [ ! -e "$STUDY/records" ] && [ ! -e "$STUDY/corners" ] && [ ! -e "$STUDY/netlist-snapshots" ]
 }
+
+# --- 1. invalid MATCH_NGSPICE, against the real runners in the fixture ----
+NOPE="$TMP/nope-ngspice"
+for r in run_feed_study.sh run_le_study.sh run_q_study.sh; do
+  out="$(MATCH_NGSPICE="$NOPE" bash "$STUDY/$r" 2>"$TMP/e-$r")"; rc=$?
+  expect="${r}: MATCH_NGSPICE=${NOPE} is not executable."
+  if [ "$rc" -eq 3 ] && [ -z "$out" ] && [ "$(cat "$TMP/e-$r")" = "$expect" ] && no_record_dirs; then
+    ok "invalid MATCH_NGSPICE ($r): exit 3, own name on stderr, no record created"
+  else bad "invalid MATCH_NGSPICE $r (rc=$rc out=[$out] err=[$(cat "$TMP/e-$r")])"; fi
+done
 
 # --- 2. ngspice version floor ---------------------------------------------
 out="$(SDT_VER="ngspice-42 old" run_impl prelude t.sh feed_study.py feed-study-declaration.md 2>"$TMP/e2a")"; rc=$?
@@ -209,9 +203,9 @@ for triple in \
   set -- $triple
   name="$1"; module="$2"; decl="$3"
   printf 'tampered\n' >> "$STUDY/$decl"
-  out="$(run_impl prelude "$name" "$module" "$decl" 2>"$TMP/e3-$name")"; rc=$?
+  bash "$STUDY/$name" > /dev/null 2>"$TMP/e3-$name"; rc=$?
   expect="${name}: ${decl} is stale vs ${module} declare."
-  if [ "$rc" -eq 3 ] && [ "$(cat "$TMP/e3-$name")" = "$expect" ] && no_record_dirs; then
+  if [ "$rc" -eq 3 ] && cmp -s "$TMP/e3-$name" <(printf '%s\n' "$expect") && no_record_dirs; then
     ok "stale declaration ($name): exit 3 naming its own module and declaration"
   else bad "stale declaration $name (rc=$rc err=[$(cat "$TMP/e3-$name")])"; fi
   python3 -I "$STUDY/$module" declare > "$STUDY/$decl"   # restore
