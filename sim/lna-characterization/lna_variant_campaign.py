@@ -668,7 +668,7 @@ def cell_status_ok(c: dict):
     return True, ""
 
 
-def validate_report_cells(corners, expected_keys, expected_measurements, emit):
+def validate_report_cells(corners, expected_keys, expected_measurements, emit, check_cell=None):
     """Shared two-pass `klt sim` corner-report cell validator (issue #480);
     used by this campaign's collect_reports and by the core-envelope
     reducer's read_requests.
@@ -679,8 +679,9 @@ def validate_report_cells(corners, expected_keys, expected_measurements, emit):
     duplicated key excluded from reduction; emitted in expected_keys
     order). Pass 2, only when `expected_measurements` is not None, walks
     each expected key: missing_cell, failed_cell, missing_measurement
-    (absent name or null value), non_finite_value, duplicate_measurement;
-    a cell is valid only with no finding and no duplicated key.
+    (absent name or null value), non_finite_value, duplicate_measurement,
+    then optional `check_cell(key, values, emit) -> bool` when those checks
+    all passed; a cell is valid only with no finding and no duplicated key.
 
     emit(kind, cell=None, measurement=None, detail="") records one issue;
     `cell` is the normalized key tuple, or a "corners[N]" string for
@@ -718,7 +719,7 @@ def validate_report_cells(corners, expected_keys, expected_measurements, emit):
         if cell is None:
             emit("missing_cell", cell=key)
             continue
-        good = key not in dups
+        good = True
         ok, detail = cell["ok"]
         if not ok:
             emit("failed_cell", cell=key, detail=detail)
@@ -738,9 +739,16 @@ def validate_report_cells(corners, expected_keys, expected_measurements, emit):
             emit("duplicate_measurement", cell=key, measurement=n,
                  detail="measurement appears more than once in the cell")
             good = False
+        if good and check_cell is not None and not check_cell(key, cell["values"], emit):
+            good = False
+        if key in dups:
+            good = False
         cell["valid"] = good
         valid_count += good
     return cells, valid_count
+
+
+_PASS1_CELL_KINDS = frozenset(("malformed_cell", "unexpected_cell", "duplicate_cell"))
 
 
 def collect_reports(cdir: Path, required_variants, grid: str, nf_npts: int = N_NF):
@@ -755,21 +763,31 @@ def collect_reports(cdir: Path, required_variants, grid: str, nf_npts: int = N_N
     """
     issues = []
 
-    def issue(kind, variant, analysis, cell=None, measurement=None, detail=""):
-        issues.append({"kind": kind, "variant": variant, "analysis": analysis,
-                       "cell": cell_text(cell) if isinstance(cell, tuple) else cell,
-                       "measurement": measurement, "detail": detail})
+    def make_issue(kind, variant, analysis, cell=None, measurement=None, detail=""):
+        return {"kind": kind, "variant": variant, "analysis": analysis,
+                "cell": cell_text(cell) if isinstance(cell, tuple) else cell,
+                "measurement": measurement, "detail": detail}
+
+    def check_nf(key, values, emit_fn):
+        samples = [values[n] for n in nf_sample_names(nf_npts)]
+        if abs(max(samples) - values["nf290_db_worst"]) > 1e-6:
+            emit_fn("inconsistent_nf_worst", cell=key, measurement="nf290_db_worst",
+                    detail=f"reported worst {values['nf290_db_worst']!r} != "
+                           f"max of {nf_npts} retained samples {max(samples)!r}")
+            return False
+        return True
 
     grid_keys = expected_grid(grid)
     cells = {}
     seen_reports = set()
+    pass2_issues = {}
     valid_counts = {}
     for rep in sorted(cdir.glob("*.report.json")):
         stem = rep.name[: -len(".report.json")]
         analysis = next((an for an in ANALYSES if stem.endswith("_" + an)), None)
         variant = stem[: -len(analysis) - 1] if analysis else None
         if analysis is None or variant not in VARIANTS:
-            issue("unexpected_report", variant, analysis, detail=rep.name)
+            issues.append(make_issue("unexpected_report", variant, analysis, detail=rep.name))
             continue
         seen_reports.add((variant, analysis))
         try:
@@ -778,37 +796,40 @@ def collect_reports(cdir: Path, required_variants, grid: str, nf_npts: int = N_N
             if not isinstance(corners, list):
                 raise ValueError("'corners' is not a list")
         except Exception as e:  # unreadable/malformed report
-            issue("unreadable_report", variant, analysis, detail=f"{rep.name}: {e}")
+            issues.append(make_issue("unreadable_report", variant, analysis, detail=f"{rep.name}: {e}"))
             continue
-
-        def emit(kind, cell=None, measurement=None, detail=""):
-            issue(kind, variant, analysis, cell=cell, measurement=measurement, detail=detail)
 
         names = ([m["name"] for m in measurements(analysis, nf_npts)]
                  if variant in required_variants else None)
-        cmap, valid = validate_report_cells(corners, grid_keys, names, emit)
+        buf = pass2_issues.setdefault((variant, analysis), []) if names is not None else None
+
+        def emit(kind, cell=None, measurement=None, detail=""):
+            target = issues if (buf is None or kind in _PASS1_CELL_KINDS) else buf
+            target.append(make_issue(kind, variant, analysis, cell=cell,
+                                     measurement=measurement, detail=detail))
+
+        cmap, valid = validate_report_cells(
+            corners, grid_keys, names, emit,
+            check_cell=check_nf if analysis == "noise" else None)
         cells[(variant, analysis)] = cmap
-        if analysis == "noise" and names is not None:
-            for key in grid_keys:
-                cell = cmap.get(key)
-                if cell is None or not cell.get("valid"):
-                    continue
-                samples = [cell["values"][n] for n in nf_sample_names(nf_npts)]
-                if abs(max(samples) - cell["values"]["nf290_db_worst"]) > 1e-6:
-                    issue("inconsistent_nf_worst", variant, analysis, cell=key,
-                          measurement="nf290_db_worst",
-                          detail=f"reported worst {cell['values']['nf290_db_worst']!r} != "
-                                 f"max of {nf_npts} retained samples {max(samples)!r}")
-                    cell["valid"] = False
-                    valid -= 1
         if names is not None:
             valid_counts[(variant, analysis)] = valid
     counts = {}
     for variant in required_variants:
         for analysis in ANALYSES:
             if (variant, analysis) not in seen_reports:
-                issue("missing_report", variant, analysis,
-                      detail=f"no {variant}_{analysis}.report.json (or unreadable)")
+                issues.append(make_issue("missing_report", variant, analysis,
+                                         detail=f"no {variant}_{analysis}.report.json (or unreadable)"))
+            elif (variant, analysis) in pass2_issues:
+                issues.extend(pass2_issues[(variant, analysis)])
+            else:
+                # Report was present on disk but unreadable in pass 1: fan out
+                # missing_cell across expected grid keys so uncovered cells are named.
+                validate_report_cells(
+                    [], grid_keys, [m["name"] for m in measurements(analysis, nf_npts)],
+                    lambda kind, cell=None, measurement=None, detail="", v=variant, an=analysis:
+                        issues.append(make_issue(kind, v, an, cell=cell,
+                                                 measurement=measurement, detail=detail)))
             counts[(variant, analysis)] = {"expected": len(grid_keys),
                                            "valid": valid_counts.get((variant, analysis), 0)}
     return cells, issues, counts

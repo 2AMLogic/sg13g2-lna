@@ -415,7 +415,59 @@ class BadInput(unittest.TestCase):
             (Path(d) / "ideal_noise.report.json").write_text("{not json")
             rc, cov, _ = run_summ(d)
             self.assertNotEqual(rc, 0)
-            self.assertIn("unreadable_report", kinds(cov))
+            got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in cov["issues"]]
+            want = ([("unreadable_report", "ideal", "noise", None)]
+                    + [("missing_cell", "ideal", "noise", V.cell_text(k))
+                       for k in V.expected_grid()])
+            self.assertEqual(got, want)
+
+    def test_collect_reports_pass2_order_and_unreadable_vs_absent(self):
+        # Glob order (ideal_noise, ideal_op, le_q10_noise, le_q20_sp_band)
+        # differs on both axes from required_variants x ANALYSES
+        # ([ideal, le_q20, le_q10] x [op, sp_band, sp_stab, noise]).
+        nom = {"process": {"name": "typ"}, "temperature_c": 27.0,
+               "supply_v": {"vdd": 1.8}, "status": "ok"}
+        unexp = {**nom, "temperature_c": 85.0, "measurements": []}
+        bad_nf = [{"name": m["name"], "value": 2.5 if m["name"] == "nf290_db_worst" else 1.0}
+                  for m in V.measurements("noise", V.N_NF)]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "ideal_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "status": "error", "measurements": []}, unexp]}))
+            (p / "ideal_op.report.json").write_text(json.dumps({"corners": [unexp]}))
+            # Duplicated nominal cell with inconsistent nf290_db_worst: both
+            # duplicate_cell (pass 1) and inconsistent_nf_worst (pass 2) fire.
+            (p / "le_q10_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "measurements": bad_nf}, {**nom, "measurements": bad_nf}]}))
+            # Unreadable required report fans out missing_cell; absent reports only emit missing_report.
+            (p / "le_q20_sp_band.report.json").write_text("{corrupt")
+            _, issues, counts = V.collect_reports(p, ["ideal", "le_q20", "le_q10"], "smoke")
+        got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in issues]
+        n_noise = len(V.measurements("noise", V.N_NF))
+        want = [
+            # Pass 1 in sorted filename order across all reports:
+            ("unexpected_cell", "ideal", "noise", "typ/85C/1.80V"),
+            ("unexpected_cell", "ideal", "op", "typ/85C/1.80V"),
+            ("duplicate_cell", "le_q10", "noise", "typ/27C/1.80V"),
+            ("unreadable_report", "le_q20", "sp_band", None),
+            # Pass 2 in required_variants x ANALYSES order:
+            ("missing_cell", "ideal", "op", "typ/27C/1.80V"),
+            ("missing_report", "ideal", "sp_band", None),
+            ("missing_report", "ideal", "sp_stab", None),
+            ("failed_cell", "ideal", "noise", "typ/27C/1.80V"),
+            *[("missing_measurement", "ideal", "noise", "typ/27C/1.80V")] * n_noise,
+            ("missing_report", "le_q20", "op", None),
+            ("missing_cell", "le_q20", "sp_band", "typ/27C/1.80V"),
+            ("missing_report", "le_q20", "sp_stab", None),
+            ("missing_report", "le_q20", "noise", None),
+            ("missing_report", "le_q10", "op", None),
+            ("missing_report", "le_q10", "sp_band", None),
+            ("missing_report", "le_q10", "sp_stab", None),
+            ("inconsistent_nf_worst", "le_q10", "noise", "typ/27C/1.80V"),
+        ]
+        self.assertEqual(got, want)
+        self.assertEqual(counts[("le_q20", "sp_band")], {"expected": 1, "valid": 0})
+        self.assertEqual(counts[("le_q10", "noise")], {"expected": 1, "valid": 0})
 
     def test_no_reports_nonzero(self):
         with tempfile.TemporaryDirectory() as d:
@@ -543,6 +595,31 @@ class SharedCellValidation(unittest.TestCase):
         self.assertEqual(valid, 0)
         self.assertIn(self.KEYS[0], cells)
         self.assertNotIn("valid", cells[self.KEYS[0]])
+
+    def test_check_cell_in_cell_order_and_on_duplicated_key(self):
+        # KEYS[0] is duplicated and fails check_cell; KEYS[1] is missing ->
+        # check_cell issue on KEYS[0] precedes missing_cell on KEYS[1].
+        seen = []
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0}),
+                   self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0})]
+
+        def check_ab(key, values, emit):
+            if values["b"] > 5.0:
+                emit("custom_bad", cell=key, measurement="b")
+                return False
+            return True
+
+        cells, valid = V.validate_report_cells(
+            corners, self.KEYS, self.MEAS,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)),
+            check_cell=check_ab)
+        self.assertEqual([(k, c) for k, c, _, _ in seen],
+                         [("duplicate_cell", self.KEYS[0]),
+                          ("custom_bad", self.KEYS[0]),
+                          ("missing_cell", self.KEYS[1])])
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
 
 
 def cell_of(i):
