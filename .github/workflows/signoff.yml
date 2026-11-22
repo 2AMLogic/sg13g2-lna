@@ -250,6 +250,10 @@ jobs:
   # sim_run_deck sequential-deck gate tests (issue #300): the rc +
   # BENCH_COMPLETE pass/fail gate shared by the matching-feasibility
   # runners, on the same fixture style with ngspice stubbed.
+  # Shared matching-study preflight tests (issue #450): the startup block
+  # the feed/Le/Q runners source with their study identity, differentially
+  # pinned byte-for-byte against the original per-runner block, on the same
+  # fixture style with ngspice stubbed and a fixture PDK tree.
   sim-record-paths-tests:
     runs-on: ubuntu-latest
     steps:
@@ -261,6 +265,9 @@ jobs:
 
       - name: sim_run_deck sequential-deck gate tests
         run: sim/tests/test-sim-run-deck.sh
+
+      - name: shared matching-study preflight tests
+        run: sim/tests/test-study-prelude.sh
 
       - name: installed-PDK identity preflight tests
         run: sim/tests/test-pdk-identity.sh
