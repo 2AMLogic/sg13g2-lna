@@ -423,6 +423,128 @@ class BadInput(unittest.TestCase):
             self.assertNotEqual(rc, 0)
 
 
+class SharedCellValidation(unittest.TestCase):
+    """Direct tests of validate_report_cells (issue #480), the two-pass cell
+    validator shared with sim/lna-core-envelope's reducer. Synthetic
+    fixtures, not evidence."""
+
+    KEYS = [("wcs", 27.0, 1.8), ("bcs", 27.0, 1.8)]  # expected order != sorted order
+    MEAS = ("a", "b")
+
+    @staticmethod
+    def corner(key, meas=None, status="ok", extra=None):
+        lab, t, v = key
+        c = {"process": {"name": lab}, "temperature_c": t, "supply_v": {"vdd": v},
+             "status": status,
+             "measurements": [{"name": n, "value": x} for n, x in (meas or {}).items()]}
+        if extra is not None:
+            c["measurements"].extend(extra)
+        return c
+
+    def validate(self, corners, expected_measurements=MEAS, keys=None):
+        seen = []
+        cells, valid = V.validate_report_cells(
+            corners, keys or self.KEYS, expected_measurements,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)))
+        return cells, valid, seen
+
+    def kinds(self, seen):
+        return [k for k, _, _, _ in seen]
+
+    def test_all_valid(self):
+        cells, valid, seen = self.validate(
+            [self.corner(k, {"a": 1.0, "b": 2.0}) for k in self.KEYS])
+        self.assertEqual(valid, 2)
+        self.assertEqual(seen, [])
+        self.assertTrue(all(c["valid"] for c in cells.values()))
+
+    def test_malformed_cell(self):
+        bad = self.corner(("wcs", 27.0, 1.8), {"a": 1.0, "b": 2.0})
+        bad["temperature_c"] = None  # float(None) -> TypeError
+        cells, valid, seen = self.validate([bad] + [self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["malformed_cell", "missing_cell"])
+        self.assertEqual(seen[0][1], "corners[0]")
+        self.assertNotIn(("wcs", 27.0, 1.8), cells)
+
+    def test_measurement_without_name_is_malformed(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0},
+                        extra=[{"value": 3.0}])  # measurement entry missing "name"
+        _, _, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen)[:1], ["malformed_cell"])
+        self.assertIn("'name'", seen[0][3])
+
+    def test_unexpected_cell(self):
+        cells, _, seen = self.validate([self.corner(("typ", 85.0, 1.8), {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["unexpected_cell", "missing_cell", "missing_cell"])
+        self.assertNotIn(("typ", 85.0, 1.8), cells)
+
+    def test_duplicate_cell_excluded_and_ordered(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[0], {"a": 9.0, "b": 9.0}),
+                   self.corner(self.KEYS[1], {"a": 9.0, "b": 9.0})]
+        cells, valid, seen = self.validate(corners)
+        # first occurrences retained in cells, duplicates excluded from reduction
+        self.assertEqual(cells[self.KEYS[0]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(cells[self.KEYS[1]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(self.kinds(seen), ["duplicate_cell", "duplicate_cell"])
+        # emitted in expected_keys order, not lexicographic order
+        self.assertEqual([s[1] for s in seen], self.KEYS)
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_missing_cell(self):
+        cells, valid, seen = self.validate([self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["missing_cell"])
+        self.assertEqual(seen[0][1], self.KEYS[1])
+        self.assertEqual(valid, 1)
+
+    def test_failed_cell(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, status="error"),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["failed_cell"])
+        self.assertIn("status='error'", seen[0][3])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertEqual(valid, 1)
+
+    def test_missing_measurement_absent_and_null(self):
+        cells, _, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0}),          # b absent
+             self.corner(self.KEYS[1], {"a": 1.0, "b": None})])  # b null
+        misses = [s for s in seen if s[0] == "missing_measurement"]
+        self.assertEqual([(s[1], s[2], s[3]) for s in misses],
+                         [(self.KEYS[0], "b", ""), (self.KEYS[1], "b", "value is null")])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_non_finite_value(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": float("nan"), "b": 2.0}),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": float("inf")})])
+        self.assertEqual(self.kinds(seen), ["non_finite_value", "non_finite_value"])
+        self.assertEqual([s[2] for s in seen], ["a", "b"])
+        self.assertEqual(valid, 0)
+
+    def test_duplicate_measurement(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, extra=[{"name": "a", "value": 3.0}])
+        cells, valid, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen), ["duplicate_measurement", "missing_cell"])
+        self.assertEqual(seen[0][2], "a")
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+
+    def test_pass1_only_without_expected_measurements(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0})]  # b missing: pass 2 would flag it
+        cells, valid, seen = self.validate(corners, expected_measurements=None)
+        self.assertEqual(seen, [])
+        self.assertEqual(valid, 0)
+        self.assertIn(self.KEYS[0], cells)
+        self.assertNotIn("valid", cells[self.KEYS[0]])
+
+
 def cell_of(i):
     return V.cell_text(V.expected_grid()[i])
 
