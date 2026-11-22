@@ -317,13 +317,14 @@ class ReplayAndRejection(unittest.TestCase):
     def test_committed_match_replays_byte_for_byte(self):
         with tempfile.TemporaryDirectory() as td:
             snap, corn = self._copy(td)
+            rec = corn / "recommendation.json"
+            rec.unlink()
             rc = fs.main(["match-reduce", "--snapdir", str(snap), "--corners", str(corn),
                           "--csv", f"{td}/m.csv", "--markdown", f"{td}/m.md"])
             self.assertEqual(rc, 0)
             self.assertEqual(Path(td, "m.csv").read_bytes(), (EXP / "records" / f"{RID}-match.csv").read_bytes())
             self.assertEqual(Path(td, "m.md").read_bytes(), (corn / "match_headlines.md").read_bytes())
-            self.assertEqual(json.loads((corn / "recommendation.json").read_text()),
-                             json.loads((EXP / "corners" / RID / "recommendation.json").read_text()))
+            self.assertEqual(rec.read_bytes(), (EXP / "corners" / RID / "recommendation.json").read_bytes())
 
     def test_committed_evidence_honors_the_declared_policy(self):
         doc = json.loads((EXP / "corners" / RID / "scan_summary.json").read_text())
