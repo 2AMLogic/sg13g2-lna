@@ -304,12 +304,15 @@ class ReplayAndRejection(unittest.TestCase):
         for _ in range(2):
             with tempfile.TemporaryDirectory() as td:
                 snap, corn = self._copy(td)
+                summary = corn / "scan_summary.json"
+                summary.unlink()
                 rc = fs.main(["scan-reduce", "--snapdir", str(snap), "--corners", str(corn),
                               "--csv", f"{td}/f.csv", "--band-csv", f"{td}/b.csv", "--markdown", f"{td}/s.md"])
                 self.assertEqual(rc, 0)
                 self.assertEqual(Path(td, "f.csv").read_bytes(), (EXP / "records" / f"{RID}-feeds.csv").read_bytes())
                 self.assertEqual(Path(td, "b.csv").read_bytes(), (EXP / "records" / f"{RID}-feeds-band.csv").read_bytes())
                 self.assertEqual(Path(td, "s.md").read_bytes(), (corn / "scan_headlines.md").read_bytes())
+                self.assertEqual(summary.read_bytes(), (EXP / "corners" / RID / "scan_summary.json").read_bytes())
 
     def test_committed_match_replays_byte_for_byte(self):
         with tempfile.TemporaryDirectory() as td:

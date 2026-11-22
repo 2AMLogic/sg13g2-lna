@@ -1073,6 +1073,33 @@ def nf_freqs(n: int) -> list[float]:
     return [F_LO + (F_HI - F_LO) * i / (n - 1) for i in range(n)]
 
 
+def reduce_stab_table(cdir: Path, stem: str) -> dict:
+    """Shared broadband stability reduction: validate the `{stem}.stab.dat`
+    grid, rebuild the four complex S-parameters and evaluate (mu, k, |Delta|)
+    at every frequency. Returns the seven shared report fields ('fields') and
+    the per-frequency series ('stab') the feed scan consumes. The first
+    frequency attaining the mu minimum wins ties; the mu <= 1 count is
+    inclusive."""
+    sf = stab_freqs()
+    _, st = columns(cdir / f"{stem}.stab.dat", len(sf), sf)
+    ss = {n: cplx(st, n) for n in ("s_1_1", "s_2_1", "s_1_2", "s_2_2")}
+    mus, ks, ds = [], [], []
+    for i in range(len(sf)):
+        mu, k, d = stability(ss["s_1_1"][i], ss["s_2_1"][i], ss["s_1_2"][i], ss["s_2_2"][i])
+        mus.append(mu)
+        ks.append(k)
+        ds.append(d)
+    m11 = [abs(x) for x in ss["s_1_1"]]
+    m22 = [abs(x) for x in ss["s_2_2"]]
+    imu = min(range(len(sf)), key=lambda i: mus[i])
+    return {
+        "fields": {"mu_bb_min": mus[imu], "mu_bb_f_min_hz": sf[imu],
+                   "mu_bb_n_lt1": sum(1 for x in mus if x <= 1.0), "k_bb_min": min(ks),
+                   "s11_mag_bb_max": max(m11), "s22_mag_bb_max": max(m22), "n_stab_pts": len(sf)},
+        "stab": {"f": sf, "mu": mus, "k": ks, "delta": ds, "m11": m11, "m22": m22},
+    }
+
+
 def reduce_one(cdir: Path, stem: str, nf_npts: int) -> dict:
     freqs = band_freqs()
     _, ib = columns(cdir / f"{stem}.inband.dat", N_BAND, freqs)
@@ -1085,15 +1112,7 @@ def reduce_one(cdir: Path, stem: str, nf_npts: int) -> dict:
                      "nf_sp_db": ib["real(NF)"][i], "nfmin_sp_db": ib["real(NFmin)"][i],
                      "nfmin290_db": nf_reref(ib["real(NFmin)"][i], T_ANALYSIS),
                      "mu": mu, "k": k, "delta": d})
-    sf = stab_freqs()
-    _, st = columns(cdir / f"{stem}.stab.dat", len(sf), sf)
-    ss = {n: cplx(st, n) for n in ("s_1_1", "s_2_1", "s_1_2", "s_2_2")}
-    mus, ks = [], []
-    for i in range(len(sf)):
-        mu, k, _ = stability(ss["s_1_1"][i], ss["s_2_1"][i], ss["s_1_2"][i], ss["s_2_2"][i])
-        mus.append(mu)
-        ks.append(k)
-    imu = min(range(len(sf)), key=lambda i: mus[i])
+    bb = reduce_stab_table(cdir, stem)
     nfq = nf_freqs(nf_npts)
     nfname, nf = columns(cdir / f"{stem}.nf290.dat", nf_npts, nfq)
     nf290 = nf["nf290"]
@@ -1115,13 +1134,7 @@ def reduce_one(cdir: Path, stem: str, nf_npts: int) -> dict:
         "nfmin290_db_mid": band[MID]["nfmin290_db"],
         "mu_band_min": min(b["mu"] for b in band),
         "k_band_min": min(b["k"] for b in band),
-        "mu_bb_min": mus[imu],
-        "mu_bb_f_min_hz": sf[imu],
-        "mu_bb_n_lt1": sum(1 for x in mus if x <= 1.0),
-        "k_bb_min": min(ks),
-        "s11_mag_bb_max": max(abs(x) for x in ss["s_1_1"]),
-        "s22_mag_bb_max": max(abs(x) for x in ss["s_2_2"]),
-        "n_stab_pts": len(sf),
+        **bb["fields"],
         "gt_minus_s21_db_mid": op["gt_mid_db"] - band[MID]["s21_db"],
         **op,
     }
