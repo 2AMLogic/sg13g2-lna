@@ -477,18 +477,11 @@ def reduce_scan_variant(cdir: Path, name: str, nf_npts: int) -> dict:
             "nfmin290_db": ms.nf_reref(ib["real(NFmin)"][i], ms.T_ANALYSIS),
             "nf50_290_sp_db": ms.nf_reref(ib["real(NF)"][i], ms.T_ANALYSIS),
             "nf50_290_noise_db": nf290[j] if j is not None else None})
-    sf = ms.stab_freqs()
-    _, st = ms.columns(cdir / f"{stem}.stab.dat", len(sf), sf)
-    ss = {n: ms.cplx(st, n) for n in ("s_1_1", "s_2_1", "s_1_2", "s_2_2")}
-    mus, ks, ds = [], [], []
-    for i in range(len(sf)):
-        mu, k, d = ms.stability(ss["s_1_1"][i], ss["s_2_1"][i], ss["s_1_2"][i], ss["s_2_2"][i])
-        mus.append(mu)
-        ks.append(k)
-        ds.append(d)
-    m11 = [abs(x) for x in ss["s_1_1"]]
-    m22 = [abs(x) for x in ss["s_2_2"]]
-    imu = min(range(len(sf)), key=lambda i: mus[i])
+    bb = ms.reduce_stab_table(cdir, stem)
+    fields = bb["fields"]
+    stab = bb["stab"]
+    sf, mus, ks, ds = stab["f"], stab["mu"], stab["k"], stab["delta"]
+    m11, m22 = stab["m11"], stab["m22"]
     ik = min(range(len(sf)), key=lambda i: ks[i])
     k_lt1 = [sf[i] for i in range(len(sf)) if ks[i] < 1.0]
     audit = parse_dc_audit(cdir / f"{stem}.log")
@@ -509,22 +502,22 @@ def reduce_scan_variant(cdir: Path, name: str, nf_npts: int) -> dict:
         "rn_mid": band[ms.MID]["rn"],
         "s11_db_mid": band[ms.MID]["s11_db"], "s22_db_mid": band[ms.MID]["s22_db"],
         "s21_db_mid": band[ms.MID]["s21_db"], "s21_db_min": min(b["s21_db"] for b in band),
-        "mu_bb_min": mus[imu], "mu_bb_f_min_hz": sf[imu],
-        "mu_bb_n_lt1": sum(1 for x in mus if x <= 1.0),
+        # Keep shared fields interleaved with diagnostics in the retained scan_summary.json order.
+        "mu_bb_min": fields["mu_bb_min"], "mu_bb_f_min_hz": fields["mu_bb_f_min_hz"],
+        "mu_bb_n_lt1": fields["mu_bb_n_lt1"],
         "mu_bb_n_resolved_lt1": sum(1 for x in mus if x < 1.0 - ms.MU_RESOLUTION),
         "mu_bb_n_unresolved": sum(1 for x in mus if abs(x - 1.0) <= ms.MU_RESOLUTION),
-        "k_bb_min": ks[ik], "k_bb_f_min_hz": sf[ik],
+        "k_bb_min": fields["k_bb_min"], "k_bb_f_min_hz": sf[ik],
         "k_bb_n_lt1": len(k_lt1),
         "k_lt1_f_lo_hz": min(k_lt1) if k_lt1 else None, "k_lt1_f_hi_hz": max(k_lt1) if k_lt1 else None,
         "delta_bb_min": min(ds), "delta_bb_max": max(ds),
-        "s11_mag_bb_max": m11[i11], "s11_mag_bb_f_hz": sf[i11],
-        "s22_mag_bb_max": m22[i22], "s22_mag_bb_f_hz": sf[i22],
-        "n_stab_pts": len(sf),
+        "s11_mag_bb_max": fields["s11_mag_bb_max"], "s11_mag_bb_f_hz": sf[i11],
+        "s22_mag_bb_max": fields["s22_mag_bb_max"], "s22_mag_bb_f_hz": sf[i22],
+        "n_stab_pts": fields["n_stab_pts"],
         "sp_vs_noise_nf_maxdiff_db": (max(abs(b["nf50_290_sp_db"] - b["nf50_290_noise_db"]) for b in band)
                                       if band[0]["nf50_290_noise_db"] is not None else None),
     }
-    return {"summary": summ, "band": band, "stab": {"f": sf, "mu": mus, "k": ks, "delta": ds,
-                                                      "m11": m11, "m22": m22}}
+    return {"summary": summ, "band": band, "stab": stab}
 
 
 def feed_area_um2(name: str, plan: dict) -> float:
