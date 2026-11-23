@@ -6,6 +6,8 @@
 
 ### 2026-11-20
 
+- **Issue #449** (closed): Reuse the Q-study boundary reduction for both metrics and band data
+- **PR #456**: refactor(sim): reuse the q-study reduction's band in the boundary loop
 - **Issue #470** (closed): chore: gitignore the runtime-owned .loom/account-ranking.* state files
 - **PR #473**: chore: ignore runtime-owned .loom/account-ranking.* state files
 - **Issue #461** (closed): Remove the unusable dpkg-deb workaround from the OSDI build error
