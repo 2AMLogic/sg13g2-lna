@@ -108,24 +108,6 @@ def is_complete(path: str) -> bool:
         return any(line.startswith("BENCH_COMPLETE") for line in fh)
 
 
-def parse_sp_log(path: str) -> dict:
-    out = {"gain": {}, "nf290": {}, "nf30015": {}}
-    with open(path) as fh:
-        for line in fh:
-            p = line.split()
-            if not p:
-                continue
-            if p[0] == "OP":
-                for i in range(1, len(p) - 1, 2):
-                    out[p[i]] = float(p[i + 1])
-            elif p[0] == "GAIN":
-                out["gain"][p[1]] = float(p[2])
-            elif p[0] == "NF":
-                out["nf290"][p[1]] = float(p[2])
-                out["nf30015"][p[1]] = float(p[3])
-    return out
-
-
 def parse_iip3_log(path: str) -> dict:
     out = {}
     with open(path) as fh:
@@ -187,7 +169,8 @@ def _read_pairs(tokens: list[str], label: str, store: dict, prefix: str,
 
 
 def validate_sp_log(path: str) -> tuple[dict | None, list[str]]:
-    """(parsed, reasons). `parsed` has the parse_sp_log shape and is only
+    """(parsed, reasons). `parsed` holds the OP keys at top level plus
+    `gain` / `nf290` / `nf30015` dicts keyed by band tag, and is only
     returned when reasons is empty (None otherwise)."""
     try:
         with open(path) as fh:

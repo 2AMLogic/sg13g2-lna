@@ -137,8 +137,9 @@ class LogReaders(unittest.TestCase):
         self.assertTrue(P.is_complete(str(FIX / "iip3_typ_27c_vdd1.80v_a1mv.log")))
         self.assertFalse(P.is_complete(str(FIX / "sp_trunc.log")))
 
-    def test_parse_sp_log(self):
-        d = P.parse_sp_log(str(FIX / "sp_typ_27c_vdd1.80v.log"))
+    def test_validate_sp_log(self):
+        d, why = P.validate_sp_log(str(FIX / "sp_typ_27c_vdd1.80v.log"))
+        self.assertEqual(why, [])
         self.assertEqual(d["ic1"], 0.0039403)
         self.assertEqual(d["pdc"], 0.00848596)
         self.assertEqual(d["vbe1"], 0.843494)
@@ -147,10 +148,12 @@ class LogReaders(unittest.TestCase):
         self.assertEqual(d["nf30015"]["lo"], 2.58821)
         self.assertEqual(set(d["nf290"]), {"lo", "mid", "hi"})
 
-    def test_parse_sp_log_truncated_lacks_nf(self):
-        d = P.parse_sp_log(str(FIX / "sp_trunc.log"))
-        self.assertEqual(d["gain"], {"lo": 11.5657})
-        self.assertEqual(d["nf290"], {})
+    def test_validate_sp_log_truncated_is_rejected(self):
+        d, why = P.validate_sp_log(str(FIX / "sp_trunc.log"))
+        self.assertIsNone(d)
+        self.assertEqual(why, ["GAIN: missing key mid", "GAIN: missing key hi",
+                               "NF: missing key lo", "NF: missing key mid",
+                               "NF: missing key hi"])
 
     def test_parse_iip3_log(self):
         d = P.parse_iip3_log(str(FIX / "iip3_typ_27c_vdd1.80v_a1mv.log"))
@@ -764,18 +767,22 @@ class Nf290Grid(GridHarness):
         self.assertNotEqual(self.run_main("--strict"), 0)
 
     def test_coverage_crosscheck_reuses_the_validated_log_parse(self):
-        # Issue #425: the 290 K cross-check consumes the measurements that
-        # validate_sp_log already returned; the lenient parse_sp_log is not
-        # re-run for a completed point (one log read, one parser).
-        calls = []
-        real = P.parse_sp_log
-        P.parse_sp_log = lambda path: calls.append(path) or real(path)
-        try:
-            self.assertEqual(self.run_main("--strict"), 0)
-        finally:
-            P.parse_sp_log = real
-        self.assertEqual(calls, [])
+        # Issue #425: with lo/mid/hi consistent with the 290 K table the
+        # cross-check passes under --strict, and within coverage the
+        # S-parameter log is validated exactly once -- the cross-check
+        # consumes the parse validate_sp_log returned rather than
+        # re-reading the log.
+        self.assertEqual(self.run_main("--strict"), 0)
         self.assertEqual(self.cov()["status"], "complete")
+        calls = []
+        real = P.validate_sp_log
+        P.validate_sp_log = lambda path: calls.append(path) or real(path)
+        try:
+            cov = P.compute_coverage(str(self.cd), P.read_manifest(str(self.manifest)))
+        finally:
+            P.validate_sp_log = real
+        self.assertEqual(calls, [str(self.cd / f"{SP}.log")])
+        self.assertEqual(cov["status"], "complete")
 
     def test_mismatched_nf_upper_endpoint_names_point_and_table(self):
         # Issue #425 regression check: a shortened nf290 upper endpoint is
@@ -1000,13 +1007,10 @@ class LogContract(unittest.TestCase):
         self.assertEqual(parsed is None, bool(why))
         return " | ".join(why)
 
-    def test_valid_fixtures_match_lenient_parsers(self):
-        for kind, name, lenient in (("sp", SP, P.parse_sp_log),
-                                    ("iip3", A1, P.parse_iip3_log)):
-            v = P.validate_sp_log if kind == "sp" else P.validate_iip3_log
-            parsed, why = v(str(FIX / f"{name}.log"))
-            self.assertEqual(why, [])
-            self.assertEqual(parsed, lenient(str(FIX / f"{name}.log")))
+    def test_valid_iip3_fixture_matches_lenient_parser(self):
+        parsed, why = P.validate_iip3_log(str(FIX / f"{A1}.log"))
+        self.assertEqual(why, [])
+        self.assertEqual(parsed, P.parse_iip3_log(str(FIX / f"{A1}.log")))
 
     def test_sp_missing_measurements(self):
         txt = self.sp.replace("NF mid 2.65551 2.58781\n", "")
