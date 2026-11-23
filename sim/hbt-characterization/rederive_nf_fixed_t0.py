@@ -41,12 +41,14 @@ scratch paths (e.g. under /tmp) and diff:
 
 Every number the correction record quotes is either copied from a source
 row, or this one documented formula applied to it -- there is no fitting
-and no modelling here. The round-trip identity (recover inoise^2, correct to
-T_amb again, get the committed NF back to <1e-9 dB) and the reproduction of
-record 20260918-203652-4293920's committed validity_flags column by the
-same three model-card limits its README documents are asserted below, so
-the derivation cannot silently drift from the source pipeline that
-produced the committed data.
+and no modelling here. At runtime the derivation asserts its
+re-classification of every row reproduces record
+20260918-203652-4293920's committed validity_flags column (the same three
+model-card limits its README documents), aborting on any disagreement.
+The algebra itself and the bench constants are pinned by the unit tests in
+tests/test_rederive_nf_fixed_t0.py: hand-computed corrected NF values at
+-40 C and 125 C, and an independent noise-power reconstruction that
+rebuilds inoise^2 from N_rest + 4*k*T_amb*RS with its own local constants.
 """
 from __future__ import annotations
 
@@ -105,23 +107,20 @@ def float_or_none(s: str):
 
 
 def corrected_nf_db(nf_committed_db: float, temp_c: float):
-    """The exact algebraic re-referencing, in dB, and its round-trip check.
+    """The exact algebraic re-referencing, in dB.
 
-    Returns (nf_corrected_db, roundtrip_error_db). roundtrip_error_db is
-    |10*log10(...) back at T_amb minus nf_committed_db| -- a pure floating
-    point residue; anything above 1e-9 dB would mean the algebra or the
-    constants are wrong, and the caller asserts on it.
+    Guards on this algebra and its constants live in the unit tests
+    (tests/test_rederive_nf_fixed_t0.py): hand-computed values at -40 C
+    and 125 C, the identity at 27 C, and an independent reconstruction of
+    inoise^2 from N_rest + 4*k*T_amb*RS with local constants. At runtime
+    main() asserts the derived validity flags reproduce record 20260918's
+    committed column.
     """
     t_amb = temp_c + 273.15
     floor = 4.0 * KB * T0 * RS  # V^2/Hz available input noise at T0
     noise = (10.0 ** (nf_committed_db / 10.0)) * floor  # committed inoise^2
     noise_fixed = noise + 4.0 * KB * RS * (T0 - t_amb)  # corrected inoise^2
-    nf_fixed = 10.0 * math.log10(noise_fixed / floor)
-    # Round trip: reverse the same substitution and demand the committed
-    # value back (guards the algebra, not the data).
-    noise_back = noise_fixed - 4.0 * KB * RS * (T0 - t_amb)
-    roundtrip = 10.0 * math.log10(noise_back / floor)
-    return nf_fixed, abs(nf_committed_db - roundtrip)
+    return 10.0 * math.log10(noise_fixed / floor)
 
 
 def reserve_outputs(paths):
@@ -210,7 +209,6 @@ def main() -> int:
         "nf_db_corrected_fixed_t0", "nf_delta_db", "validity_flags",
     ]
 
-    worst_roundtrip = 0.0
     flag_mismatches = 0  # vs record 20260918's committed column
     rows_out = []
     per_row = []  # (source, row dict, nf_fixed, flags) for the summary pass
@@ -236,8 +234,7 @@ def main() -> int:
                 nf_fixed = None
                 delta = None
             else:
-                nf_fixed, rt = corrected_nf_db(nf_src, temp_c)
-                worst_roundtrip = max(worst_roundtrip, rt)
+                nf_fixed = corrected_nf_db(nf_src, temp_c)
                 delta = nf_fixed - nf_src
             out = {
                 "source_record": source_id,
@@ -261,8 +258,6 @@ def main() -> int:
             rows_out.append(out)
             per_row.append((source_id, out, flags))
 
-    assert worst_roundtrip < 1e-9, (
-        f"algebra round-trip residue too large: {worst_roundtrip} dB")
     assert flag_mismatches == 0, (
         "derived validity flags disagree with record 20260918's committed "
         "validity_flags column -- do not ship this derivation")
@@ -357,7 +352,6 @@ def main() -> int:
           f"(affected temps only: {affected_temps_seen}; "
           f"27 C rows are identity and stay only in the source records)")
     print(f"corrected cells: {len(cells)}")
-    print(f"worst algebra round-trip residue: {worst_roundtrip:.3e} dB")
     print(f"validity-flag reproduction mismatches vs 20260918: "
           f"{flag_mismatches}")
 
