@@ -18,6 +18,10 @@ Companion to run_lna_variant.sh / run_lna_iip3.sh. Subcommands:
                 (`<stem> <exit_code>` per failed member, envelope order),
                 stderr the per-member diagnostics; exit 1 only when the
                 envelope itself cannot be read
+  check-client  the klt client version-floor preflight shared by every
+                campaign runner (issue #475): exit nonzero, with the
+                runner-tagged floor/feature diagnostic, when `klt --version`
+                text is below sim/pdk.json klt_variant_campaign.min_version
   summarize     turn the `klt sim` JSON reports under corners/<record-id>/
                 into records/<record-id>-{summary,compare}.csv and the
                 headline numbers the record .md quotes
@@ -72,6 +76,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import parse_lna_sweep as _sweep  # noqa: E402  (shares the #133 grid helpers)
 REPO = HERE.parent.parent
+PDK_JSON = HERE.parent / "pdk.json"
 DESIGN_NETLIST = REPO / "sim" / "pre-match-dut" / "lna.pre27.spice"
 # The live (matched, issue #27) design netlist, used verbatim by the "matched" variant only.
 LIVE_NETLIST = REPO / "design" / "netlist" / "lna.spice"
@@ -524,6 +529,44 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
     if backend:
         req["backend"] = backend
     return req
+
+
+def check_client_floor(version_text: str, runner: str = "") -> None:
+    """klt client version-floor preflight shared by every sim campaign
+    (run_lna_variant.sh, run_lna_iip3.sh and the core-envelope gate runner;
+    previously three copies of this comparison -- issue #475). The floor and
+    its feature diagnostic are recorded in ONE place, sim/pdk.json
+    klt_variant_campaign. Semantic-version comparison on the first
+    three-part version found in the text; raises SystemExit (message carries
+    the runner's failure context, the floor and the missing features) when
+    the text has no version or is below the floor. The shell entry points
+    map the nonzero exit to exit 3, before any request is generated. This
+    checks the CLIENT klt; the batch runner image must carry the same
+    features and is checked by klt itself (batch_runner_version_mismatch).
+    """
+    cfg = json.loads(PDK_JSON.read_text())["klt_variant_campaign"]
+    floor_s, feats = cfg["min_version"], cfg["required_features"]
+    prefix = f"{runner}: " if runner else ""
+
+    def triple(s):
+        m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
+        return tuple(int(x) for x in m.groups()) if m else None
+
+    have, floor = triple(version_text), triple(floor_s)
+    if have is None:
+        raise SystemExit(f"{prefix}cannot parse a version from `klt --version` output "
+                         f"{version_text!r}; need klt >= {floor_s}.")
+    if have < floor:
+        raise SystemExit(f"{prefix}klt {'.'.join(map(str, have))} is older than the required "
+                         f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). "
+                         "It lacks: " + ", ".join(feats)
+                         + f'. Use a newer klt (e.g. `uvx --from "klayout-tools>={floor_s}" '
+                         "klt`); do not run the grid locally.")
+
+
+def cmd_check_client(a):
+    check_client_floor(a.version_text, a.runner)
+    return 0
 
 
 def cmd_gen(a):
@@ -1662,6 +1705,13 @@ def main():
     cs.add_argument("--corners-out", required=True,
                     help="record corners dir to materialise <stem>.report.json into")
     cs.set_defaults(fn=cmd_collect_set)
+    cc = sub.add_parser("check-client",
+                        help="exit nonzero if `klt --version` text is below the floor "
+                             "(sim/pdk.json klt_variant_campaign.min_version)")
+    cc.add_argument("version_text", help="output of `klt --version`")
+    cc.add_argument("--runner", default="",
+                    help="runner label prefixing the failure message (e.g. run_lna_variant.sh)")
+    cc.set_defaults(fn=cmd_check_client)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
     s.add_argument("--summary-csv", required=True)

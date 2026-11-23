@@ -64,27 +64,14 @@ EM_SHA="$(sha256sum "${SIM_DIR}/models/sg13g2_inductor_em.spice" | awk '{print $
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
 
 # klt version-floor preflight: fail here, not late at the batch runner. The
-# floor lives in sim/pdk.json (klt_variant_campaign.min_version), the one place
-# it is recorded. Semantic-version comparison only; no feature-list parsing.
+# check is the ONE shared implementation (lna_variant_campaign.py
+# check-client; issue #475) that run_lna_iip3.sh and the core-envelope gate
+# runner use too; the floor lives in sim/pdk.json
+# (klt_variant_campaign.min_version), the one place it is recorded.
 # This checks the CLIENT klt; the batch runner image must carry the same
 # features and is checked by klt itself (batch_runner_version_mismatch).
-python3 -I - "${SIM_DIR}/pdk.json" "${KLT_VERSION}" <<'PYEOF' || exit 3
-import json, re, sys
-cfg = json.load(open(sys.argv[1]))["klt_variant_campaign"]
-floor_s, feats = cfg["min_version"], cfg["required_features"]
-def triple(s):
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
-    return tuple(int(x) for x in m.groups()) if m else None
-have, floor = triple(sys.argv[2]), triple(floor_s)
-if have is None:
-    sys.exit("run_lna_variant.sh: cannot parse a version from `klt --version` output "
-             f"{sys.argv[2]!r}; need klt >= {floor_s}.")
-if have < floor:
-    sys.exit(f"run_lna_variant.sh: klt {'.'.join(map(str, have))} is older than the required "
-             f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). It lacks: "
-             + ", ".join(feats) + ". Use a newer klt (e.g. `uvx --from \"klayout-tools>="
-             + floor_s + "\" klt`); do not run the grid locally.")
-PYEOF
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client \
+  --runner run_lna_variant.sh -- "${KLT_VERSION}" || exit 3
 
 NF_NPTS="${LNA_NF_NPTS:-11}"
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
