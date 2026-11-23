@@ -731,6 +731,12 @@ class ClientFloor(unittest.TestCase):
                 klt.write_text('#!/bin/sh\n[ "$1" = "--version" ] && { echo "--help"; exit 0; }\n'
                                'echo "klt $*" >> "$STUB_LOG"\nexit 0\n')
                 klt.chmod(0o755)
+                # Stub ngspice (the PDK preflight wants one on PATH; CI has none).
+                # `-v` line 2 carries the version, as in test-core-envelope-lifecycle.sh.
+                ng = bindir / "ngspice"
+                ng.write_text('#!/bin/sh\nif [ "$1" = "-v" ]; then echo stub; echo "ngspice-46 stub"; '
+                              'exit 0; fi\nexit 1\n')
+                ng.chmod(0o755)
                 # Stub generator hook: any call to the campaign generator
                 # subcommand would be a failure -- wrap python3 to log it.
                 py = bindir / "python3"
