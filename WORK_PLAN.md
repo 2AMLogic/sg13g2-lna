@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-21T03:26:13Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T13:45:00Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -31,24 +31,18 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#450**: Share the matching-study preflight across the feed, Le and Q runners
 - **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
-- **#468**: Share broadband stability reduction between feed scans and matching verification
-- **#475**: Share the klt client version check across three simulation campaigns
-- **#476**: Byte-compare recommendation.json in the match replay test
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#471**: sim: share the broadband stability table reduction between reducers
-
+_None._
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work — closes #336
-- **#459**: refactor(sim): share the matching-study preflight across the feed, Le and Q runners — closes #450
 - **#466**: test: pin that class-2 usage exits publish no DRC pair — closes #458
 
 ## Proposed
@@ -61,15 +55,12 @@ Issues carrying `loom:curated`.
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)* *(held)*
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
 - **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457) *(curated)*
-- **#476**: Byte-compare recommendation.json in the match replay test *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)* *(held)*
 - **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)* *(held)*
-- **#282**: Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous *(hermit)* *(held)*
 - **#432**: Remove reducer-only drive-level overrides from the IIP3 runner *(hermit)* *(held)*
-- **#450**: Share the matching-study preflight across the feed, Le and Q runners *(hermit)*
 
 ## Epics
 
@@ -83,10 +74,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 6 |
-| PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 3 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 0 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 7 |
-| Architect / Hermit proposals | 5 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

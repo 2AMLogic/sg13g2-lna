@@ -6,6 +6,8 @@
 
 ### 2026-11-23
 
+- **PR #477**: refactor(sim): share the klt client version-floor check across campaigns
+- **Issue #475** (closed): Share the klt client version check across three simulation campaigns
 - **PR #485**: sim: drop the vacuous round-trip identity guard from rederive_nf_fixed_t0
 - **Issue #282** (closed): Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous
 - **PR #484**: sim: remove unused lenient parse_sp_log reader and migrate its tests
