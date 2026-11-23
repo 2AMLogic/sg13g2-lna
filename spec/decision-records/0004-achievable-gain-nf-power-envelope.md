@@ -548,7 +548,7 @@ change outside the disclosure cells of `spec/target-spec.md`.
 A **disclosure-cell refresh** in [`spec/target-spec.md`](../target-spec.md) —
 replacing, in one or more ratified rows' disclosure cells, the cited record,
 its quoted numbers, and the status stated with them, by those of a newer
-**committed** record — may be performed by the Builder **only when all three
+**committed** record — may be performed by the Builder **only when all four
 of these hold**:
 
 1. **No ratified threshold changes.** Every row's ratified value and binding
@@ -561,6 +561,17 @@ of these hold**:
 3. **A row's status follows what that record says.** The status word in the
    cell (met / failing / DRAFT / …) is whatever the cited record's verdict
    is — including a row that stays failing.
+4. **The cell states what the record's bench does and does not cover.** For
+   each refreshed figure the cell carries, from the record: the simulator
+   engine build and the PDK/model provenance behind it; which slices, corners
+   and analyses produced it; and every gap against that row's binding
+   conditions (a mixed engine build across slices, a slice that ran no
+   analysis the figure needs, a `models_lib_comparison` other than
+   comparable, a corner box not fully covered). A figure assembled from
+   slices that differ in engine or provenance is cited per slice, not as one
+   undifferentiated pass count. A cell may not read stronger than its
+   record's bench supports; a refresh whose record does not state this
+   provenance is not Builder work and stays an operator act.
 
 ### What stays an operator act
 
@@ -572,12 +583,19 @@ Anything beyond that narrow definition, specifically:
 - any **non-disclosure change** to `spec/target-spec.md` or any other
   ratified document.
 
-### Conditions the ruling fixes for the first refresh under it
+### Non-loosening conditions — every refresh, not only the first
 
-The ruling, and the committed record that refresh would cite
+**Every** refresh under this amendment must carry forward, in the cells
+themselves, each qualifier and non-passing status the prior cell stated, and
+may drop one only on a newer committed record whose own text removes it (for
+instance, a stability re-run after an inductor re-model). A refresh never
+turns a failing or conditional row into an unconditional pass on its own
+authority.
+
+The ruling, and the committed record the first refresh would cite
 (`sim/lna-characterization/records/issue-27-matched-pvt-verdict.md`), pin
-these non-loosening conditions, which any refresh must carry **in the cells
-themselves**:
+these specific non-loosening conditions for that first refresh; they are
+examples of the general rule above, not its limit:
 
 - The **stability row keeps its condition in the cell**: met at **45/45 at
   numerical resolution**, **conditional on the Q ≈ 10 inductor-loss model**,
@@ -591,6 +609,13 @@ themselves**:
 
 The repository is public and the spec is a public statement: the **Judge
 checks each refreshed cell against the committed record digit for digit**
-before a refresh PR merges. Per the TEMPLATE's status vocabulary, a
+before a refresh PR merges, **and** checks, per refreshed figure, that the
+record's bench covers the row's binding conditions (engine build, PDK
+provenance, corner box, analyses run) and that every gap the record shows is
+carried in the cell (condition 4). Digit-for-digit fidelity verifies
+transcription only; the coverage check is what verifies evidence adequacy. A
+row moves to a stronger status only on a record whose bench covers that
+row's binding conditions; otherwise the refresh keeps the weaker status
+or is escalated to the operator. Per the TEMPLATE's status vocabulary, a
 `proposed` record never ratifies itself — this amendment included; its
 effect begins only when the operator ratifies it.
