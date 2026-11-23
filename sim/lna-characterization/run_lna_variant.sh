@@ -70,8 +70,8 @@ KLT_VERSION="$(klt --version 2>&1 | head -1)"
 # (klt_variant_campaign.min_version), the one place it is recorded.
 # This checks the CLIENT klt; the batch runner image must carry the same
 # features and is checked by klt itself (batch_runner_version_mismatch).
-python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client "${KLT_VERSION}" \
-  --runner run_lna_variant.sh || exit 3
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client \
+  --runner run_lna_variant.sh -- "${KLT_VERSION}" || exit 3
 
 NF_NPTS="${LNA_NF_NPTS:-11}"
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")

@@ -34,43 +34,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-if [[ -n "${MATCH_NGSPICE:-}" ]]; then
-  if [[ ! -x "${MATCH_NGSPICE}" ]]; then
-    echo "run_feed_study.sh: MATCH_NGSPICE=${MATCH_NGSPICE} is not executable." >&2
-    exit 3
-  fi
-  PATH="$(cd "$(dirname "${MATCH_NGSPICE}")" && pwd):${PATH}"
-  export PATH
-fi
-
+# The shared matching-study preflight (issue #450): simulator override, PDK /
+# model checks, this study's declaration freshness check and the provenance
+# hashes, with the study identity passed in.
 # shellcheck source-path=SCRIPTDIR
-# shellcheck source=../env.sh
-source "${SIM_DIR}/env.sh"
-
-sim_require_pdk run_feed_study.sh --osdi
-command -v python3 >/dev/null 2>&1 || { echo "run_feed_study.sh: python3 not on PATH." >&2; exit 3; }
-NGSPICE_MAJOR="$(printf '%s\n' "${NGSPICE_VERSION}" | sed -n 's/.*ngspice-\([0-9][0-9]*\).*/\1/p')"
-if [[ -z "${NGSPICE_MAJOR}" ]] || (( NGSPICE_MAJOR < 46 )); then
-  echo "run_feed_study.sh: need ngspice >= 46 (found '${NGSPICE_VERSION}'); set MATCH_NGSPICE." >&2
-  exit 3
-fi
-CAP_LIB="${SG13G2_NGSPICE_MODELS}/cornerCAP.lib"
-CAP_MOD="${SG13G2_NGSPICE_MODELS}/capacitors_mod.lib"
-[[ -f "${CAP_LIB}" && -f "${CAP_MOD}" ]] || { echo "run_feed_study.sh: ${CAP_LIB} / capacitors_mod.lib missing." >&2; exit 3; }
-"${SIM_DIR}/models/check_sources.sh" || { echo "run_feed_study.sh: sim/models hash check failed." >&2; exit 3; }
-# The declaration must match the code, or the run is not the declared study.
-python3 -I "${SCRIPT_DIR}/feed_study.py" declare | cmp -s - "${SCRIPT_DIR}/feed-study-declaration.md" \
-  || { echo "run_feed_study.sh: feed-study-declaration.md is stale vs feed_study.py declare." >&2; exit 3; }
-
-NGSPICE_BIN="$(command -v ngspice)"
-NGSPICE_SHA="$(sha256sum "${NGSPICE_BIN}" | awk '{print $1}')"
-DESIGN_NETLIST_SHA="$(sha256sum "${REPO_ROOT}/design/netlist/lna.spice" | awk '{print $1}')"
-EM_SHA="$(sha256sum "${SIM_DIR}/models/sg13g2_inductor_em.spice" | awk '{print $1}')"
-CAP_LIB_SHA="$(sha256sum "${CAP_LIB}" | awk '{print $1}')"
-CAP_MOD_SHA="$(sha256sum "${CAP_MOD}" | awk '{print $1}')"
-DECL_SHA="$(sha256sum "${SCRIPT_DIR}/feed-study-declaration.md" | awk '{print $1}')"
+# shellcheck source=study_prelude.sh
+source "${SCRIPT_DIR}/study_prelude.sh" run_feed_study.sh feed_study.py feed-study-declaration.md
 
 sim_record_paths
 FEED=(python3 -I "${SCRIPT_DIR}/feed_study.py")

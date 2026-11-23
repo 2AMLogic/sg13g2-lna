@@ -40,7 +40,6 @@ import argparse
 import csv
 import importlib.util
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -87,9 +86,9 @@ VCE_BOX_MAX_V = 2.0
 
 BIAS_CLASSES = ("forward_active", "marginal", "saturated", "cutoff", "reverse", "nonfinite", "missing")
 
-
-def finite(x) -> bool:
-    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+# Shared finite-number predicate (issue #480): the same helper the variant
+# campaign's cell validator uses, not a second copy.
+finite = LVC.is_finite_number
 
 
 # =============================================================================
@@ -169,51 +168,13 @@ def read_requests(snapshot_dir: Path, corners_dir: Path, client_version: str | N
             rv = remote.get("runner_klt_version")
             if client_version and rv and CAMP._semver(rv) != CAMP._semver(client_version):
                 issue("version_mismatch", r, detail=f"runner klt {rv} != client klt {client_version}")
-        cmap, dups = {}, set()
-        for idx, c in enumerate(corners):
-            try:
-                key = LVC.norm_key(*LVC.corner_key(c))
-            except Exception as e:  # noqa: BLE001
-                issue("malformed_cell", r, cell=f"corners[{idx}]", detail=str(e))
-                continue
-            if key not in expected:
-                issue("unexpected_cell", r, cell=key)
-                continue
-            if key in cmap:
-                dups.add(key)
-                continue
-            names = [m.get("name") for m in c.get("measurements", [])]
-            cmap[key] = {"values": LVC.corner_values(c), "ok": LVC.cell_status_ok(c),
-                         "dup_meas": sorted({n for n in names if names.count(n) > 1})}
-        for key in sorted(dups):
-            issue("duplicate_cell", r, cell=key, detail="cell appears more than once; excluded")
-        out = {}
-        for key in expected:
-            if key not in cmap:
-                issue("missing_cell", r, cell=key)
-                continue
-            cell = cmap[key]
-            good = key not in dups
-            ok, detail = cell["ok"]
-            if not ok:
-                issue("failed_cell", r, cell=key, detail=detail)
-                good = False
-            for n in r["expected_measurements"]:
-                v = cell["values"].get(n, "__absent__")
-                if v == "__absent__":
-                    issue("missing_measurement", r, cell=key, measurement=n)
-                    good = False
-                elif v is None:
-                    issue("missing_measurement", r, cell=key, measurement=n, detail="value is null")
-                    good = False
-                elif not finite(v):
-                    issue("non_finite_value", r, cell=key, measurement=n, detail=f"value={v!r}")
-                    good = False
-            for n in cell["dup_meas"]:
-                issue("duplicate_measurement", r, cell=key, measurement=n)
-                good = False
-            out[key] = {"values": cell["values"], "valid": good}
-        data[r["stem"]] = out
+
+        def emit(kind, cell=None, measurement=None, detail=""):
+            issue(kind, r, cell=cell, measurement=measurement, detail=detail)
+
+        cmap, _ = LVC.validate_report_cells(corners, expected, r["expected_measurements"], emit)
+        data[r["stem"]] = {k: {"values": cmap[k]["values"], "valid": cmap[k]["valid"]}
+                           for k in expected if k in cmap}
     return man, data, issues, synthetic, jobs
 
 

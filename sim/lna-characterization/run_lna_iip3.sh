@@ -75,8 +75,8 @@ KLT_VERSION="$(klt --version 2>&1 | head -1)"
 # run_lna_variant.sh and the core-envelope gate runner -- the IIP3 requests
 # use the same features (sim/pdk.json klt_variant_campaign), and the batch
 # runner image is checked by klt itself.
-python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client "${KLT_VERSION}" \
-  --runner run_lna_iip3.sh || exit 3
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client \
+  --runner run_lna_iip3.sh -- "${KLT_VERSION}" || exit 3
 
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --variants "${VARIANT}")
 [[ -n "${LNA_IIP3_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_iip3.sh: LNA_IIP3_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }

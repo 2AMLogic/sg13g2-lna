@@ -101,31 +101,30 @@ class CorrectedNfDb(unittest.TestCase):
     def test_identity_at_t0(self):
         # 27 C -> T_amb = 300.15 K = T0: no correction at all.
         for nf in (0.0, 1.276670, 3.0, 8.74034, 56.1623):
-            got, rt = R.corrected_nf_db(nf, 27)
+            got = R.corrected_nf_db(nf, 27)
             self.assertAlmostEqual(got, nf, places=12)
-            self.assertLess(rt, 1e-9)
 
     def test_minus_40c_hand_value(self):
         # T_amb = 233.15 K; F += (300.15 - 233.15)/300.15 = 67/300.15.
         # NF 0 dB (F=1) -> 10log10(1 + 67/300.15) = 0.8750518485 dB.
-        got, _ = R.corrected_nf_db(0.0, -40)
+        got = R.corrected_nf_db(0.0, -40)
         self.assertAlmostEqual(got, 0.8750518485194088, places=12)
         # Cold ambient under-counted the source noise: correction raises NF.
         self.assertGreater(got, 0.0)
         # Committed fixture row nx8 bcs -40C vce1.2 vbe0.95, NF 1.276670 dB:
         # 10log10(10^0.127667 + 67/300.15) = 1.9450254741 dB.
-        got, _ = R.corrected_nf_db(1.276670, -40)
+        got = R.corrected_nf_db(1.276670, -40)
         self.assertAlmostEqual(got, 1.9450254740686668, places=12)
 
     def test_125c_hand_value(self):
         # T_amb = 398.15 K; F -= 98/300.15. NF 3.0103 dB (F=2) ->
         # 10log10(2 - 98/300.15) = 2.2362483047 dB.
-        got, _ = R.corrected_nf_db(db10(2.0), 125)
+        got = R.corrected_nf_db(db10(2.0), 125)
         self.assertAlmostEqual(got, 2.236248304676566, places=12)
         self.assertLess(got, db10(2.0))
         # Committed fixture row nx1 wcs 125C vce1.0 vbe0.91, NF 8.740340 dB:
         # 10log10(10^0.874034 - 98/300.15) = 8.5465681850 dB.
-        got, _ = R.corrected_nf_db(8.740340, 125)
+        got = R.corrected_nf_db(8.740340, 125)
         self.assertAlmostEqual(got, 8.546568185006135, places=12)
 
     def test_independent_noise_power_construction(self):
@@ -139,21 +138,13 @@ class CorrectedNfDb(unittest.TestCase):
                 committed = db10((n_rest + 4 * k * t_amb * rs)
                                  / (4 * k * t0 * rs))
                 want = db10((n_rest + 4 * k * t0 * rs) / (4 * k * t0 * rs))
-                got, rt = R.corrected_nf_db(committed, temp_c)
+                got = R.corrected_nf_db(committed, temp_c)
                 self.assertAlmostEqual(got, want, places=10)
-                self.assertLess(rt, 1e-9)
-
-    def test_roundtrip_residue(self):
-        for temp_c in (-40, 27, 125):
-            for nf in (0.5, 1.3, 4.4, 9.9, 52.57):
-                _, rt = R.corrected_nf_db(nf, temp_c)
-                self.assertGreaterEqual(rt, 0.0)
-                self.assertLess(rt, 1e-9)
 
     def test_delta_shrinks_with_nf(self):
         # The additive F shift is fixed, so its dB size falls as NF grows.
-        d_lo = R.corrected_nf_db(1.0, -40)[0] - 1.0
-        d_hi = R.corrected_nf_db(20.0, -40)[0] - 20.0
+        d_lo = R.corrected_nf_db(1.0, -40) - 1.0
+        d_hi = R.corrected_nf_db(20.0, -40) - 20.0
         self.assertGreater(d_lo, d_hi)
         self.assertGreater(d_hi, 0.0)
 

@@ -5,6 +5,8 @@ import importlib.util
 import io
 import json
 import math
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -415,12 +417,211 @@ class BadInput(unittest.TestCase):
             (Path(d) / "ideal_noise.report.json").write_text("{not json")
             rc, cov, _ = run_summ(d)
             self.assertNotEqual(rc, 0)
-            self.assertIn("unreadable_report", kinds(cov))
+            got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in cov["issues"]]
+            want = ([("unreadable_report", "ideal", "noise", None)]
+                    + [("missing_cell", "ideal", "noise", V.cell_text(k))
+                       for k in V.expected_grid()])
+            self.assertEqual(got, want)
+
+    def test_collect_reports_pass2_order_and_unreadable_vs_absent(self):
+        # Glob order (ideal_noise, ideal_op, le_q10_noise, le_q20_sp_band)
+        # differs on both axes from required_variants x ANALYSES
+        # ([ideal, le_q20, le_q10] x [op, sp_band, sp_stab, noise]).
+        nom = {"process": {"name": "typ"}, "temperature_c": 27.0,
+               "supply_v": {"vdd": 1.8}, "status": "ok"}
+        unexp = {**nom, "temperature_c": 85.0, "measurements": []}
+        bad_nf = [{"name": m["name"], "value": 2.5 if m["name"] == "nf290_db_worst" else 1.0}
+                  for m in V.measurements("noise", V.N_NF)]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "ideal_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "status": "error", "measurements": []}, unexp]}))
+            (p / "ideal_op.report.json").write_text(json.dumps({"corners": [unexp]}))
+            # Duplicated nominal cell with inconsistent nf290_db_worst: both
+            # duplicate_cell (pass 1) and inconsistent_nf_worst (pass 2) fire.
+            (p / "le_q10_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "measurements": bad_nf}, {**nom, "measurements": bad_nf}]}))
+            # Unreadable required report fans out missing_cell; absent reports only emit missing_report.
+            (p / "le_q20_sp_band.report.json").write_text("{corrupt")
+            _, issues, counts = V.collect_reports(p, ["ideal", "le_q20", "le_q10"], "smoke")
+        got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in issues]
+        n_noise = len(V.measurements("noise", V.N_NF))
+        want = [
+            # Pass 1 in sorted filename order across all reports:
+            ("unexpected_cell", "ideal", "noise", "typ/85C/1.80V"),
+            ("unexpected_cell", "ideal", "op", "typ/85C/1.80V"),
+            ("duplicate_cell", "le_q10", "noise", "typ/27C/1.80V"),
+            ("unreadable_report", "le_q20", "sp_band", None),
+            # Pass 2 in required_variants x ANALYSES order:
+            ("missing_cell", "ideal", "op", "typ/27C/1.80V"),
+            ("missing_report", "ideal", "sp_band", None),
+            ("missing_report", "ideal", "sp_stab", None),
+            ("failed_cell", "ideal", "noise", "typ/27C/1.80V"),
+            *[("missing_measurement", "ideal", "noise", "typ/27C/1.80V")] * n_noise,
+            ("missing_report", "le_q20", "op", None),
+            ("missing_cell", "le_q20", "sp_band", "typ/27C/1.80V"),
+            ("missing_report", "le_q20", "sp_stab", None),
+            ("missing_report", "le_q20", "noise", None),
+            ("missing_report", "le_q10", "op", None),
+            ("missing_report", "le_q10", "sp_band", None),
+            ("missing_report", "le_q10", "sp_stab", None),
+            ("inconsistent_nf_worst", "le_q10", "noise", "typ/27C/1.80V"),
+        ]
+        self.assertEqual(got, want)
+        self.assertEqual(counts[("le_q20", "sp_band")], {"expected": 1, "valid": 0})
+        self.assertEqual(counts[("le_q10", "noise")], {"expected": 1, "valid": 0})
 
     def test_no_reports_nonzero(self):
         with tempfile.TemporaryDirectory() as d:
             rc, cov, _ = run_summ(d)
             self.assertNotEqual(rc, 0)
+
+
+class SharedCellValidation(unittest.TestCase):
+    """Direct tests of validate_report_cells (issue #480), the two-pass cell
+    validator shared with sim/lna-core-envelope's reducer. Synthetic
+    fixtures, not evidence."""
+
+    KEYS = [("wcs", 27.0, 1.8), ("bcs", 27.0, 1.8)]  # expected order != sorted order
+    MEAS = ("a", "b")
+
+    @staticmethod
+    def corner(key, meas=None, status="ok", extra=None):
+        lab, t, v = key
+        c = {"process": {"name": lab}, "temperature_c": t, "supply_v": {"vdd": v},
+             "status": status,
+             "measurements": [{"name": n, "value": x} for n, x in (meas or {}).items()]}
+        if extra is not None:
+            c["measurements"].extend(extra)
+        return c
+
+    def validate(self, corners, expected_measurements=MEAS, keys=None):
+        seen = []
+        cells, valid = V.validate_report_cells(
+            corners, keys or self.KEYS, expected_measurements,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)))
+        return cells, valid, seen
+
+    def kinds(self, seen):
+        return [k for k, _, _, _ in seen]
+
+    def test_all_valid(self):
+        cells, valid, seen = self.validate(
+            [self.corner(k, {"a": 1.0, "b": 2.0}) for k in self.KEYS])
+        self.assertEqual(valid, 2)
+        self.assertEqual(seen, [])
+        self.assertTrue(all(c["valid"] for c in cells.values()))
+
+    def test_malformed_cell(self):
+        bad = self.corner(("wcs", 27.0, 1.8), {"a": 1.0, "b": 2.0})
+        bad["temperature_c"] = None  # float(None) -> TypeError
+        cells, valid, seen = self.validate([bad] + [self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["malformed_cell", "missing_cell"])
+        self.assertEqual(seen[0][1], "corners[0]")
+        self.assertNotIn(("wcs", 27.0, 1.8), cells)
+
+    def test_measurement_without_name_is_malformed(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0},
+                        extra=[{"value": 3.0}])  # measurement entry missing "name"
+        _, _, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen)[:1], ["malformed_cell"])
+        self.assertIn("'name'", seen[0][3])
+
+    def test_unexpected_cell(self):
+        cells, _, seen = self.validate([self.corner(("typ", 85.0, 1.8), {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["unexpected_cell", "missing_cell", "missing_cell"])
+        self.assertNotIn(("typ", 85.0, 1.8), cells)
+
+    def test_duplicate_cell_excluded_and_ordered(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[0], {"a": 9.0, "b": 9.0}),
+                   self.corner(self.KEYS[1], {"a": 9.0, "b": 9.0})]
+        cells, valid, seen = self.validate(corners)
+        # first occurrences retained in cells, duplicates excluded from reduction
+        self.assertEqual(cells[self.KEYS[0]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(cells[self.KEYS[1]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(self.kinds(seen), ["duplicate_cell", "duplicate_cell"])
+        # emitted in expected_keys order, not lexicographic order
+        self.assertEqual([s[1] for s in seen], self.KEYS)
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_missing_cell(self):
+        cells, valid, seen = self.validate([self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["missing_cell"])
+        self.assertEqual(seen[0][1], self.KEYS[1])
+        self.assertEqual(valid, 1)
+
+    def test_failed_cell(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, status="error"),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["failed_cell"])
+        self.assertIn("status='error'", seen[0][3])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertEqual(valid, 1)
+
+    def test_missing_measurement_absent_and_null(self):
+        cells, _, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0}),          # b absent
+             self.corner(self.KEYS[1], {"a": 1.0, "b": None})])  # b null
+        misses = [s for s in seen if s[0] == "missing_measurement"]
+        self.assertEqual([(s[1], s[2], s[3]) for s in misses],
+                         [(self.KEYS[0], "b", ""), (self.KEYS[1], "b", "value is null")])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_non_finite_value(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": float("nan"), "b": 2.0}),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": float("inf")})])
+        self.assertEqual(self.kinds(seen), ["non_finite_value", "non_finite_value"])
+        self.assertEqual([s[2] for s in seen], ["a", "b"])
+        self.assertEqual(valid, 0)
+
+    def test_duplicate_measurement(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, extra=[{"name": "a", "value": 3.0}])
+        cells, valid, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen), ["duplicate_measurement", "missing_cell"])
+        self.assertEqual(seen[0][2], "a")
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+
+    def test_pass1_only_without_expected_measurements(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0})]  # b missing: pass 2 would flag it
+        cells, valid, seen = self.validate(corners, expected_measurements=None)
+        self.assertEqual(seen, [])
+        self.assertEqual(valid, 0)
+        self.assertIn(self.KEYS[0], cells)
+        self.assertNotIn("valid", cells[self.KEYS[0]])
+
+    def test_check_cell_in_cell_order_and_on_duplicated_key(self):
+        # KEYS[0] is duplicated and fails check_cell; KEYS[1] is missing ->
+        # check_cell issue on KEYS[0] precedes missing_cell on KEYS[1].
+        seen = []
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0}),
+                   self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0})]
+
+        def check_ab(key, values, emit):
+            if values["b"] > 5.0:
+                emit("custom_bad", cell=key, measurement="b")
+                return False
+            return True
+
+        cells, valid = V.validate_report_cells(
+            corners, self.KEYS, self.MEAS,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)),
+            check_cell=check_ab)
+        self.assertEqual([(k, c) for k, c, _, _ in seen],
+                         [("duplicate_cell", self.KEYS[0]),
+                          ("custom_bad", self.KEYS[0]),
+                          ("missing_cell", self.KEYS[1])])
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
 
 
 def cell_of(i):
@@ -468,10 +669,83 @@ class ClientFloor(unittest.TestCase):
         for sh, gen_cmd in (("run_lna_variant.sh", '" gen '),
                             ("run_lna_iip3.sh", '" gen-iip3 ')):
             text = (LNA / sh).read_text()
-            self.assertIn('lna_variant_campaign.py" check-client "${KLT_VERSION}"', text, sh)
-            self.assertIn("|| exit 3", text, sh)
+            self.assertIn('lna_variant_campaign.py" check-client', text, sh)
+            # the banner follows the end-of-options delimiter so an
+            # option-shaped banner (`--help`) is data, not an argparse flag
+            self.assertIn('-- "${KLT_VERSION}" || exit 3', text, sh)
             self.assertNotIn("def triple", text, sh)
             self.assertLess(text.index("check-client"), text.index("lna_variant_campaign.py" + gen_cmd), sh)
+
+
+    def test_cli_option_shaped_banner_is_rejected_not_parsed_as_flag(self):
+        # `klt --version` printing `--help` must reach check_client_floor and
+        # fail with the runner's diagnostic; without the `--` delimiter
+        # argparse prints its own help and exits 0.
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "--runner", "run_lna_variant.sh", "--", "--help"], capture_output=True, text=True)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("run_lna_variant.sh:", p.stderr)
+        self.assertIn("cannot parse", p.stderr)
+
+    def test_wrappers_stop_before_generation_on_option_shaped_banner(self):
+        # Run the real shell entry points in a scratch tree (fixture PDK, stub
+        # klt that reports `--help` as its version and logs every other
+        # call). Expect exit 3 and zero generator invocations. No simulator
+        # or fleet run.
+        repo_sim = LNA.parent
+        for sh, gen in (("run_lna_variant.sh", "gen"), ("run_lna_iip3.sh", "gen-iip3")):
+            with self.subTest(runner=sh), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                sim = root / "sim"
+                (root / "design" / "netlist").mkdir(parents=True)
+                shutil.copy(repo_sim.parent / "design" / "netlist" / "lna.spice",
+                            root / "design" / "netlist" / "lna.spice")
+                sim.mkdir()
+                for name in ("env.sh", "pdk.json"):
+                    shutil.copy(repo_sim / name, sim / name)
+                for name in ("tools", "models"):
+                    shutil.copytree(repo_sim / name, sim / name)
+                shutil.copytree(LNA, sim / "lna-characterization",
+                                ignore=shutil.ignore_patterns("tests", "__pycache__",
+                                                              "records", "corners",
+                                                              "netlist-snapshots"))
+                # parse_lna_sweep.py loads this sibling module by relative path.
+                (sim / "lna-core-envelope").mkdir()
+                shutil.copy(repo_sim / "lna-core-envelope" / "envelope_rf.py",
+                            sim / "lna-core-envelope" / "envelope_rf.py")
+                # Fixture PDK (same shape as sim/tests/test-core-envelope-lifecycle.sh).
+                tech = root / "pdk" / "ihp-sg13g2" / "libs.tech" / "ngspice"
+                (tech / "models").mkdir(parents=True)
+                (tech / "osdi").mkdir()
+                (tech / "models" / "cornerHBT.lib").write_text(".lib cur\n.endl\n")
+                (tech / "models" / "cornerMOShv.lib").write_text("* mos\n")
+                for f in ("psp103", "psp103_nqs", "mosvar"):
+                    (tech / "osdi" / f"{f}.osdi").write_text("x\n")
+                (root / "pdk" / "ihp-sg13g2" / ".fetched-version").write_text("0.3.0\n")
+                # Stub klt: `--version` banner is option-shaped; anything else is logged.
+                bindir = root / "bin"
+                bindir.mkdir()
+                log = root / "klt.log"
+                klt = bindir / "klt"
+                klt.write_text('#!/bin/sh\n[ "$1" = "--version" ] && { echo "--help"; exit 0; }\n'
+                               'echo "klt $*" >> "$STUB_LOG"\nexit 0\n')
+                klt.chmod(0o755)
+                # Stub generator hook: any call to the campaign generator
+                # subcommand would be a failure -- wrap python3 to log it.
+                py = bindir / "python3"
+                py.write_text('#!/bin/sh\nfor a in "$@"; do [ "$a" = "%s" ] && '
+                              'echo "python3 $*" >> "$STUB_LOG"; done\nexec "%s" "$@"\n'
+                              % (gen, sys.executable))
+                py.chmod(0o755)
+                env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}",
+                           STUB_LOG=str(log), PDK_ROOT=str(root / "pdk"), PDK="ihp-sg13g2")
+                p = subprocess.run(["bash", str(sim / "lna-characterization" / sh)],
+                                   capture_output=True, text=True, env=env, timeout=120)
+                self.assertEqual(p.returncode, 3, p.stdout + p.stderr)
+                self.assertIn("cannot parse", p.stderr)
+                self.assertFalse(log.exists(), f"generator/klt reached after bad banner: "
+                                 f"{log.read_text() if log.exists() else ''}")
 
 
 class WrapperPropagation(unittest.TestCase):
