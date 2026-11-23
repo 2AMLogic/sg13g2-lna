@@ -4,6 +4,22 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-23
+
+- **PR #484**: sim: remove unused lenient parse_sp_log reader and migrate its tests
+- **PR #481**: sim: dedupe the corner-report cell validator shared by both reducers
+- **Issue #482** (closed): Retire the test-only S-parameter log reader after the coverage migration
+- **Issue #480** (closed): Share klt sim corner-report cell validation between variant and core-envelope reducers
+
+### 2026-11-22
+
+- **PR #479**: test: byte-compare regenerated recommendation.json in match replay
+- **PR #471**: sim: share the broadband stability table reduction between reducers
+- **PR #459**: refactor(sim): share the matching-study preflight across the feed, Le and Q runners
+- **Issue #476** (closed): Byte-compare recommendation.json in the match replay test
+- **Issue #468** (closed): Share broadband stability reduction between feed scans and matching verification
+- **Issue #450** (closed): Share the matching-study preflight across the feed, Le and Q runners
+
 ### 2026-11-20
 
 - **Issue #449** (closed): Reuse the Q-study boundary reduction for both metrics and band data
