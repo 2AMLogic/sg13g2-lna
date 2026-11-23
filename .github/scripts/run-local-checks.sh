@@ -8,8 +8,11 @@
 # an absent tool or a git base ref print a SKIP line instead.
 #
 # Usage: .github/scripts/run-local-checks.sh [--base <ref>]
-#   --base <ref>  also run the sim-append-only check against <ref>
-#                 (CI uses origin/<pull-request base branch>, full history).
+#   --base <ref>  also run the sim-append-only check and the
+#                 check-signoff.sh T1 met-regression comparison against
+#                 <ref> (CI uses origin/<pull-request base branch> on a PR
+#                 and the merge queue's trial-merge base_sha on a
+#                 merge-group run; full history).
 # The workflow stays the authority; .github/scripts/test-run-local-checks.sh
 # fails if any workflow command is not run here by a `step` exactly as CI
 # runs it (whole-command match, workflow order).
@@ -21,7 +24,7 @@ while [ $# -gt 0 ]; do
     --base)
       [ $# -ge 2 ] || { echo "usage: $0 [--base <ref>]" >&2; exit 2; }
       base="$2"; shift 2 ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "usage: $0 [--base <ref>]" >&2; exit 2 ;;
   esac
 done
@@ -112,7 +115,14 @@ step "signoff: test-check-klt-pin.sh" .github/scripts/test-check-klt-pin.sh
 if [ "$klt_ready" -eq 1 ]; then
   [ -n "$klt_tmp" ] && PATH="$klt_tmp:$PATH"
   step "signoff: test-check-signoff.sh" .github/scripts/test-check-signoff.sh
-  step "signoff: check-signoff.sh" .github/scripts/check-signoff.sh
+  # Mirrors the workflow's event-selected base (issue #446): with --base
+  # the T1 met-regression comparison runs against <ref>; without it this
+  # is the push-to-main, freshness-only invocation.
+  if [ -n "$base" ]; then
+    step "signoff: check-signoff.sh --base $base" .github/scripts/check-signoff.sh --base "$base"
+  else
+    step "signoff: check-signoff.sh" .github/scripts/check-signoff.sh
+  fi
   [ -n "$klt_tmp" ] && PATH="${PATH#"$klt_tmp":}"
 else
   skip "signoff: test-check-signoff.sh (need release klt $klt_pin on PATH or uvx to fetch it, have: ${klt_have:-none}; CI pip-installs it)"
@@ -150,6 +160,8 @@ step "sim-record-paths-tests: sim_record_paths reservation tests" \
   sim/tests/test-sim-record-paths.sh
 step "sim-record-paths-tests: sim_run_deck sequential-deck gate tests (issue #300)" \
   sim/tests/test-sim-run-deck.sh
+step "sim-record-paths-tests: shared matching-study preflight tests (issue #450)" \
+  sim/tests/test-study-prelude.sh
 step "sim-pdk-identity-tests: installed-PDK identity preflight tests" \
   sim/tests/test-pdk-identity.sh
 step "sim-core-envelope-lifecycle-tests: core-envelope record lifecycle tests" \
@@ -227,7 +239,8 @@ fi
 step "design-source-audit: self-test" .github/scripts/test-design-source-audit.sh
 step "design-source-audit: check" .github/scripts/design-source-audit check
 
-# --- job: sim-append-only (CI: pull_request only)
+# --- job: sim-append-only (CI: pull_request and merge_group; this runner's
+# --base flag stands in for the event-derived base of both)
 step "sim-append-only: self-test" .github/scripts/test-check-sim-append-only.sh
 if [ -n "$base" ]; then
   step "sim-append-only: check --base $base" .github/scripts/check-sim-append-only --base "$base"

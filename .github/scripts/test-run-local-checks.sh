@@ -14,6 +14,18 @@
 #     mirrored (the runner probes for xschem + the PDK and SKIPs when absent).
 #   - "Installed ShellCheck is exactly 0.10.0": runner must probe the same
 #     `shellcheck --version | grep -qx 'version: 0.10.0'`.
+#   - "No committed sim/ evidence modified, deleted or renamed" (issue #391):
+#     CI resolves the base from the event (PR: origin/<base_ref>;
+#     merge_group: the trial-merge merge_group.base_sha) and the block must
+#     end in `check-sim-append-only --base "$BASE"`; the runner is
+#     event-agnostic and plays the event's role with its own `--base <ref>`
+#     flag, so the mirrored step is `check-sim-append-only --base "$base"`.
+#   - "T1 verdict of record is current" (issue #446): the same event
+#     selection (merge_group: merge_group.base_sha; pull_request:
+#     origin/<base_ref>), and the block must carry all three invocations —
+#     `--base "$MG_BASE"`, `--base "$PR_BASE"` and the bare no-base form
+#     for pushes to main that check-repo-hygiene.py pins verbatim; the
+#     runner mirrors with its `--base` step plus the bare no-base step.
 #   - "Lint tracked first-party Bash": body (minus `set -euo pipefail`,
 #     `exit 1` read as `return 1`) must equal the runner's shell_lint()
 #     body line for line, and the runner must run `step ... shell_lint`.
@@ -46,6 +58,20 @@ bad() { echo "FAIL: $1"; fail=$((fail+1)); }
 BASE_WF='"origin/${{ github.base_ref }}"'
 # shellcheck disable=SC2016
 BASE_RN='"$base"'
+# Literal string: the runner's sim-append-only step command (issue #391) —
+# the mirror of the workflow block, filtered from the whole-command diff
+# like `shell_lint` is.
+# shellcheck disable=SC2016
+SIM_RN='.github/scripts/check-sim-append-only --base "$base"'
+# Literal strings: the runner's two check-signoff.sh step commands
+# (issue #446) — the --base mirror of the workflow block's event-selected
+# invocations and the bare push-to-main form. Both are filtered from the
+# whole-command diff (the block's event plumbing has no single-command
+# equivalent) and asserted explicitly below.
+# shellcheck disable=SC2016
+SIGN_RN='.github/scripts/check-signoff.sh --base "$base"'
+# shellcheck disable=SC2016
+SIGN_BARE='.github/scripts/check-signoff.sh'
 
 # Workflow -> records, one per line:
 #   CMD<TAB><step name><TAB><command>      single-line run:
@@ -93,18 +119,18 @@ runner_steps() {
 
 # check <workflow> <runner>: print every drift problem; return 1 if any.
 check() {
-  local wf="$1" rn="$2" d kind name cmd line probs=0 inlint=0
+  local wf="$1" rn="$2" d kind name cmd line probs=0 inlint=0 insim=0 insign=0
   d="$(mktemp -d -p "$TMP")"
-  : > "$d/wf"; : > "$d/lint"
+  : > "$d/wf"; : > "$d/lint"; : > "$d/simblock"; : > "$d/signblock"
   wf_records "$wf" > "$d/rec"
   while IFS=$'\t' read -r kind name cmd; do
     case "$kind" in
       CMD)
-        inlint=0
+        inlint=0; insim=0; insign=0
         case "$name" in "Install pinned klt") continue ;; esac
         printf '%s\n' "${cmd//"$BASE_WF"/"$BASE_RN"}" >> "$d/wf" ;;
       BLOCK)
-        inlint=0
+        inlint=0; insim=0; insign=0
         case "$name" in
           "Install pinned ShellCheck 0.10.0") ;;
           "Install xschem") ;;
@@ -115,11 +141,15 @@ check() {
           "Pinned xschem is on PATH")
             grep -qF 'XSCHEM V3\.4\.7' "$rn" \
               || { echo "runner does not probe for the pinned xschem version"; probs=1; } ;;
+          "No committed sim/ evidence modified, deleted or renamed") insim=1 ;;
+          "T1 verdict of record is current") insign=1 ;;
           "Lint tracked first-party Bash") inlint=1 ;;
           *) echo "unhandled block-scalar step '$name' (teach this test how the runner mirrors it)"; probs=1 ;;
         esac ;;
       BODY)
         line="$name"
+        if [ "$insim" -eq 1 ]; then printf '%s\n' "$line" >> "$d/simblock"; fi
+        if [ "$insign" -eq 1 ]; then printf '%s\n' "$line" >> "$d/signblock"; fi
         if [ "$inlint" -eq 1 ] && [ "$line" != "set -euo pipefail" ]; then
           [ "$line" = "exit 1" ] && line="return 1"
           printf '%s\n' "$line" >> "$d/lint"
@@ -127,8 +157,49 @@ check() {
     esac
   done < "$d/rec"
 
+  # sim-append-only mirror (issue #391): the workflow block must still
+  # select the merge-group base from the event and end in the checker
+  # invocation (`--base "$BASE"`), and the runner must run the same
+  # invocation with its `--base` flag (`--base "$base"`). That runner step
+  # is then excluded from the whole-command diff below (as `shell_lint` is):
+  # the block's CI event plumbing has no local equivalent, the runner's
+  # `--base` option is the stand-in documented in its header. Every drift
+  # direction still fails loudly: block edits fail the two checks above,
+  # a runner-side deletion fails the rn_all check, and a workflow-side
+  # revert to a single-line `run:` re-adds the command to $d/wf while it
+  # stays filtered from $d/rn ("runner has no step running").
+  grep -qxF 'if [ "$EVENT" = "merge_group" ]; then' "$d/simblock" \
+    || { echo "workflow sim-append-only block no longer selects the merge-group base"; probs=1; }
+  [ "$(tail -n 1 "$d/simblock")" = '.github/scripts/check-sim-append-only --base "$BASE"' ] \
+    || { echo "workflow sim-append-only block does not end in the checker invocation with the event-selected base"; probs=1; }
+
+  # check-signoff.sh base mirror (issue #446): the workflow block must keep
+  # the event selection (merge_group: merge_group.base_sha; pull_request:
+  # origin/<base_ref>) and all three invocations — both --base forms and the
+  # bare no-base form for pushes to main (which check-repo-hygiene.py pins
+  # verbatim as a declared command). The runner mirrors with its --base step
+  # plus the bare step; both are excluded from the whole-command diff below
+  # because the block's event plumbing has no single-command equivalent. A
+  # deletion on either side still fails loudly: workflow edits fail these
+  # greps, runner deletions fail the rn_all greps.
+  grep -qxF 'if [ "$EVENT" = "merge_group" ]; then' "$d/signblock" \
+    || { echo "workflow check-signoff block no longer selects the merge-group base"; probs=1; }
+  grep -qxF '.github/scripts/check-signoff.sh --base "$MG_BASE"' "$d/signblock" \
+    || { echo "workflow check-signoff block lost the merge-group base invocation"; probs=1; }
+  grep -qxF '.github/scripts/check-signoff.sh --base "$PR_BASE"' "$d/signblock" \
+    || { echo "workflow check-signoff block lost the pull-request base invocation"; probs=1; }
+  grep -qxF '.github/scripts/check-signoff.sh' "$d/signblock" \
+    || { echo "workflow check-signoff block lost the no-base (push to main) invocation"; probs=1; }
+
   runner_steps "$rn" | cut -f2- > "$d/rn_all"
-  grep -vxF shell_lint "$d/rn_all" > "$d/rn"
+  grep -qxF -- "$SIM_RN" "$d/rn_all" \
+    || { echo "runner has no step running the sim-append-only check with --base"; probs=1; }
+  grep -qxF -- "$SIGN_RN" "$d/rn_all" \
+    || { echo "runner has no step running check-signoff.sh with --base"; probs=1; }
+  grep -qxF -- "$SIGN_BARE" "$d/rn_all" \
+    || { echo "runner has no step running the no-base check-signoff.sh (pushes to main)"; probs=1; }
+  grep -vxF shell_lint "$d/rn_all" | grep -vxF -- "$SIM_RN" \
+    | grep -vxF -- "$SIGN_RN" | grep -vxF -- "$SIGN_BARE" > "$d/rn"
   while IFS= read -r cmd; do
     grep -qxF -- "$cmd" "$d/rn" || { echo "runner has no step running: $cmd"; probs=1; }
   done < "$d/wf"

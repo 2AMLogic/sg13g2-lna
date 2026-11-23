@@ -60,6 +60,14 @@ HYGIENE_FILES = {
     WORKFLOW: "CI workflow",
     ".github/scripts/check-repo-hygiene.py": "this audit",
     ".github/scripts/signoff_common.py": "shared helpers this audit and the item-9 audit load",
+    ".github/scripts/native_drc_pair.py":
+        "the one native-DRC pair check: loaded by path by the layout-freshness "
+        "gate and the layout scripts (issue #359), so it is hashed like the "
+        "gate that executes it",
+    ".github/scripts/inductance_lowfreq.py":
+        "the low-frequency inductance extraction: loaded by path by the "
+        "layout-freshness gate (issue #359 ruling), so it is hashed like the "
+        "gate that executes it",
     ".github/scripts/test-check-repo-hygiene.sh": "this audit's self-test",
 }
 
@@ -71,9 +79,21 @@ DECLARED_COMMANDS = [
     ("testbench-inventory", "python3 -I .github/scripts/check-testbench-inventory.py", "item-9 inventory freshness"),
     ("netlist-freshness", "python3 -I .github/scripts/check-netlist-freshness", "netlist matches schematic inventory"),
     ("layout-freshness", ".github/scripts/check-layout-freshness", "layout evidence agrees with its provenance"),
+    ("layout-freshness", ".github/scripts/test-check-layout-freshness.sh", "layout-freshness gate self-test"),
     ("model-provenance", "sim/models/check_sources.sh", "vendored models match recorded sha256"),
-    ("sim-append-only", '.github/scripts/check-sim-append-only --base "origin/${{ github.base_ref }}"',
-     "committed sim/ evidence is append-only (pull_request only)"),
+    ("sim-append-only", '.github/scripts/check-sim-append-only --base "$BASE"',
+     "committed sim/ evidence is append-only (pull_request and merge_group)"),
+    ("signoff", ".github/scripts/test-check-klt-pin.sh", "klt pin checker self-test"),
+    ("record-citations", ".github/scripts/test-check-record-citations.sh", "record-citations gate self-test"),
+    ("testbench-inventory", ".github/scripts/test-check-testbench-inventory.sh", "testbench-inventory gate self-test"),
+    ("characterization-report", ".github/scripts/test-characterization-report.sh", "characterization-report gate self-test"),
+    ("artifact-manifests", ".github/scripts/test-check-artifact-manifests.sh", "artifact-manifests gate self-test"),
+    ("netlist-freshness", ".github/scripts/test-check-netlist-freshness.sh", "netlist-freshness gate self-test"),
+    ("netlist-freshness", ".github/scripts/test-check-floating-nodes.sh", "floating-nodes gate self-test"),
+    ("netlist-regen", ".github/scripts/test-check-netlist-regen.sh --require-tools", "netlist-regen gate self-test"),
+    ("design-source-audit", ".github/scripts/test-design-source-audit.sh", "design-source audit self-test"),
+    ("sim-append-only", ".github/scripts/test-check-sim-append-only.sh", "sim append-only gate self-test"),
+    ("model-provenance", ".github/scripts/test-check-model-sources.sh", "model-provenance gate self-test"),
     ("local-checks-drift", ".github/scripts/test-run-local-checks.sh", "local runner mirrors the workflow"),
     ("repo-hygiene", ".github/scripts/test-check-repo-hygiene.sh", "this audit's self-test"),
     ("repo-hygiene", "python3 -I .github/scripts/check-repo-hygiene.py", "this audit"),
@@ -85,7 +105,7 @@ MECHANICAL_CHECKS = [
     "spec/target-spec.md contains a markdown table with a header, a separator and at least one data row",
     "LICENSE is non-empty",
     "every declared command's script is tracked and present, and is hashed",
-    "every declared command appears verbatim as a single-line `run:` in its named CI job",
+    "every declared command appears verbatim as a `run:` command (a single-line `run:` or a block-scalar body line) in its named CI job",
     "the committed inventory equals the recomputed one; the envelope binds its hash",
 ]
 
@@ -97,22 +117,40 @@ NOT_CHECKED = [
 
 
 def workflow_runs(text):
-    """Map job id -> list of single-line `run:` commands (block scalars are skipped)."""
+    """Map job id -> list of `run:` commands. A single-line `run:` contributes
+    its command; a block scalar (`run: |` / `run: >`) contributes its
+    non-blank, non-comment body lines, trimmed (issue #391: the
+    sim-append-only gate resolves its base from the event in a short block
+    and ends in the checker invocation). Blank lines inside the block never
+    end it (issue #395); only a non-blank dedent does."""
     jobs, cur, in_jobs = {}, None, False
+    block_indent = -1
     for line in text.splitlines():
         if re.match(r"^jobs:\s*$", line):
             in_jobs = True
             continue
         if not in_jobs:
             continue
+        indent = len(line) - len(line.lstrip(" "))
+        if block_indent >= 0:
+            if not line.strip():
+                continue
+            if indent <= block_indent:
+                block_indent = -1
+            elif not line.strip().startswith("#"):
+                jobs[cur].append(line.strip())
+                continue
         m = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
         if m:
             cur = m.group(1)
             jobs[cur] = []
             continue
         m = re.match(r"^\s+(?:- )?run:\s+(\S.*?)\s*$", line)
-        if m and cur and m.group(1) not in ("|", ">", "|-", ">-"):
-            jobs[cur].append(m.group(1))
+        if m and cur:
+            if m.group(1) in ("|", ">", "|-", ">-"):
+                block_indent = indent
+            else:
+                jobs[cur].append(m.group(1))
     return jobs
 
 

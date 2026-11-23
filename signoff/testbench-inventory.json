@@ -1937,7 +1937,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_feed_study.sh"
+        "sim/lna-matching-feasibility/run_feed_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -2022,7 +2023,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_le_study.sh"
+        "sim/lna-matching-feasibility/run_le_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -2108,7 +2110,8 @@
       ],
       "result_status": "none-blocked",
       "runners": [
-        "sim/lna-matching-feasibility/run_q_study.sh"
+        "sim/lna-matching-feasibility/run_q_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -2261,7 +2264,8 @@
       "result_status": "published",
       "runners": [
         "sim/lna-matching-feasibility/run_q_study.sh",
-        "sim/lna-matching-feasibility/run_q_study_correction.sh"
+        "sim/lna-matching-feasibility/run_q_study_correction.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -2486,7 +2490,7 @@
     }
   },
   "files": {
-    "README.md": "sha256:d8764e03e148f8d9eebfa6f7b840209ed43c86f960e62d28c8688f47ddd9ac7e",
+    "README.md": "sha256:956c6330770d196ff8be6fb4f9588609b03b2e171f84f58c0322b74fd63ab61c",
     "design/netlist/lna.spice": "sha256:151aec66ade8f05257795721527b580014edda14793bdafb2a0816d1a212ec64",
     "measurements/README.md": "sha256:e6b5cbee2067b1126570089f27a050ace8de608f6bab0a95c67380e89f993954",
     "measurements/results-verdicts.json": "sha256:a32d21ba7108423713c933034e5053713454dc40bc6ca82194cd2df3ca1ef6b1",
@@ -2572,8 +2576,8 @@
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
     "sim/lna-characterization/README.md": "sha256:9bbeeb913f6d6035f52e7cf8ba2b47b6b7496bc89811aedeb08e06646e205c5e",
     "sim/lna-characterization/gen_spec_envelopes.py": "sha256:c8ba7ca228c993b5e1356605356cccc358b20ab494886ddeb4de7228a57debdd",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:383ade9012a5256a7abdcbc39bdfdf45a359821aa915b4d89c5066a639fbcaa9",
-    "sim/lna-characterization/parse_lna_sweep.py": "sha256:22bf9830ee7efc7af6ab25ef6472e2b0e2505437fd138a83a13dff4dd3328157",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:d436578c93274a9d845e6caf591f08732d659d21650a6467c0fb9e0d93920186",
+    "sim/lna-characterization/parse_lna_sweep.py": "sha256:70d4f20699861be0c1a94cab59196485a4f2c2a2bae188b618776f6ba0c98779",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
     "sim/lna-characterization/records/20260918-210908-4293920-summary.csv": "sha256:57e599c2c74019af02244c230c0ca1d78ca65ff82f8a1921737889f887eb5847",
@@ -2634,15 +2638,15 @@
     "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:923252dfcaf4edc613de5dc32a75416498327fb4dd744f892148a685b071ce54",
     "sim/lna-characterization/reduce_spec_envelopes.py": "sha256:7c0cd8867fd4b1d191582a9e1613a2651e19bd4188fdd0a5263a6b971542506f",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
-    "sim/lna-characterization/run_lna_iip3.sh": "sha256:ddf57057c86cdf2caa0b3efd9af7786139dab0d878dea2b523cd6327e42bb4a3",
+    "sim/lna-characterization/run_lna_iip3.sh": "sha256:5510dcb2a37f30fb31f57cb7f08e111b78c34717b09b4d7c3fd7b985fb3f0cb5",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:280eeb08093a120e8dd2abd5919db9796b560712bb6f44d03e11a459037383ef",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:ce7f84eb3e6bdefb0ce0f64192f22024b065b2433b17048d4804db563546a996",
     "sim/lna-characterization/run_spec_envelopes.sh": "sha256:34a140e55dc0333a03b0b20ad8256c762feb0186f08e54fce632286bd12f0950",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
     "sim/lna-characterization/testbench/tb_resistor_noise_temp_probe.spice": "sha256:14d069161e9155af578d027fa4cc859d6cab33dca68be6871528b94922515b54",
-    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:4bf271b75eb7d931eedfd0b83cf22215550720f6d8f4f3aec90109d4b2bf3db8",
-    "sim/lna-characterization/tests/test_parse_lna_sweep.py": "sha256:1f502b52304b3dd5d89eb15335bb76ee98bb5030649f7836197ff7ad001f1c3f",
+    "sim/lna-characterization/tests/test_lna_variant_campaign.py": "sha256:9cb1c9ae327bf120f8602c356e1a37e96be84016f5fdfcdb8c67b40962d866bf",
+    "sim/lna-characterization/tests/test_parse_lna_sweep.py": "sha256:264ae2e3aac94a4a3cbee55be9b67ec0f6b2b9f64ab5590eac1b76a1289c0017",
     "sim/lna-characterization/tests/test_render_results.py": "sha256:dade5ce6c7e80f1b4335f02bc9fe4c3d33c00b6d6c0fe3c16ea618e188291c8c",
     "sim/lna-characterization/views/20260926-122301-088c734-nfmin290.csv": "sha256:f419185943f2d86a25f14b93954d2daca8d3c6358227ad6b14b814d3497eaaf7",
     "sim/lna-core-envelope/README.md": "sha256:052a87cd29d27b3764262e6717bdb6f540cb8585ffb56e30b76d30d387de8578",
@@ -2656,7 +2660,7 @@
     "sim/lna-core-envelope/records/20260926-180931-90b07a0-variant-summary.csv": "sha256:9c9280605a7f7e89a7fd8c4a53d376a1ba2e3e88883cb9783660d0faf3d523f4",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.csv": "sha256:c3fbeac7243324b42a7bd1c03fe434e7de8c2b480e6ea58ef04bc430c2238d62",
     "sim/lna-core-envelope/records/20260926-180931-90b07a0.md": "sha256:7dba629237229d55e65f75c6d0aa4498105bb35f44842e21d83660b745e67984",
-    "sim/lna-core-envelope/reduce_core_envelope_campaign.py": "sha256:06f81970f09d5fe6e90a25ae2f4186b4fc6ff54a1efcbf236def6ef52d7e2b10",
+    "sim/lna-core-envelope/reduce_core_envelope_campaign.py": "sha256:dbf0d8e270dede7d5c271d8c7236a88a5a49471cb865c6894edea65524168066",
     "sim/lna-core-envelope/run_core_envelope.sh": "sha256:cdc26a71fd5055c34848354f019092003c3308ae1db6ae6fe678eb91f38e4668",
     "sim/lna-core-envelope/run_core_envelope_campaign.sh": "sha256:efadc0f1fba50b5504859055bc454ed69b73d52a045eb1dd712ee982ab961c9c",
     "sim/lna-core-envelope/testbench/tb_core_envelope.spice.tmpl": "sha256:f789ab2988ff9c305a9a2d7e4d1aefd2c28061ad13e3b821b720b65f007579f7",
@@ -2668,14 +2672,14 @@
     "sim/lna-core-envelope/tests/test_envelope_rf.py": "sha256:803c84153a1d1f6ff6cfd4f14692a966ee20b8d43304bb347df0e2a2d7b56fcf",
     "sim/lna-core-envelope/tests/test_parse_core_envelope.py": "sha256:348f305b19a3c3e189268866fb904d9855977ac92513c744d6ca620c65a36985",
     "sim/lna-core-envelope/tests/test_reduce_core_envelope_campaign.py": "sha256:4b5f66eba1c5d10508373d9350c38f2047d514a0c74ca4356441d5408699bf52",
-    "sim/lna-matching-feasibility/README.md": "sha256:3352edeebd0cef05f0af68497b40514ae764f0a49e6b75360738dc85828afebb",
+    "sim/lna-matching-feasibility/README.md": "sha256:9e276f56429282ad349d3df6c7a22565474642cefe5030a10eb5aa40631e7ac8",
     "sim/lna-matching-feasibility/feed-study-declaration.md": "sha256:26291c8f01e966d0b837fc97999a72df18d1d7c74c91d2e56434312c151591e2",
-    "sim/lna-matching-feasibility/feed_study.py": "sha256:edafee1d671fde06267f6cc39289e0f917eae92b503cb287986eff848bf0dc77",
+    "sim/lna-matching-feasibility/feed_study.py": "sha256:f5df05872a312bdf6fe23974a2e264ba12738c7b2b17ac544466f899accb8932",
     "sim/lna-matching-feasibility/le-study-declaration.md": "sha256:65582abe794ccc2ae1b953be77718655d539f7673f191f7776b09b130e22c2ea",
     "sim/lna-matching-feasibility/le_study.py": "sha256:ff71bdb950ab3d0e2ff84ee525a6294d6fc9f9706f74cc826988130e7bd1b2ee",
-    "sim/lna-matching-feasibility/matching_solver.py": "sha256:95ef1c00b7059c1d78dfac248bdfe7cb340bee832617254d5eeebfc213c487fa",
+    "sim/lna-matching-feasibility/matching_solver.py": "sha256:d614a18f5224185d7437ee548728627d5bf46d6515400e16bb77e1d592fe1e1c",
     "sim/lna-matching-feasibility/q-study-declaration.md": "sha256:13d3cf0a1a9048f459b0315a22dd159995e4c5d1ec8d4787c723128a9dc583a7",
-    "sim/lna-matching-feasibility/q_study.py": "sha256:c010532a3bec62293a88411b2ca25c5e6b35f7a29628061bdbf4305f13345889",
+    "sim/lna-matching-feasibility/q_study.py": "sha256:8eb4b09be27e10db8dd37e919903a5ebd431db916f7a59cc5f484bb986b7e025",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-band.csv": "sha256:d3d3607da866858e177bf7b9b252a23d0fc1628a3dd9ceac32e7364b631b4b67",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c-candidates.csv": "sha256:4d2949ee325a4f977d2f01c452833a2be5a16392d46773b9c84c0146fd5fe2fe",
     "sim/lna-matching-feasibility/records/20261010-201010-6aca84c.md": "sha256:c411f89190c992cadec8079b46aef8b56868eb6b2db8c913233fed625482206c",
@@ -2713,11 +2717,12 @@
     "sim/lna-matching-feasibility/records/20261011-182735-367e645-isolation.csv": "sha256:2ab7b9c470128774753db372ef1d1492cbe32745a009c5a8cf568e07db7e10a8",
     "sim/lna-matching-feasibility/records/20261011-182735-367e645.md": "sha256:3bb2e6f6f0b6ea18d13c98680640cf9317d5950de477bbaa2bfbb8f5eb54cb70",
     "sim/lna-matching-feasibility/run_dc_reference_study.sh": "sha256:16955b2af9d3539440a3bf0d05b6c485fa98cc8d64744f051e9e052cd37155cb",
-    "sim/lna-matching-feasibility/run_feed_study.sh": "sha256:5d9633a881fb3583f4abf9efae138450b13d77c3130361dd0102bb92a31c8837",
-    "sim/lna-matching-feasibility/run_le_study.sh": "sha256:fa3f289903d1ae169a11647967a169afc9a041ab691a57da6a65400ce9f00fd4",
+    "sim/lna-matching-feasibility/run_feed_study.sh": "sha256:61cbc142603fcdafed54d5e0dd1ea048535db0b07ce2d8e00e0462f35b53e352",
+    "sim/lna-matching-feasibility/run_le_study.sh": "sha256:0333b3be4cd688eaa51e976d747ba52fdc7eb07c700cc7e439261f34e3d7a92a",
     "sim/lna-matching-feasibility/run_matching_study.sh": "sha256:75267b1d692c7cd50492764984243ff47cfc5fd81f5b157e20dac55ef2488546",
-    "sim/lna-matching-feasibility/run_q_study.sh": "sha256:9a85dc4359eb9b46ac18c38363abb13959e1d00b866c36427ba05983779632d1",
+    "sim/lna-matching-feasibility/run_q_study.sh": "sha256:7c688f3ccfce23392068028fbadb900d12efe82405abffd7f13e2962a58be363",
     "sim/lna-matching-feasibility/run_q_study_correction.sh": "sha256:d5d4145238a74fd810656c34a89b0a0a386f586afb0b6237e046fd7fddb1d3e8",
+    "sim/lna-matching-feasibility/study_prelude.sh": "sha256:1d9bc7ee0aacb00f2d659a28c7777bba4852c546a550a141dff03b18d6a833fa",
     "sim/lna-matching-feasibility/testbench/tb_feed_cmimprobe.spice.tmpl": "sha256:7a4f33f9045a5958b10bc8bd0eca596042c71b43abed5eee01bde35fd4a0ab91",
     "sim/lna-matching-feasibility/testbench/tb_feed_scan.spice.tmpl": "sha256:61044b3b06f5b232aa310b92e646f4c9c38a90c0ae82277f98af3f3fd4452c45",
     "sim/lna-matching-feasibility/testbench/tb_feed_tune.spice.tmpl": "sha256:2a187369aca6c70013fca69eedbf25453b093fec1fbe89920b8a1ffece87c30f",
@@ -2725,7 +2730,7 @@
     "sim/lna-matching-feasibility/testbench/tb_match_feedprobe.spice.tmpl": "sha256:9247b5f71e3f7618d17da5f1c81880b0aed20afaa0e4f470ed12b7debd228373",
     "sim/lna-matching-feasibility/testbench/tb_match_verify.spice.tmpl": "sha256:3233052b85bc364459f3346581e7644f2dd29a687fd28121589b5dc12d73fc3b",
     "sim/lna-matching-feasibility/testbench/tb_qreq_tankprobe.spice.tmpl": "sha256:04ba13c05d8c20004f80d37eb6b0a23d9403ed72612d26420c140266445bbce4",
-    "sim/lna-matching-feasibility/tests/test_feed_study.py": "sha256:35148c12cd684af5415e0214bd5ad11efe959beae3e755cbc9cae96373bbec38",
+    "sim/lna-matching-feasibility/tests/test_feed_study.py": "sha256:363e5a73070b850891a631bb27636f26578730e8b4953e1e0fb260d98c8914a5",
     "sim/lna-matching-feasibility/tests/test_le_study.py": "sha256:6ed75e837dc83f9b93a5694645f24b7f9d32417acce1ad14a288fd957d5b5ff9",
     "sim/lna-matching-feasibility/tests/test_matching_solver.py": "sha256:a8839754e246f91f9c9bc3294df4db58c893e269fb6ccf2604ab45b974e34fae",
     "sim/lna-matching-feasibility/tests/test_q_study.py": "sha256:543909c14ce520924ebab7c4c4b31bd95dea3c06de27acc1d445646bab88d685",
@@ -2734,7 +2739,7 @@
     "sim/models/sg13g2_inductor_em.spice": "sha256:6f24f9857ab7810c91bda5f6307e78f1dfcbe2afd750bb023e28156ded06d6a0",
     "sim/pdk.json": "sha256:d485b20e5040c061087b6b20b62c5f22d65ed15744175e5075b7a67964bf8175",
     "sim/tests/test-core-envelope-lifecycle.sh": "sha256:a0ca3e20a5e0b3c357bca4692552308d3847804b641eac81b85bf97c18de5ddf",
-    "sim/tools/build-osdi.sh": "sha256:0afd6b491ca988739591a1cf93928e9c9c1a17d23df0dc26c3434c87edb49949",
+    "sim/tools/build-osdi.sh": "sha256:fc971eee41ecf6285afbc2ec1aa34ea856ce0a8ec416cb15d05bce9ed1c94f21",
     "sim/tools/pdk_identity.py": "sha256:49e8ecc6b88970eb8b0ced39d8f7b302e0455d7e4cffe162a8536d8b2416a67b",
     "sim/tools/reducer_common.py": "sha256:3e4a2ba7f79c70bf22544c17ddf76dfefdc08c137b84d79d02601a1f79cc119a",
     "spec/ratified-rows.json": "sha256:b36eb0219c9a23fc450d592c18712ee70457842a94ecf157b56786a9f689eb36"

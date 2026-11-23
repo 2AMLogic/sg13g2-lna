@@ -14,7 +14,7 @@ that cites a file:
   * the cited file's directory must hold realization.json and
     <top_cell>.provenance.json (scope metadata); missing/malformed -> failure,
     never a silent "full scope";
-  * realization.json's in_scope/out_of_scope must partition the instances
+  * realization.json's in_scope/modeled_in_device/out_of_scope must partition the instances
     of the netlist it names (parsed with layout/lvs_reference.py's
     parse_netlist, same check as the LVS-reference generator);
   * input binding: the report's provenance.input.content_hash, the
@@ -109,9 +109,13 @@ def main():
             except (OSError, SystemExit) as ex:
                 errs.append(f"{tag}: cannot parse declared netlist {nl} ({ex})")
                 continue
-            both = sorted(set(ins) & set(outs))
-            missing = sorted(set(cards) - set(ins) - set(outs))
-            stale = sorted((set(ins) | set(outs)) - set(cards))
+            mod = rz.get("modeled_in_device", {})  # issue #347: loss elements with no device
+            if not isinstance(mod, dict):
+                errs.append(f"{tag}: realization.json modeled_in_device is not an object")
+                continue
+            both = sorted({n for a, b in ((ins, outs), (ins, mod), (mod, outs)) for n in set(a) & set(b)})
+            missing = sorted(set(cards) - set(ins) - set(outs) - set(mod))
+            stale = sorted((set(ins) | set(outs) | set(mod)) - set(cards))
             if both or missing or stale:
                 errs.append(f"{tag}: realization.json does not partition {nl}: in both={both} "
                             f"unassigned={missing} not-in-netlist={stale}")

@@ -1358,7 +1358,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_feed_study.sh"
+        "sim/lna-matching-feasibility/run_feed_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -1427,7 +1428,8 @@
       ],
       "result_status": "published",
       "runners": [
-        "sim/lna-matching-feasibility/run_le_study.sh"
+        "sim/lna-matching-feasibility/run_le_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -1498,7 +1500,8 @@
       ],
       "result_status": "none-blocked",
       "runners": [
-        "sim/lna-matching-feasibility/run_q_study.sh"
+        "sim/lna-matching-feasibility/run_q_study.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",
@@ -1574,7 +1577,8 @@
       "result_status": "published",
       "runners": [
         "sim/lna-matching-feasibility/run_q_study.sh",
-        "sim/lna-matching-feasibility/run_q_study_correction.sh"
+        "sim/lna-matching-feasibility/run_q_study_correction.sh",
+        "sim/lna-matching-feasibility/study_prelude.sh"
       ],
       "shared": [
         "runner-common",

@@ -724,5 +724,9 @@ python3 -I -m unittest discover -s sim/lna-matching-feasibility/tests -v
   Le / input-match study (#198) and its pre-run declaration;
   `tests/test_le_study.py`: its unit tests, Le-targeting checks and record
   replay.
+- `study_prelude.sh`: the shared startup block (simulator override, PDK /
+  model checks, declaration freshness, provenance hashes) the feed, Le and
+  Q runners source with their study identity (#450); tested by
+  `../tests/test-study-prelude.sh`.
 - `netlist-snapshots/<id>/`, `corners/<id>/`, `records/<id>*`: append-only
   evidence, per `../README.md`.

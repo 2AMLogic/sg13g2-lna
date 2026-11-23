@@ -415,12 +415,211 @@ class BadInput(unittest.TestCase):
             (Path(d) / "ideal_noise.report.json").write_text("{not json")
             rc, cov, _ = run_summ(d)
             self.assertNotEqual(rc, 0)
-            self.assertIn("unreadable_report", kinds(cov))
+            got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in cov["issues"]]
+            want = ([("unreadable_report", "ideal", "noise", None)]
+                    + [("missing_cell", "ideal", "noise", V.cell_text(k))
+                       for k in V.expected_grid()])
+            self.assertEqual(got, want)
+
+    def test_collect_reports_pass2_order_and_unreadable_vs_absent(self):
+        # Glob order (ideal_noise, ideal_op, le_q10_noise, le_q20_sp_band)
+        # differs on both axes from required_variants x ANALYSES
+        # ([ideal, le_q20, le_q10] x [op, sp_band, sp_stab, noise]).
+        nom = {"process": {"name": "typ"}, "temperature_c": 27.0,
+               "supply_v": {"vdd": 1.8}, "status": "ok"}
+        unexp = {**nom, "temperature_c": 85.0, "measurements": []}
+        bad_nf = [{"name": m["name"], "value": 2.5 if m["name"] == "nf290_db_worst" else 1.0}
+                  for m in V.measurements("noise", V.N_NF)]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "ideal_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "status": "error", "measurements": []}, unexp]}))
+            (p / "ideal_op.report.json").write_text(json.dumps({"corners": [unexp]}))
+            # Duplicated nominal cell with inconsistent nf290_db_worst: both
+            # duplicate_cell (pass 1) and inconsistent_nf_worst (pass 2) fire.
+            (p / "le_q10_noise.report.json").write_text(json.dumps(
+                {"corners": [{**nom, "measurements": bad_nf}, {**nom, "measurements": bad_nf}]}))
+            # Unreadable required report fans out missing_cell; absent reports only emit missing_report.
+            (p / "le_q20_sp_band.report.json").write_text("{corrupt")
+            _, issues, counts = V.collect_reports(p, ["ideal", "le_q20", "le_q10"], "smoke")
+        got = [(i["kind"], i["variant"], i["analysis"], i["cell"]) for i in issues]
+        n_noise = len(V.measurements("noise", V.N_NF))
+        want = [
+            # Pass 1 in sorted filename order across all reports:
+            ("unexpected_cell", "ideal", "noise", "typ/85C/1.80V"),
+            ("unexpected_cell", "ideal", "op", "typ/85C/1.80V"),
+            ("duplicate_cell", "le_q10", "noise", "typ/27C/1.80V"),
+            ("unreadable_report", "le_q20", "sp_band", None),
+            # Pass 2 in required_variants x ANALYSES order:
+            ("missing_cell", "ideal", "op", "typ/27C/1.80V"),
+            ("missing_report", "ideal", "sp_band", None),
+            ("missing_report", "ideal", "sp_stab", None),
+            ("failed_cell", "ideal", "noise", "typ/27C/1.80V"),
+            *[("missing_measurement", "ideal", "noise", "typ/27C/1.80V")] * n_noise,
+            ("missing_report", "le_q20", "op", None),
+            ("missing_cell", "le_q20", "sp_band", "typ/27C/1.80V"),
+            ("missing_report", "le_q20", "sp_stab", None),
+            ("missing_report", "le_q20", "noise", None),
+            ("missing_report", "le_q10", "op", None),
+            ("missing_report", "le_q10", "sp_band", None),
+            ("missing_report", "le_q10", "sp_stab", None),
+            ("inconsistent_nf_worst", "le_q10", "noise", "typ/27C/1.80V"),
+        ]
+        self.assertEqual(got, want)
+        self.assertEqual(counts[("le_q20", "sp_band")], {"expected": 1, "valid": 0})
+        self.assertEqual(counts[("le_q10", "noise")], {"expected": 1, "valid": 0})
 
     def test_no_reports_nonzero(self):
         with tempfile.TemporaryDirectory() as d:
             rc, cov, _ = run_summ(d)
             self.assertNotEqual(rc, 0)
+
+
+class SharedCellValidation(unittest.TestCase):
+    """Direct tests of validate_report_cells (issue #480), the two-pass cell
+    validator shared with sim/lna-core-envelope's reducer. Synthetic
+    fixtures, not evidence."""
+
+    KEYS = [("wcs", 27.0, 1.8), ("bcs", 27.0, 1.8)]  # expected order != sorted order
+    MEAS = ("a", "b")
+
+    @staticmethod
+    def corner(key, meas=None, status="ok", extra=None):
+        lab, t, v = key
+        c = {"process": {"name": lab}, "temperature_c": t, "supply_v": {"vdd": v},
+             "status": status,
+             "measurements": [{"name": n, "value": x} for n, x in (meas or {}).items()]}
+        if extra is not None:
+            c["measurements"].extend(extra)
+        return c
+
+    def validate(self, corners, expected_measurements=MEAS, keys=None):
+        seen = []
+        cells, valid = V.validate_report_cells(
+            corners, keys or self.KEYS, expected_measurements,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)))
+        return cells, valid, seen
+
+    def kinds(self, seen):
+        return [k for k, _, _, _ in seen]
+
+    def test_all_valid(self):
+        cells, valid, seen = self.validate(
+            [self.corner(k, {"a": 1.0, "b": 2.0}) for k in self.KEYS])
+        self.assertEqual(valid, 2)
+        self.assertEqual(seen, [])
+        self.assertTrue(all(c["valid"] for c in cells.values()))
+
+    def test_malformed_cell(self):
+        bad = self.corner(("wcs", 27.0, 1.8), {"a": 1.0, "b": 2.0})
+        bad["temperature_c"] = None  # float(None) -> TypeError
+        cells, valid, seen = self.validate([bad] + [self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["malformed_cell", "missing_cell"])
+        self.assertEqual(seen[0][1], "corners[0]")
+        self.assertNotIn(("wcs", 27.0, 1.8), cells)
+
+    def test_measurement_without_name_is_malformed(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0},
+                        extra=[{"value": 3.0}])  # measurement entry missing "name"
+        _, _, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen)[:1], ["malformed_cell"])
+        self.assertIn("'name'", seen[0][3])
+
+    def test_unexpected_cell(self):
+        cells, _, seen = self.validate([self.corner(("typ", 85.0, 1.8), {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["unexpected_cell", "missing_cell", "missing_cell"])
+        self.assertNotIn(("typ", 85.0, 1.8), cells)
+
+    def test_duplicate_cell_excluded_and_ordered(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0}),
+                   self.corner(self.KEYS[0], {"a": 9.0, "b": 9.0}),
+                   self.corner(self.KEYS[1], {"a": 9.0, "b": 9.0})]
+        cells, valid, seen = self.validate(corners)
+        # first occurrences retained in cells, duplicates excluded from reduction
+        self.assertEqual(cells[self.KEYS[0]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(cells[self.KEYS[1]]["values"], {"a": 1.0, "b": 2.0})
+        self.assertEqual(self.kinds(seen), ["duplicate_cell", "duplicate_cell"])
+        # emitted in expected_keys order, not lexicographic order
+        self.assertEqual([s[1] for s in seen], self.KEYS)
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_missing_cell(self):
+        cells, valid, seen = self.validate([self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["missing_cell"])
+        self.assertEqual(seen[0][1], self.KEYS[1])
+        self.assertEqual(valid, 1)
+
+    def test_failed_cell(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, status="error"),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": 2.0})])
+        self.assertEqual(self.kinds(seen), ["failed_cell"])
+        self.assertIn("status='error'", seen[0][3])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertEqual(valid, 1)
+
+    def test_missing_measurement_absent_and_null(self):
+        cells, _, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": 1.0}),          # b absent
+             self.corner(self.KEYS[1], {"a": 1.0, "b": None})])  # b null
+        misses = [s for s in seen if s[0] == "missing_measurement"]
+        self.assertEqual([(s[1], s[2], s[3]) for s in misses],
+                         [(self.KEYS[0], "b", ""), (self.KEYS[1], "b", "value is null")])
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+        self.assertFalse(cells[self.KEYS[1]]["valid"])
+
+    def test_non_finite_value(self):
+        cells, valid, seen = self.validate(
+            [self.corner(self.KEYS[0], {"a": float("nan"), "b": 2.0}),
+             self.corner(self.KEYS[1], {"a": 1.0, "b": float("inf")})])
+        self.assertEqual(self.kinds(seen), ["non_finite_value", "non_finite_value"])
+        self.assertEqual([s[2] for s in seen], ["a", "b"])
+        self.assertEqual(valid, 0)
+
+    def test_duplicate_measurement(self):
+        c = self.corner(self.KEYS[0], {"a": 1.0, "b": 2.0}, extra=[{"name": "a", "value": 3.0}])
+        cells, valid, seen = self.validate([c])
+        self.assertEqual(self.kinds(seen), ["duplicate_measurement", "missing_cell"])
+        self.assertEqual(seen[0][2], "a")
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
+
+    def test_pass1_only_without_expected_measurements(self):
+        corners = [self.corner(self.KEYS[0], {"a": 1.0})]  # b missing: pass 2 would flag it
+        cells, valid, seen = self.validate(corners, expected_measurements=None)
+        self.assertEqual(seen, [])
+        self.assertEqual(valid, 0)
+        self.assertIn(self.KEYS[0], cells)
+        self.assertNotIn("valid", cells[self.KEYS[0]])
+
+    def test_check_cell_in_cell_order_and_on_duplicated_key(self):
+        # KEYS[0] is duplicated and fails check_cell; KEYS[1] is missing ->
+        # check_cell issue on KEYS[0] precedes missing_cell on KEYS[1].
+        seen = []
+        corners = [self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0}),
+                   self.corner(self.KEYS[0], {"a": 1.0, "b": 9.0})]
+
+        def check_ab(key, values, emit):
+            if values["b"] > 5.0:
+                emit("custom_bad", cell=key, measurement="b")
+                return False
+            return True
+
+        cells, valid = V.validate_report_cells(
+            corners, self.KEYS, self.MEAS,
+            lambda kind, cell=None, measurement=None, detail="":
+                seen.append((kind, cell, measurement, detail)),
+            check_cell=check_ab)
+        self.assertEqual([(k, c) for k, c, _, _ in seen],
+                         [("duplicate_cell", self.KEYS[0]),
+                          ("custom_bad", self.KEYS[0]),
+                          ("missing_cell", self.KEYS[1])])
+        self.assertEqual(valid, 0)
+        self.assertFalse(cells[self.KEYS[0]]["valid"])
 
 
 def cell_of(i):
@@ -804,10 +1003,11 @@ def reroot_report_logs(root):
         rp.write_text(json.dumps(doc, indent=1) + "\n")
 
 
-def fft_values(tone=0.01023, im3=2.0e-9):
+def fft_values(tone=0.01023, im3=2.0e-9, im5=None):
     v = {"fft_df": V.IIP3_DF, "tone1": tone, "tone2": tone * 1.0005,
          "im3l": im3, "im3h": im3 * 1.005,
-         "im5l": 7.13e-11, "im5h": 7.36e-11,
+         "im5l": 7.13e-11 if im5 is None else im5 * 0.98,
+         "im5h": 7.36e-11 if im5 is None else im5 * 1.02,
          "src1": 0.001999, "src2": 0.001998}
     return v
 
@@ -917,14 +1117,31 @@ class Iip3Generation(unittest.TestCase):
                                      "matched_iip3_a2mv.request.json", "matched_iip3_a2mv.spice"])
 
 
+# The per-point iip3.csv column contract, in order, copied verbatim from the
+# committed record header (records/20261117-040629-30d1235a-iip3.csv): five
+# identifier columns, the shared measurement block, dft_fft_iip3_agreement_db
+# between iip3_dbm_dft_crosscheck and v_tone1_out_v, then the FFT witnesses.
+IIP3_CSV_COLUMNS = [
+    "point_id", "variant", "corner_label", "temp_c", "vdd_v",
+    "amp_v_peak_per_tone", "src_tone_v_peak_measured",
+    "pin_avail_dbm_per_tone", "pout_dbm_per_tone", "pim3_dbm",
+    "gain_db", "iip3_dbm", "oip3_dbm", "iip3_dbm_dft_crosscheck",
+    "dft_fft_iip3_agreement_db", "v_tone1_out_v", "v_tone2_out_v",
+    "v_im3l_out_v", "v_im3h_out_v", "v_im5_out_v", "im3_over_im5_db",
+    "ic1_a", "idd_a", "fft_npts", "fft_df_hz",
+]
+
+
 class Iip3Reduction(unittest.TestCase):
     def run_reduce(self, cells, amps="0.001,0.002", extras="", s11=None,
                    op=True, extra_report=None, grid=V.GRID_SMOKE,
-                   reroot_logs=False):
+                   reroot_logs=False, im5=None):
         """cells: {(label, temp, vdd): {"a1": (tone, im3), "a2": (tone, im3)}};
         a missing level key makes that point genuinely missing. With
         reroot_logs=True the reports' artifacts.log paths are rewritten into
-        the dead absolute-worktree shape the committed klt reports carry."""
+        the dead absolute-worktree shape the committed klt reports carry.
+        im5 is forwarded to fft_values (None keeps its default bins; 0.0
+        makes every point a zero-IM5 case)."""
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             for key, lv in cells.items():
@@ -933,7 +1150,8 @@ class Iip3Reduction(unittest.TestCase):
                         continue
                     tone, im3 = lv[tag]
                     synth_report(root / f"matched_iip3_{tag}mv.report.json",
-                                 key[0], key[1], key[2], amp, fft_values(tone, im3))
+                                 key[0], key[1], key[2], amp,
+                                 fft_values(tone, im3, im5))
             if extra_report:
                 synth_report(root / extra_report, "typ", 27, 1.8, 4e-3, fft_values())
             if reroot_logs:
@@ -970,9 +1188,21 @@ class Iip3Reduction(unittest.TestCase):
                                    slope_tol=_sweep.IIP3_SLOPE_TOL,
                                    grid=grid, temps="")
             rc = V.cmd_summarize_iip3(a)
-            rows = list(csv.DictReader(open(out)))
+            with open(out, newline="") as fh:
+                reader = csv.DictReader(fh)
+                # The writer derives its fieldnames from the first row's key
+                # order, so a moved/renamed/dropped/added column must fail
+                # here even when the numeric assertions of every caller pass.
+                self.assertEqual(reader.fieldnames, IIP3_CSV_COLUMNS)
+                rows = list(reader)
             srows = list(csv.DictReader(open(summ)))
             return rc, rows, srows, head.read_text()
+
+    def test_csv_header_is_the_committed_record_contract(self):
+        rc, _rows, _srows, _md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (0.01023 / 2, 2.0e-9 / 8),
+                                 "a2": (0.01023, 2.0e-9)}})
+        self.assertEqual(rc, 0)
 
     def test_nominal_cell_valid_and_arithmetic_matches_the_definition(self):
         tone, im3 = 0.01023, 2.0e-9
@@ -1000,6 +1230,21 @@ class Iip3Reduction(unittest.TestCase):
                                float(s["iip3_dbm_a2mv"]) - term, places=4)
         self.assertIn("Draft > 0 dBm value", md)
         self.assertIn("stays DRAFT", md)
+
+    def test_zero_im5_point_leaves_the_im3_over_im5_ratio_empty(self):
+        # A point whose IM5 bins read zero is valid evidence for IIP3; the
+        # shared measurement keeps im3_over_im5_db empty rather than -inf.
+        tone, im3 = 0.01023, 2.0e-9
+        rc, rows, srows, _md = self.run_reduce(
+            {("typ", 27, 1.80): {"a1": (tone / 2, im3 / 8), "a2": (tone, im3)}},
+            im5=0.0)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(rows), 2)
+        for r in rows:
+            self.assertEqual(r["im3_over_im5_db"], "")
+            self.assertEqual(float(r["v_im5_out_v"]), 0.0)
+        # the 3:1 slope check reads IM3, not IM5: the cell stays valid
+        self.assertEqual(srows[0]["iip3_validity"], "valid")
 
     def test_dead_recorded_log_path_reroots_onto_corners_dir(self):
         # The committed klt reports record artifacts.log as an absolute path

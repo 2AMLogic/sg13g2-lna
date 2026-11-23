@@ -655,6 +655,59 @@ def finalize_nf_columns(per_cell: dict) -> None:
                                    " them are NOT checked")
 
 
+def iip3_measurement_fields(amp: float, fft: dict, dft: dict) -> tuple[dict, float, float]:
+    """The per-point two-tone measurement arithmetic and formatting shared
+    by both IIP3 reducers (issue #439): this raw-log reducer and the
+    campaign summarize-iip3 reducer turn the same evidence into these 19
+    CSV fields. Callers stay responsible for decoding and validating their
+    inputs, assigning point/corner/variant identifiers and ordering their
+    own columns.
+
+    `amp` is the per-tone source amplitude in V peak. `fft` carries the FFT
+    bins under the canonical bin names tone1, tone2, im3l, im3h, im5l,
+    im5h, src1, plus fft_df. `dft` carries the log echoes in the
+    parse_iip3_log shape: dft_tone1, dft_tone2, dft_im3l, dft_im3h, ic1,
+    idd and npts (absent npts formats as the empty string).
+
+    Returns (fields, iip3, iip3_dft): the formatted fields plus the
+    unrounded FFT and DFT input intercepts, so a caller's DFT/FFT agreement
+    column is computed from the intercepts, never from the rounded CSV.
+    """
+    pin = avail_power_dbm(amp)
+    t = (fft["tone1"] + fft["tone2"]) / 2.0
+    i3 = (fft["im3l"] + fft["im3h"]) / 2.0
+    pout = out_power_dbm(t)
+    pim3 = out_power_dbm(i3)
+    gain = pout - pin
+    iip3 = iip3_from(pin, pout, pim3)
+    dft_t = (dft["dft_tone1"] + dft["dft_tone2"]) / 2.0
+    dft_i3 = (dft["dft_im3l"] + dft["dft_im3h"]) / 2.0
+    iip3_dft = iip3_from(pin, out_power_dbm(dft_t), out_power_dbm(dft_i3))
+    im5 = (fft["im5l"] + fft["im5h"]) / 2.0
+    fields = {
+        "amp_v_peak_per_tone": f"{amp:.6e}",
+        "src_tone_v_peak_measured": f"{fft['src1']:.6e}",
+        "pin_avail_dbm_per_tone": f"{pin:.4f}",
+        "pout_dbm_per_tone": f"{pout:.4f}",
+        "pim3_dbm": f"{pim3:.4f}",
+        "gain_db": f"{gain:.4f}",
+        "iip3_dbm": f"{iip3:.4f}",
+        "oip3_dbm": f"{iip3 + gain:.4f}",
+        "iip3_dbm_dft_crosscheck": f"{iip3_dft:.4f}",
+        "v_tone1_out_v": f"{fft['tone1']:.6e}",
+        "v_tone2_out_v": f"{fft['tone2']:.6e}",
+        "v_im3l_out_v": f"{fft['im3l']:.6e}",
+        "v_im3h_out_v": f"{fft['im3h']:.6e}",
+        "v_im5_out_v": f"{im5:.6e}",
+        "im3_over_im5_db": f"{db20(i3 / im5):.2f}" if im5 > 0 else "",
+        "ic1_a": f"{dft['ic1']:.6e}",
+        "idd_a": f"{dft['idd']:.6e}",
+        "fft_npts": str(dft.get("npts", "")),
+        "fft_df_hz": f"{fft['fft_df']:.6e}",
+    }
+    return fields, iip3, iip3_dft
+
+
 def build_iip3_rows(corners_dir: str, include=None) -> tuple[list[dict], list[str]]:
     """`include`: the manifest's declared iip3 point IDs (issue #180). When
     given, an undeclared drive level never becomes an IIP3 row, so it cannot
@@ -682,45 +735,17 @@ def build_iip3_rows(corners_dir: str, include=None) -> tuple[list[dict], list[st
                   + "; ".join(bad_log), file=sys.stderr)
             continue
         amp = float(m.group("amp").replace("p", ".")) * 1e-3
-        pin = avail_power_dbm(amp)
-
-        def pair_iip3(prefix: str) -> tuple[float, float, float, float]:
-            t = (log[f"{prefix}_tone1"] + log[f"{prefix}_tone2"]) / 2.0
-            i3 = (log[f"{prefix}_im3l"] + log[f"{prefix}_im3h"]) / 2.0
-            pout = out_power_dbm(t)
-            pim3 = out_power_dbm(i3)
-            return pout, pim3, iip3_from(pin, pout, pim3), pout - pin
-
-        pout, pim3, iip3, gain = pair_iip3("fft")
-        _, _, iip3_dft, _ = pair_iip3("dft")
-        im5 = (log["fft_im5l"] + log["fft_im5h"]) / 2.0
+        fft = {k: log[f"fft_{k}"] for k in
+               ("tone1", "tone2", "im3l", "im3h", "im5l", "im5h", "src1")}
+        fft["fft_df"] = log["fft_df"]
+        fields, _iip3, _iip3_dft = iip3_measurement_fields(amp, fft, log)
         rows.append(
             {
                 "point_id": point_id,
                 "corner_label": m.group("corner"),
                 "temp_c": m.group("temp"),
                 "vdd_v": m.group("vdd"),
-                "amp_v_peak_per_tone": f"{amp:.6e}",
-                "src_tone_v_peak_measured": f"{log['fft_src1']:.6e}",
-                "pin_avail_dbm_per_tone": f"{pin:.4f}",
-                "pout_dbm_per_tone": f"{pout:.4f}",
-                "pim3_dbm": f"{pim3:.4f}",
-                "gain_db": f"{gain:.4f}",
-                "iip3_dbm": f"{iip3:.4f}",
-                "oip3_dbm": f"{iip3 + gain:.4f}",
-                "iip3_dbm_dft_crosscheck": f"{iip3_dft:.4f}",
-                "v_tone1_out_v": f"{log['fft_tone1']:.6e}",
-                "v_tone2_out_v": f"{log['fft_tone2']:.6e}",
-                "v_im3l_out_v": f"{log['fft_im3l']:.6e}",
-                "v_im3h_out_v": f"{log['fft_im3h']:.6e}",
-                "v_im5_out_v": f"{im5:.6e}",
-                "im3_over_im5_db": f"{db20((log['fft_im3l'] + log['fft_im3h']) / 2.0 / im5):.2f}"
-                if im5 > 0
-                else "",
-                "ic1_a": f"{log['ic1']:.6e}",
-                "idd_a": f"{log['idd']:.6e}",
-                "fft_npts": str(log.get("npts", "")),
-                "fft_df_hz": f"{log['fft_df']:.6e}",
+                **fields,
             }
         )
     return rows, skipped
@@ -992,27 +1017,29 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
 
     invalid_logs: list[dict] = []
 
-    def state(point_id: str, dats: tuple[str, ...]) -> str:
+    def state(point_id: str, dats: tuple[str, ...]) -> tuple[str, dict | None]:
+        """(state, measurements): the strict log check's parse is handed back
+        so callers never re-read the log (None unless the log validated)."""
         log = os.path.join(corners_dir, point_id + ".log")
         if not os.path.isfile(log):
-            return "missing"
+            return "missing", None
         if not is_complete(log):
-            return "failed"
+            return "failed", None
         if any(not os.path.isfile(os.path.join(corners_dir, point_id + d)) for d in dats):
-            return "failed"
+            return "failed", None
         check = validate_sp_log if point_id in man["sp"] else validate_iip3_log
-        _, reasons = check(log)
+        parsed, reasons = check(log)
         for reason in reasons:
             invalid_logs.append({"point": point_id, "artifact": point_id + ".log",
                                  "reason": reason})
-        return "invalid" if reasons else "completed"
+        return ("invalid" if reasons else "completed"), parsed
 
     states: dict[str, str] = {}
     invalid_grids: list[dict] = []
     for pid in man["sp"]:
         dats = (".inband.dat", ".stability.dat") + (
             (".nf290.dat",) if "nf290" in man.get("grids", {}) else ())
-        states[pid] = state(pid, dats)
+        states[pid], parsed = state(pid, dats)
         if states[pid] == "completed" and man.get("grids"):
             for kind in man["grids"]:
                 ext = SCALE_COLS[kind][2]
@@ -1020,8 +1047,7 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
                 reasons = validate_table(tbl, kind, man["grids"][kind])
                 if kind == "nf290" and not reasons:
                     reasons = nf_crosscheck(
-                        read_nf_grid(tbl),
-                        parse_sp_log(os.path.join(corners_dir, pid + ".log"))["nf290"])
+                        read_nf_grid(tbl), parsed["nf290"])
                 for reason in reasons:
                     invalid_grids.append(
                         {"point": pid, "artifact": pid + ext, "reason": reason}
@@ -1029,7 +1055,7 @@ def compute_coverage(corners_dir: str, man: dict) -> dict:
             if any(g["point"] == pid for g in invalid_grids):
                 states[pid] = "invalid"
     for pid in man["iip3"]:
-        states[pid] = state(pid, ())
+        states[pid], _ = state(pid, ())
     expected = list(man["sp"]) + list(man["iip3"])
     broken_pairs = []
     for pair in man["pairs"]:

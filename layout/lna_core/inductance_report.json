@@ -1,0 +1,68 @@
+{
+  "_comment": "Written by layout/inductance_report.py; regenerate with layout/run_flow.sh.",
+  "method": "low-frequency series L of sim/models/sg13g2_inductor_em.spice (em_ltot = kem_l * ind_lmw) evaluated at the drawn w/s/d/turns; geometry read back from the GDS PyCell label",
+  "limits": [
+    "A model evaluation at the drawn geometry, not an EM or static solve of the GDS; it is a low-frequency figure (self-resonance and Q are not in it).",
+    "kem_l is fitted at three extracted geometries (1, 4, 5 turns); em_verified=false marks a geometry away from them: an unvalidated interpolation.",
+    "klt mom is a capacitance solve and the sg13g2 extraction deck has no inductor class, so klt cannot check these devices (layout/README.md)."
+  ],
+  "inductors": {
+    "Le": {
+      "netlist_H": 1e-09,
+      "drawn_lowfreq_H": 9.99901686381136e-10,
+      "drawn_over_netlist": 0.9999,
+      "geometry_um": {
+        "w": 8.22,
+        "s": 3.74,
+        "d": 30.13,
+        "turns": 4
+      },
+      "drawn_cells_matching_label": 1,
+      "em_verified": false,
+      "em_point_relation": {
+        "same_turns_w_s_point": [
+          "p11"
+        ],
+        "within_0p5um_of_extracted_d": []
+      }
+    },
+    "Lc": {
+      "netlist_H": 5e-09,
+      "drawn_lowfreq_H": 5.000090845777367e-09,
+      "drawn_over_netlist": 1.00002,
+      "geometry_um": {
+        "w": 6.1,
+        "s": 3.29,
+        "d": 109.15,
+        "turns": 5
+      },
+      "drawn_cells_matching_label": 1,
+      "em_verified": false,
+      "em_point_relation": {
+        "same_turns_w_s_point": [
+          "p13"
+        ],
+        "within_0p5um_of_extracted_d": []
+      }
+    },
+    "Lb": {
+      "netlist_H": 4.56374e-09,
+      "drawn_lowfreq_H": 4.563749727876625e-09,
+      "drawn_over_netlist": 1.0,
+      "geometry_um": {
+        "w": 8.22,
+        "s": 3.74,
+        "d": 151.95,
+        "turns": 4
+      },
+      "drawn_cells_matching_label": 1,
+      "em_verified": false,
+      "em_point_relation": {
+        "same_turns_w_s_point": [
+          "p11"
+        ],
+        "within_0p5um_of_extracted_d": []
+      }
+    }
+  }
+}

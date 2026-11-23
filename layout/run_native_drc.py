@@ -68,14 +68,15 @@ Exit codes of this runner (each failure class distinguishable):
       the one-sided pair fails the freshness gate loudly on purpose)
 
 On any failure path (3-6) a previously published pair is moved to
-native_drc_stale/<utc-timestamp>/ first: a failed rerun must never leave an
-old report sitting in place as if it were fresh evidence. Staging uses
+native_drc_stale/<utc-timestamp>/ before the runner dies: a failed rerun
+must never leave an old report sitting in place as if it were fresh
+evidence. Staging uses
 native_drc_report.json.tmp (gitignored); the pair itself is published
 atomically only after the report has been validated against the GDS hash.
 No native verdict exists in this tree until issue #201 runs this on an
 evidence host; see layout/README.md for scope and honest-status caveats.
 """
-import argparse, hashlib, json, os, re, shlex, shutil, subprocess, sys, time
+import argparse, hashlib, importlib.util, json, os, shlex, shutil, subprocess, sys, time
 from pathlib import Path
 
 LAYOUT_DIR = Path(__file__).resolve().parent
@@ -87,9 +88,6 @@ KLT_RELEASE = "0.9.2"  # keep in sync with layout/run_flow.sh (check-klt-pin.sh)
 # version klt declares as klayout_version_expected (klayout-tools#5601). Keep
 # the two in sync (check-klt-pin.sh).
 KLAYOUT_PIN = "0.30.12"
-REPORT_NAME = "native_drc_report.json"
-SIDE_NAME = "native_drc_inputs.json"
-STAGING = REPORT_NAME + ".tmp"
 # The completed-run status tokens this gate accepts, from klt's total
 # coverage rollup via rollup_status(success="clean",
 # failure="violations"): each carries an exit code COMPLETED_RC already
@@ -98,13 +96,35 @@ STAGING = REPORT_NAME + ".tmp"
 # klayout-tools 0.9.2 (issue #312) the klayout engine never populates
 # coverage.skipped, so --engine klayout emits four of the five today —
 # clean_partial is accepted for forward compatibility and would arrive
-# with exit 0 the moment klt populates skipped. The
-# vocabulary exists in three places that must move together: here, the
-# identity copy in native_drc_identity.py, and NATIVE_STATUSES in the
-# freshness gate .github/scripts/check-layout-freshness — test_native_drc.py
-# pins all three equal.
-STATUSES = ("clean", "clean_partial", "violations",
-            "coverage_unknown", "not_checked")
+# with exit 0 the moment klt populates skipped. The vocabulary itself, the
+# version helpers below and the whole native pair check live once in
+# .github/scripts/native_drc_pair.py beside the freshness gate — operator
+# ruling (rjwalters, 2026-11-17, issue #359), reversing the copy-and-pin
+# arrangement this file used to document (the runner, native_drc_identity.py
+# and the gate each kept a copy, pinned equal by test_native_drc.py's sync
+# tests): the gate must not import the logic it judges with from layout/,
+# so the shared module lives beside it and every consumer loads it by
+# explicit path, which works under `python3 -I` (`-I` does not put a
+# script's directory on sys.path) and stays stdlib-only.
+sys.dont_write_bytecode = True
+_pair_path = str(REPO_ROOT / ".github" / "scripts" / "native_drc_pair.py")
+# Register in sys.modules (the documented spec_from_file_location pattern):
+# several consumers in one process — the test suite imports the identity
+# module and this runner together — must execute and re-export one module
+# object.
+if "native_drc_pair" in sys.modules:
+    native_drc_pair = sys.modules["native_drc_pair"]
+else:
+    _pair_spec = importlib.util.spec_from_file_location("native_drc_pair",
+                                                        _pair_path)
+    native_drc_pair = importlib.util.module_from_spec(_pair_spec)
+    sys.modules["native_drc_pair"] = native_drc_pair
+    _pair_spec.loader.exec_module(native_drc_pair)
+REPORT_NAME, SIDE_NAME = native_drc_pair.REPORT, native_drc_pair.SIDE
+STAGING = REPORT_NAME + ".tmp"
+STATUSES = native_drc_pair.STATUSES
+version_tuple = native_drc_pair.version_tuple
+version_at_least = native_drc_pair.version_at_least
 # The full-scope tokens, derived: the published-run NOTE below fires on
 # "not in" this tuple instead of restating the complement of STATUSES, so
 # the partition is total and a token added to STATUSES defaults to the
@@ -116,30 +136,18 @@ COMPLETED_RC = {0, 3, 4}
 E_PUBLISHED, E_USAGE, E_NO_EXE, E_BAD_VERSION, E_OLD_VERSION, E_RUN, E_SELFCHECK \
     = 0, 2, 3, 4, 5, 6, 7
 
+# The failure exits that must archive a previously published pair before
+# the runner dies: every pre-publication class. Applied once where
+# SystemExit leaves the run (main), not at each die() site — the klt
+# identity probe's exits bypassed the rule until issue #435. Usage errors
+# (E_USAGE, before the cell directory's evidence is touched) and the
+# post-publication self-check (E_SELFCHECK, whose one-sided pair must stay
+# in place to fail the freshness gate loudly) never archive.
+SEGREGATE_ON_RC = {E_NO_EXE, E_BAD_VERSION, E_OLD_VERSION, E_RUN}
+
 
 def say(msg):
     print(f"run_native_drc: {msg}")
-
-
-# Version helpers, duplicated from native_drc_identity.py on purpose: `python3
-# -I` does not put this script's directory on sys.path, so the runner cannot
-# import its sibling. test_native_drc.py pins both copies to the same contract.
-_VERSION_RE = re.compile(r"\d+(?:\.\d+)+")
-
-
-def version_tuple(s):
-    if not isinstance(s, str):
-        return None
-    m = _VERSION_RE.search(s)
-    return tuple(int(x) for x in m.group(0).split(".")) if m else None
-
-
-def version_at_least(got, minimum):
-    a, b = version_tuple(got), version_tuple(minimum)
-    if a is None or b is None:
-        return False
-    n = max(len(a), len(b))
-    return a + (0,) * (n - len(a)) >= b + (0,) * (n - len(b))
 
 
 def die(code, msg):
@@ -213,6 +221,126 @@ def klt_identity(klt_cmd):
     return json.dumps(doc)
 
 
+def run_gate(args, cd, gds):
+    """The gate itself for a resolved cell directory and its committed GDS:
+    preflight the standalone executable and the klt identity, run the deck
+    staged, validate the staged report against the GDS, then publish the
+    pair. Returns E_PUBLISHED or exits via die(); archival of a previously
+    published pair on the failure exits is owned by main, once."""
+    (cd / STAGING).unlink(missing_ok=True)  # staging from an earlier crashed
+    # run is not evidence; the pair names are the only publication channel
+
+    klt_cmd = shlex.split(os.environ.get(
+        "KLT", f"uvx --isolated --from klayout-tools=={KLT_RELEASE} "
+               f"--with klayout=={KLAYOUT_PIN} klt"))
+    exe_req = args.klayout_exe or os.environ.get("KLAYOUT_EXE") or "klayout"
+
+    # --- preflight: the standalone executable and its version ---
+    exe = resolve_exe(exe_req)
+    if exe is None:
+        die(E_NO_EXE, f"standalone KLayout executable not found "
+                      f"({exe_req!r}; tried PATH and --klayout-exe/$KLAYOUT_EXE). "
+                      f"Note: the pip `klayout` module is not this binary.")
+    ver_raw = probe_version(exe)
+    if version_tuple(ver_raw) is None:
+        die(E_BAD_VERSION, f"cannot parse a version from {exe} -v: {ver_raw!r}")
+    if not version_at_least(ver_raw, args.min_klayout_version):
+        die(E_OLD_VERSION, f"standalone KLayout {ver_raw!r} is below the "
+                           f"required minimum {args.min_klayout_version!r}; "
+                           f"refusing to run the native deck")
+    say(f"preflight ok: {exe} reports {ver_raw!r} >= "
+        f"{args.min_klayout_version!r}")
+
+    klt_json = klt_identity(klt_cmd)
+
+    # --- run the native deck, staged ---
+    klt_argv = klt_cmd + ["drc", "--engine", "klayout", "--pdk", args.pdk]
+    if args.pdk_root:
+        klt_argv += ["--pdk-root", args.pdk_root]
+    klt_argv += [gds.name, "--format", "json",
+                 "--min-klayout-version", args.min_klayout_version]
+    if args.expect_rule_categories is not None:
+        klt_argv += ["--expect-rule-categories",
+                     str(args.expect_rule_categories)]
+    if args.expect_rule_categories_file:
+        klt_argv += ["--expect-rule-categories-file",
+                     args.expect_rule_categories_file]
+    if args.timeout_s is not None:
+        klt_argv += ["--timeout-s", str(args.timeout_s)]
+
+    env = dict(os.environ)
+    env["PATH"] = f"{exe.parent}{os.pathsep}{env.get('PATH', '')}"
+    out_path = cd / STAGING
+    say(f"running: {' '.join(klt_argv)} (cwd {cd})")
+    try:
+        with open(out_path, "wb") as out:
+            rc = subprocess.run(klt_argv, cwd=cd, env=env, stdout=out,
+                                stderr=subprocess.PIPE, text=True).returncode
+    except OSError as e:
+        out_path.unlink(missing_ok=True)
+        die(E_RUN, f"could not execute klt: {e}")
+
+    if rc not in COMPLETED_RC:
+        tail = ""
+        if out_path.exists():
+            tail = out_path.read_text(errors="replace").strip()[-400:]
+        die(E_RUN, f"klt drc --engine klayout failed (exit {rc}); raw output "
+                   f"kept in {out_path}" + (f": {tail}" if tail else ""))
+    if not out_path.exists():
+        die(E_RUN, f"klt exited {rc} but wrote no report")
+
+    # --- validate the staged report before publishing its binding ---
+    gds_sha = hashlib.sha256(gds.read_bytes()).hexdigest()
+    try:
+        rep = json.loads(out_path.read_bytes())
+    except ValueError as e:
+        die(E_RUN, f"klt exited {rc} but the report is not valid JSON ({e});"
+                   f" refusing to publish; raw output kept in {out_path}")
+    status = rep.get("status") if isinstance(rep, dict) else None
+    if status not in STATUSES:
+        die(E_RUN, f"klt exited {rc} but the report has status {status!r}, "
+                   f"not a completed-run token (one of {list(STATUSES)}); "
+                   f"refusing to publish; raw output kept in {out_path}")
+    inp = (rep.get("provenance") or {}).get("input")
+    if not (isinstance(inp, dict) and inp.get("role") == "layout" \
+            and inp.get("content_hash") == f"sha256:{gds_sha}"):
+        die(E_RUN, f"klt exited {rc} but the report does not pin this GDS "
+                   f"(sha256:{gds_sha[:12]}…); refusing to publish; "
+                   f"raw output kept in {out_path}")
+
+    os.replace(out_path, cd / REPORT_NAME)
+    count = rep.get("violation_count")
+    say(f"native run completed (klt exit {rc}): status {status!r}, "
+        f"violation_count {count}")
+
+    rec = [sys.executable, "-I", str(IDENTITY), "record", str(cd),
+           REPORT_NAME, "--gds", str(gds), "--klayout-exe", exe_req,
+           "--klayout-exe-resolved", str(exe),
+           "--klayout-exe-version", ver_raw,
+           "--min-klayout-version", args.min_klayout_version,
+           "--pdk", args.pdk, "--klt-version-json", klt_json,
+           "--argv", json.dumps(klt_argv)]
+    r = subprocess.run(rec, capture_output=True, text=True)
+    if r.returncode != 0:
+        # The report is published but unbound: a one-sided pair, which the
+        # freshness gate fails loudly (issue #130's property). Do not hide it.
+        die(E_SELFCHECK, "binding the published report failed: "
+                         f"{(r.stderr or r.stdout).strip()}")
+    val = [sys.executable, "-I", str(IDENTITY), "validate", str(cd),
+           "--gds", str(gds)]
+    r = subprocess.run(val, capture_output=True, text=True)
+    if r.returncode != 0:
+        die(E_SELFCHECK, "published pair failed its self-check: "
+                         f"{(r.stderr or r.stdout).strip()}")
+    if status not in FULL_SCOPE_STATUSES:
+        say(f"NOTE: status {status!r} is not a full-scope DRC pass; it is "
+            f"published verbatim as honest evidence, and layout/README.md "
+            f"'Scope' explains what it does and does not attest")
+    say(f"published {REPORT_NAME} + {SIDE_NAME} in {cd} "
+        f"(status {status!r}; see layout/README.md for scope)")
+    return E_PUBLISHED
+
+
 def main(argv):
     ap = argparse.ArgumentParser(
         prog="run_native_drc.py",
@@ -264,127 +392,16 @@ def main(argv):
     if not gds.is_file():
         die(E_USAGE, f"committed GDS {gds} missing; this runner consumes the "
                      f"committed GDS and never regenerates geometry")
-    (cd / STAGING).unlink(missing_ok=True)  # staging from an earlier crashed
-    # run is not evidence; the pair names are the only publication channel
 
-    klt_cmd = shlex.split(os.environ.get(
-        "KLT", f"uvx --isolated --from klayout-tools=={KLT_RELEASE} "
-               f"--with klayout=={KLAYOUT_PIN} klt"))
-    exe_req = args.klayout_exe or os.environ.get("KLAYOUT_EXE") or "klayout"
-
-    # --- preflight: the standalone executable and its version ---
-    exe = resolve_exe(exe_req)
-    if exe is None:
-        segregate_old_pair(cd)
-        die(E_NO_EXE, f"standalone KLayout executable not found "
-                      f"({exe_req!r}; tried PATH and --klayout-exe/$KLAYOUT_EXE). "
-                      f"Note: the pip `klayout` module is not this binary.")
-    ver_raw = probe_version(exe)
-    if version_tuple(ver_raw) is None:
-        segregate_old_pair(cd)
-        die(E_BAD_VERSION, f"cannot parse a version from {exe} -v: {ver_raw!r}")
-    if not version_at_least(ver_raw, args.min_klayout_version):
-        segregate_old_pair(cd)
-        die(E_OLD_VERSION, f"standalone KLayout {ver_raw!r} is below the "
-                           f"required minimum {args.min_klayout_version!r}; "
-                           f"refusing to run the native deck")
-    say(f"preflight ok: {exe} reports {ver_raw!r} >= "
-        f"{args.min_klayout_version!r}")
-
-    klt_json = klt_identity(klt_cmd)
-
-    # --- run the native deck, staged ---
-    klt_argv = klt_cmd + ["drc", "--engine", "klayout", "--pdk", args.pdk]
-    if args.pdk_root:
-        klt_argv += ["--pdk-root", args.pdk_root]
-    klt_argv += [gds.name, "--format", "json",
-                 "--min-klayout-version", args.min_klayout_version]
-    if args.expect_rule_categories is not None:
-        klt_argv += ["--expect-rule-categories",
-                     str(args.expect_rule_categories)]
-    if args.expect_rule_categories_file:
-        klt_argv += ["--expect-rule-categories-file",
-                     args.expect_rule_categories_file]
-    if args.timeout_s is not None:
-        klt_argv += ["--timeout-s", str(args.timeout_s)]
-
-    env = dict(os.environ)
-    env["PATH"] = f"{exe.parent}{os.pathsep}{env.get('PATH', '')}"
-    out_path = cd / STAGING
-    say(f"running: {' '.join(klt_argv)} (cwd {cd})")
     try:
-        with open(out_path, "wb") as out:
-            rc = subprocess.run(klt_argv, cwd=cd, env=env, stdout=out,
-                                stderr=subprocess.PIPE, text=True).returncode
-    except OSError as e:
-        out_path.unlink(missing_ok=True)
-        segregate_old_pair(cd)
-        die(E_RUN, f"could not execute klt: {e}")
-
-    if rc not in COMPLETED_RC:
-        segregate_old_pair(cd)
-        tail = ""
-        if out_path.exists():
-            tail = out_path.read_text(errors="replace").strip()[-400:]
-        die(E_RUN, f"klt drc --engine klayout failed (exit {rc}); raw output "
-                   f"kept in {out_path}" + (f": {tail}" if tail else ""))
-    if not out_path.exists():
-        segregate_old_pair(cd)
-        die(E_RUN, f"klt exited {rc} but wrote no report")
-
-    # --- validate the staged report before publishing its binding ---
-    gds_sha = hashlib.sha256(gds.read_bytes()).hexdigest()
-    try:
-        rep = json.loads(out_path.read_bytes())
-    except ValueError as e:
-        segregate_old_pair(cd)
-        die(E_RUN, f"klt exited {rc} but the report is not valid JSON ({e});"
-                   f" refusing to publish; raw output kept in {out_path}")
-    status = rep.get("status") if isinstance(rep, dict) else None
-    if status not in STATUSES:
-        segregate_old_pair(cd)
-        die(E_RUN, f"klt exited {rc} but the report has status {status!r}, "
-                   f"not a completed-run token (one of {list(STATUSES)}); "
-                   f"refusing to publish; raw output kept in {out_path}")
-    inp = (rep.get("provenance") or {}).get("input")
-    if not (isinstance(inp, dict) and inp.get("role") == "layout" \
-            and inp.get("content_hash") == f"sha256:{gds_sha}"):
-        segregate_old_pair(cd)
-        die(E_RUN, f"klt exited {rc} but the report does not pin this GDS "
-                   f"(sha256:{gds_sha[:12]}…); refusing to publish; "
-                   f"raw output kept in {out_path}")
-
-    os.replace(out_path, cd / REPORT_NAME)
-    count = rep.get("violation_count")
-    say(f"native run completed (klt exit {rc}): status {status!r}, "
-        f"violation_count {count}")
-
-    rec = [sys.executable, "-I", str(IDENTITY), "record", str(cd),
-           REPORT_NAME, "--gds", str(gds), "--klayout-exe", exe_req,
-           "--klayout-exe-resolved", str(exe),
-           "--klayout-exe-version", ver_raw,
-           "--min-klayout-version", args.min_klayout_version,
-           "--pdk", args.pdk, "--klt-version-json", klt_json,
-           "--argv", json.dumps(klt_argv)]
-    r = subprocess.run(rec, capture_output=True, text=True)
-    if r.returncode != 0:
-        # The report is published but unbound: a one-sided pair, which the
-        # freshness gate fails loudly (issue #130's property). Do not hide it.
-        die(E_SELFCHECK, "binding the published report failed: "
-                         f"{(r.stderr or r.stdout).strip()}")
-    val = [sys.executable, "-I", str(IDENTITY), "validate", str(cd),
-           "--gds", str(gds)]
-    r = subprocess.run(val, capture_output=True, text=True)
-    if r.returncode != 0:
-        die(E_SELFCHECK, "published pair failed its self-check: "
-                         f"{(r.stderr or r.stdout).strip()}")
-    if status not in FULL_SCOPE_STATUSES:
-        say(f"NOTE: status {status!r} is not a full-scope DRC pass; it is "
-            f"published verbatim as honest evidence, and layout/README.md "
-            f"'Scope' explains what it does and does not attest")
-    say(f"published {REPORT_NAME} + {SIDE_NAME} in {cd} "
-        f"(status {status!r}; see layout/README.md for scope)")
-    return E_PUBLISHED
+        return run_gate(args, cd, gds)
+    except SystemExit as e:
+        # The one archive point (issue #435): whichever pre-publication
+        # failure exit is leaving, the previous pair is segregated before
+        # the process dies, so it can never sit in place as fresh evidence.
+        if e.code in SEGREGATE_ON_RC:
+            segregate_old_pair(cd)
+        raise
 
 
 if __name__ == "__main__":

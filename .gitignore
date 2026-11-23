@@ -21,6 +21,9 @@ design/build/
 flow/build/
 # local klt install, created by the setup script
 .venv/
+# Loom runtime account-ranking state (per agent runtime), sibling of the
+# managed block's account-health.json (issue #470)
+.loom/account-ranking.*
 # >>> loom-managed (do not edit) >>>
 # Loom runtime state (don't commit these)
 .loom-in-use

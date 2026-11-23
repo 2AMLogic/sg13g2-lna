@@ -4,6 +4,79 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-20
+
+- **Issue #470** (closed): chore: gitignore the runtime-owned .loom/account-ranking.* state files
+- **PR #473**: chore: ignore runtime-owned .loom/account-ranking.* state files
+- **Issue #461** (closed): Remove the unusable dpkg-deb workaround from the OSDI build error
+- **PR #469**: fix: drop the unusable dpkg-deb workaround from the OSDI build error
+- **Issue #438** (closed): ERC negative-control break layer is declared twice: run_flow.sh hardcodes 6/0, erc_control.py records its own constant
+- **PR #467**: layout: take the ERC control break layer/box from erc_control.py
+- **Issue #454** (closed): Share batch-set report collection between the variant and IIP3 runners
+- **PR #464**: refactor(sim): share the batch-set report collector between the variant and IIP3 runners
+- **Issue #433** (closed): docs: README.md:3-4 lede duplicates the PDK name ("on IHP SG13G2 on [IHP SG13G2]")
+- **PR #462**: docs: name the PDK once in the README and CLAUDE.md ledes
+- **Issue #439** (closed): Share the per-point IIP3 measurement calculation across both reducers
+- **PR #444**: refactor: share the per-point IIP3 measurement across both reducers
+- **Issue #446** (closed): check-signoff.sh does not gate on a T1 met-count regression
+- **PR #455**: feat: gate check-signoff.sh on T1 met-item regressions vs the merge base
+- **Issue #452** (closed): test_usage_errors' seg() == [] assertion is vacuous: class 2's non-archival is still unguarded
+- **PR #457**: test: seed a previous pair so usage errors' no-archive assertion can fail
+- **Issue #447** (closed): Pin the campaign IIP3 CSV column order in a test (the agreement-column splice is unguarded)
+- **PR #453**: test: pin the campaign iip3.csv column order against the committed record header
+- **Issue #443** (closed): No test covers native DRC exit class 7 (E_SELFCHECK), whose non-archival invariant is now a set-membership test
+- **PR #451**: test: cover native DRC exit class 7's non-archival invariant
+- **Issue #35** (closed): T1 item 11 (power delivery, structural): klt erc supply spec + LVS supply pairing — unmet until layout exists
+- **PR #434**: feat(signoff): T1 item-11 power-delivery ERC evidence -- supply spec, negative controls, compound citation
+- **Issue #425** (closed): Reuse the validated S-parameter log for the 290 K noise-figure cross-check
+- **PR #445**: fix: reuse validated S-parameter measurements for the 290 K NF cross-check
+- **Issue #437** (closed): Item-9 fixture suite has no case that fails when tree_digest's hash input changes
+- **PR #442**: test: pin the item-9 corners tree digest against an independent sha256
+- **Issue #435** (closed): Centralize native DRC cleanup so a failed klt version probe archives the previous report
+- **PR #440**: fix: archive the previous native DRC pair at one exit point, not nine
+- **Issue #428** (closed): Reuse the collected record paths for item 9 tree digests
+- **PR #436**: refactor: reuse the evidence_files paths for item-9 tree digests
+- **Issue #430** (closed): Root README status paragraph is stale: understates T1 met count and still calls the layout a partial bring-up with DRC not clean
+- **PR #431**: docs: refresh stale README status paragraph and regenerate hygiene attest cascade
+- **Issue #424** (closed): Gate extract_report.json connectivity (split_net_labels / merged_net_labels) in CI: an opened net is currently silent
+- **PR #429**: feat: gate extract_report connectivity in the layout-freshness check
+- **Issue #229** (closed): T1 item 3 (DRC clean): clean klt drc on the full-block GDS with coverage disclosed
+- **PR #427**: feat(signoff): re-cite T1 item 3 (DRC clean) on the full-block GDS
+- **PR #423**: feat(layout): assemble the full LNA block -- pads, inter-block routing, T1 item-2 evidence
+- **Issue #228** (closed): T1 item 2 (layout): full-block LNA layout generator and GDS, beyond the 6-of-30-instance bring-up
+
+### 2026-11-18
+
+- **Issue #82** (closed): Auditor Capability Request: Python 3 unavailable on audit host
+- **PR #419**: refactor: extract netlist value parse and pin parity with gate copy
+- **Issue #410** (closed): inductance_lowfreq.py: netlist_values() is a second gate-side copy with no parity pin (unlike l_lowfreq)
+- **PR #417**: chore(hygiene): hash eleven more CI-run gate self-tests in the item-10 envelope
+- **Issue #414** (closed): repo-hygiene: 10 more CI-run gate self-tests are undeclared and unhashed (the #411 class)
+- **PR #415**: fix(layout): reject router pin pairs closer than stub pitch plus Metal2 space
+- **Issue #412** (closed): Router pin-collision guard accepts different-net stubs abutting at exactly the stub pitch
+- **PR #407**: feat: gate re-derives netlist_H and drawn_over_netlist in inductance report
+- **Issue #403** (closed): check-layout-freshness: the netlist half of inductance_report.json is still ungated
+- **PR #413**: chore(hygiene): hash the layout-freshness self-test in the item-10 envelope
+- **Issue #411** (closed): repo-hygiene: test-check-layout-freshness.sh is run by CI but absent from DECLARED_COMMANDS
+- **PR #409**: feat: Router fails loudly when different-net Metal2 stubs would overlap
+- **Issue #406** (closed): layout: Router asserts no two bias pins share an x, but never checks it
+- **PR #408**: chore(signoff): hash inductance_lowfreq.py in the repo-hygiene inventory
+- **Issue #404** (closed): repo-hygiene: inductance_lowfreq.py is not in HYGIENE_FILES, unlike native_drc_pair.py
+- **PR #405**: feat(layout): draw the bias side with routed intra-block wiring
+- **Issue #346** (closed): T1 item 2 (layout) part A: draw the bias-side instances (DR-0003 reference core, vb2 divider, decoupling) in lna_core
+- **PR #402**: feat: gate verifies inductance report against realization geometry
+- **Issue #400** (closed): check-layout-freshness does not cover inductance_report.json
+- **PR #399**: feat(layout): draw the matching network and add a modeled_in_device scope category
+- **Issue #347** (closed): T1 item 2 (layout) part B: draw the matching network (inductors via inductor2 PyCell, caps) and settle the loss-resistor partition
+- **PR #397**: fix: blank lines in a run: block no longer truncate its collected commands
+- **Issue #395** (closed): check-repo-hygiene.py: a blank line truncates a block-scalar run: body
+- **PR #394**: ci: report required checks on merge-group runs
+- **Issue #391** (closed): Merge queue: add the merge_group trigger and adapt the PR-metadata gates
+- **PR #389**: fix: native-DRC pair check rejects non-dict provenance and null bindings
+- **Issue #386** (closed): native-DRC pair check: non-dict provenance crashes, and null deck/pdk bindings are accepted
+- **PR #385**: refactor: one native-DRC pair check, path-loaded by gate and layout
+- **Issue #359** (closed): Consolidate native-DRC pair validation: one implementation instead of three
+
 ### 2026-11-17
 
 - **PR #315**: refactor: consolidate five run_deck() deck gates into one sim_run_deck helper
@@ -366,15 +439,4 @@
 - **Issue #26** (closed): design: replace Q1's placeholder resistive base-bias divider — measured I_C1 spans 25 uA..14.7 mA over PVT
 - **Issue #25** (closed): sim: hbt-characterization's NF bench does not pin the source reference temperature (ngspice per-instance temp= is ignored for resistor noise)
 - **Issue #19** (closed): spec: ratify spec/target-spec.md via the fleet two-key mechanism
-
-### 2026-09-18
-
-- **PR #29**: feat(sim): committed BVCEO/BVCER/BVCES breakdown-extraction testbench for npn13G2
-- **PR #28**: sim: circuit-level S-parameter, NF, stability and IIP3 campaign against design/lna.sch
-- **PR #24**: feat(sim): full Nx=8 corner grid + V_CE=0.6 V point for hbt-characterization
-- **PR #23**: feat(design): add cascode LNA schematic and derived netlist
-- **Issue #21** (closed): Extend hbt-characterization: full Nx=8 corner grid and V_CE=0.6 V point
-- **Issue #20** (closed): Committed BVCEO / BVCER breakdown-extraction testbench for npn13G2
-- **Issue #18** (closed): sim: S-parameter, NF, stability, and IIP3 testbenches against design/lna.sch
-- **Issue #17** (closed): design/lna.sch: schematic and derived netlist for the ratified bias/supply topology
 

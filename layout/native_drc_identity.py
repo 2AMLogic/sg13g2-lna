@@ -19,58 +19,52 @@ pin the given GDS bytes. The sidecar is published atomically (tmp + rename).
 It only attests identity; it never changes a report's verdict.
 
 `validate` re-checks a committed pair against the GDS: the same contract
-.github/scripts/check-layout-freshness enforces for the native pair (the
-gate inlines its copy to stay bash + stdlib and read-only). run_native_drc.py
-runs it as a publication self-check. Absence of the whole pair is valid —
-no native verdict exists in this tree until issue #201 supplies one; a
-one-sided pair is not.
+.github/scripts/check-layout-freshness enforces for the native pair, in one
+implementation (native_drc_pair.py beside the gate) loaded by both (issue
+#359). run_native_drc.py runs it as a publication self-check. Absence of
+the whole pair is valid — no native verdict exists in this tree until
+issue #201 supplies one; a one-sided pair is not.
 
 Stdlib only: no klayout, klt or PDK. Run tests with
     python3 -I -m unittest discover -s layout/tests -v
 """
-import argparse, hashlib, json, os, re, sys
+import argparse, hashlib, importlib.util, json, os, sys
 from pathlib import Path
 
-SCHEMA = "sg13g2-lna.native-drc/1"
-NAME = "native_drc_inputs.json"
-REPORT = "native_drc_report.json"
-# The completed-run status tokens these gates accept from klt's rollup
-# vocabulary (run_native_drc.py's rationale records which of them
-# --engine klayout emits today — issue #312). Duplicated
-# from run_native_drc.py on purpose (which carries the rationale): `python3
-# -I` does not put this script's directory on sys.path, so this script
-# cannot import its sibling. The vocabulary exists in three places that
-# must move together — here, the runner, and NATIVE_STATUSES in the
-# freshness gate .github/scripts/check-layout-freshness; test_native_drc.py
-# pins all three equal. Widening one copy alone strands a published-but-
-# rejected pair.
-STATUSES = ("clean", "clean_partial", "violations",
-            "coverage_unknown", "not_checked")
+LAYOUT_DIR = Path(__file__).resolve().parent
+# The native-DRC vocabulary, version helpers and pair check live once, in
+# .github/scripts/native_drc_pair.py beside the freshness gate (operator
+# ruling, rjwalters 2026-11-17, issue #359). This reverses the
+# copy-and-pin arrangement the comment here used to document — STATUSES and
+# the version helpers were duplicated into this file and the runner on
+# purpose, because `python3 -I` does not put a script's directory on
+# sys.path and the gate is bash + stdlib only — and the ruling keeps those
+# constraints while dropping the copies: the shared module is loaded by
+# explicit path (importlib.util.spec_from_file_location), which works under
+# -I and stays stdlib-only, and the gate does not import anything from
+# layout/, the directory whose output it judges. test_native_drc.py's sync
+# tests, which pinned the three copies equal, are gone with them.
+sys.dont_write_bytecode = True
+_pair_path = str(LAYOUT_DIR.parent / ".github" / "scripts" / "native_drc_pair.py")
+# Register in sys.modules (the documented spec_from_file_location pattern):
+# several consumers in one process — the test suite imports the runner and
+# this module together — must execute and re-export one module object.
+if "native_drc_pair" in sys.modules:
+    native_drc_pair = sys.modules["native_drc_pair"]
+else:
+    _pair_spec = importlib.util.spec_from_file_location("native_drc_pair",
+                                                        _pair_path)
+    native_drc_pair = importlib.util.module_from_spec(_pair_spec)
+    sys.modules["native_drc_pair"] = native_drc_pair
+    _pair_spec.loader.exec_module(native_drc_pair)
 
-_VERSION_RE = re.compile(r"\d+(?:\.\d+)+")
-
-
-def sha(p):
-    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
-
-
-def version_tuple(s):
-    """First dotted-number run in *s* as a tuple of ints, else None."""
-    if not isinstance(s, str):
-        return None
-    m = _VERSION_RE.search(s)
-    return tuple(int(x) for x in m.group(0).split(".")) if m else None
-
-
-def version_at_least(got, minimum):
-    """got >= minimum, padding the shorter tuple with zeros: 0.29 == 0.29.0."""
-    a, b = version_tuple(got), version_tuple(minimum)
-    if a is None or b is None:
-        return False
-    n = max(len(a), len(b))
-    a += (0,) * (n - len(a))
-    b += (0,) * (n - len(b))
-    return a >= b
+SCHEMA = native_drc_pair.SCHEMA
+NAME = native_drc_pair.SIDE
+REPORT = native_drc_pair.REPORT
+STATUSES = native_drc_pair.STATUSES
+sha = native_drc_pair.sha
+version_tuple = native_drc_pair.version_tuple
+version_at_least = native_drc_pair.version_at_least
 
 
 def _report_facts(rep_bytes, gds_sha):
@@ -174,89 +168,12 @@ def validate(cell_dir, gds, report_name=REPORT):
     Returns a list of problem strings; empty means consistent (or absent)."""
     cd = Path(cell_dir)
     gds = Path(gds).resolve()
-    rep_path, side_path = cd / report_name, cd / NAME
-    have_rep, have_side = rep_path.is_file(), side_path.is_file()
-    if not have_rep and not have_side:
+    if not (cd / report_name).is_file() and not (cd / NAME).is_file():
         return []
-    rel = f"{cd.name}/{NAME}"
-    if not have_rep:
-        return [f"{rel}: {report_name} missing: native report/sidecar pair "
-                f"is one-sided"]
-    if not have_side:
-        return [f"{cd.name}/{report_name}: {NAME} missing: native "
-                f"report/sidecar pair is one-sided"]
     problems = []
-    try:
-        side = json.loads(side_path.read_text())
-    except ValueError as e:
-        return [f"{rel}: unparseable JSON ({e})"]
-    if not isinstance(side, dict) or side.get("schema") != SCHEMA:
-        return [f"{rel}: malformed (bad schema)"]
-    str_fields = ("report", "report_sha256", "status", "gds", "gds_sha256",
-                  "pdk", "klayout_exe", "klayout_exe_resolved",
-                  "klayout_exe_version", "min_klayout_version")
-    missing = [k for k in str_fields
-               if not isinstance(side.get(k), str) or not side[k]]
-    if missing:
-        return [f"{rel}: missing or malformed field(s): {', '.join(missing)}"]
-    for k in ("deck_binding", "pdk_binding"):
-        if k not in side:
-            return [f"{rel}: missing {k}"]
-    if side["report"] != report_name:
-        return [f"{rel}: report is {side['report']!r}, want {report_name!r}"]
-    klt = side.get("klt")
-    if not isinstance(klt, dict) or not isinstance(klt.get("version"), str) \
-            or not klt["version"]:
-        return [f"{rel}: klt identity missing or malformed"]
-    argv = side.get("argv")
-    if not isinstance(argv, list) or not argv \
-            or any(not isinstance(a, str) for a in argv):
-        return [f"{rel}: argv missing or malformed"]
-
-    if sha(rep_path) != side["report_sha256"]:
-        problems.append(
-            f"{rel}: report changed since this native run (recorded "
-            f"{side['report_sha256'][:12]}, now {sha(rep_path)[:12]}); "
-            f"rerun layout/run_native_drc.py")
-    root = cd.parent.parent
-    try:
-        want_gds = str(gds.relative_to(root))
-    except ValueError:
-        want_gds = str(gds)
-    if side["gds"] != want_gds:
-        problems.append(f"{rel}: gds path {side['gds']!r} != {want_gds!r}")
-    elif sha(gds) != side["gds_sha256"]:
-        problems.append(
-            f"{rel}: GDS changed since this native run (recorded "
-            f"{side['gds_sha256'][:12]}, now {sha(gds)[:12]}); rerun "
-            f"layout/run_native_drc.py")
-    try:
-        rep = json.loads(rep_path.read_bytes())
-        if not isinstance(rep, dict):
-            raise ValueError("not a JSON object")
-    except ValueError as e:
-        problems.append(f"{cd.name}/{report_name}: unparseable report ({e})")
-        return problems
-    facts = _report_facts(rep_path.read_bytes(), sha(gds))
-    if isinstance(facts, str):
-        problems.append(f"{cd.name}/{report_name}: {facts}")
-        return problems
-    status, deck, pdk_binding = facts
-    if side["status"] != status:
-        problems.append(f"{rel}: status {side['status']!r} != report "
-                        f"status {status!r}")
-    if side["deck_binding"] != deck:
-        problems.append(f"{rel}: deck_binding differs from the report's "
-                        f"provenance.deck; rerun layout/run_native_drc.py")
-    if side["pdk_binding"] != pdk_binding:
-        problems.append(f"{rel}: pdk_binding differs from the report's "
-                        f"provenance.pdk; rerun layout/run_native_drc.py")
-    if not version_at_least(side["klayout_exe_version"],
-                            side["min_klayout_version"]):
-        problems.append(
-            f"{rel}: klayout_exe_version "
-            f"{side['klayout_exe_version']!r} is below min_klayout_version "
-            f"{side['min_klayout_version']!r}")
+    native_drc_pair.check_pair(cd, cd.parent.parent, cd.name, gds, sha(gds),
+                               lambda rel, msg: problems.append(f"{rel}: {msg}"),
+                               report_name=report_name, side_name=NAME)
     return problems
 
 

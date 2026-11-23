@@ -63,8 +63,8 @@
     {
       "class": "cap_cmim",
       "device_kind": "capacitor",
-      "layout_devices": 1,
-      "reference_devices": 1,
+      "layout_devices": 8,
+      "reference_devices": 7,
       "compared": [
         "C"
       ],
@@ -80,10 +80,37 @@
       ]
     },
     {
+      "class": "rhigh",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "R"
+      ],
+      "not_compared": [
+        {
+          "parameter": "L",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "W",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
       "class": "rppd",
       "device_kind": "resistor",
-      "layout_devices": 2,
-      "reference_devices": 2,
+      "layout_devices": 8,
+      "reference_devices": 8,
       "compared": [
         "R"
       ],
@@ -107,39 +134,40 @@
       ]
     }
   ],
-  "mismatch_count": 28,
-  "error_count": 24,
+  "mismatch_count": 64,
+  "error_count": 60,
   "category_counts": {
-    "device.combine_parameter_corrected": 1,
-    "device.geometry_not_compared": 2,
-    "device.unmatched": 9,
-    "net.merged": 7,
-    "net.split": 3,
-    "net.unmatched": 4,
+    "device.geometry_not_compared": 3,
+    "device.property": 4,
+    "device.unmatched": 36,
+    "net.merged": 10,
+    "net.split": 8,
+    "net.unmatched": 1,
     "topology": 2
   },
   "category_error_counts": {
-    "device.unmatched": 9,
-    "net.merged": 7,
-    "net.split": 3,
-    "net.unmatched": 4,
+    "device.property": 4,
+    "device.unmatched": 36,
+    "net.merged": 10,
+    "net.split": 8,
+    "net.unmatched": 1,
     "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 10,
-      "reference": 10,
+      "layout": 18,
+      "reference": 19,
       "matched": 2
     },
     "devices": {
-      "layout": 4,
-      "reference": 7,
-      "matched": 1
+      "layout": 26,
+      "reference": 31,
+      "matched": 8
     },
     "pins": {
-      "layout": 10,
+      "layout": 18,
       "reference": 0,
-      "matched": 10
+      "matched": 18
     }
   },
   "device_classes": [
@@ -157,8 +185,8 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
-    "reference_sha256": "0d4b7636dad968126bc0c12ed8009ee2761112b551a206c6bbefc12c56d9c524",
+    "layout_sha256": "c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
+    "reference_sha256": "1a73b18709f50845c165f79fde5932f4a01b4c7a407bf7b6b23c755a52a7bcd8",
     "extracted_netlist": null
   },
   "provenance": {
@@ -173,36 +201,12 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
       "role": "layout"
     },
     "klayout_version_mismatch": false
   },
   "mismatches": [
-    {
-      "category": "device.combine_parameter_corrected",
-      "severity": "warning",
-      "description": "options.combine_devices produced one or more combined devices whose parameters did not agree with the parallel group KLayout's own Netlist.combine_devices() folded them from (a summed parameter not equal to the group's pre-combine total, or a shared-region parameter not equal to the group's common value), on the layout netlist -- corrected in place (see docs/cli/lvs.md, 'device.combine_parameter_corrected'): lna_core/<unnamed>.C (6.250695e-12 -> 1.0001111999999999e-10)",
-      "side": "layout",
-      "net": null,
-      "device": null,
-      "property": null,
-      "details": {
-        "corrected": [
-          {
-            "circuit": "lna_core",
-            "device": null,
-            "class": "cap_cmim",
-            "parameter": "C",
-            "before": 6.250695e-12,
-            "after": 1.0001111999999999e-10
-          }
-        ]
-      },
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
     {
       "category": "device.geometry_not_compared",
       "severity": "warning",
@@ -223,6 +227,36 @@
         "not_compared_parameters": [
           "A",
           "P"
+        ],
+        "layout_devices": 8,
+        "reference_devices": 7
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.geometry_not_compared",
+      "severity": "warning",
+      "description": "device class 'rhigh' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rhigh"
+      },
+      "property": null,
+      "details": {
+        "device_kind": "resistor",
+        "compared_parameters": [
+          "R"
+        ],
+        "not_compared_parameters": [
+          "A",
+          "L",
+          "P",
+          "W"
         ],
         "layout_devices": 1,
         "reference_devices": 1
@@ -254,9 +288,93 @@
           "P",
           "W"
         ],
-        "layout_devices": 2,
-        "reference_devices": 2
+        "layout_devices": 8,
+        "reference_devices": 8
       },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'a' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$14",
+        "reference": "CVDD",
+        "class": "cap_cmim"
+      },
+      "property": {
+        "name": "a",
+        "layout": 66564.0,
+        "reference": 0.0
+      },
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'p' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$14",
+        "reference": "CVDD",
+        "class": "cap_cmim"
+      },
+      "property": {
+        "name": "p",
+        "layout": 4128.0,
+        "reference": 0.0
+      },
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'a' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$15",
+        "reference": "CBREF",
+        "class": "cap_cmim"
+      },
+      "property": {
+        "name": "a",
+        "layout": 66564.0,
+        "reference": 0.0
+      },
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'p' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$15",
+        "reference": "CBREF",
+        "class": "cap_cmim"
+      },
+      "property": {
+        "name": "p",
+        "layout": 4128.0,
+        "reference": 0.0
+      },
+      "details": null,
       "circuit": null,
       "instance": null,
       "subcircuit": null
@@ -268,7 +386,7 @@
       "side": "layout",
       "net": null,
       "device": {
-        "layout": "\\$33",
+        "layout": "\\$10",
         "reference": null,
         "class": "cap_cmim"
       },
@@ -285,7 +403,92 @@
       "side": "layout",
       "net": null,
       "device": {
-        "layout": "\\$49",
+        "layout": "\\$11",
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$12",
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$13",
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$16",
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$17",
+        "reference": null,
+        "class": "cap_cmim"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$18",
         "reference": null,
         "class": "rppd"
       },
@@ -302,9 +505,128 @@
       "side": "layout",
       "net": null,
       "device": {
-        "layout": "\\$50",
+        "layout": "\\$19",
         "reference": null,
         "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$20",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$21",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$22",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$23",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$24",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$25",
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$26",
+        "reference": null,
+        "class": "rhigh"
       },
       "property": null,
       "details": null,
@@ -320,7 +642,75 @@
       "net": null,
       "device": {
         "layout": null,
-        "reference": "CBREF",
+        "reference": "CBYP2",
+        "class": "CAP_CMIM"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "CIN",
+        "class": "CAP_CMIM"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "COUT",
+        "class": "CAP_CMIM"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "CPOUT",
+        "class": "CAP_CMIM"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "CSOUT",
         "class": "CAP_CMIM"
       },
       "property": null,
@@ -388,6 +778,91 @@
       "net": null,
       "device": {
         "layout": null,
+        "reference": "QA",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "QB",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "QC",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "R2A",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "R2B",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
         "reference": "R3B",
         "class": "RPPD"
       },
@@ -407,6 +882,108 @@
         "layout": null,
         "reference": "RBLEED",
         "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RL",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RP",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RSEED",
+        "class": "RHIGH"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RSUM",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "RTAIL",
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$5",
+        "reference": "MA",
+        "class": "pfet"
       },
       "property": null,
       "details": null,
@@ -453,7 +1030,55 @@
       "side": "reference",
       "net": {
         "layout": null,
+        "reference": "CB3"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.merged",
+      "severity": "error",
+      "description": "multiple reference nets were collapsed into one layout net",
+      "side": "reference",
+      "net": {
+        "layout": null,
         "reference": "E1"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.merged",
+      "severity": "error",
+      "description": "multiple reference nets were collapsed into one layout net",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "NC_A"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.merged",
+      "severity": "error",
+      "description": "multiple reference nets were collapsed into one layout net",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "NC_E"
       },
       "device": null,
       "property": null,
@@ -485,7 +1110,7 @@
       "side": "reference",
       "net": {
         "layout": null,
-        "reference": "VB2"
+        "reference": "RFOUT"
       },
       "device": null,
       "property": null,
@@ -501,7 +1126,7 @@
       "side": "reference",
       "net": {
         "layout": null,
-        "reference": "VSS"
+        "reference": "VB2"
       },
       "device": null,
       "property": null,
@@ -548,7 +1173,87 @@
       "description": "a reference net's role is divided across multiple layout nets",
       "side": "layout",
       "net": {
-        "layout": "vss",
+        "layout": "cb3",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "nca",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "nce",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "rfin|xin",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "rfout",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.split",
+      "severity": "error",
+      "description": "a reference net's role is divided across multiple layout nets",
+      "side": "layout",
+      "net": {
+        "layout": "vb2",
         "reference": null
       },
       "device": null,
@@ -591,71 +1296,6 @@
       "subcircuit": null
     },
     {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "e1",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "outn",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "vb2",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'nfet'",
-      "side": "layout",
-      "net": null,
-      "device": {
-        "layout": null,
-        "reference": null,
-        "class": "nfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
       "category": "topology",
       "severity": "error",
       "description": "device class could not be mapped to a counterpart: 'NPN13G2'",
@@ -671,17 +1311,34 @@
       "circuit": null,
       "instance": null,
       "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'RPPD__renewed'",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RPPD__renewed"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
     }
   ],
   "net_correspondence": [
     {
-      "layout": "gsvo",
-      "reference": "GSVO",
+      "layout": "dn",
+      "reference": "DN",
       "pin": true
     },
     {
-      "layout": "vdd",
-      "reference": "VDD",
+      "layout": "gsvo",
+      "reference": "GSVO",
       "pin": true
     }
   ]

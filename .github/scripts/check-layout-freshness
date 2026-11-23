@@ -8,8 +8,8 @@
 #   2. layout/lvs_reference.py regenerated from the current netlist
 #      byte-equals the committed <cell>.lvs_reference.spice
 #   3. provenance.input of drc_report.json, lvs_full_report.json,
-#      extract_report.json and lvs_report.json (scoped LVS) has
-#      role == "layout" and content_hash == sha256:<committed GDS sha256>
+#      extract_report.json, lvs_report.json (scoped LVS) and erc_report.json
+#      has role == "layout" and content_hash == sha256:<committed GDS sha256>
 #   4. lvs_inputs.json (issue #130) binds each LVS report's exact bytes to the
 #      GDS, reference netlist and request bytes of the invocation that made
 #      it; any changed relationship is reported by name
@@ -22,6 +22,31 @@
 #      report's exact bytes and the committed GDS, match the report's own
 #      status and provenance deck/pdk, and record a standalone executable
 #      version >= its recorded minimum
+#   7. inductance_report.json (issue #400): the committed report has exactly
+#      the realization's inductor2 instances, each with geometry_um equal to
+#      the realization params and drawn_lowfreq_H equal to the low-frequency
+#      L re-evaluated here (inductance_lowfreq.py, beside this gate; kept
+#      equal to layout/inductance_report.py by a layout/tests case); and
+#      netlist_H equal to the value re-parsed from the inductor2 cards of the
+#      realization's netlist, drawn_over_netlist equal to the rounded ratio
+#      (issue #403)
+#   8. extract_report.json connectivity (issue #424), lna_core only:
+#      split_net_labels must be empty (the assembled layout joins every
+#      labelled net) and merged_net_labels exactly the three known spiral
+#      merge groups e1|vss, outn|vdd, rfin|xin (the sg13g2 extraction deck
+#      has no inductor class — layout/README.md "Friction"), order-
+#      independent. The expected set lives here, not in the report under
+#      test, so a regressed report cannot redefine its own expectation.
+#      Scoped to lna_core: the merge groups are this cell's assembly facts;
+#      other --cell values do not inherit its net names.
+#   9. the ERC supply evidence (issue #35): erc_report.json's
+#      provenance.input pins the committed GDS (step 3's list), its named
+#      spec is the committed erc_spec.json by content hash, its file/spec
+#      paths are repo-relative (what klt signoff's grader resolves), the
+#      committed verdict is erc_status clean, erc_spec.json declares
+#      exactly the netlist's two supply ports with ties[], and
+#      erc_control.json is a schema-1 record with rejected true -- both
+#      contact controls recorded erc.missing_tie for their own tie and net
 #
 # Usage: check-layout-freshness [--root DIR] [--cell NAME]
 set -eu
@@ -37,13 +62,43 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-exec python3 -I - "$ROOT" "$CELL" <<'PY'
-import hashlib, json, re, shutil, subprocess, sys, tempfile
+exec python3 -I - "$ROOT" "$CELL" "$HERE" <<'PY'
+import hashlib, importlib.util, json, os, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 root, cell = Path(sys.argv[1]).resolve(), sys.argv[2]
 cd = root / "layout" / cell
 errs = []
+
+# The native-DRC pair check (STATUSES, the version helpers, the whole pair
+# validation) lives once, in native_drc_pair.py beside this gate — operator
+# ruling (rjwalters, 2026-11-17, issue #359): the gate executes only code
+# from its own directory and must not import the logic it judges with from
+# layout/, the directory whose output it judges. dont_write_bytecode first:
+# a __pycache__/ write would break this gate's read-only-on-the-checkout
+# guarantee.
+sys.dont_write_bytecode = True
+if "native_drc_pair" in sys.modules:
+    _pair = sys.modules["native_drc_pair"]
+else:
+    _pair_spec = importlib.util.spec_from_file_location(
+        "native_drc_pair", os.path.join(sys.argv[3], "native_drc_pair.py"))
+    _pair = importlib.util.module_from_spec(_pair_spec)
+    sys.modules["native_drc_pair"] = _pair
+    _pair_spec.loader.exec_module(_pair)
+check_pair = _pair.check_pair
+
+# Same rule, same reason, for the low-frequency inductor model (issue #400).
+if "inductance_lowfreq" in sys.modules:
+    _ind = sys.modules["inductance_lowfreq"]
+else:
+    _ind_spec = importlib.util.spec_from_file_location(
+        "inductance_lowfreq", os.path.join(sys.argv[3], "inductance_lowfreq.py"))
+    _ind = importlib.util.module_from_spec(_ind_spec)
+    sys.modules["inductance_lowfreq"] = _ind
+    _ind_spec.loader.exec_module(_ind)
+l_lowfreq = _ind.l_lowfreq
+netlist_values = _ind.netlist_values
 
 def fail(rel, msg):
     errs.append(f"layout-freshness: {rel}: {msg}")
@@ -107,7 +162,8 @@ if rz is not None:
 # (extraction / scoped LVS are pinned to the GDS only; they are not signoff
 # evidence. The extraction output digest is checked separately in step 5.)
 for name in ("drc_report.json", "lvs_full_report.json",
-             "extract_report.json", "lvs_report.json"):
+             "extract_report.json", "lvs_report.json",
+             "erc_report.json"):
     rel = f"layout/{cell}/{name}"
     rep = load(cd / name)
     if rep is None:
@@ -153,6 +209,65 @@ def check_extract_output():
              f"netlist_sha256 {nsha}; rerun layout/run_flow.sh")
 
 check_extract_output()
+
+# 8. extraction connectivity (issue #424): an opened net is currently
+# silent everywhere else — DRC sees shorts not opens, the assembly test
+# drives a recording canvas, and the LVS counts are already mismatch by
+# expectation (#230). split_net_labels and merged_net_labels are the
+# strongest regression signal the flow already records, so gate them here.
+EXPECTED_MERGED_NETS = ("e1|vss", "outn|vdd", "rfin|xin")
+
+def check_extract_connectivity():
+    if cell != "lna_core":
+        return  # expected merge groups are an lna_core assembly fact (#424)
+    rel = f"layout/{cell}/extract_report.json"
+    p = cd / "extract_report.json"
+    if not p.is_file():
+        return  # missing report already reported by check 3
+    rep = load(p)
+    if not isinstance(rep, dict):
+        return  # unreadable JSON already reported
+    splits = rep.get("split_net_labels")
+    if not isinstance(splits, list):
+        fail(rel, f"split_net_labels missing or malformed ({splits!r}); want a list")
+    else:
+        named = []
+        for s in splits:
+            if isinstance(s, dict) and isinstance(s.get("label"), str) \
+                    and isinstance(s.get("nets"), list):
+                named.append(f"{s['label']} (nets "
+                             + ", ".join(str(n) for n in s["nets"]) + ")")
+            else:
+                named.append(repr(s))
+        if named:
+            fail(rel, "split_net_labels non-empty: " + "; ".join(named)
+                 + "; the assembled layout must join every labelled net; "
+                 "rerun layout/run_flow.sh")
+    merged = rep.get("merged_net_labels")
+    if not isinstance(merged, list):
+        fail(rel, f"merged_net_labels missing or malformed ({merged!r}); want a list")
+        return
+    got = []
+    for e in merged:
+        if isinstance(e, dict) and isinstance(e.get("net"), str) \
+                and isinstance(e.get("labels"), list) \
+                and all(isinstance(x, str) for x in e["labels"]):
+            got.append(e["net"])
+        else:
+            fail(rel, f"merged_net_labels entry malformed ({e!r}); want an "
+                 "object with a 'net' name and a 'labels' array of strings")
+    missing = [n for n in EXPECTED_MERGED_NETS if n not in got]
+    extra = sorted(set(got) - set(EXPECTED_MERGED_NETS))
+    if missing:
+        fail(rel, f"merged_net_labels missing expected merge group(s) {missing}; "
+             "the sg13g2 deck merges exactly the three inductor spirals "
+             "(layout/README.md \"Friction\"); rerun layout/run_flow.sh")
+    if extra:
+        fail(rel, f"merged_net_labels has unexpected merge group(s) {extra}; a "
+             "new merge is a short the assembled layout must not have; "
+             "rerun layout/run_flow.sh")
+
+check_extract_connectivity()
 
 # 4. LVS input identity sidecar (written by layout/lvs_identity.py)
 def sha(p):
@@ -209,118 +324,180 @@ if side is not None:
         cmp(f"GDS {e['gds']}", e["gds_sha256"], gds_p)
 
 # 6. native DRC pair (written by layout/run_native_drc.py, issue #185).
-#    Entirely absent: allowed — no native verdict exists in this tree until
-#    issue #201 supplies one. One-sided or inconsistent: fails, naming it.
-NATIVE_REPORT = "native_drc_report.json"
-NATIVE_SIDE = "native_drc_inputs.json"
-# Same completed-run vocabulary as STATUSES in layout/run_native_drc.py and
-# layout/native_drc_identity.py, kept in sync on purpose (test_native_drc.py
-# pins all three equal): a token the runner publishes and the identity binds
-# must not fail this gate, or a partial/no-verdict native run would be
-# discarded one gate later than the defect issue #290 fixes.
-NATIVE_STATUSES = ("clean", "clean_partial", "violations",
-                   "coverage_unknown", "not_checked")
+#    Checked by check_pair from native_drc_pair.py, loaded above: the one
+#    implementation of the vocabulary/version/pair contract, shared since
+#    the operator ruling in issue #359 with layout/run_native_drc.py and
+#    layout/native_drc_identity.py (which previously kept three copies
+#    equal via a sync test). Entirely absent: allowed — no native verdict
+#    exists in this tree until issue #201 supplies one. One-sided or
+#    inconsistent: fails, naming it.
+check_pair(cd, root, f"layout/{cell}", gds, gds_sha, fail)
 
-def vtuple(s):
-    m = re.search(r"\d+(?:\.\d+)+", s)
-    return tuple(int(x) for x in m.group(0).split(".")) if m else None
+# 7. inductance report vs realization geometry (issue #400). Recomputes the
+# low-frequency L of every inductor2 in realization.json and compares it to
+# the committed report, so a geometry edit not followed by layout/run_flow.sh
+# cannot leave the report stale with CI green.
+def check_inductance_report():
+    rel = f"layout/{cell}/inductance_report.json"
+    p = cd / "inductance_report.json"
+    if not p.is_file():
+        fail(rel, "missing (regenerate with layout/run_flow.sh)")
+        return
+    rep = load(p)
+    if rep is None:
+        return
+    rows = rep.get("inductors") if isinstance(rep, dict) else None
+    if not isinstance(rows, dict):
+        fail(rel, "malformed (no 'inductors' object)")
+        return
+    if rz is None or not isinstance(rz.get("in_scope"), dict):
+        return  # unreadable realization already reported by step 2
+    want = {k: v for k, v in rz["in_scope"].items()
+            if isinstance(v, dict) and v.get("pcell") == "inductor2"}
+    if set(rows) != set(want):
+        fail(rel, f"inductors {sorted(rows)} != inductor2 instances in "
+             f"realization.json {sorted(want)}; rerun layout/run_flow.sh")
+    nl_rel = rz.get("netlist")
+    nl_vals = {}
+    if isinstance(nl_rel, str) and nl_rel and (root / nl_rel).is_file():
+        nl_vals = netlist_values((root / nl_rel).read_text(), set(want))
+    for inst in sorted(set(rows) & set(want)):
+        row, par = rows[inst], want[inst].get("params") or {}
+        try:
+            geo = {"w": float(str(par["w"]).rstrip("uU")),
+                   "s": float(str(par["s"]).rstrip("uU")),
+                   "d": float(str(par["d"]).rstrip("uU")),
+                   "turns": int(par["nr_r"])}
+        except (KeyError, ValueError, TypeError) as ex:
+            fail(f"layout/{cell}/realization.json", f"{inst}: unusable inductor2 params ({ex!r})")
+            continue
+        got = row.get("geometry_um") if isinstance(row, dict) else None
+        if not isinstance(got, dict) or any(
+                not isinstance(got.get(k), (int, float)) or isinstance(got.get(k), bool)
+                or abs(got[k] - v) > 1e-9 for k, v in geo.items()):
+            fail(rel, f"{inst}: geometry_um {got!r} != realization.json params {geo}; "
+                 "rerun layout/run_flow.sh")
+            continue
+        lval = l_lowfreq(geo["turns"], geo["w"], geo["s"], geo["d"])
+        rec = row.get("drawn_lowfreq_H")
+        if not isinstance(rec, (int, float)) or isinstance(rec, bool) \
+                or abs(rec - lval) > 1e-9 * abs(lval):
+            fail(rel, f"{inst}: drawn_lowfreq_H {rec!r} != {lval!r} recomputed from "
+                 "realization.json geometry; rerun layout/run_flow.sh")
+            continue
+        # netlist_H and drawn_over_netlist (issue #403)
+        nl = nl_vals.get(inst)
+        if nl is None:
+            fail(rel, f"{inst}: no parsable inductor2 card in netlist {nl_rel!r}; "
+                 "cannot verify netlist_H")
+            continue
+        rnl = row.get("netlist_H")
+        if not isinstance(rnl, (int, float)) or isinstance(rnl, bool) \
+                or abs(rnl - nl) > 1e-9 * abs(nl):
+            fail(rel, f"{inst}: netlist_H {rnl!r} != {nl!r} re-parsed from {nl_rel}; "
+                 "rerun layout/run_flow.sh")
+            continue
+        ratio = row.get("drawn_over_netlist")
+        if not isinstance(ratio, (int, float)) or isinstance(ratio, bool) \
+                or abs(ratio - round(lval / nl, 5)) > 1e-9:
+            fail(rel, f"{inst}: drawn_over_netlist {ratio!r} != {round(lval / nl, 5)!r} "
+                 "(round(drawn_lowfreq_H / netlist_H, 5)); rerun layout/run_flow.sh")
 
-def check_native_pair():
-    rep_p, side_p = cd / NATIVE_REPORT, cd / NATIVE_SIDE
-    if not rep_p.is_file() and not side_p.is_file():
-        return  # absent: allowed
-    nrep_rel, nside_rel = f"layout/{cell}/{NATIVE_REPORT}", f"layout/{cell}/{NATIVE_SIDE}"
-    if not rep_p.is_file():
-        fail(nside_rel, f"{NATIVE_REPORT} missing: native report/sidecar pair is one-sided")
+check_inductance_report()
+
+# 9. ERC supply evidence (issue #35): the item-11 citation set is
+#    erc_report.json + erc_spec.json + erc_control.json, so the gate binds
+#    all three together. The envelope's provenance.input pin is step 3's
+#    job; here the spec hash, the repo-relative file/spec paths the
+#    signoff grader resolves, the committed clean verdict, and the
+#    negative-control record's shape are checked. Re-deriving the verdicts
+#    needs klt (run_flow's job on a layout host); this gate is PDK-free.
+def check_erc_evidence():
+    rep_rel = f"layout/{cell}/erc_report.json"
+    spec_name, ctrl_name = "erc_spec.json", "erc_control.json"
+    spec_rel, ctrl_rel = f"layout/{cell}/{spec_name}", f"layout/{cell}/{ctrl_name}"
+    rep = load(cd / "erc_report.json") if (cd / "erc_report.json").is_file() else None
+    if rep is None:
+        fail(rep_rel, "missing (regenerate with layout/run_flow.sh)")
         return
-    if not side_p.is_file():
-        fail(nrep_rel, f"{NATIVE_SIDE} missing: native report/sidecar pair is one-sided")
-        return
-    side = load(side_p)
-    rep = load(rep_p)
-    rel = nside_rel
-    if side is None or rep is None:
-        return
-    if not isinstance(side, dict) or side.get("schema") != "sg13g2-lna.native-drc/1":
-        fail(rel, "malformed (bad schema)")
-        return
-    keys = ("report", "report_sha256", "status", "gds", "gds_sha256", "pdk",
-            "klayout_exe", "klayout_exe_resolved", "klayout_exe_version",
-            "min_klayout_version")
-    missing = [k for k in keys if not isinstance(side.get(k), str) or not side[k]]
-    if missing:
-        fail(rel, f"missing or malformed field(s): {', '.join(missing)}")
-        return
-    for k in ("deck_binding", "pdk_binding"):
-        if k not in side:
-            fail(rel, f"missing {k}")
-            return
-    if side["report"] != NATIVE_REPORT:
-        fail(rel, f"report is {side['report']!r}, want {NATIVE_REPORT!r}")
-        return
-    klt = side.get("klt")
-    if not isinstance(klt, dict) or not isinstance(klt.get("version"), str) \
-            or not klt["version"]:
-        fail(rel, "klt identity missing or malformed")
-        return
-    argv = side.get("argv")
-    if not isinstance(argv, list) or not argv \
-            or any(not isinstance(a, str) for a in argv):
-        fail(rel, "argv missing or malformed")
-        return
-    if sha(rep_p) != side["report_sha256"]:
-        fail(rel, f"report changed since this native run (recorded "
-             f"{side['report_sha256'][:12]}, now {sha(rep_p)[:12]}); "
-             f"rerun layout/run_native_drc.py")
-    try:
-        want_gds = str(gds.resolve().relative_to(root))
-    except ValueError:
-        want_gds = str(gds.resolve())
-    if side["gds"] != want_gds:
-        fail(rel, f"gds path {side['gds']!r} != {want_gds!r}")
-    elif gds_sha is not None and side["gds_sha256"] != gds_sha:
-        fail(rel, f"GDS changed since this native run (recorded "
-             f"{side['gds_sha256'][:12]}, now {gds_sha[:12]}); "
-             f"rerun layout/run_native_drc.py")
-    # the report itself must pin the committed GDS and carry the recorded verdict
-    prov = rep.get("provenance") if isinstance(rep, dict) else None
-    inp = (prov or {}).get("input")
-    if not isinstance(inp, dict):
-        fail(nrep_rel, "missing provenance.input")
+    spec = load(cd / spec_name)
+    ctrl = load(cd / ctrl_name) if (cd / ctrl_name).is_file() else None
+    # paths the envelope names must be the repo-relative committed paths:
+    # klt signoff's grader resolves them from the repo root
+    f = rep.get("file")
+    if not (isinstance(f, dict) and f.get("scope") == "repo"
+            and f.get("path") == f"layout/{cell}/{cell}.gds"):
+        fail(rep_rel, f"file is {f!r}, want repo-scope layout/{cell}/{cell}.gds")
+    if rep.get("spec") != f"layout/{cell}/{spec_name}":
+        fail(rep_rel, f"spec is {rep.get('spec')!r}, want {spec_rel}")
+    # the spec the run graded is the committed spec, byte for byte
+    sp = (rep.get("provenance") or {}).get("spec")
+    if not isinstance(sp, dict):
+        fail(rep_rel, "missing provenance.spec")
     else:
-        if inp.get("role") != "layout":
-            fail(nrep_rel, f"provenance.input.role is {inp.get('role')!r}, want 'layout'")
-        ch = inp.get("content_hash")
+        ch = sp.get("content_hash")
         if not isinstance(ch, str) or not ch.startswith("sha256:"):
-            fail(nrep_rel, f"provenance.input.content_hash missing or malformed ({ch!r})")
-        elif gds_sha is not None and ch[len("sha256:"):] != gds_sha:
-            fail(nrep_rel, f"provenance.input.content_hash {ch} != sha256:{gds_sha} (committed GDS)")
-    if not isinstance(rep, dict) or rep.get("status") not in NATIVE_STATUSES:
-        got = rep.get("status") if isinstance(rep, dict) else type(rep).__name__
-        fail(nrep_rel, f"status is {got!r}, want one of {list(NATIVE_STATUSES)}")
-    elif side["status"] != rep["status"]:
-        fail(rel, f"status {side['status']!r} != report status {rep['status']!r}")
-    # deck / pdk bindings must equal what the report itself records
-    if isinstance(prov, dict):
-        for k, want in (("deck_binding", prov.get("deck")),
-                        ("pdk_binding", prov.get("pdk"))):
-            if side[k] != want:
-                fail(rel, f"{k} differs from the report's provenance; "
-                     f"rerun layout/run_native_drc.py")
-    # recorded executable must satisfy the recorded minimum
-    vt_min, vt_exe = vtuple(side["min_klayout_version"]), vtuple(side["klayout_exe_version"])
-    if vt_min is None:
-        fail(rel, f"min_klayout_version {side['min_klayout_version']!r} unparseable")
-    if vt_exe is None:
-        fail(rel, f"klayout_exe_version {side['klayout_exe_version']!r} unparseable")
-    if vt_min is not None and vt_exe is not None:
-        n = max(len(vt_min), len(vt_exe))
-        a, b = vt_exe + (0,) * (n - len(vt_exe)), vt_min + (0,) * (n - len(vt_min))
-        if a < b:
-            fail(rel, f"klayout_exe_version {side['klayout_exe_version']!r} "
-                 f"is below min_klayout_version {side['min_klayout_version']!r}")
+            fail(rep_rel, f"provenance.spec.content_hash malformed ({ch!r})")
+        elif isinstance(spec, dict) and ch[len("sha256:"):] != sha(cd / spec_name):
+            fail(rep_rel, f"provenance.spec.content_hash {ch} != sha256 of committed "
+                 f"{spec_rel}; the spec changed after this run -- rerun layout/run_flow.sh")
+    if not isinstance(spec, dict):
+        fail(spec_rel, "expected a supply spec object")
+    else:
+        nets = spec.get("nets")
+        supplies = sorted(n.get("name") for n in nets
+                          if isinstance(n, dict) and n.get("kind") == "supply") \
+            if isinstance(nets, list) else None
+        if supplies != ["vdd", "vss"]:
+            fail(spec_rel, f"declared supply nets are {supplies!r}, want ['vdd', 'vss'] "
+                 "(the netlist's supply ports)")
+        if not spec.get("ties"):
+            fail(spec_rel, "declares no ties[]; item 11 needs the well/substrate taps")
+    if rep.get("erc_status") != "clean":
+        fail(rep_rel, f"erc_status is {rep.get('erc_status')!r}, want 'clean' "
+             "(a violating committed run must not back the item-11 citation)")
+    if ctrl is None:
+        fail(ctrl_rel, "missing (regenerate with layout/run_flow.sh)")
+        return
+    if ctrl.get("schema_version") != 1 or ctrl.get("rejected") is not True:
+        fail(ctrl_rel, "malformed or not rejected: a control that did not flip the "
+             "verdict cannot back the item-11 citation")
+    if (ctrl.get("committed_layout") or {}).get("erc_status") != "clean":
+        fail(ctrl_rel, "committed_layout.erc_status is not 'clean'")
+    expected_controls = {
+        "substrate_tie_severed": ("substrate_vss", "vss"),
+        "well_tie_severed": ("nwell_vdd", "vdd"),
+    }
+    controls = ctrl.get("controls")
+    n_controls = len(controls) if isinstance(controls, list) else None
+    if n_controls != len(expected_controls):
+        fail(ctrl_rel, f"controls is {type(controls).__name__} len "
+             f"{n_controls}, want 2")
+    else:
+        for name, (tie, net) in expected_controls.items():
+            matches = [c for c in controls if isinstance(c, dict) and c.get("name") == name]
+            if len(matches) != 1:
+                fail(ctrl_rel, f"expected one {name} control, found {len(matches)}")
+                continue
+            control = matches[0]
+            if control.get("break_layer") != "6/0":
+                fail(ctrl_rel, f"{name} must remove contacts on 6/0")
+            verdict = control.get("verdict")
+            if control.get("rejected") is not True or not isinstance(verdict, dict) \
+                    or verdict.get("erc_status") != "violations":
+                fail(ctrl_rel, f"control {name!r} did not flip to violations")
+                continue
+            findings = verdict.get("tie_findings")
+            if not isinstance(findings, list) or not any(
+                isinstance(f, dict) and f.get("rule") == "erc.missing_tie"
+                and f.get("tie") == tie and f.get("net") == net for f in findings
+            ):
+                fail(ctrl_rel, f"{name} lacks an erc.missing_tie finding for {tie} on {net}")
+    if ctrl.get("file") != f"layout/{cell}/{cell}.gds" \
+            or ctrl.get("spec") != f"layout/{cell}/{spec_name}":
+        fail(ctrl_rel, "file/spec do not name the committed GDS and spec")
 
-check_native_pair()
+check_erc_evidence()
 
 if errs:
     print("\n".join(errs), file=sys.stderr)

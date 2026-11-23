@@ -25,7 +25,6 @@ import hashlib
 import io
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -93,31 +92,43 @@ sys.stdout.write(json.dumps(rep, indent=2) + "\\n")
 raise SystemExit(int(os.environ.get("STUB_RC", "3")))
 """
 
+STUB_IDENTITY = '''#!/usr/bin/env python3
+"""test stub: native_drc_identity.py stand-in with one injected failure.
+
+The runner runs its identity helper as a subprocess (python3 -I <script>
+record|validate ...), so a post-publication failure cannot be injected by
+monkeypatching: copied_runner swaps this stub in as the helper of a runner
+copy. The injected step ({fail}) exits 1 before doing anything; every other
+step delegates to the real helper via os.execv, so the state the runner has
+reached when it dies is the real one.
+"""
+import os, sys
+argv = sys.argv[1:]
+if argv[:1] == ["{fail}"]:
+    print("stub: injected {fail} failure", file=sys.stderr)
+    raise SystemExit(1)
+os.execv(sys.executable, [sys.executable, "-I", "{real}"] + argv)
+'''
+
 
 class VersionHelpersTest(unittest.TestCase):
-    def test_identity_and_runner_copies_agree(self):
-        samples = ["KLayout 0.28.16 (2023-12-30) abc", "0.29", "0.30.30",
-                   "no digits here", "", None, "v1.2.3.4-rc1"]
-        for s in samples:
-            with self.subTest(sample=s):
-                self.assertEqual(native_drc_identity.version_tuple(s),
-                                 run_native_drc.version_tuple(s))
-
-    def test_statuses_copies_agree(self):
-        """All three STATUSES copies move together (issue #290): the
-        runner, the identity module, and NATIVE_STATUSES in the freshness
-        gate .github/scripts/check-layout-freshness."""
-        self.assertEqual(native_drc_identity.STATUSES,
-                         run_native_drc.STATUSES)
-        gate = (LAYOUT.parent / ".github" / "scripts"
-                / "check-layout-freshness").read_text()
-        m = re.search(r"^NATIVE_STATUSES\s*=\s*\(([^)]*)\)", gate, re.M)
-        self.assertIsNotNone(
-            m, "NATIVE_STATUSES not found in "
-               ".github/scripts/check-layout-freshness")
-        tokens = tuple(t.strip().strip("'\"")
-                       for t in m.group(1).split(","))
-        self.assertEqual(native_drc_identity.STATUSES, tokens)
+    def test_runner_and_identity_expose_the_shared_pair_module(self):
+        """The runner and the identity module load and re-export the one
+        pair-check module, .github/scripts/native_drc_pair.py (operator
+        ruling, issue #359: a single implementation beside the freshness
+        gate, loaded by file path), so a vocabulary change is one edit and
+        object identity — not a sync test — proves the copies are gone."""
+        pair_path = str(LAYOUT.parent / ".github" / "scripts"
+                        / "native_drc_pair.py")
+        for mod in (native_drc_identity, run_native_drc):
+            with self.subTest(module=mod.__name__):
+                self.assertEqual(mod.native_drc_pair.__file__, pair_path)
+                self.assertIs(mod.STATUSES, mod.native_drc_pair.STATUSES)
+                self.assertIs(mod.version_tuple,
+                              mod.native_drc_pair.version_tuple)
+                self.assertIs(mod.version_at_least,
+                              mod.native_drc_pair.version_at_least)
+        self.assertIs(native_drc_identity.STATUSES, run_native_drc.STATUSES)
 
     def test_tuple(self):
         self.assertEqual(native_drc_identity.version_tuple(
@@ -195,6 +206,14 @@ class IdentityFixtureTest(unittest.TestCase):
     def sidecar(self):
         return json.loads(
             (self.cd / native_drc_identity.NAME).read_text())
+
+    def resync_sidecar_digest(self):
+        """Re-record the report digest after rewriting the report, so the
+        defect under test is the pair's only fault (issue #386)."""
+        side = self.sidecar()
+        side["report_sha256"] = sha(
+            (self.cd / "native_drc_report.json").read_bytes())
+        (self.cd / native_drc_identity.NAME).write_text(json.dumps(side))
 
     def validate(self):
         return native_drc_identity.validate(self.cd, self.gds)
@@ -329,6 +348,58 @@ class IdentityValidateTest(IdentityFixtureTest):
                 self.assertEqual(len(problems), 1)
                 self.assertIn(f"{key} differs", problems[0])
 
+    def test_non_dict_provenance_is_named_not_raised(self):
+        # issue #386: a provenance that is not a JSON object used to crash
+        # check_pair with AttributeError; every caller must reject it with
+        # the shared "missing provenance.input" message instead.
+        for value in ("x", [1], 7, None):
+            with self.subTest(provenance=value):
+                self.seed_pair()
+                rep_path = self.cd / "native_drc_report.json"
+                rep = json.loads(rep_path.read_text())
+                rep["provenance"] = value
+                rep_path.write_text(json.dumps(rep))
+                self.resync_sidecar_digest()
+                problems = self.validate()
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn("missing provenance.input", problems[0])
+
+    def test_non_dict_sidecar_bindings_are_rejected(self):
+        # issue #386: the sidecar field validation checked presence only,
+        # so null bindings passed when the report lacked the objects too.
+        for key in ("deck_binding", "pdk_binding"):
+            with self.subTest(key=key):
+                self.seed_pair()
+                side = self.sidecar()
+                side[key] = None
+                (self.cd / native_drc_identity.NAME).write_text(
+                    json.dumps(side))
+                problems = self.validate()
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn(f"{key} missing or malformed", problems[0])
+
+    def test_report_without_deck_or_pdk_object_is_named(self):
+        # issue #386: a report whose provenance lacks a deck/pdk object must
+        # be rejected with _report_facts' wording, not accepted because
+        # None == None against a null binding.
+        for key, want in (
+                ("deck", "report provenance has no deck object"),
+                ("pdk", "report provenance has no pdk object"
+                        " (--pdk must be given)")):
+            for mutate in (lambda d, k=key: d["provenance"].pop(k),
+                           lambda d, k=key:
+                           d["provenance"].__setitem__(k, "x")):
+                with self.subTest(key=key, mutate=mutate):
+                    self.seed_pair()
+                    rep_path = self.cd / "native_drc_report.json"
+                    rep = json.loads(rep_path.read_text())
+                    mutate(rep)
+                    rep_path.write_text(json.dumps(rep))
+                    self.resync_sidecar_digest()
+                    problems = self.validate()
+                    self.assertEqual(len(problems), 1, problems)
+                    self.assertIn(want, problems[0])
+
     def test_status_mismatch(self):
         self.seed_pair(status="violations")
         side = self.sidecar()
@@ -355,7 +426,9 @@ class IdentityValidateTest(IdentityFixtureTest):
         rep["status"] = "bananas"
         rep_path.write_text(json.dumps(rep))
         problems = self.validate()
-        self.assertTrue(any("not one of" in p for p in problems), problems)
+        # the shared pair check's reference wording (issue #359 unified
+        # validate() with the freshness gate's message text)
+        self.assertTrue(any("want one of" in p for p in problems), problems)
 
     def test_report_input_repinned(self):
         self.seed_pair()
@@ -364,7 +437,7 @@ class IdentityValidateTest(IdentityFixtureTest):
         rep["provenance"]["input"]["content_hash"] = "sha256:" + "f" * 64
         rep_path.write_text(json.dumps(rep))
         problems = self.validate()
-        self.assertTrue(any("not this GDS" in p for p in problems))
+        self.assertTrue(any("committed GDS" in p for p in problems))
 
     def test_malformed_and_missing_fields(self):
         self.seed_pair()
@@ -474,7 +547,7 @@ class RunnerTest(IdentityFixtureTest):
         self.stub_record = self.root / "stub-record.json"
 
     def run_runner(self, *extra, env_extra=None, min_version="0.29.0",
-                   klayout_exe=True):
+                   klayout_exe=True, runner=RUNNER):
         env = dict(os.environ)
         env["KLT"] = f"{sys.executable} {self.stub_klt}"
         env["STUB_KLAYOUT_V"] = "KLayout 0.30.30 (2026-01-01) deadbee"
@@ -487,7 +560,7 @@ class RunnerTest(IdentityFixtureTest):
                 env.pop(k, None)
             else:
                 env[k] = v
-        cmd = [sys.executable, "-I", str(RUNNER), "--cell-dir", str(self.cd),
+        cmd = [sys.executable, "-I", str(runner), "--cell-dir", str(self.cd),
                "--pdk", "stub-pdk"]
         if klayout_exe:
             cmd += ["--klayout-exe", str(self.stub_klayout)]
@@ -559,21 +632,34 @@ class RunnerTest(IdentityFixtureTest):
         self.assertEqual(self.pair_exists(), (True, True))
 
     def test_usage_errors(self):
+        # Seed a previous pair first: against an empty cell dir the
+        # no-archive assertion below is vacuous — nothing exists for
+        # segregate_old_pair() to move (issue #452). A usage error must
+        # leave the previous pair in place and never segregate it.
+
+        def pair_untouched():
+            self.assertEqual(self.pair_exists(), (True, True))
+            self.assertEqual(self.seg(), [])  # usage errors never archive
+
+        self.seed_pair()
         r = self.run_runner(min_version=None)
         self.assertEqual(r.returncode, 2)
+        pair_untouched()
         r = self.run_runner(min_version="banana")
         self.assertEqual(r.returncode, 2)
         self.assertIn("not a dotted version", r.stderr)
+        pair_untouched()
         self.gds.unlink()
         r = self.run_runner()
         self.assertEqual(r.returncode, 2)
         self.assertIn("never regenerates", r.stderr)
+        pair_untouched()
         self.gds.write_bytes(self.gds_bytes)
         r = self.run_runner("--expect-rule-categories", "3",
                             "--expect-rule-categories-file", "f")
         self.assertEqual(r.returncode, 2)
         self.assertIn("mutually exclusive", r.stderr)
-        self.assertEqual(self.pair_exists(), (False, False))
+        pair_untouched()
 
     def test_missing_executable_is_class_3(self):
         r = self.run_runner(
@@ -642,28 +728,90 @@ class RunnerTest(IdentityFixtureTest):
                          ["native_drc_inputs.json",
                           "native_drc_report.json"])
 
+    def copied_runner(self, fail):
+        """A byte-identical copy of run_native_drc.py inside this fixture's
+        temp layout/ dir, with native_drc_identity.py swapped for a stub
+        that fails the `fail` step.
+
+        The runner resolves its identity helper as LAYOUT_DIR /
+        native_drc_identity.py and runs it as a subprocess (python3 -I),
+        and path-loads .github/scripts/native_drc_pair.py via REPO_ROOT —
+        so the temp tree mirrors both (issue #443): the runner copy is
+        shutil.copyfile of the committed one, the pair module is copied to
+        the temp REPO_ROOT, and the helper is the STUB_IDENTITY stand-in
+        that injects one failure and delegates everything else to the real
+        helper. Nothing under the repo's own layout/ is touched."""
+        copied_layout = self.root / "layout"
+        shutil.copyfile(RUNNER, copied_layout / "run_native_drc.py")
+        (copied_layout / "native_drc_identity.py").write_text(
+            STUB_IDENTITY.format(fail=fail, real=str(IDENTITY)))
+        pair_dst = self.root / ".github" / "scripts" / "native_drc_pair.py"
+        pair_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(LAYOUT.parent / ".github" / "scripts"
+                        / "native_drc_pair.py", pair_dst)
+        return copied_layout / "run_native_drc.py"
+
+    def test_record_failure_after_publication_is_class_7(self):
+        # The binding step runs after the report is published; its failure
+        # must not archive the just-published report. The one-sided pair
+        # stays in place on purpose, to fail the freshness gate loudly
+        # (issue #185's property; coverage added by issue #443).
+        runner = self.copied_runner(fail="record")
+        r = self.run_runner(runner=runner)
+        self.assertEqual(r.returncode, 7)
+        self.assertIn("binding the published report failed", r.stderr)
+        self.assertIn("injected record failure", r.stderr)
+        self.assertEqual(self.pair_exists(), (True, False))
+        self.assertEqual(self.seg(), [])
+        rep = self.report()
+        self.assertEqual(rep["status"], "violations")
+        self.assertEqual(rep["provenance"]["input"]["content_hash"],
+                         "sha256:" + sha(self.gds_bytes))
+        self.assertFalse((self.cd / "native_drc_report.json.tmp").exists())
+
+    def test_validate_failure_after_record_is_class_7(self):
+        # record bound the real pair; the self-check failure that follows
+        # must leave the just-published pair in place byte for byte — the
+        # sidecar written by the delegated record still pins the report
+        # exactly, and nothing is segregated (issue #443).
+        runner = self.copied_runner(fail="validate")
+        r = self.run_runner(runner=runner)
+        self.assertEqual(r.returncode, 7)
+        self.assertIn("published pair failed its self-check", r.stderr)
+        self.assertIn("injected validate failure", r.stderr)
+        self.assertEqual(self.pair_exists(), (True, True))
+        self.assertEqual(self.seg(), [])
+        self.assertEqual(self.sidecar()["status"], "violations")
+        self.assertEqual(self.sidecar()["report_sha256"],
+                         sha((self.cd / "native_drc_report.json").read_bytes()))
+        self.assertEqual(self.validate(), [])
+
     def seg(self):
         stale = self.cd / "native_drc_stale"
         return sorted(p.name for d in stale.iterdir() for p in d.iterdir()) \
             if stale.is_dir() else []
 
     def test_failed_rerun_segregates_previous_pair(self):
-        for env in ({"STUB_RC": "7"}, {"STUB_KLAYOUT_V": "KLayout 0.28.16 x"},
-                    {}):
-            tag = env.get("STUB_RC", env.get("STUB_KLAYOUT_V", "no-exe"))
+        # Every pre-publication failure class archives the previous pair
+        # byte for byte — including the klt identity probe: a missing $KLT
+        # bypassed the branch-local archive calls (issue #435).
+        cases = [
+            ("deck-crash", {"STUB_RC": "7"}, 6, "failed (exit 7)", {}),
+            ("old-version", {"STUB_KLAYOUT_V": "KLayout 0.28.16 x"}, 5,
+             "below the required minimum", {}),
+            ("missing-klt", {"KLT": str(self.root / "missing-klt")}, 6,
+             "could not execute klt", {}),
+            ("no-exe", {"KLAYOUT_EXE": str(self.root / "nope" / "klayout")},
+             3, "not found", {"klayout_exe": False}),
+        ]
+        for tag, env, rc, err, kwargs in cases:
             with self.subTest(failure=tag):
                 self.seed_pair()
                 old_report = (self.cd / "native_drc_report.json").read_bytes()
                 old_side = (self.cd / native_drc_identity.NAME).read_bytes()
-                if env.get("STUB_RC") is None and \
-                        env.get("STUB_KLAYOUT_V") is None:
-                    r = self.run_runner(
-                        klayout_exe=False,
-                        env_extra={"KLAYOUT_EXE": str(
-                            self.root / "nope" / "klayout")})
-                else:
-                    r = self.run_runner(env_extra=env)
-                self.assertNotEqual(r.returncode, 0)
+                r = self.run_runner(env_extra=env, **kwargs)
+                self.assertEqual(r.returncode, rc)
+                self.assertIn(err, r.stderr)
                 self.assertEqual(self.pair_exists(), (False, False))
                 self.assertEqual(self.seg(),
                                  ["native_drc_inputs.json",

@@ -524,12 +524,8 @@ def build(root, audit):
         if rel in tracked and os.path.isfile(os.path.join(root, rel)):
             files[rel] = sha256_bytes(read_bytes(root, rel))
 
-    def tree_digest(family, kind, ident):
-        rows = sorted(
-            (p, tracked[p][1])
-            for p in tracked
-            if p.startswith("sim/%s/%s/%s/" % (family, kind, ident))
-        )
+    def tree_digest(paths):
+        rows = sorted((p, tracked[p][1]) for p in paths)
         h = hashlib.sha256()
         for p, blob in rows:
             h.update(("%s %s\n" % (blob, p)).encode())
@@ -550,8 +546,8 @@ def build(root, audit):
                 {
                     "id": ident,
                     "published_files": sorted(ev["records"] + ev["views"]),
-                    "corners": tree_digest(fam, "corners", ident),
-                    "netlist_snapshots": tree_digest(fam, "netlist-snapshots", ident),
+                    "corners": tree_digest(ev["corners"]),
+                    "netlist_snapshots": tree_digest(ev["netlist-snapshots"]),
                 }
             )
         out_claims.append(entry)

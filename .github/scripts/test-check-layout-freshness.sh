@@ -15,6 +15,20 @@
 #   9. native DRC pair (issue #185): absent passes; one-sided, mutated
 #      report/GDS/deck/pdk/status bindings, or an executable below its
 #      recorded minimum -> FAIL, naming the relationship
+#      (issue #386 adds: non-dict provenance and null / object-less
+#      deck/pdk bindings -> FAIL with a message, not a traceback)
+#  10. inductance_report.json (issue #400): mutated realization geometry,
+#      stale drawn_lowfreq_H, missing / malformed report, missing or extra
+#      inductor -> FAIL, naming inductance_report.json
+#  11. extract_report.json connectivity (issue #424): restored historical
+#      split, unexpected merge, missing expected merge, missing / malformed
+#      fields, malformed merge entry -> FAIL, naming the report, the field
+#      and the offending or missing group or split; reordered merge rows
+#      still pass
+#  12. ERC supply evidence (issue #35): missing ERC report or spec, spec
+#      edited after the run (provenance.spec hash), wrong file/spec paths,
+#      a not-clean committed verdict, wrong declared supplies, or a
+#      missing, duplicate or misidentified contact control -> FAIL, naming the file
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CHECKER="$HERE/check-layout-freshness"
@@ -30,7 +44,7 @@ C=layout/lna_core
 mk() { # mk <name>: repo-shaped copy of the inputs
   d="$TMP/$1"; mkdir -p "$d/$C" "$d/design/netlist"
   cp "$SRC/layout/lvs_reference.py" "$d/layout/"
-  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice} "$d/$C/"
+  cp "$SRC/$C"/{lna_core.gds,lna_core.provenance.json,lna_core.lvs_reference.spice,realization.json,drc_report.json,lvs_full_report.json,extract_report.json,lvs_report.json,lna_core.extracted.spice,inductance_report.json,erc_spec.json,erc_report.json,erc_control.json} "$d/$C/"
   cp "$SRC/design/netlist/lna.spice" "$d/design/netlist/"
   cp "$SRC/$C"/{lvs_request.json,lvs_full_request.json} "$d/$C/"
   cp "$SRC/layout/lvs_identity.py" "$d/layout/"
@@ -188,6 +202,32 @@ mk ex-sub; mkdir "$TMP/ex-sub/$C/sub"; mv "$TMP/ex-sub/$C/lna_core.extracted.spi
 exmut ex-sub 'd["netlist_path"] = "sub/lna_core.extracted.spice"'
 run ex-sub 0 "output resolved relative to report directory"
 
+# --- issue #424: extraction connectivity (split / merged net labels) ---
+# The historical gsvo split row is the pre-assembly report's own, verbatim
+# (label + net ids), as committed before the #228 assembly joined the nets.
+mk con-split; exmut con-split 'd["split_net_labels"] = [{"label": "gsvo", "nets": [19, 29], "count": 2}]'
+run con-split 1 "restored historical gsvo split"
+named con-split "split_net_labels non-empty.*gsvo"
+mk con-extra; exmut con-extra 'd["merged_net_labels"].append({"net": "b1|vb2", "labels": ["b1", "vb2"]})'
+run con-extra 1 "unexpected merge group"
+named con-extra "unexpected merge group.*b1|vb2"
+mk con-miss; exmut con-miss 'd["merged_net_labels"] = [e for e in d["merged_net_labels"] if e["net"] != "e1|vss"]'
+run con-miss 1 "missing expected merge group"
+named con-miss "missing expected merge group.*e1|vss"
+mk con-nosplit; exmut con-nosplit 'del d["split_net_labels"]'
+run con-nosplit 1 "missing split_net_labels"
+named con-nosplit "split_net_labels missing or malformed"
+mk con-nomerge; exmut con-nomerge 'del d["merged_net_labels"]'
+run con-nomerge 1 "missing merged_net_labels"
+named con-nomerge "merged_net_labels missing or malformed"
+mk con-badsplit; exmut con-badsplit 'd["split_net_labels"] = "none"'
+run con-badsplit 1 "non-list split_net_labels"
+mk con-badmerge; exmut con-badmerge 'd["merged_net_labels"] = ["e1|vss"]'
+run con-badmerge 1 "string merge entry"
+named con-badmerge "merged_net_labels entry malformed"
+mk con-order; exmut con-order 'd["merged_net_labels"] = list(reversed(d["merged_net_labels"]))'
+run con-order 0 "reordered merge rows"
+
 # --- issue #185: native DRC report/sidecar pair ---
 # Fixture pairs are built by the real recorder (layout/native_drc_identity.py)
 # over a synthetic native report, in the throwaway copy only. No fabricated
@@ -291,6 +331,162 @@ named nat-noargv "argv"
 mknative nat-nodeck; natmut nat-nodeck 'del d["deck_binding"]'
 run nat-nodeck 1 "native sidecar without deck binding"
 named nat-nodeck "missing deck_binding"
+
+# --- issue #386: non-dict provenance, and null deck/pdk bindings ---
+# Report mutations resync the sidecar's recorded digest, so the provenance
+# defect under test is the pair's only fault (mirrors natmut, on the report).
+natrep() { # natrep <case> <python statement on d (the native report)>
+  python3 -I - "$TMP/$1/$C/native_drc_report.json" \
+    "$TMP/$1/$C/native_drc_inputs.json" "$2" <<'PY'
+import hashlib, json, sys
+rp, sp, stmt = sys.argv[1], sys.argv[2], sys.argv[3]
+d = json.load(open(rp)); exec(stmt)
+json.dump(d, open(rp, "w"), indent=2)
+s = json.load(open(sp))
+s["report_sha256"] = hashlib.sha256(open(rp, "rb").read()).hexdigest()
+json.dump(s, open(sp, "w"), indent=2)
+PY
+}
+mknative nat-provstr; natrep nat-provstr 'd["provenance"] = "x"'
+run nat-provstr 1 "non-dict provenance (string)"
+named nat-provstr "missing provenance.input"
+mknative nat-provlist; natrep nat-provlist 'd["provenance"] = [1]'
+run nat-provlist 1 "non-dict provenance (list)"
+named nat-provlist "missing provenance.input"
+mknative nat-provnum; natrep nat-provnum 'd["provenance"] = 7'
+run nat-provnum 1 "non-dict provenance (number)"
+named nat-provnum "missing provenance.input"
+mknative nat-provnull; natrep nat-provnull 'd["provenance"] = None'
+run nat-provnull 1 "null provenance"
+named nat-provnull "missing provenance.input"
+mknative nat-nullboth; natmut nat-nullboth \
+  'd["deck_binding"] = None; d["pdk_binding"] = None'
+run nat-nullboth 1 "null deck and pdk bindings"
+named nat-nullboth "deck_binding missing or malformed"
+mknative nat-nulldeck; natmut nat-nulldeck 'd["deck_binding"] = None'
+run nat-nulldeck 1 "null deck binding only"
+named nat-nulldeck "deck_binding missing or malformed"
+mknative nat-nodeckobj; natrep nat-nodeckobj 'del d["provenance"]["deck"]'
+run nat-nodeckobj 1 "report without a deck object"
+named nat-nodeckobj "report provenance has no deck object"
+mknative nat-nopdkobj; natrep nat-nopdkobj 'del d["provenance"]["pdk"]'
+run nat-nopdkobj 1 "report without a pdk object"
+named nat-nopdkobj "no pdk object (--pdk must be given)"
+
+# --- issue #400: inductance report vs realization geometry ---
+indmut() { # indmut <case> <python statement on d (the report)>
+  python3 -I - "$TMP/$1/$C/inductance_report.json" "$2" <<'PY'
+import json, sys
+p, stmt = sys.argv[1], sys.argv[2]
+d = json.load(open(p)); exec(stmt)
+json.dump(d, open(p, "w"), indent=2)
+PY
+}
+mk ind-geom; python3 -I - "$TMP/ind-geom/$C/realization.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["in_scope"]["Lb"]["params"]["d"] = "99.5u"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run ind-geom 1 "inductor geometry changed, report not regenerated"
+named ind-geom "inductance_report.json"
+mk ind-stale; indmut ind-stale 'd["inductors"]["Lb"]["drawn_lowfreq_H"] *= 1.01'
+run ind-stale 1 "stale drawn_lowfreq_H"
+named ind-stale "drawn_lowfreq_H"
+mk ind-missing; rm "$TMP/ind-missing/$C/inductance_report.json"
+run ind-missing 1 "missing inductance_report.json"
+named ind-missing "inductance_report.json"
+mk ind-badjson; echo '{not json' > "$TMP/ind-badjson/$C/inductance_report.json"
+run ind-badjson 1 "unparseable inductance_report.json"
+mk ind-noobj; echo '{"inductors": 3}' > "$TMP/ind-noobj/$C/inductance_report.json"
+run ind-noobj 1 "report without inductors object"
+mk ind-dropped; indmut ind-dropped 'del d["inductors"]["Lb"]'
+run ind-dropped 1 "inductor missing from report"
+named ind-dropped "inductance_report.json"
+mk ind-extra; indmut ind-extra 'd["inductors"]["Lx"] = d["inductors"]["Lb"]'
+run ind-extra 1 "extra inductor in report"
+mk ind-nogeo; indmut ind-nogeo 'del d["inductors"]["Lb"]["geometry_um"]'
+run ind-nogeo 1 "inductor row without geometry_um"
+mk ind-nonnum; indmut ind-nonnum 'd["inductors"]["Lb"]["drawn_lowfreq_H"] = "x"'
+run ind-nonnum 1 "non-numeric drawn_lowfreq_H"
+mk ind-nlH; indmut ind-nlH 'd["inductors"]["Lb"]["netlist_H"] *= 2'
+run ind-nlH 1 "doubled netlist_H"
+named ind-nlH "netlist_H"
+mk ind-ratio; indmut ind-ratio 'd["inductors"]["Lb"]["drawn_over_netlist"] = 999.0'
+run ind-ratio 1 "drawn_over_netlist = 999.0"
+named ind-ratio "drawn_over_netlist"
+# netlist inductor value edited, report not regenerated (issue #403)
+mk ind-nledit; sub 's/^\(Lb [^ ]* [^ ]* \)[^ ]*/\1 5.5n/' "$TMP/ind-nledit/design/netlist/lna.spice"
+run ind-nledit 1 "netlist inductor edit without regeneration"
+named ind-nledit "inductance_report.json"
+
+# --- 12. ERC supply evidence (issue #35) --------------------------------
+ercmut() { # ercmut <fixture> <expr> [report|control]
+  python3 -I - "$TMP/$1/$C/erc_${3:-report}.json" "$2" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); exec(sys.argv[2])
+json.dump(d, open(p, "w"), indent=2)
+PY
+}
+mk erc-ok; run erc-ok 0 "matching tree (erc evidence present)"
+mk erc-missing; rm "$TMP/erc-missing/$C/erc_report.json"
+run erc-missing 1 "missing erc_report.json"
+named erc-missing "erc_report.json"
+mk erc-nospec; rm "$TMP/erc-nospec/$C/erc_spec.json"
+run erc-nospec 1 "missing erc_spec.json"
+named erc-nospec "erc_spec.json"
+mk erc-specedited; ercmut erc-specedited 'd["provenance"]["spec"]["content_hash"] = "sha256:" + "0" * 64'
+run erc-specedited 1 "spec edited after the erc run"
+named erc-specedited "erc_report.json"
+mk erc-badpath; ercmut erc-badpath 'd["file"] = {"path": "lna_core.gds", "scope": "repo"}'
+run erc-badpath 1 "erc envelope with non-repo-relative file path"
+mk erc-dirty; ercmut erc-dirty 'd["erc_status"] = "violations"'
+run erc-dirty 1 "committed erc run not clean"
+named erc-dirty "erc_status"
+mk erc-specnets; python3 -I - "$TMP/erc-specnets/$C/erc_spec.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["nets"][0]["name"] = "VDD"
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-specnets 1 "spec supply names do not match the netlist ports"
+named erc-specnets "erc_spec.json"
+mk erc-noties; python3 -I - "$TMP/erc-noties/$C/erc_spec.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["ties"] = []
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-noties 1 "spec without ties[]"
+mk erc-ctrlmissing; rm "$TMP/erc-ctrlmissing/$C/erc_control.json"
+run erc-ctrlmissing 1 "missing erc_control.json"
+named erc-ctrlmissing "erc_control.json"
+mk erc-ctrlpass; python3 -I - "$TMP/erc-ctrlpass/$C/erc_control.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["rejected"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-ctrlpass 1 "control record that did not reject"
+named erc-ctrlpass "rejected"
+mk erc-ctrlok; python3 -I - "$TMP/erc-ctrlok/$C/erc_control.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["controls"][0]["rejected"] = False
+json.dump(d, open(p, "w"), indent=2)
+PY
+run erc-ctrlok 1 "one control stayed clean"
+mk erc-duplicate; ercmut erc-duplicate 'd["controls"][1] = d["controls"][0]' control
+run erc-duplicate 1 "duplicate substrate control in place of the well control"
+named erc-duplicate "well_tie_severed"
+mk erc-reordered; ercmut erc-reordered 'd["controls"].reverse()' control
+run erc-reordered 0 "both contact controls in reverse record order"
+for pair in 'rule erc.unconnected_net' 'tie substrate_vss' 'net vss'; do
+  read -r field wrong <<< "$pair"
+  name="erc-wrong-$field"
+  mk "$name"
+  ercmut "$name" "d['controls'][1]['verdict']['tie_findings'][0]['$field'] = '$wrong'" control
+  run "$name" 1 "wrong $field in the well contact finding"
+  named "$name" "well_tie_severed"
+done
+mk erc-oldbreak; ercmut erc-oldbreak 'd["controls"][0]["break_layer"] = "1/0"' control
+run erc-oldbreak 1 "substrate control removed diffusion instead of contacts"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

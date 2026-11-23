@@ -45,6 +45,7 @@
       "1/20",
       "5/0",
       "6/0",
+      "7/0",
       "7/21",
       "8/0",
       "10/0",
@@ -61,26 +62,46 @@
       "66/0",
       "67/0",
       "125/0",
-      "126/0"
+      "126/0",
+      "133/0",
+      "134/0"
     ],
     "layers_in_stream_without_rules": [
+      "1/23",
       "5/2",
+      "5/23",
       "8/2",
+      "8/23",
       "8/25",
+      "9/0",
       "10/2",
+      "10/23",
       "10/25",
       "26/0",
+      "27/0",
+      "27/2",
+      "27/25",
       "28/0",
+      "30/23",
       "31/2",
       "33/0",
       "40/0",
+      "41/0",
       "44/0",
+      "46/21",
+      "50/23",
       "51/0",
       "52/0",
+      "67/23",
       "111/0",
+      "126/2",
+      "126/23",
       "126/25",
       "128/0",
-      "129/0"
+      "129/0",
+      "134/23",
+      "134/25",
+      "148/0"
     ],
     "rules_checked": [
       "activ.enclosing.cont.1",
@@ -110,10 +131,16 @@
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
       "nwell.enclosing.pactiv.1",
       "nwell.enclosing.pactiv.dig.1",
       "nwell.enclosing.pactiv.hv.1",
       "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
       "nwell.space.pactiv.1",
       "nwell.space.pactiv.dig.1",
       "nwell.space.pactiv.hv.1",
@@ -122,10 +149,16 @@
       "psd.space.1",
       "psd.width.1",
       "topmetal1.enclosing.topvia1.1",
+      "topmetal1.enclosing.topvia2.1",
       "topmetal1.space.1",
       "topmetal1.width.1",
+      "topmetal2.enclosing.topvia2.1",
+      "topmetal2.space.1",
+      "topmetal2.width.1",
       "topvia1.space.1",
       "topvia1.width.1",
+      "topvia2.space.1",
+      "topvia2.width.1",
       "via1.space.1",
       "via1.width.1",
       "via2.space.1",
@@ -135,20 +168,7 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "rules_skipped": [
-      "nwell.enclosing.nactiv.1",
-      "nwell.enclosing.nactiv.dig.1",
-      "nwell.enclosing.nactiv.hv.1",
-      "nwell.space.nactiv.1",
-      "nwell.space.nactiv.dig.1",
-      "nwell.space.nactiv.hv.1",
-      "topmetal1.enclosing.topvia2.1",
-      "topmetal2.enclosing.topvia2.1",
-      "topmetal2.space.1",
-      "topmetal2.width.1",
-      "topvia2.space.1",
-      "topvia2.width.1"
-    ],
+    "rules_skipped": [],
     "voltage_domain_warnings": [
       {
         "marker": "44/0",
@@ -231,10 +251,16 @@
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
       "nwell.enclosing.pactiv.1",
       "nwell.enclosing.pactiv.dig.1",
       "nwell.enclosing.pactiv.hv.1",
       "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
       "nwell.space.pactiv.1",
       "nwell.space.pactiv.dig.1",
       "nwell.space.pactiv.hv.1",
@@ -243,10 +269,16 @@
       "psd.space.1",
       "psd.width.1",
       "topmetal1.enclosing.topvia1.1",
+      "topmetal1.enclosing.topvia2.1",
       "topmetal1.space.1",
       "topmetal1.width.1",
+      "topmetal2.enclosing.topvia2.1",
+      "topmetal2.space.1",
+      "topmetal2.width.1",
       "topvia1.space.1",
       "topvia1.width.1",
+      "topvia2.space.1",
+      "topvia2.width.1",
       "via1.space.1",
       "via1.width.1",
       "via2.space.1",
@@ -257,56 +289,7 @@
       "via4.width.1"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "nwell.enclosing.nactiv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.enclosing.nactiv.dig.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.enclosing.nactiv.hv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.dig.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "nwell.space.nactiv.hv.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topmetal1.enclosing.topvia2.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topmetal2.enclosing.topvia2.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topmetal2.space.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topmetal2.width.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topvia2.space.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "topvia2.width.1",
-        "reason": "no_applicable_geometry"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
     "nothing_checked_reasons": []
@@ -323,7 +306,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:ddda7312175a81a8fcf215ea0da08dc5b9089f8d2eaa57bcffa43e0f209155cb",
+      "content_hash": "sha256:c7f9816071268bf1cffc042dfd8a6542f0bacb11facac2f6620c5ad7b4247615",
       "role": "layout"
     },
     "klayout_version_mismatch": false

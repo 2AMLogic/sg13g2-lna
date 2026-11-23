@@ -46,7 +46,7 @@ class Base(unittest.TestCase):
         self.cell = self.repo / "cellx"
         self.cell.mkdir()
 
-    def run_build(self, netlist=NETLIST, in_scope=None, out_of_scope=(), spec=None):
+    def run_build(self, netlist=NETLIST, in_scope=None, out_of_scope=(), spec=None, modeled=()):
         (self.repo / "n.spice").write_text(netlist)
         names = list(SPEC) if in_scope is None else in_scope
         spec = spec or SPEC
@@ -56,6 +56,8 @@ class Base(unittest.TestCase):
             "in_scope": {k: spec[k] for k in names},
             "out_of_scope": list(out_of_scope),
         }
+        if modeled:
+            rz["modeled_in_device"] = {k: {"of": "X", "reason": "t"} for k in modeled}
         (self.cell / "realization.json").write_text(json.dumps(rz))
         out = lvs_reference.build(self.cell, repo=self.repo)
         return out.read_text().splitlines()
@@ -82,6 +84,13 @@ class TestCards(Base):
         lines = self.run_build(nl, ["XM2", "R1"], spec=SPEC | {"XM2": {"pcell": "nmosHV"}})
         self.assertEqual(lines[5], "MM2 d g s b nfet L=0.5U W=2U")
         self.assertTrue(lines[6].startswith("RR1 a b 1k rppd"))
+
+    def test_rhigh_meander_card(self):
+        # issue #346: a 10 MOhm seed resistor is an rhigh meander, class rhigh
+        nl = "Rseed vdd nc_a 10meg m=1\n"
+        spec = {"Rseed": {"pcell": "rhigh", "params": {"l": "98.82u", "w": "0.5u", "b": "33"}}}
+        lines = self.run_build(nl, ["Rseed"], spec=spec)
+        self.assertEqual(lines[5], "RRseed vdd nc_a 10meg rhigh L=98.82U W=0.5U")
 
     def test_nx_defaults_to_one(self):
         lines = self.run_build("XQ1 c b e s npn13G2\n", ["XQ1"])
@@ -123,6 +132,43 @@ class TestPartition(Base):
     def test_out_of_scope_instance_omitted(self):
         lines = self.run_build(in_scope=["XQ1", "XM1", "C1"], out_of_scope=["R1"])
         self.assertFalse(any(l.startswith("RR1") for l in lines))
+
+
+class TestModeledInDevice(Base):
+    """Issue #347: the third partition category."""
+
+    def test_modeled_instance_omitted_and_listed(self):
+        lines = self.run_build(in_scope=["XQ1", "XM1", "C1"], modeled=["R1"])
+        self.assertFalse(any(l.startswith("RR1") for l in lines))
+        self.assertIn("* modeled_in_device (no card): R1", lines)
+
+    def test_in_scope_and_modeled_rejected(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.run_build(modeled=["R1"])
+        self.assertIn("in both=['R1']", str(cm.exception))
+
+    def test_modeled_and_out_of_scope_rejected(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.run_build(in_scope=["XQ1", "XM1", "C1"], modeled=["R1"], out_of_scope=["R1"])
+        self.assertIn("in both=['R1']", str(cm.exception))
+
+    def test_unassigned_with_modeled_present_rejected(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.run_build(NETLIST + "R9 p q 1k\n", in_scope=["XQ1", "XM1", "C1"], modeled=["R1"])
+        self.assertIn("unassigned=['R9']", str(cm.exception))
+
+    def test_stale_modeled_rejected(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.run_build(in_scope=list(SPEC), modeled=["Rgone"])
+        self.assertIn("not-in-netlist=['Rgone']", str(cm.exception))
+
+
+    def test_inductor_drawn_but_no_card(self):
+        nl = NETLIST + "L1 p q 1n m=1\n"
+        spec = SPEC | {"L1": {"pcell": "inductor2", "params": {}}}
+        lines = self.run_build(nl, list(SPEC) + ["L1"], spec=spec)
+        self.assertFalse(any(l.split()[0] in ("L1", "LL1") for l in lines if not l.startswith("*")))
+        self.assertIn("L1", lines[2])
 
 
 class TestMos(Base):
