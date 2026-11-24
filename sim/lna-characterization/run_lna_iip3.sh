@@ -177,8 +177,6 @@ SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}"
   --headlines-md "${CORNERS_OUT}/iip3-headlines.md"
   --op-report "${CORNERS_OUT}/${VARIANT}_op.report.json"
   --s11-csv "${S11_CSV}")
-[[ -n "${LNA_IIP3_AMPS:-}" ]] && SUMMARIZE_ARGS+=(--amps "${LNA_IIP3_AMPS}")
-[[ -n "${LNA_IIP3_AMPS_NOMINAL_ONLY:-}" ]] && SUMMARIZE_ARGS+=(--amps-nominal-only "${LNA_IIP3_AMPS_NOMINAL_ONLY}")
 [[ -n "${LNA_IIP3_SMOKE:-}" ]] && SUMMARIZE_ARGS+=(--grid smoke)
 [[ -n "${LNA_IIP3_TEMPS:-}" ]] && SUMMARIZE_ARGS+=(--temps "${LNA_IIP3_TEMPS}")
 SUMMARIZE_RC=0
