@@ -1549,5 +1549,94 @@ class Iip3Reduction(unittest.TestCase):
         self.assertTrue(s["iip3_device_plane_dbm_a2mv"])
 
 
+class Iip3RunnerDriveLevels(unittest.TestCase):
+    """issue #432: run_lna_iip3.sh is the fixed-protocol entry point. Its
+    reduction step used to honour two drive-level environment knobs that its
+    own gen-iip3 step never saw, so setting either made reduction demand
+    reports the runner had not generated. Custom drive levels are a direct
+    lna_variant_campaign.py invocation, never the runner."""
+
+    # Split on purpose: the acceptance criterion is a repository-wide grep
+    # for these two names, and this file must not match it.
+    REMOVED_KNOBS = {"LNA_IIP3_" + "AMPS": "0.001,0.003",
+                     "LNA_IIP3_" + "AMPS_NOMINAL_ONLY": "0.004"}
+    DRIVE_FLAGS = ("--amps", "--amps-nominal-only")
+
+    def test_runner_names_no_drive_level_knob(self):
+        text = (LNA / "run_lna_iip3.sh").read_text()
+        for token in (*self.REMOVED_KNOBS, *self.DRIVE_FLAGS):
+            self.assertFalse(token in text, f"run_lna_iip3.sh still names {token}")
+
+    def test_runner_hands_no_drive_levels_to_either_subcommand(self):
+        # Run the real shell entry point in a scratch tree (fixture PDK, stub
+        # klt and ngspice -- the ClientFloor recipe) with both removed knobs
+        # exported; python3 is wrapped to log every campaign-module argv.
+        # The stub klt returns no reports, so reduction fails for want of
+        # them: what is under test is the argv it was handed. No simulator
+        # or fleet run.
+        repo_sim = LNA.parent
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            sim = root / "sim"
+            (root / "design" / "netlist").mkdir(parents=True)
+            shutil.copy(repo_sim.parent / "design" / "netlist" / "lna.spice",
+                        root / "design" / "netlist" / "lna.spice")
+            sim.mkdir()
+            for name in ("env.sh", "pdk.json"):
+                shutil.copy(repo_sim / name, sim / name)
+            for name in ("tools", "models"):
+                shutil.copytree(repo_sim / name, sim / name)
+            shutil.copytree(LNA, sim / "lna-characterization",
+                            ignore=shutil.ignore_patterns("tests", "__pycache__",
+                                                          "records", "corners",
+                                                          "netlist-snapshots"))
+            (sim / "lna-core-envelope").mkdir()
+            shutil.copy(repo_sim / "lna-core-envelope" / "envelope_rf.py",
+                        sim / "lna-core-envelope" / "envelope_rf.py")
+            tech = root / "pdk" / "ihp-sg13g2" / "libs.tech" / "ngspice"
+            (tech / "models").mkdir(parents=True)
+            (tech / "osdi").mkdir()
+            (tech / "models" / "cornerHBT.lib").write_text(".lib cur\n.endl\n")
+            (tech / "models" / "cornerMOShv.lib").write_text("* mos\n")
+            for f in ("psp103", "psp103_nqs", "mosvar"):
+                (tech / "osdi" / f"{f}.osdi").write_text("x\n")
+            (root / "pdk" / "ihp-sg13g2" / ".fetched-version").write_text("0.3.0\n")
+            bindir = root / "bin"
+            bindir.mkdir()
+            log = root / "calls.log"
+            klt = bindir / "klt"
+            klt.write_text('#!/bin/sh\n'
+                           '[ "$1" = "--version" ] && { echo "klt 0.7.0+gstub"; exit 0; }\n'
+                           'exit 0\n')
+            klt.chmod(0o755)
+            ng = bindir / "ngspice"
+            ng.write_text('#!/bin/sh\nif [ "$1" = "-v" ]; then echo stub; echo "ngspice-46 stub"; '
+                          'exit 0; fi\nexit 1\n')
+            ng.chmod(0o755)
+            py = bindir / "python3"
+            py.write_text('#!/bin/sh\n'
+                          '{ printf "python3"; for a in "$@"; do printf "\\t%s" "$a"; done; printf "\\n"; } '
+                          '>> "$STUB_LOG"\n'
+                          'exec "@REAL@" "$@"\n'.replace("@REAL@", sys.executable))
+            py.chmod(0o755)
+            # The backend is pinned so a host KLT_SIM_BACKEND=batch cannot
+            # route the stub through --batch-set and stop before reduction.
+            env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}",
+                       STUB_LOG=str(log), PDK_ROOT=str(root / "pdk"), PDK="ihp-sg13g2",
+                       LNA_IIP3_BACKEND="local", **self.REMOVED_KNOBS)
+            p = subprocess.run(["bash", str(sim / "lna-characterization" / "run_lna_iip3.sh")],
+                               capture_output=True, text=True, env=env, timeout=120)
+            self.assertTrue(log.exists(), p.stdout + p.stderr)
+            calls = [line.split("\t")[1:] for line in log.read_text().splitlines()]
+            campaign = [a for a in calls if a[0].endswith("lna_variant_campaign.py")]
+            gen = [a for a in campaign if a[1] == "gen-iip3"]
+            summ = [a for a in campaign if a[1] == "summarize-iip3"]
+            self.assertEqual(len(gen), 1, p.stdout + p.stderr)
+            self.assertEqual(len(summ), 1, p.stdout + p.stderr)
+            for argv in gen + summ:
+                for flag in self.DRIVE_FLAGS:
+                    self.assertNotIn(flag, argv)
+
+
 if __name__ == "__main__":
     unittest.main()
