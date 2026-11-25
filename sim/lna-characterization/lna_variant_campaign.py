@@ -1432,14 +1432,8 @@ def cmd_summarize_iip3(a):
         row["iip3_spread_2pt_db"] = (
             f"{abs(float(hi['iip3_dbm']) - float(lo['iip3_dbm'])):.3f}"
             if lo and hi else "")
-        slope = ""
-        if lo and hi:
-            dpin = (float(hi["pin_avail_dbm_per_tone"])
-                    - float(lo["pin_avail_dbm_per_tone"]))
-            if dpin:
-                slope = (round((float(hi["pim3_dbm"]) - float(lo["pim3_dbm"])) / dpin, 3))
-                slope = f"{slope:.3f}"
-        row["im3_slope_2pt"] = slope
+        slope = _sweep.im3_slope_2pt(lo, hi) if lo and hi else None
+        row["im3_slope_2pt"] = "" if slope is None else f"{slope:.3f}"
         row["iip3_validity"] = validity
         row["iip3_validity_reason"] = reason
         s11_db = s11.get(norm_key(*key))

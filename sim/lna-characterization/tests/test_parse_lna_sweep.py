@@ -911,6 +911,29 @@ class IIP3MethodValidity(unittest.TestCase):
             ("unknown", "zero Pin step between drive levels"),
         )
 
+    def test_slope_helper_is_the_single_rounded_arithmetic(self):
+        # im3_slope_2pt (issue #492) is the one two-point slope computation
+        # behind the summary column and the verdict: rounded to the 3 decimals
+        # the summary CSV records, None when the Pin step is zero.
+        def row(pin, pim3):
+            return {"pin_avail_dbm_per_tone": f"{pin:.4f}",
+                    "pim3_dbm": f"{pim3:.4f}"}
+
+        self.assertEqual(P.im3_slope_2pt(row(-50.0, -100.0), row(-44.0, -82.0)), 3.0)
+        self.assertEqual(P.im3_slope_2pt(row(-50.0, -100.0), row(-44.0, -86.0)), 2.333)
+        self.assertIsNone(P.im3_slope_2pt(row(-50.0, -100.0), row(-50.0, -82.0)))
+
+    def test_summary_slope_string_matches_the_verdict_reason(self):
+        # The CSV column and the validity reason quote one computation, so a
+        # rounding change cannot make the displayed slope disagree with the
+        # reason the intercept was accepted or rejected (issue #492).
+        for slope in (3.0, 3.15, 2.84, 1.0):
+            rows = self.pair(slope)
+            per_cell = {"c": {"corner_label": "typ", "temp_c": "27", "vdd_v": "1.80"}}
+            P.join_iip3_into_summary(per_cell, rows)
+            _v, why = P.classify_iip3_cell(rows)
+            self.assertIn(f"slope {per_cell['c']['im3_slope_2pt']} ", why, slope)
+
     def test_invalid_pair_cannot_claim_cubic_assumption(self):
         for slope in (1.0, 5.0):
             h = self.headline(self.pair(slope), [("typ", "27", "1.80")])
