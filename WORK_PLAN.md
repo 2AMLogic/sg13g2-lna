@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-24T22:28:37Z (snapshot; compare against live labels)_
+_Generated: 2026-11-25T20:59:54Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -60,6 +60,8 @@ Issues carrying `loom:curated`.
 
 - **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)* *(held)*
 - **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)* *(held)*
+- **#495**: Remove the local ngspice requirement from the fleet Monte Carlo runner *(hermit)* *(held)*
+- **#496**: Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh *(hermit)*
 
 ## Epics
 
@@ -77,6 +79,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 2 |
 | Curated | 6 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
