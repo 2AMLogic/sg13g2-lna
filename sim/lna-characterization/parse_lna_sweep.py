@@ -734,6 +734,23 @@ def build_iip3_rows(corners_dir: str, include=None) -> tuple[list[dict], list[st
     return rows, skipped
 
 
+def im3_slope_2pt(lo: dict, hi: dict) -> float | None:
+    """Two-point IM3 slope of a cell's 1 mV / 2 mV drive pair:
+    (Pim3(a2mv) - Pim3(a1mv)) / (Pin_avail(a2mv) - Pin_avail(a1mv)),
+    rounded to the 3 decimals the summary CSV records. Both summary writers
+    and classify_iip3_cell share this one arithmetic (issue #492), so a
+    rounding change can never make the displayed slope disagree with the
+    verdict that accepted or rejected the intercept. None when the
+    available-power step is zero: the slope is undefined then, not zero.
+    """
+    dpin = float(hi["pin_avail_dbm_per_tone"]) - float(
+        lo["pin_avail_dbm_per_tone"]
+    )
+    if dpin == 0:
+        return None
+    return round((float(hi["pim3_dbm"]) - float(lo["pim3_dbm"])) / dpin, 3)
+
+
 def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
     by_cell: dict[tuple[str, str, str], list[dict]] = {}
     for r in iip3_rows:
@@ -755,11 +772,8 @@ def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
         )
         if len(grid) == 2:
             lo, hi = grid[0], grid[1]
-            dpin = float(hi["pin_avail_dbm_per_tone"]) - float(
-                lo["pin_avail_dbm_per_tone"]
-            )
-            dim3 = float(hi["pim3_dbm"]) - float(lo["pim3_dbm"])
-            cell["im3_slope_2pt"] = f"{dim3 / dpin:.3f}" if dpin else ""
+            slope = im3_slope_2pt(lo, hi)
+            cell["im3_slope_2pt"] = "" if slope is None else f"{slope:.3f}"
             cell["iip3_spread_2pt_db"] = (
                 f"{abs(float(hi['iip3_dbm']) - float(lo['iip3_dbm'])):.3f}"
             )
@@ -771,8 +785,9 @@ def join_iip3_into_summary(per_cell: dict, iip3_rows: list[dict]) -> None:
 # --- IIP3 method validity (issue #137) -----------------------------------
 # IIP3 is an extrapolation that is meaningful only while IM3 rises 3:1 with
 # drive. Each PVT cell is classified from its 1 mV / 2 mV drive pair:
-#   valid   : |slope - 3| <= IIP3_SLOPE_TOL (inclusive; slope rounded to the
-#             3 decimals the summary CSV records, so the boundary is exact)
+#   valid   : |slope - 3| <= IIP3_SLOPE_TOL (inclusive; slope is im3_slope_2pt,
+#             rounded to the 3 decimals the summary CSV records, so the
+#             boundary is exact)
 #   invalid : finite slope with |slope - 3| >  IIP3_SLOPE_TOL
 #   unknown : slope cannot be formed (a drive level missing/duplicated, a
 #             nonfinite input, or zero Pin step)
@@ -796,7 +811,6 @@ def classify_iip3_cell(
         return IIP3_UNKNOWN, (
             "drive level(s) missing or duplicated: " + ", ".join(missing)
         )
-    vals = {}
     for name, r in (("a1mv", lo[0]), ("a2mv", hi[0])):
         for f in _PAIR_FIELDS:
             try:
@@ -805,11 +819,11 @@ def classify_iip3_cell(
                 v = float("nan")
             if not math.isfinite(v):
                 return IIP3_UNKNOWN, f"nonfinite or unparsable {f} at {name}"
-            vals[name, f] = v
-    dpin = vals["a2mv", _PAIR_FIELDS[0]] - vals["a1mv", _PAIR_FIELDS[0]]
-    if dpin == 0:
+    # fields are validated finite above, so the shared helper re-parses the
+    # same strings; its 3-decimal rounding IS the boundary's precision.
+    slope = im3_slope_2pt(lo[0], hi[0])
+    if slope is None:
         return IIP3_UNKNOWN, "zero Pin step between drive levels"
-    slope = round((vals["a2mv", "pim3_dbm"] - vals["a1mv", "pim3_dbm"]) / dpin, 3)
     if not math.isfinite(slope):
         return IIP3_UNKNOWN, "nonfinite slope"
     if round(abs(slope - 3.0), 6) <= tol:
