@@ -4,6 +4,11 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-25
+
+- **PR #493**: refactor(sim): single-source the two-point IM3 slope
+- **Issue #492** (closed): Compute the two-point IM3 slope once for IIP3 summaries and verdicts
+
 ### 2026-11-24
 
 - **PR #490**: fix(sim): drop reducer-only drive-level overrides from the IIP3 runner
