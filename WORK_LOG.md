@@ -4,6 +4,13 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-26
+
+- **PR #498**: refactor(sim): share klt request execution and job bullets across LNA runners
+- **PR #501**: refactor(sim): share corner request settings across LNA campaigns
+- **Issue #496** (closed): Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh
+- **Issue #500** (closed): Share PDK and corner settings between the variant and IIP3 request generators
+
 ### 2026-11-25
 
 - **PR #466**: test: pin that class-2 usage exits publish no DRC pair
@@ -436,13 +443,4 @@
 ### 2026-10-08
 
 - **PR #60**: sim: stamped EM inductor model and lossy-inductor variant bench (issue #56, partial: 45-cell run blocked on fleet klt)
-
-### 2026-09-26
-
-- **PR #54**: spec: DR-0004 draft — the achievable (gain, NF, P_dc) envelope on npn13G2, plus the lna-core-envelope campaign behind it
-- **PR #53**: sim: move the runners' shared PDK/record/pool scaffolding into sim/env.sh
-- **PR #51**: sim: re-baseline the lna-characterization PVT campaign against the DR-0003 bias core
-- **Issue #52** (closed): spec/design: RATIFIED gain (>15 dB) and NF (<1.5 dB) rows are unreachable by matching alone on the DR-0003 core — available-gain basis 14.42 dB, NFmin 2.07 dB at the best of 45 cells
-- **Issue #50** (closed): sim: de-duplicate the five run_*_sweep.sh runners — 22 lines identical in all five, helper trio copy-pasted 3x
-- **Issue #49** (closed): sim: re-baseline the lna-characterization PVT campaign against the DR-0003 bias core — the #37-deferred RF re-characterization, never filed
 
