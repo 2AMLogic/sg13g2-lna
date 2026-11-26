@@ -1,6 +1,6 @@
 # 0004: The achievable (gain, NF, P_dc) envelope on `npn13G2`, and what the RATIFIED NF row costs
 
-- **Status**: ruled 2026-10-08 — Option A adopted (disclosure-note correction, no ratified value changes; issue [#57](https://github.com/2AMLogic/sg13g2-lna/issues/57)); Option C in progress ([#58](https://github.com/2AMLogic/sg13g2-lna/issues/58)); Options B and D not taken. Originally `proposed` 2026-09-26; analysis below unchanged.
+- **Status**: ruled 2026-10-08 — Option A adopted (disclosure-note correction, no ratified value changes; issue [#57](https://github.com/2AMLogic/sg13g2-lna/issues/57)); Option C in progress ([#58](https://github.com/2AMLogic/sg13g2-lna/issues/58)); Options B and D not taken. Originally `proposed` 2026-09-26; analysis below unchanged. **Amendment 2026-11-17 appended** (issue [#336](https://github.com/2AMLogic/sg13g2-lna/issues/336)): disclosure-cell-refresh delegation, `proposed` and **pending ratification** — until ratified it authorises nothing and disclosure-cell refreshes remain the operator's act (see [§Amendment 2026-11-17](#amendment-2026-11-17--the-narrow-disclosure-cell-refresh-becomes-builder-work)).
 - **Date**: 2026-09-26
 - **Decided by**: Builder (Loom), issue #52 — **drafted for the operator to
   rule on; this record decides nothing by itself**
@@ -518,3 +518,145 @@ and its market rationale.
   input-network NF budget).
 - IIP3 on any variant — this bench has no two-tone phase, and the DRAFT IIP3
   number is explicitly out of #52's scope.
+
+---
+
+## Amendment 2026-11-17 — the narrow disclosure-cell refresh becomes Builder work
+
+- **Status**: `proposed` — this amendment awaits ratification (two reviews,
+  then the operator). Until ratified it authorises nothing: a disclosure-cell
+  refresh remains an operator act, exactly as the 2026-10-08 ruling above has
+  it. **This amendment ratifies nothing and changes no ratified value.**
+- **Date**: 2026-11-17
+- **Driven by**: operator ruling (rjwalters, 2026-11-17, `/fleet:decide`
+  round 20261116-r15, q116, option 3) on issue
+  [#336](https://github.com/2AMLogic/sg13g2-lna/issues/336). The first
+  candidate refresh, [#380](https://github.com/2AMLogic/sg13g2-lna/issues/380),
+  requires both ratification and the evidence described below.
+
+### Scope of the amendment
+
+This amendment changes only *who may perform* the narrow, mechanical act
+defined below. It does not rewrite the 2026-10-08 ruling, the Options text
+or any Evidence section above; it changes no ratified threshold; and it is
+**not retroactive** — it authorises no `spec/` edit already made and no
+change outside the disclosure cells of `spec/target-spec.md`.
+
+### What becomes Builder work
+
+A **disclosure-cell refresh** in [`spec/target-spec.md`](../target-spec.md) —
+replacing, in one or more ratified rows' disclosure cells, the cited record,
+its quoted numbers, and the status stated with them, by those of a newer
+**committed** record — may be performed by the Builder **only when all four
+of these hold**:
+
+1. **No ratified threshold changes.** Every row's ratified value and binding
+   conditions are carried across verbatim; only the evidence cited in the
+   disclosure column moves.
+2. **Every number is taken from a committed record and named with its
+   bench.** Each refreshed figure cites the `sim/<experiment>/records/`
+   record id and the analysis and column behind it. A derived figure may
+   be quoted only if the record gives its inputs, method and result for the
+   same DUT and conditions. For example, the gain cell calculates headroom
+   from S-parameters, and the S22 cell counts excursions in full-precision
+   tables. Substituting new inputs in the old calculation, inferring a cause,
+   or dropping a caveat because it no longer fits requires operator review.
+   If updating the quotes would leave a stale argument in the cell, refer
+   the whole cell to the operator.
+3. **A row's status follows what that record says.** The status word in the
+   cell (met / failing / DRAFT / …) is whatever the cited record's verdict
+   is — including a row that stays failing.
+4. **The cell states what the record's bench does and does not cover.** For
+   each refreshed figure the cell carries, from the record: the simulator
+   engine build and the PDK/model provenance behind it; which slices, corners
+   and analyses produced it; and every gap against that row's binding
+   conditions (a mixed engine build across slices, an analysis missing from
+   a slice, a missing or non-comparable `models_lib_comparison`,
+   a corner box not fully covered). A figure assembled from
+   slices that differ in engine or provenance is cited per slice, not as one
+   undifferentiated pass count. A cell may not read stronger than its
+   record's bench supports; a refresh whose record does not state this
+   provenance is not Builder work and stays an operator act.
+
+### What stays an operator act
+
+Anything beyond that narrow definition, specifically:
+
+- a **threshold change** in any ratified row;
+- a row **added to or removed from** the table;
+- asserting a **status or interpretation the cited record does not state**;
+- any **non-disclosure change** to `spec/target-spec.md` or any other
+  ratified document.
+
+This delegation is specific to the LNA and to the operator ruling on #336.
+For comparison, the GF180 PLL retained operator review for a refresh that
+combined measured block areas with an estimated overhead and a decision to
+hold the area limit. [GF180 PLL DR-017](https://github.com/2AMLogic/gf180-pll/blob/68e6524c28416e61b645a5f9a7926d5903e24005/spec/decision-records/DR-017-area-row-held-at-0.30-on-the-refreshed-measured-floor.md)
+
+### Non-loosening conditions — every refresh, not only the first
+
+**Every** refresh under this amendment must carry forward, in the cells
+themselves, each qualifier and non-passing status the prior cell stated, and
+may drop one only on a newer committed record whose own text removes it (for
+instance, a stability re-run after an inductor re-model). A refresh never
+turns a failing or conditional row into an unconditional pass on its own
+authority.
+
+**The #27 verdict alone does not qualify #380 for Builder work.** Its grid
+summary names the analyses but omits the per-slice engine builds and runner
+model comparisons. Its ngspice-47 attribution describes a separate
+single-corner debug probe. The three grid slices have the following coverage
+in their committed `corners/<record-id>/matched_*.report.json` files. All
+three cite IHP SG13G2 0.3.0 in client provenance.
+
+| Record ID | Temperature and cells | Engine | Matched analyses | Runner model-library comparison |
+|---|---|---|---|---|
+| `20261106-054735-64b37ae` | 125 °C, 15 | ngspice-46 | noise, sp_band, sp_stab | Field absent |
+| `20261116-022647-eacd53a` | 27 °C, 15 | ngspice-47 | noise, sp_band, sp_stab, op | `not_comparable` (`runner_hash_unavailable`) |
+| `20261116-023212-eacd53a` | −40 °C, 15 | ngspice-47 | noise, sp_band, sp_stab, op | `not_comparable` (`runner_hash_unavailable`) |
+
+Before a Builder uses that verdict, a new, append-only characterization
+record must tie each refreshed figure and its verdict to its contributing
+slices, analysis, column, engine build and model provenance, including the
+gaps above. Until then the refresh stays with the operator. The original
+[#27 verdict](../../sim/lna-characterization/records/issue-27-matched-pvt-verdict.md)
+sets the following limits on what those measurements support.
+
+- The **stability row keeps its condition in the cell**: met at **45/45 at
+  numerical resolution**, **conditional on the Q ≈ 10 inductor-loss model**,
+  and **any inductor re-model re-runs the stability gate**. The 45 cells are
+  deterministic PVT corners. The cell must disclose that device mismatch
+  and passive tolerance remain unmeasured. The [target spec's statistical
+  coverage statement](../target-spec.md#statistical-coverage-t1-item-6--no-statistical-evidence-exists-yet)
+  records the T1 item 6 gap for the RF rows. Each refreshed RF cell must
+  retain that gap until a statistical campaign covers its row.
+- The **NF row stays FAILING (0/45)**. The matched 290 K noise bench
+  (`nf290_db_worst`, worst sampled in-band point per cell) gives
+  **2.5691–4.3779 dB** against the ratified **< 1.5 dB**. The record attributes
+  the shortfall to the device/bias floor plus **0.68 dB** of nominal finite-Q
+  input-match loss. Any claim of competitive achieved NF needs separate
+  evidence.
+- **Power (P_dc) is under 10 mW in the 30 matched cells measured by
+  `op`** at 27 °C and −40 °C (column `pdc`, worst **9.7611 mW**). The 15 hot
+  cells in the #27 grid lack matched `op`. The **9.7683 mW** hot-corner
+  value is pre-match. A full-box matched-DUT power verdict requires
+  committed matched measurements covering the hot slice.
+- **IIP3 stays DRAFT / unbound.** The three #27 slices have no two-tone
+  result. The [subsequent #337 two-tone record](../../sim/lna-characterization/records/20261117-040629-30d1235a.md)
+  reports the matched measurement under the ratified protocol. Binding a
+  number still requires a separate decision record.
+
+### Verification
+
+CI checks the table shape and validates the limits in `spec/ratified-rows.json`
+against the value and binding cells. Responsibility for the public disclosure
+in column five rests with the **Judge**, who **checks each refreshed cell
+against the committed record digit for digit** before merge. For a derived
+figure, the Judge reproduces the quoted result from the cited inputs and
+method at the precision the record reports.
+For each figure, the Judge compares the bench with the row's binding
+conditions and verifies that the cell carries the record's coverage gaps,
+including any distinction between corner and statistical evidence. A
+stronger status requires a record whose bench covers the row's binding
+conditions. Otherwise, keep the weaker status or refer the cell to the operator.
+This delegation takes effect only when the operator ratifies the amendment.
