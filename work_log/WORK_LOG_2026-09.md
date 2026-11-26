@@ -2,6 +2,11 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-25
+
+- **PR #48**: chore(signoff): bump klt pin 0.5.0 -> 0.6.0, re-vendor tiers doc
+- **Issue #47** (closed): signoff: bump the klt pin 0.5.0 → 0.6.0, re-vendor the tiers doc, retire the stale release-lag narrative
+
 ### 2026-09-22
 
 - **PR #44**: docs: align living docs with DR-0002's partial target-spec ratification

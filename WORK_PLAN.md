@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-25T20:59:54Z (snapshot; compare against live labels)_
+_Generated: 2026-11-26T02:01:20Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -31,19 +31,21 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
+- **#496**: Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh
+- **#500**: Share PDK and corner settings between the variant and IIP3 request generators
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#498**: refactor(sim): share klt request execution and job bullets across LNA runners — closes #496
+
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work — closes #336
-- **#466**: test: pin that class-2 usage exits publish no DRC pair — closes #458
+- **#501**: refactor(sim): share corner request settings across LNA campaigns — closes #500
 
 ## Proposed
 
@@ -54,14 +56,12 @@ Issues carrying `loom:curated`.
 - **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)* *(held)*
 - **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)* *(held)*
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
-- **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)* *(held)*
 - **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)* *(held)*
 - **#495**: Remove the local ngspice requirement from the fleet Monte Carlo runner *(hermit)* *(held)*
-- **#496**: Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh *(hermit)*
 
 ## Epics
 
@@ -75,10 +75,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 6 |
-| Architect / Hermit proposals | 4 |
+| Curated | 5 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

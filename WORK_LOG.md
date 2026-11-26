@@ -6,6 +6,8 @@
 
 ### 2026-11-25
 
+- **PR #466**: test: pin that class-2 usage exits publish no DRC pair
+- **Issue #458** (closed): test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
 - **PR #493**: refactor(sim): single-source the two-point IM3 slope
 - **Issue #492** (closed): Compute the two-point IM3 slope once for IIP3 summaries and verdicts
 
@@ -443,9 +445,4 @@
 - **Issue #52** (closed): spec/design: RATIFIED gain (>15 dB) and NF (<1.5 dB) rows are unreachable by matching alone on the DR-0003 core — available-gain basis 14.42 dB, NFmin 2.07 dB at the best of 45 cells
 - **Issue #50** (closed): sim: de-duplicate the five run_*_sweep.sh runners — 22 lines identical in all five, helper trio copy-pasted 3x
 - **Issue #49** (closed): sim: re-baseline the lna-characterization PVT campaign against the DR-0003 bias core — the #37-deferred RF re-characterization, never filed
-
-### 2026-09-25
-
-- **PR #48**: chore(signoff): bump klt pin 0.5.0 -> 0.6.0, re-vendor tiers doc
-- **Issue #47** (closed): signoff: bump the klt pin 0.5.0 → 0.6.0, re-vendor the tiers doc, retire the stale release-lag narrative
 
