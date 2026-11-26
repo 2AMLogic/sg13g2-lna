@@ -17,7 +17,7 @@ LOCAL = '{"status": "pass", "corner_count": 2, "corners": [{}, {}]}'
 
 # The same stub handles both klt invocation shapes. Log the full argument
 # vector so an unintended retry, backend switch or split path is observable.
-KLT = '''#!/usr/bin/env python3
+KLT = '''
 import json, sys
 from pathlib import Path
 args = sys.argv[1:]
@@ -49,6 +49,8 @@ class CampaignRunners(unittest.TestCase):
         # requests. Run the real check-client, collect-set and record writer.
         (sim / "env.sh").write_text("""
 REPO_ROOT=$PWD
+# Invoke the stub through Python even when the fixture is on a noexec mount.
+klt() { python3 -I "$REPO_ROOT/klt_stub.py" "$@"; }
 sim_require_pdk() { SIM_SCRIPT_NAME=$1; }
 sim_record_paths() {
   RECORD_ID=fixture
@@ -72,10 +74,9 @@ elif sys.argv[1] not in ("gen", "gen-iip3"):
         (root / "a.json").write_text(REMOTE)
         (root / "b.json").write_text(LOCAL)
         (root / "replies.json").write_text(json.dumps(replies))
-        (root / "klt").write_text(KLT)
-        (root / "klt").chmod(0o755)
+        (root / "klt_stub.py").write_text(KLT)
 
-        env = dict(PATH=f"{root}:{os.environ['PATH']}", CAMPAIGN=str(LNA / "lna_variant_campaign.py"),
+        env = dict(PATH=os.environ["PATH"], CAMPAIGN=str(LNA / "lna_variant_campaign.py"),
                    PDK="fixture", PDK_ROOT=str(root), SIM_PDK_RELEASE="fixture", SIM_PDK_ID_ROUTE="fixture")
         # Exercise the inherited batch backend and explicit serial override.
         env["KLT_SIM_BACKEND"] = "batch"
