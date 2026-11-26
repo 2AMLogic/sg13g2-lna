@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-25T22:12:47Z (snapshot; compare against live labels)_
+_Generated: 2026-11-26T02:01:20Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -32,6 +32,7 @@ Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
 - **#496**: Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh
+- **#500**: Share PDK and corner settings between the variant and IIP3 request generators
 
 ## PRs Awaiting Review
 
@@ -44,6 +45,7 @@ PRs waiting on Judge (`loom:review-requested`).
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work — closes #336
+- **#501**: refactor(sim): share corner request settings across LNA campaigns — closes #500
 
 ## Proposed
 
@@ -73,9 +75,9 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 5 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
