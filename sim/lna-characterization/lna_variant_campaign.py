@@ -274,40 +274,12 @@ def iip3_request(variant: str, amp: float, netlist_name: str, smoke: bool,
     cell (run_lna_sweep.sh's AMPS_NOMINAL_ONLY levels run there alone).
     remote.hosts shards the 45-cell grid into fleet jobs of <= 3 units so one
     job stays inside the fleet's whole-job ceiling (3 x 900 s + overhead)."""
-    labels = ["typ"] if smoke or nominal_only else LABELS
-    temps = [27] if smoke or nominal_only else TEMPS
-    vdds = [1.80] if smoke or nominal_only else VDDS
-    process = [
-        {
-            "name": lab,
-            "sections": [
-                {"lib": "libs.tech/ngspice/models/cornerHBT.lib", "section": HBT[lab]},
-                {"lib": "libs.tech/ngspice/models/cornerMOShv.lib", "section": MOS[lab]},
-            ],
-        }
-        for lab in labels
-    ]
-    osdi = [f"$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/{f}" for f in
-            ("psp103.osdi", "psp103_nqs.osdi", "mosvar.osdi")]
-    n_units = len(labels) * len(temps) * len(vdds)
-    req = {
-        "netlist": netlist_name,
-        "models": {"pdk": "ihp-sg13g2"},
-        "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
-        "analysis": {"kind": iip3_control_kind(), "args": ""},
-        "measurements": iip3_measurements(),
-        "options": {
-            "timeout_s": 900,
-            "keep_artifacts": True,
-            "osdi_preload": osdi,
-            "stage_model_inputs": True,
-            "ngspice_init": ["set numdgt=8"],
-        },
-        "remote": {"hosts": 1 if n_units <= 3 else 15},
-    }
-    if backend:
-        req["backend"] = backend
-    return req
+    single_cell = smoke or nominal_only
+    n_units = 1 if single_cell else len(LABELS) * len(TEMPS) * len(VDDS)
+    return _corner_request(
+        netlist_name, {"kind": iip3_control_kind(), "args": ""}, iip3_measurements(),
+        nominal_only=single_cell, backend=backend, hosts=1 if n_units <= 3 else 15,
+    )
 
 
 # DC operating point, measured per variant per cell (issue #56, prompted by the
@@ -495,11 +467,12 @@ def analysis_card(analysis: str, nf_npts: int = N_NF) -> dict:
     return {"kind": "noise", "args": f"v(nfout) vin lin {check_nf_npts(nf_npts)} {F_LO:g} {F_HI:g}"}
 
 
-def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None,
-            nf_npts: int = N_NF) -> dict:
-    labels = ["typ"] if smoke else LABELS
-    temps = [27] if smoke else TEMPS
-    vdds = [1.80] if smoke else VDDS
+def _corner_request(netlist_name: str, analysis: dict, measurements: list[dict], *,
+                    nominal_only: bool, backend: str | None, hosts: int | None = None) -> dict:
+    label, temp, vdd = NOMINAL
+    labels = [label] if nominal_only else LABELS
+    temps = [temp] if nominal_only else TEMPS
+    vdds = [vdd] if nominal_only else VDDS
     process = [
         {
             "name": lab,
@@ -516,8 +489,8 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
         "netlist": netlist_name,
         "models": {"pdk": "ihp-sg13g2"},
         "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
-        "analysis": analysis_card(analysis, nf_npts),
-        "measurements": measurements(analysis, nf_npts),
+        "analysis": analysis,
+        "measurements": measurements,
         "options": {
             "timeout_s": 900,
             "keep_artifacts": True,
@@ -526,9 +499,19 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
             "ngspice_init": ["set numdgt=8"],
         },
     }
+    if hosts is not None:
+        req["remote"] = {"hosts": hosts}
     if backend:
         req["backend"] = backend
     return req
+
+
+def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None,
+            nf_npts: int = N_NF) -> dict:
+    return _corner_request(
+        netlist_name, analysis_card(analysis, nf_npts), measurements(analysis, nf_npts),
+        nominal_only=smoke, backend=backend,
+    )
 
 
 def check_client_floor(version_text: str, runner: str = "") -> None:

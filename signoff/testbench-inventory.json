@@ -2576,7 +2576,7 @@
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
     "sim/lna-characterization/README.md": "sha256:9bbeeb913f6d6035f52e7cf8ba2b47b6b7496bc89811aedeb08e06646e205c5e",
     "sim/lna-characterization/gen_spec_envelopes.py": "sha256:c8ba7ca228c993b5e1356605356cccc358b20ab494886ddeb4de7228a57debdd",
-    "sim/lna-characterization/lna_variant_campaign.py": "sha256:3d358bf678e37d2d29e41a523b52d3b55cdbba80e5c862f2f10aedc7808130c0",
+    "sim/lna-characterization/lna_variant_campaign.py": "sha256:cd7049ebc054de0bc5d6565f30f8062bcff39f450e3694183315a9f4c1e2467a",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:ad13f4dad6e9a4504dd602e6f3b6dcdf3f4f029e21883a6f4dbe24555b97af86",
     "sim/lna-characterization/records/20260918-210908-4293920-iip3.csv": "sha256:9dd508231693cfa438c19c93d4dfe6ccc45b8e00ad245459410a7ddd5b1d4f8d",
     "sim/lna-characterization/records/20260918-210908-4293920-sparam.csv": "sha256:b7cb25ed8d8b405a36d3c1f6f6c738b19383fc88ce6702790aa9c99e9612a38e",
