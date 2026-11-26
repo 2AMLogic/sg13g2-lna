@@ -57,7 +57,7 @@
   "inputs": {
     "coverage_index": {
       "path": "signoff/testbench-coverage.json",
-      "sha256": "sha256:f846afcf2a82cf894f51eac31a6687168134a6c3ea4c17e9a0b0ce9b641843f3"
+      "sha256": "sha256:d0c75d6e57922a8da5294726a100db03ce90abc31728117d88d0441640c1fddc"
     },
     "ratified_rows": {
       "path": "spec/ratified-rows.json",

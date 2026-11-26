@@ -5,6 +5,8 @@ import importlib.util
 import io
 import json
 import math
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -624,6 +626,132 @@ class SharedCellValidation(unittest.TestCase):
 
 def cell_of(i):
     return V.cell_text(V.expected_grid()[i])
+
+
+class ClientFloor(unittest.TestCase):
+    """Issue #475: the single klt client version-floor preflight shared by
+    run_lna_variant.sh, run_lna_iip3.sh and the core-envelope campaigns
+    (previously three copies of the comparison; the floor and its feature
+    diagnostic are recorded once in sim/pdk.json klt_variant_campaign)."""
+
+    FLOOR_CFG = json.loads((LNA.parent / "pdk.json").read_text())["klt_variant_campaign"]
+
+    def test_banners_at_above_and_below_floor(self):
+        V.check_client_floor("klt 0.7.0+gabc", "run_lna_variant.sh")  # at the floor
+        V.check_client_floor("klt 0.10.0")                             # above it
+        with self.assertRaises(SystemExit) as below:
+            V.check_client_floor("klt 0.6.9", "run_lna_variant.sh")
+        msg = str(below.exception)
+        self.assertIn("run_lna_variant.sh:", msg)      # runner-specific context
+        self.assertIn(self.FLOOR_CFG["min_version"], msg)
+        for feat in self.FLOOR_CFG["required_features"]:
+            self.assertIn(feat, msg)
+        with self.assertRaises(SystemExit) as unparsable:
+            V.check_client_floor("no version", "run_lna_variant.sh")
+        self.assertIn("cannot parse", str(unparsable.exception))
+        self.assertIn(self.FLOOR_CFG["min_version"], str(unparsable.exception))
+
+    def test_cli_check_client(self):
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "klt 0.6.9", "--runner", "run_lna_iip3.sh"], capture_output=True, text=True)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("run_lna_iip3.sh:", p.stderr)
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "klt 0.7.0+gabc"], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr)
+
+    def test_wrappers_delegate_and_keep_exit_3(self):
+        # Both shell entry points call the shared check (via the module CLI),
+        # keep their exit-3 mapping, and no longer carry an inline copy of
+        # the comparison (the `def triple` heredoc of the pre-#475 checks).
+        for sh, gen_cmd in (("run_lna_variant.sh", '" gen '),
+                            ("run_lna_iip3.sh", '" gen-iip3 ')):
+            text = (LNA / sh).read_text()
+            self.assertIn('lna_variant_campaign.py" check-client', text, sh)
+            # the banner follows the end-of-options delimiter so an
+            # option-shaped banner (`--help`) is data, not an argparse flag
+            self.assertIn('-- "${KLT_VERSION}" || exit 3', text, sh)
+            self.assertNotIn("def triple", text, sh)
+            self.assertLess(text.index("check-client"), text.index("lna_variant_campaign.py" + gen_cmd), sh)
+
+
+    def test_cli_option_shaped_banner_is_rejected_not_parsed_as_flag(self):
+        # `klt --version` printing `--help` must reach check_client_floor and
+        # fail with the runner's diagnostic; without the `--` delimiter
+        # argparse prints its own help and exits 0.
+        p = subprocess.run(
+            [sys.executable, "-I", str(LNA / "lna_variant_campaign.py"), "check-client",
+             "--runner", "run_lna_variant.sh", "--", "--help"], capture_output=True, text=True)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("run_lna_variant.sh:", p.stderr)
+        self.assertIn("cannot parse", p.stderr)
+
+    def test_wrappers_stop_before_generation_on_option_shaped_banner(self):
+        # Run the real shell entry points in a scratch tree (fixture PDK, stub
+        # klt that reports `--help` as its version and logs every other
+        # call). Expect exit 3 and zero generator invocations. No simulator
+        # or fleet run.
+        repo_sim = LNA.parent
+        for sh, gen in (("run_lna_variant.sh", "gen"), ("run_lna_iip3.sh", "gen-iip3")):
+            with self.subTest(runner=sh), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                sim = root / "sim"
+                (root / "design" / "netlist").mkdir(parents=True)
+                shutil.copy(repo_sim.parent / "design" / "netlist" / "lna.spice",
+                            root / "design" / "netlist" / "lna.spice")
+                sim.mkdir()
+                for name in ("env.sh", "pdk.json"):
+                    shutil.copy(repo_sim / name, sim / name)
+                for name in ("tools", "models"):
+                    shutil.copytree(repo_sim / name, sim / name)
+                shutil.copytree(LNA, sim / "lna-characterization",
+                                ignore=shutil.ignore_patterns("tests", "__pycache__",
+                                                              "records", "corners",
+                                                              "netlist-snapshots"))
+                # parse_lna_sweep.py loads this sibling module by relative path.
+                (sim / "lna-core-envelope").mkdir()
+                shutil.copy(repo_sim / "lna-core-envelope" / "envelope_rf.py",
+                            sim / "lna-core-envelope" / "envelope_rf.py")
+                # Fixture PDK (same shape as sim/tests/test-core-envelope-lifecycle.sh).
+                tech = root / "pdk" / "ihp-sg13g2" / "libs.tech" / "ngspice"
+                (tech / "models").mkdir(parents=True)
+                (tech / "osdi").mkdir()
+                (tech / "models" / "cornerHBT.lib").write_text(".lib cur\n.endl\n")
+                (tech / "models" / "cornerMOShv.lib").write_text("* mos\n")
+                for f in ("psp103", "psp103_nqs", "mosvar"):
+                    (tech / "osdi" / f"{f}.osdi").write_text("x\n")
+                (root / "pdk" / "ihp-sg13g2" / ".fetched-version").write_text("0.3.0\n")
+                # Stub klt: `--version` banner is option-shaped; anything else is logged.
+                bindir = root / "bin"
+                bindir.mkdir()
+                log = root / "klt.log"
+                klt = bindir / "klt"
+                klt.write_text('#!/bin/sh\n[ "$1" = "--version" ] && { echo "--help"; exit 0; }\n'
+                               'echo "klt $*" >> "$STUB_LOG"\nexit 0\n')
+                klt.chmod(0o755)
+                # Stub ngspice (the PDK preflight wants one on PATH; CI has none).
+                # `-v` line 2 carries the version, as in test-core-envelope-lifecycle.sh.
+                ng = bindir / "ngspice"
+                ng.write_text('#!/bin/sh\nif [ "$1" = "-v" ]; then echo stub; echo "ngspice-46 stub"; '
+                              'exit 0; fi\nexit 1\n')
+                ng.chmod(0o755)
+                # Stub generator hook: any call to the campaign generator
+                # subcommand would be a failure -- wrap python3 to log it.
+                py = bindir / "python3"
+                py.write_text('#!/bin/sh\nfor a in "$@"; do [ "$a" = "%s" ] && '
+                              'echo "python3 $*" >> "$STUB_LOG"; done\nexec "%s" "$@"\n'
+                              % (gen, sys.executable))
+                py.chmod(0o755)
+                env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}",
+                           STUB_LOG=str(log), PDK_ROOT=str(root / "pdk"), PDK="ihp-sg13g2")
+                p = subprocess.run(["bash", str(sim / "lna-characterization" / sh)],
+                                   capture_output=True, text=True, env=env, timeout=120)
+                self.assertEqual(p.returncode, 3, p.stdout + p.stderr)
+                self.assertIn("cannot parse", p.stderr)
+                self.assertFalse(log.exists(), f"generator/klt reached after bad banner: "
+                                 f"{log.read_text() if log.exists() else ''}")
 
 
 class WrapperPropagation(unittest.TestCase):
@@ -1419,6 +1547,95 @@ class Iip3Reduction(unittest.TestCase):
         self.assertEqual(s["ic1"], "0.00394")
         self.assertEqual(s["pdc"], "0.00394")
         self.assertTrue(s["iip3_device_plane_dbm_a2mv"])
+
+
+class Iip3RunnerDriveLevels(unittest.TestCase):
+    """issue #432: run_lna_iip3.sh is the fixed-protocol entry point. Its
+    reduction step used to honour two drive-level environment knobs that its
+    own gen-iip3 step never saw, so setting either made reduction demand
+    reports the runner had not generated. Custom drive levels are a direct
+    lna_variant_campaign.py invocation, never the runner."""
+
+    # Split on purpose: the acceptance criterion is a repository-wide grep
+    # for these two names, and this file must not match it.
+    REMOVED_KNOBS = {"LNA_IIP3_" + "AMPS": "0.001,0.003",
+                     "LNA_IIP3_" + "AMPS_NOMINAL_ONLY": "0.004"}
+    DRIVE_FLAGS = ("--amps", "--amps-nominal-only")
+
+    def test_runner_names_no_drive_level_knob(self):
+        text = (LNA / "run_lna_iip3.sh").read_text()
+        for token in (*self.REMOVED_KNOBS, *self.DRIVE_FLAGS):
+            self.assertFalse(token in text, f"run_lna_iip3.sh still names {token}")
+
+    def test_runner_hands_no_drive_levels_to_either_subcommand(self):
+        # Run the real shell entry point in a scratch tree (fixture PDK, stub
+        # klt and ngspice -- the ClientFloor recipe) with both removed knobs
+        # exported; python3 is wrapped to log every campaign-module argv.
+        # The stub klt returns no reports, so reduction fails for want of
+        # them: what is under test is the argv it was handed. No simulator
+        # or fleet run.
+        repo_sim = LNA.parent
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            sim = root / "sim"
+            (root / "design" / "netlist").mkdir(parents=True)
+            shutil.copy(repo_sim.parent / "design" / "netlist" / "lna.spice",
+                        root / "design" / "netlist" / "lna.spice")
+            sim.mkdir()
+            for name in ("env.sh", "pdk.json"):
+                shutil.copy(repo_sim / name, sim / name)
+            for name in ("tools", "models"):
+                shutil.copytree(repo_sim / name, sim / name)
+            shutil.copytree(LNA, sim / "lna-characterization",
+                            ignore=shutil.ignore_patterns("tests", "__pycache__",
+                                                          "records", "corners",
+                                                          "netlist-snapshots"))
+            (sim / "lna-core-envelope").mkdir()
+            shutil.copy(repo_sim / "lna-core-envelope" / "envelope_rf.py",
+                        sim / "lna-core-envelope" / "envelope_rf.py")
+            tech = root / "pdk" / "ihp-sg13g2" / "libs.tech" / "ngspice"
+            (tech / "models").mkdir(parents=True)
+            (tech / "osdi").mkdir()
+            (tech / "models" / "cornerHBT.lib").write_text(".lib cur\n.endl\n")
+            (tech / "models" / "cornerMOShv.lib").write_text("* mos\n")
+            for f in ("psp103", "psp103_nqs", "mosvar"):
+                (tech / "osdi" / f"{f}.osdi").write_text("x\n")
+            (root / "pdk" / "ihp-sg13g2" / ".fetched-version").write_text("0.3.0\n")
+            bindir = root / "bin"
+            bindir.mkdir()
+            log = root / "calls.log"
+            klt = bindir / "klt"
+            klt.write_text('#!/bin/sh\n'
+                           '[ "$1" = "--version" ] && { echo "klt 0.7.0+gstub"; exit 0; }\n'
+                           'exit 0\n')
+            klt.chmod(0o755)
+            ng = bindir / "ngspice"
+            ng.write_text('#!/bin/sh\nif [ "$1" = "-v" ]; then echo stub; echo "ngspice-46 stub"; '
+                          'exit 0; fi\nexit 1\n')
+            ng.chmod(0o755)
+            py = bindir / "python3"
+            py.write_text('#!/bin/sh\n'
+                          '{ printf "python3"; for a in "$@"; do printf "\\t%s" "$a"; done; printf "\\n"; } '
+                          '>> "$STUB_LOG"\n'
+                          'exec "@REAL@" "$@"\n'.replace("@REAL@", sys.executable))
+            py.chmod(0o755)
+            # The backend is pinned so a host KLT_SIM_BACKEND=batch cannot
+            # route the stub through --batch-set and stop before reduction.
+            env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}",
+                       STUB_LOG=str(log), PDK_ROOT=str(root / "pdk"), PDK="ihp-sg13g2",
+                       LNA_IIP3_BACKEND="local", **self.REMOVED_KNOBS)
+            p = subprocess.run(["bash", str(sim / "lna-characterization" / "run_lna_iip3.sh")],
+                               capture_output=True, text=True, env=env, timeout=120)
+            self.assertTrue(log.exists(), p.stdout + p.stderr)
+            calls = [line.split("\t")[1:] for line in log.read_text().splitlines()]
+            campaign = [a for a in calls if a[0].endswith("lna_variant_campaign.py")]
+            gen = [a for a in campaign if a[1] == "gen-iip3"]
+            summ = [a for a in campaign if a[1] == "summarize-iip3"]
+            self.assertEqual(len(gen), 1, p.stdout + p.stderr)
+            self.assertEqual(len(summ), 1, p.stdout + p.stderr)
+            for argv in gen + summ:
+                for flag in self.DRIVE_FLAGS:
+                    self.assertNotIn(flag, argv)
 
 
 if __name__ == "__main__":

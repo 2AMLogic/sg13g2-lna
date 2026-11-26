@@ -4,8 +4,42 @@
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-25
+
+- **PR #466**: test: pin that class-2 usage exits publish no DRC pair
+- **Issue #458** (closed): test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
+- **PR #493**: refactor(sim): single-source the two-point IM3 slope
+- **Issue #492** (closed): Compute the two-point IM3 slope once for IIP3 summaries and verdicts
+
+### 2026-11-24
+
+- **PR #490**: fix(sim): drop reducer-only drive-level overrides from the IIP3 runner
+- **Issue #432** (closed): Remove reducer-only drive-level overrides from the IIP3 runner
+
+### 2026-11-23
+
+- **PR #477**: refactor(sim): share the klt client version-floor check across campaigns
+- **Issue #475** (closed): Share the klt client version check across three simulation campaigns
+- **PR #485**: sim: drop the vacuous round-trip identity guard from rederive_nf_fixed_t0
+- **Issue #282** (closed): Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous
+- **PR #484**: sim: remove unused lenient parse_sp_log reader and migrate its tests
+- **PR #481**: sim: dedupe the corner-report cell validator shared by both reducers
+- **Issue #482** (closed): Retire the test-only S-parameter log reader after the coverage migration
+- **Issue #480** (closed): Share klt sim corner-report cell validation between variant and core-envelope reducers
+
+### 2026-11-22
+
+- **PR #479**: test: byte-compare regenerated recommendation.json in match replay
+- **PR #471**: sim: share the broadband stability table reduction between reducers
+- **PR #459**: refactor(sim): share the matching-study preflight across the feed, Le and Q runners
+- **Issue #476** (closed): Byte-compare recommendation.json in the match replay test
+- **Issue #468** (closed): Share broadband stability reduction between feed scans and matching verification
+- **Issue #450** (closed): Share the matching-study preflight across the feed, Le and Q runners
+
 ### 2026-11-20
 
+- **Issue #449** (closed): Reuse the Q-study boundary reduction for both metrics and band data
+- **PR #456**: refactor(sim): reuse the q-study reduction's band in the boundary loop
 - **Issue #470** (closed): chore: gitignore the runtime-owned .loom/account-ranking.* state files
 - **PR #473**: chore: ignore runtime-owned .loom/account-ranking.* state files
 - **Issue #461** (closed): Remove the unusable dpkg-deb workaround from the OSDI build error
@@ -411,32 +445,4 @@
 - **Issue #52** (closed): spec/design: RATIFIED gain (>15 dB) and NF (<1.5 dB) rows are unreachable by matching alone on the DR-0003 core — available-gain basis 14.42 dB, NFmin 2.07 dB at the best of 45 cells
 - **Issue #50** (closed): sim: de-duplicate the five run_*_sweep.sh runners — 22 lines identical in all five, helper trio copy-pasted 3x
 - **Issue #49** (closed): sim: re-baseline the lna-characterization PVT campaign against the DR-0003 bias core — the #37-deferred RF re-characterization, never filed
-
-### 2026-09-25
-
-- **PR #48**: chore(signoff): bump klt pin 0.5.0 -> 0.6.0, re-vendor tiers doc
-- **Issue #47** (closed): signoff: bump the klt pin 0.5.0 → 0.6.0, re-vendor the tiers doc, retire the stale release-lag narrative
-
-### 2026-09-22
-
-- **PR #44**: docs: align living docs with DR-0002's partial target-spec ratification
-- **PR #43**: docs: state cornerHBT.lib's three real sections and add consumers note
-- **Issue #45** (closed): dep-recheck-fingerprint named-dependency drops cross-repo dependency bullets (OWNER/REPO#N) — false VERDICT=clear
-- **Issue #41** (closed): 2am: reuse rule 9 — cornerHBT.lib ships three HBT corners, not five — a consumer's correction that never travelled here
-- **Issue #39** (closed): docs: refresh stale pre-#32 nothing-is-ratified framing in measurements/README.md, spec/porting-plan.md, sim/README.md
-
-### 2026-09-21
-
-- **PR #40**: feat: swap the bias island to the DR-0003 flat-reference core (4.0 mA re-land)
-- **PR #38**: feat: add bias-reference DR-0003, OSDI toolchain, and probe bench
-- **PR #36**: feat: add klt signoff block manifest with CI verdict-drift gate
-- **PR #34**: fix: replace Q1's placeholder divider bias with an npn13G2 mirror reference
-- **PR #32**: docs(spec): ratify target-spec rows via decision record 0002
-- **PR #31**: docs(sim): re-reference hbt NF records to fixed T0, add erratum
-- **Issue #37** (closed): bias core: land DR-0003 Stage 2 amp-servo flat-current swap (4.0 mA re-land)
-- **Issue #33** (closed): design: flat PVT bias reference for Q1 — the 4.0 mA nominal / corner-bar trade issue #26 sized around
-- **Issue #30** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
-- **Issue #26** (closed): design: replace Q1's placeholder resistive base-bias divider — measured I_C1 spans 25 uA..14.7 mA over PVT
-- **Issue #25** (closed): sim: hbt-characterization's NF bench does not pin the source reference temperature (ngspice per-instance temp= is ignored for resistor noise)
-- **Issue #19** (closed): spec: ratify spec/target-spec.md via the fleet two-key mechanism
 

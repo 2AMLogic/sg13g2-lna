@@ -60,7 +60,7 @@ fi
 CAPACITY_WAIT="${CORE_ENV_CAPACITY_WAIT_S:-600}"
 
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
-python3 -I "${GEN}" check-client "${KLT_VERSION}" || exit 3
+python3 -I "${GEN}" check-client -- "${KLT_VERSION}" || exit 3
 
 GIT_SHA="$(cd "${REPO_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 STAMP="$(date -u +%Y%m%d-%H%M%S)"
@@ -76,7 +76,7 @@ RECORDS="${SCRIPT_DIR}/records"
 if [[ "${MODE}" == campaign ]]; then
   V="${CORE_ENV_GATE_VERDICT:-}"
   [[ -f "${V}" ]] || { echo "run_core_envelope_campaign.sh: campaign needs CORE_ENV_GATE_VERDICT=<gate-verdict.json> from a passing gate." >&2; exit 3; }
-  python3 -I "${GEN}" check-gate-verdict "${V}" "${KLT_VERSION}" || exit 3
+  python3 -I "${GEN}" check-gate-verdict -- "${V}" "${KLT_VERSION}" || exit 3
 fi
 
 python3 -I "${GEN}" gen --record-id "${RECORD_ID}" --set "${MODE}" --backend batch --git-sha "${GIT_SHA}"

@@ -50,6 +50,8 @@ SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
+# shellcheck source=campaign_requests.sh
+source "${SCRIPT_DIR}/campaign_requests.sh"
 
 sim_require_pdk run_lna_variant.sh --osdi
 command -v klt >/dev/null 2>&1 || { echo "run_lna_variant.sh: klt not on PATH." >&2; exit 3; }
@@ -64,27 +66,14 @@ EM_SHA="$(sha256sum "${SIM_DIR}/models/sg13g2_inductor_em.spice" | awk '{print $
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
 
 # klt version-floor preflight: fail here, not late at the batch runner. The
-# floor lives in sim/pdk.json (klt_variant_campaign.min_version), the one place
-# it is recorded. Semantic-version comparison only; no feature-list parsing.
+# check is the ONE shared implementation (lna_variant_campaign.py
+# check-client; issue #475) that run_lna_iip3.sh and the core-envelope gate
+# runner use too; the floor lives in sim/pdk.json
+# (klt_variant_campaign.min_version), the one place it is recorded.
 # This checks the CLIENT klt; the batch runner image must carry the same
 # features and is checked by klt itself (batch_runner_version_mismatch).
-python3 -I - "${SIM_DIR}/pdk.json" "${KLT_VERSION}" <<'PYEOF' || exit 3
-import json, re, sys
-cfg = json.load(open(sys.argv[1]))["klt_variant_campaign"]
-floor_s, feats = cfg["min_version"], cfg["required_features"]
-def triple(s):
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
-    return tuple(int(x) for x in m.groups()) if m else None
-have, floor = triple(sys.argv[2]), triple(floor_s)
-if have is None:
-    sys.exit("run_lna_variant.sh: cannot parse a version from `klt --version` output "
-             f"{sys.argv[2]!r}; need klt >= {floor_s}.")
-if have < floor:
-    sys.exit(f"run_lna_variant.sh: klt {'.'.join(map(str, have))} is older than the required "
-             f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). It lacks: "
-             + ", ".join(feats) + ". Use a newer klt (e.g. `uvx --from \"klayout-tools>="
-             + floor_s + "\" klt`); do not run the grid locally.")
-PYEOF
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client \
+  --runner run_lna_variant.sh -- "${KLT_VERSION}" || exit 3
 
 NF_NPTS="${LNA_NF_NPTS:-11}"
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
@@ -93,103 +82,14 @@ GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --nf-npts "${NF_NPTS}")
 [[ -n "${LNA_TEMPS:-}" ]] && { GEN_ARGS+=("--temps=${LNA_TEMPS}"); echo "run_lna_variant.sh: LNA_TEMPS set (${LNA_TEMPS}) -- temperature slice, partial PVT grid, NOT a full corner-box campaign"; }
 python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen "${GEN_ARGS[@]}"
 
-KLT_ARGS=(--format json)
-[[ -n "${LNA_VARIANT_BACKEND:-}" ]] && KLT_ARGS+=(--backend "${LNA_VARIANT_BACKEND}")
-# The Spot batch fleet is vCPU-budgeted: a burst of requests gets
-# `batch_no_capacity`, which fails the submit outright. Waiting with backoff is
-# the host rule for every batch `klt sim`, so pass --wait-for-capacity whenever
-# the effective backend is batch. It is a submit-side wait only: it never
-# retries on another backend and never falls back to a local grid.
-EFFECTIVE_BACKEND="${LNA_VARIANT_BACKEND:-${KLT_SIM_BACKEND:-local}}"
+BACKEND_OVERRIDE="${LNA_VARIANT_BACKEND:-}"
+EFFECTIVE_BACKEND="${BACKEND_OVERRIDE:-${KLT_SIM_BACKEND:-local}}"
 CAPACITY_WAIT="${LNA_VARIANT_CAPACITY_WAIT_S:-600}"
-if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
-  KLT_ARGS+=(--wait-for-capacity "${CAPACITY_WAIT}")
-fi
+MAX_IN_FLIGHT="${LNA_VARIANT_MAX_IN_FLIGHT:-7}"
+CAPACITY_RETRIES="${LNA_VARIANT_CAPACITY_RETRIES:-3}"
 
 echo "run_lna_variant.sh: record ${RECORD_ID}; klt ${KLT_VERSION}; KLT_SIM_BACKEND=${KLT_SIM_BACKEND:-<unset>}"
-FAILED=()
-
-# --- batch: submit the whole set in one invocation -----------------------
-# Submitting the requests one at a time serialises the fleet's own launch
-# overhead (~2 min per job) behind every request: the 7-variant x 3-analysis
-# campaign is 21 requests, so a serial loop spends hours waiting on spot
-# launches rather than on ngspice. `klt sim --batch-set` is the sanctioned
-# scheduler for a set of independent requests (it forces backend batch and
-# never falls back to local ngspice): at most --max-in-flight run on the fleet
-# at once and the rest queue. Each member writes its own
-# <set-dir>/<stem>/report.json, which is copied to the same
-# corners/<id>/<stem>.report.json path the serial loop produces, so the
-# reducer, the coverage validator and the record provenance below are
-# unchanged and cannot tell the two submission paths apart.
-if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
-  MAX_IN_FLIGHT="${LNA_VARIANT_MAX_IN_FLIGHT:-7}"
-  CAPACITY_RETRIES="${LNA_VARIANT_CAPACITY_RETRIES:-3}"
-  SET_OUT="${CORNERS_OUT}/set"
-  mkdir -p "${SET_OUT}"
-  REQS=()
-  for req in "${SNAPSHOTS_OUT}"/*.request.json; do REQS+=("${req}"); done
-  echo "run_lna_variant.sh: klt sim --batch-set ${#REQS[@]} requests, max-in-flight ${MAX_IN_FLIGHT}, --wait-for-capacity ${CAPACITY_WAIT}"
-  SET_REPORT="${CORNERS_OUT}/set-report.json"
-  SET_ERRLOG="${CORNERS_OUT}/set.stderr.log"
-  set_rc=0
-  klt sim --batch-set "${REQS[@]}" -o "${SET_OUT}" \
-    --max-in-flight "${MAX_IN_FLIGHT}" --capacity-retries "${CAPACITY_RETRIES}" \
-    --wait-for-capacity "${CAPACITY_WAIT}" --format json \
-    > "${SET_REPORT}" 2> "${SET_ERRLOG}" || set_rc=$?
-  # Collect the set in ONE read of the envelope (issue #454): the campaign
-  # module's collect-set subcommand materialises each member's report at the
-  # per-request path the reducer reads (the source path is the envelope's own
-  # `requests[].report` field, not a guessed directory name -- klt names a
-  # member's directory after the request file with only the LAST suffix
-  # removed, so `ideal_noise.request.json` lands in `ideal_noise.request/`,
-  # not `ideal_noise/`), prints missing-report diagnostics to stderr, and
-  # lists the failed members on stdout (`<stem> <exit_code>`, envelope
-  # order). The shell checks the collector's exit status before consuming
-  # the entries: exit 1 means the envelope itself was unreadable and the
-  # collector has already said why -- stop before consuming anything.
-  SET_FAILURES="${CORNERS_OUT}/set-failures.txt"
-  collect_rc=0
-  python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" collect-set \
-    --runner run_lna_variant.sh --envelope "${SET_REPORT}" \
-    --corners-out "${CORNERS_OUT}" > "${SET_FAILURES}" || collect_rc=$?
-  if (( collect_rc != 0 )); then
-    exit 1
-  fi
-  # Per-member status from the aggregate envelope: a non-zero member exit is a
-  # failure even when the set as a whole returned 0.
-  while read -r stem rc; do
-    [[ -z "${stem}" ]] && continue
-    echo "run_lna_variant.sh: ${stem} exited ${rc} (see ${SET_ERRLOG}, ${SET_REPORT})" >&2
-    FAILED+=("${stem}:${rc}")
-  done < "${SET_FAILURES}"
-  if (( set_rc != 0 )) && [[ ${#FAILED[@]} -eq 0 ]]; then
-    FAILED+=("batch-set:${set_rc}")
-    echo "run_lna_variant.sh: --batch-set exited ${set_rc} with no per-request failure (see ${SET_ERRLOG})" >&2
-  fi
-else
-for req in "${SNAPSHOTS_OUT}"/*.request.json; do
-  stem="$(basename "${req}" .request.json)"
-  report="${CORNERS_OUT}/${stem}.report.json"
-  errlog="${CORNERS_OUT}/${stem}.stderr.log"
-  echo "run_lna_variant.sh: klt sim ${stem}"
-  rc=0
-  # Absolute -o is required: klt runs ngspice with cwd = the corner dir, so a
-  # relative --outdir yields relative deck/log paths that do not resolve there.
-  klt sim "${req}" -o "${CORNERS_OUT}/${stem}.artifacts" "${KLT_ARGS[@]}" > "${report}" 2> "${errlog}" || rc=$?
-  # klt sim: 0 pass, 3 a declared limit failed, 4 error/inconclusive. This
-  # bench declares no limits, so only 0 is a clean run.
-  if (( rc != 0 )); then
-    echo "run_lna_variant.sh: ${stem} exited ${rc} (see ${errlog})" >&2
-    FAILED+=("${stem}:${rc}")
-    # A submit/transport failure (no usable report) must not be retried
-    # locally; stop rather than burn through the remaining variants.
-    if ! python3 -I -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get('corners') else 1)" "${report}" 2>/dev/null; then
-      echo "run_lna_variant.sh: no usable report for ${stem}; stopping (no local fallback)." >&2
-      break
-    fi
-  fi
-done
-fi
+lna_run_requests "${BACKEND_OVERRIDE}" "${MAX_IN_FLIGHT}" "${CAPACITY_RETRIES}"
 
 SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}" --nf-npts "${NF_NPTS}"
   --summary-csv "${RECORDS_DIR}/${RECORD_ID}-summary.csv"
@@ -208,20 +108,7 @@ if (( SUMMARIZE_RC != 0 )); then
   echo "run_lna_variant.sh: reduction FAILED (exit ${SUMMARIZE_RC}); coverage incomplete -- see ${CORNERS_OUT}/headlines.md" >&2
 fi
 
-JOBS="$(python3 -I - "${CORNERS_OUT}" <<'PYEOF'
-import glob, json, sys
-for p in sorted(glob.glob(sys.argv[1] + "/*.report.json")):
-    try:
-        d = json.load(open(p))
-    except Exception:
-        continue
-    r = (d.get("environment") or {}).get("remote") or {}
-    name = p.rsplit("/", 1)[-1][: -len(".report.json")]
-    print("  - `%s`: job `%s`, %s, runner klt `%s`, state `%s`, status `%s`, %s corners" % (
-        name, r.get("job_id"), r.get("instance_type"), r.get("runner_klt_version"),
-        r.get("state"), d.get("status"), d.get("corner_count")))
-PYEOF
-)"
+JOBS="$(lna_job_bullets "${CORNERS_OUT}")"
 
 {
   echo "# Record ${RECORD_ID}"

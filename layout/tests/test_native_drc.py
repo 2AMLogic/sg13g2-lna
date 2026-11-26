@@ -661,6 +661,41 @@ class RunnerTest(IdentityFixtureTest):
         self.assertIn("mutually exclusive", r.stderr)
         pair_untouched()
 
+    def test_usage_errors_publish_nothing(self):
+        # The unseeded complement of test_usage_errors (issue #458): a
+        # class-2 (E_USAGE) exit must never publish a pair. The seeded
+        # test above pins that an existing pair is left in place; this
+        # pins, against an empty cell dir, that nothing is created — a
+        # regression guard for refactors that move die(E_USAGE) sites
+        # past run_gate.
+
+        def nothing_published():
+            self.assertEqual(self.pair_exists(), (False, False))
+            self.assertEqual(self.seg(), [])
+
+        with self.subTest(case="missing --min-klayout-version"):
+            r = self.run_runner(min_version=None)
+            self.assertEqual(r.returncode, 2)
+            nothing_published()
+        with self.subTest(case="undotted --min-klayout-version"):
+            r = self.run_runner(min_version="banana")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("not a dotted version", r.stderr)
+            nothing_published()
+        with self.subTest(case="missing committed GDS"):
+            self.gds.unlink()
+            r = self.run_runner()
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("never regenerates", r.stderr)
+            nothing_published()
+            self.gds.write_bytes(self.gds_bytes)
+        with self.subTest(case="mutually exclusive expect flags"):
+            r = self.run_runner("--expect-rule-categories", "3",
+                                "--expect-rule-categories-file", "f")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("mutually exclusive", r.stderr)
+            nothing_published()
+
     def test_missing_executable_is_class_3(self):
         r = self.run_runner(
             klayout_exe=False,

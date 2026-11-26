@@ -18,6 +18,10 @@ Companion to run_lna_variant.sh / run_lna_iip3.sh. Subcommands:
                 (`<stem> <exit_code>` per failed member, envelope order),
                 stderr the per-member diagnostics; exit 1 only when the
                 envelope itself cannot be read
+  check-client  the klt client version-floor preflight shared by every
+                campaign runner (issue #475): exit nonzero, with the
+                runner-tagged floor/feature diagnostic, when `klt --version`
+                text is below sim/pdk.json klt_variant_campaign.min_version
   summarize     turn the `klt sim` JSON reports under corners/<record-id>/
                 into records/<record-id>-{summary,compare}.csv and the
                 headline numbers the record .md quotes
@@ -72,6 +76,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import parse_lna_sweep as _sweep  # noqa: E402  (shares the #133 grid helpers)
 REPO = HERE.parent.parent
+PDK_JSON = HERE.parent / "pdk.json"
 DESIGN_NETLIST = REPO / "sim" / "pre-match-dut" / "lna.pre27.spice"
 # The live (matched, issue #27) design netlist, used verbatim by the "matched" variant only.
 LIVE_NETLIST = REPO / "design" / "netlist" / "lna.spice"
@@ -269,40 +274,12 @@ def iip3_request(variant: str, amp: float, netlist_name: str, smoke: bool,
     cell (run_lna_sweep.sh's AMPS_NOMINAL_ONLY levels run there alone).
     remote.hosts shards the 45-cell grid into fleet jobs of <= 3 units so one
     job stays inside the fleet's whole-job ceiling (3 x 900 s + overhead)."""
-    labels = ["typ"] if smoke or nominal_only else LABELS
-    temps = [27] if smoke or nominal_only else TEMPS
-    vdds = [1.80] if smoke or nominal_only else VDDS
-    process = [
-        {
-            "name": lab,
-            "sections": [
-                {"lib": "libs.tech/ngspice/models/cornerHBT.lib", "section": HBT[lab]},
-                {"lib": "libs.tech/ngspice/models/cornerMOShv.lib", "section": MOS[lab]},
-            ],
-        }
-        for lab in labels
-    ]
-    osdi = [f"$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/{f}" for f in
-            ("psp103.osdi", "psp103_nqs.osdi", "mosvar.osdi")]
-    n_units = len(labels) * len(temps) * len(vdds)
-    req = {
-        "netlist": netlist_name,
-        "models": {"pdk": "ihp-sg13g2"},
-        "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
-        "analysis": {"kind": iip3_control_kind(), "args": ""},
-        "measurements": iip3_measurements(),
-        "options": {
-            "timeout_s": 900,
-            "keep_artifacts": True,
-            "osdi_preload": osdi,
-            "stage_model_inputs": True,
-            "ngspice_init": ["set numdgt=8"],
-        },
-        "remote": {"hosts": 1 if n_units <= 3 else 15},
-    }
-    if backend:
-        req["backend"] = backend
-    return req
+    single_cell = smoke or nominal_only
+    n_units = 1 if single_cell else len(LABELS) * len(TEMPS) * len(VDDS)
+    return _corner_request(
+        netlist_name, {"kind": iip3_control_kind(), "args": ""}, iip3_measurements(),
+        nominal_only=single_cell, backend=backend, hosts=1 if n_units <= 3 else 15,
+    )
 
 
 # DC operating point, measured per variant per cell (issue #56, prompted by the
@@ -490,11 +467,12 @@ def analysis_card(analysis: str, nf_npts: int = N_NF) -> dict:
     return {"kind": "noise", "args": f"v(nfout) vin lin {check_nf_npts(nf_npts)} {F_LO:g} {F_HI:g}"}
 
 
-def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None,
-            nf_npts: int = N_NF) -> dict:
-    labels = ["typ"] if smoke else LABELS
-    temps = [27] if smoke else TEMPS
-    vdds = [1.80] if smoke else VDDS
+def _corner_request(netlist_name: str, analysis: dict, measurements: list[dict], *,
+                    nominal_only: bool, backend: str | None, hosts: int | None = None) -> dict:
+    label, temp, vdd = NOMINAL
+    labels = [label] if nominal_only else LABELS
+    temps = [temp] if nominal_only else TEMPS
+    vdds = [vdd] if nominal_only else VDDS
     process = [
         {
             "name": lab,
@@ -511,8 +489,8 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
         "netlist": netlist_name,
         "models": {"pdk": "ihp-sg13g2"},
         "corners": {"process": process, "supply_v": {"vdd": vdds}, "temperature_c": temps},
-        "analysis": analysis_card(analysis, nf_npts),
-        "measurements": measurements(analysis, nf_npts),
+        "analysis": analysis,
+        "measurements": measurements,
         "options": {
             "timeout_s": 900,
             "keep_artifacts": True,
@@ -521,9 +499,57 @@ def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend
             "ngspice_init": ["set numdgt=8"],
         },
     }
+    if hosts is not None:
+        req["remote"] = {"hosts": hosts}
     if backend:
         req["backend"] = backend
     return req
+
+
+def request(variant: str, analysis: str, netlist_name: str, smoke: bool, backend: str | None,
+            nf_npts: int = N_NF) -> dict:
+    return _corner_request(
+        netlist_name, analysis_card(analysis, nf_npts), measurements(analysis, nf_npts),
+        nominal_only=smoke, backend=backend,
+    )
+
+
+def check_client_floor(version_text: str, runner: str = "") -> None:
+    """klt client version-floor preflight shared by every sim campaign
+    (run_lna_variant.sh, run_lna_iip3.sh and the core-envelope gate runner;
+    previously three copies of this comparison -- issue #475). The floor and
+    its feature diagnostic are recorded in ONE place, sim/pdk.json
+    klt_variant_campaign. Semantic-version comparison on the first
+    three-part version found in the text; raises SystemExit (message carries
+    the runner's failure context, the floor and the missing features) when
+    the text has no version or is below the floor. The shell entry points
+    map the nonzero exit to exit 3, before any request is generated. This
+    checks the CLIENT klt; the batch runner image must carry the same
+    features and is checked by klt itself (batch_runner_version_mismatch).
+    """
+    cfg = json.loads(PDK_JSON.read_text())["klt_variant_campaign"]
+    floor_s, feats = cfg["min_version"], cfg["required_features"]
+    prefix = f"{runner}: " if runner else ""
+
+    def triple(s):
+        m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
+        return tuple(int(x) for x in m.groups()) if m else None
+
+    have, floor = triple(version_text), triple(floor_s)
+    if have is None:
+        raise SystemExit(f"{prefix}cannot parse a version from `klt --version` output "
+                         f"{version_text!r}; need klt >= {floor_s}.")
+    if have < floor:
+        raise SystemExit(f"{prefix}klt {'.'.join(map(str, have))} is older than the required "
+                         f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). "
+                         "It lacks: " + ", ".join(feats)
+                         + f'. Use a newer klt (e.g. `uvx --from "klayout-tools>={floor_s}" '
+                         "klt`); do not run the grid locally.")
+
+
+def cmd_check_client(a):
+    check_client_floor(a.version_text, a.runner)
+    return 0
 
 
 def cmd_gen(a):
@@ -1389,14 +1415,8 @@ def cmd_summarize_iip3(a):
         row["iip3_spread_2pt_db"] = (
             f"{abs(float(hi['iip3_dbm']) - float(lo['iip3_dbm'])):.3f}"
             if lo and hi else "")
-        slope = ""
-        if lo and hi:
-            dpin = (float(hi["pin_avail_dbm_per_tone"])
-                    - float(lo["pin_avail_dbm_per_tone"]))
-            if dpin:
-                slope = (round((float(hi["pim3_dbm"]) - float(lo["pim3_dbm"])) / dpin, 3))
-                slope = f"{slope:.3f}"
-        row["im3_slope_2pt"] = slope
+        slope = _sweep.im3_slope_2pt(lo, hi) if lo and hi else None
+        row["im3_slope_2pt"] = "" if slope is None else f"{slope:.3f}"
         row["iip3_validity"] = validity
         row["iip3_validity_reason"] = reason
         s11_db = s11.get(norm_key(*key))
@@ -1662,6 +1682,13 @@ def main():
     cs.add_argument("--corners-out", required=True,
                     help="record corners dir to materialise <stem>.report.json into")
     cs.set_defaults(fn=cmd_collect_set)
+    cc = sub.add_parser("check-client",
+                        help="exit nonzero if `klt --version` text is below the floor "
+                             "(sim/pdk.json klt_variant_campaign.min_version)")
+    cc.add_argument("version_text", help="output of `klt --version`")
+    cc.add_argument("--runner", default="",
+                    help="runner label prefixing the failure message (e.g. run_lna_variant.sh)")
+    cc.set_defaults(fn=cmd_check_client)
     s = sub.add_parser("summarize")
     s.add_argument("--corners-dir", required=True)
     s.add_argument("--summary-csv", required=True)

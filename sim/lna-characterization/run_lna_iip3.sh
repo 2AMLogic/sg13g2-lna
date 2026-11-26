@@ -55,6 +55,8 @@ SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../env.sh
 source "${SIM_DIR}/env.sh"
+# shellcheck source=campaign_requests.sh
+source "${SCRIPT_DIR}/campaign_requests.sh"
 
 sim_require_pdk run_lna_iip3.sh --osdi
 command -v klt >/dev/null 2>&1 || { echo "run_lna_iip3.sh: klt not on PATH." >&2; exit 3; }
@@ -70,111 +72,28 @@ DESIGN_NETLIST="${REPO_ROOT}/design/netlist/lna.spice"
 DESIGN_NETLIST_SHA="$(sha256sum "${DESIGN_NETLIST}" | awk '{print $1}')"
 KLT_VERSION="$(klt --version 2>&1 | head -1)"
 
-# klt version-floor preflight (same floor as run_lna_variant.sh: the IIP3
-# requests use the same features -- measurements[].expr, options.osdi_preload,
-# options.stage_model_inputs -- recorded in sim/pdk.json under
-# klt_variant_campaign). The batch runner image is checked by klt itself.
-python3 -I - "${SIM_DIR}/pdk.json" "${KLT_VERSION}" <<'PYEOF' || exit 3
-import json, re, sys
-cfg = json.load(open(sys.argv[1]))["klt_variant_campaign"]
-floor_s, feats = cfg["min_version"], cfg["required_features"]
-def triple(s):
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", s)
-    return tuple(int(x) for x in m.groups()) if m else None
-have, floor = triple(sys.argv[2]), triple(floor_s)
-if have is None:
-    sys.exit("run_lna_iip3.sh: cannot parse a version from `klt --version` output "
-             f"{sys.argv[2]!r}; need klt >= {floor_s}.")
-if have < floor:
-    sys.exit(f"run_lna_iip3.sh: klt {'.'.join(map(str, have))} is older than the required "
-             f"floor {floor_s} (sim/pdk.json klt_variant_campaign.min_version). It lacks: "
-             + ", ".join(feats) + ". Use a newer klt; do not run the grid locally.")
-PYEOF
+# klt version-floor preflight: the ONE shared check
+# (lna_variant_campaign.py check-client; issue #475) also used by
+# run_lna_variant.sh and the core-envelope gate runner -- the IIP3 requests
+# use the same features (sim/pdk.json klt_variant_campaign), and the batch
+# runner image is checked by klt itself.
+python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" check-client \
+  --runner run_lna_iip3.sh -- "${KLT_VERSION}" || exit 3
 
 GEN_ARGS=(--outdir "${SNAPSHOTS_OUT}" --variants "${VARIANT}")
 [[ -n "${LNA_IIP3_SMOKE:-}" ]] && { GEN_ARGS+=(--smoke); echo "run_lna_iip3.sh: LNA_IIP3_SMOKE set -- single-cell smoke, NOT a PVT campaign"; }
 [[ -n "${LNA_IIP3_TEMPS:-}" ]] && { GEN_ARGS+=(--temps "${LNA_IIP3_TEMPS}"); echo "run_lna_iip3.sh: LNA_IIP3_TEMPS set (${LNA_IIP3_TEMPS}) -- temperature slice, partial PVT grid, NOT a full corner-box campaign"; }
 python3 "${SCRIPT_DIR}/lna_variant_campaign.py" gen-iip3 "${GEN_ARGS[@]}"
 
-KLT_ARGS=(--format json)
-[[ -n "${LNA_IIP3_BACKEND:-}" ]] && KLT_ARGS+=(--backend "${LNA_IIP3_BACKEND}")
-EFFECTIVE_BACKEND="${LNA_IIP3_BACKEND:-${KLT_SIM_BACKEND:-local}}"
+BACKEND_OVERRIDE="${LNA_IIP3_BACKEND:-}"
+EFFECTIVE_BACKEND="${BACKEND_OVERRIDE:-${KLT_SIM_BACKEND:-local}}"
 CAPACITY_WAIT="${LNA_IIP3_CAPACITY_WAIT_S:-600}"
+# The 45-cell IIP3 requests use remote.hosts = 15 (at most 3 cells per fleet job).
 MAX_IN_FLIGHT="${LNA_IIP3_MAX_IN_FLIGHT:-2}"
 CAPACITY_RETRIES="${LNA_IIP3_CAPACITY_RETRIES:-3}"
-if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
-  KLT_ARGS+=(--wait-for-capacity "${CAPACITY_WAIT}")
-fi
 
 echo "run_lna_iip3.sh: record ${RECORD_ID}; variant ${VARIANT}; DUT sha256 ${DESIGN_NETLIST_SHA}; klt ${KLT_VERSION}; KLT_SIM_BACKEND=${KLT_SIM_BACKEND:-<unset>}"
-FAILED=()
-
-if [[ "${EFFECTIVE_BACKEND}" == "batch" ]]; then
-  # --- batch: submit the whole set in one invocation -----------------------
-  # Same rationale as run_lna_variant.sh: one klt sim --batch-set owns the
-  # fleet scheduling (at most --max-in-flight requests at once, the rest
-  # queued), each member writes its own report copied to the path the
-  # reducer reads. The 45-cell IIP3 requests carry remote.hosts = 15, so a
-  # member shards into fleet jobs of <= 3 units and one job stays inside the
-  # fleet's whole-job ceiling.
-  SET_OUT="${CORNERS_OUT}/set"
-  mkdir -p "${SET_OUT}"
-  REQS=()
-  for req in "${SNAPSHOTS_OUT}"/*.request.json; do REQS+=("${req}"); done
-  echo "run_lna_iip3.sh: klt sim --batch-set ${#REQS[@]} requests, max-in-flight ${MAX_IN_FLIGHT}, --wait-for-capacity ${CAPACITY_WAIT}"
-  SET_REPORT="${CORNERS_OUT}/set-report.json"
-  SET_ERRLOG="${CORNERS_OUT}/set.stderr.log"
-  set_rc=0
-  klt sim --batch-set "${REQS[@]}" -o "${SET_OUT}" \
-    --max-in-flight "${MAX_IN_FLIGHT}" --capacity-retries "${CAPACITY_RETRIES}" \
-    --wait-for-capacity "${CAPACITY_WAIT}" --format json \
-    > "${SET_REPORT}" 2> "${SET_ERRLOG}" || set_rc=$?
-  # Collect the set in ONE read of the envelope (issue #454): the campaign
-  # module's collect-set subcommand materialises each member's report at the
-  # per-request path the reducer reads (the source path is the envelope's
-  # own requests[].report, not a guessed directory name), prints
-  # missing-report diagnostics to stderr, and lists the failed members on
-  # stdout (`<stem> <exit_code>`, envelope order). The shell checks the
-  # collector's exit status before consuming the entries: exit 1 means the
-  # envelope itself was unreadable and the collector has already said why --
-  # stop before consuming anything.
-  SET_FAILURES="${CORNERS_OUT}/set-failures.txt"
-  collect_rc=0
-  python3 -I "${SCRIPT_DIR}/lna_variant_campaign.py" collect-set \
-    --runner run_lna_iip3.sh --envelope "${SET_REPORT}" \
-    --corners-out "${CORNERS_OUT}" > "${SET_FAILURES}" || collect_rc=$?
-  if (( collect_rc != 0 )); then
-    exit 1
-  fi
-  while read -r stem rc; do
-    [[ -z "${stem}" ]] && continue
-    echo "run_lna_iip3.sh: ${stem} exited ${rc} (see ${SET_ERRLOG}, ${SET_REPORT})" >&2
-    FAILED+=("${stem}:${rc}")
-  done < "${SET_FAILURES}"
-  if (( set_rc != 0 )) && [[ ${#FAILED[@]} -eq 0 ]]; then
-    FAILED+=("batch-set:${set_rc}")
-    echo "run_lna_iip3.sh: --batch-set exited ${set_rc} with no per-request failure (see ${SET_ERRLOG})" >&2
-  fi
-else
-  for req in "${SNAPSHOTS_OUT}"/*.request.json; do
-    stem="$(basename "${req}" .request.json)"
-    report="${CORNERS_OUT}/${stem}.report.json"
-    errlog="${CORNERS_OUT}/${stem}.stderr.log"
-    echo "run_lna_iip3.sh: klt sim ${stem}"
-    rc=0
-    # Absolute -o is required: klt runs ngspice with cwd = the corner dir, so a
-    # relative --outdir yields relative deck/log paths that do not resolve there.
-    klt sim "${req}" -o "${CORNERS_OUT}/${stem}.artifacts" "${KLT_ARGS[@]}" > "${report}" 2> "${errlog}" || rc=$?
-    if (( rc != 0 )); then
-      echo "run_lna_iip3.sh: ${stem} exited ${rc} (see ${errlog})" >&2
-      FAILED+=("${stem}:${rc}")
-      if ! python3 -I -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get('corners') else 1)" "${report}" 2>/dev/null; then
-        echo "run_lna_iip3.sh: no usable report for ${stem}; stopping (no local fallback)." >&2
-        break
-      fi
-    fi
-  done
-fi
+lna_run_requests "${BACKEND_OVERRIDE}" "${MAX_IN_FLIGHT}" "${CAPACITY_RETRIES}"
 
 # --- reduce ---------------------------------------------------------------
 # Per-cell |S11| for the device-plane conversion: the three committed
@@ -190,8 +109,6 @@ SUMMARIZE_ARGS=(--corners-dir "${CORNERS_OUT}"
   --headlines-md "${CORNERS_OUT}/iip3-headlines.md"
   --op-report "${CORNERS_OUT}/${VARIANT}_op.report.json"
   --s11-csv "${S11_CSV}")
-[[ -n "${LNA_IIP3_AMPS:-}" ]] && SUMMARIZE_ARGS+=(--amps "${LNA_IIP3_AMPS}")
-[[ -n "${LNA_IIP3_AMPS_NOMINAL_ONLY:-}" ]] && SUMMARIZE_ARGS+=(--amps-nominal-only "${LNA_IIP3_AMPS_NOMINAL_ONLY}")
 [[ -n "${LNA_IIP3_SMOKE:-}" ]] && SUMMARIZE_ARGS+=(--grid smoke)
 [[ -n "${LNA_IIP3_TEMPS:-}" ]] && SUMMARIZE_ARGS+=(--temps "${LNA_IIP3_TEMPS}")
 SUMMARIZE_RC=0
@@ -200,20 +117,7 @@ if (( SUMMARIZE_RC != 0 )); then
   echo "run_lna_iip3.sh: reduction FAILED (exit ${SUMMARIZE_RC}); coverage incomplete -- see ${CORNERS_OUT}/iip3-headlines.md" >&2
 fi
 
-JOBS="$(python3 -I - "${CORNERS_OUT}" <<'PYEOF'
-import glob, json, sys
-for p in sorted(glob.glob(sys.argv[1] + "/*.report.json")):
-    try:
-        d = json.load(open(p))
-    except Exception:
-        continue
-    r = (d.get("environment") or {}).get("remote") or {}
-    name = p.rsplit("/", 1)[-1][: -len(".report.json")]
-    print("  - `%s`: job `%s`, %s, runner klt `%s`, state `%s`, status `%s`, %s corners" % (
-        name, r.get("job_id"), r.get("instance_type"), r.get("runner_klt_version"),
-        r.get("state"), d.get("status"), d.get("corner_count")))
-PYEOF
-)"
+JOBS="$(lna_job_bullets "${CORNERS_OUT}")"
 
 NGSPICE_VER="$(python3 -I - "${CORNERS_OUT}/${VARIANT}_op.report.json" <<'PYEOF'
 import json, sys

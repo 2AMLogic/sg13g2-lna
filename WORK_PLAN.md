@@ -1,6 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
+_Generated: 2026-11-26T02:01:20Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -21,53 +22,46 @@ _None._
 
 ## Ready
 
-Human-approved issues ready for implementation (`loom:issue`).
+Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#470**: chore: gitignore the runtime-owned .loom/account-ranking.* state files
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes
-- **#449**: Reuse the Q-study boundary reduction for both metrics and band data
-- **#450**: Share the matching-study preflight across the feed, Le and Q runners
-- **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457)
-- **#468**: Share broadband stability reduction between feed scans and matching verification
+- **#496**: Share the klt sim execution block and remote-job summary formatter between run_lna_variant.sh and run_lna_iip3.sh
+- **#500**: Share PDK and corner settings between the variant and IIP3 request generators
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#471**: sim: share the broadband stability table reduction between reducers
+- **#498**: refactor(sim): share klt request execution and job bullets across LNA runners — closes #496
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work
-- **#466**: test: pin that class-2 usage exits publish no DRC pair
+- **#381**: docs(spec): propose DR-0004 amendment making narrow disclosure-cell refreshes Builder work — closes #336
+- **#501**: refactor(sim): share corner request settings across LNA campaigns — closes #500
 
 ## Proposed
 
 Issues carrying `loom:curated`.
 
-- **#4**: Gap-to-T1 tracker: artifact-presence checklist (schematic through repo hygiene) *(curated)*
-- **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)*
-- **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)*
-- **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)*
+- **#4**: Gap-to-T1 tracker: artifact-presence checklist (schematic through repo hygiene) *(curated)* *(held)*
+- **#58**: design: adopt the larger emitter array and measure the cascode split against the NF row (decision record 0004, Option C, first lever) *(curated)* *(held)*
+- **#201**: Worker capability request: compatible standalone KLayout for native PDK evidence *(curated)* *(held)*
+- **#227**: Live verification: klt artifact verify against the real broker with SIM_ARTIFACT_STORE=1 (follow-up to PR #223) *(curated)* *(held)*
 - **#336**: operator: refresh spec/target-spec.md disclosure cells (Gain/NF/S11/S22/Stability rows + open-work list) once #27 closes *(curated)*
-- **#458**: test_usage_errors no longer pins class-2 non-publication (assertion dropped in PR #457) *(curated)*
-- **#470**: chore: gitignore the runtime-owned .loom/account-ranking.* state files *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)*
-- **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)*
-- **#282**: Simplify rederive_nf_fixed_t0.py: the round-trip identity guard is algebraically vacuous *(hermit)*
-- **#432**: Remove reducer-only drive-level overrides from the IIP3 runner *(hermit)*
-- **#449**: Reuse the Q-study boundary reduction for both metrics and band data *(hermit)*
-- **#450**: Share the matching-study preflight across the feed, Le and Q runners *(hermit)*
+- **#68**: sim: Monte Carlo on the DR-0003 bias core and an explicit statistical-row classification (T1 item 6) *(architect)* *(held)*
+- **#269**: Remove the inlined native-DRC validate copy in check-layout-freshness: call layout/native_drc_identity.py instead *(hermit)* *(held)*
+- **#495**: Remove the local ngspice requirement from the fleet Monte Carlo runner *(hermit)* *(held)*
 
 ## Epics
 
@@ -80,11 +74,11 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 5 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 7 |
-| Architect / Hermit proposals | 6 |
+| Curated | 5 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
