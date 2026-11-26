@@ -1107,6 +1107,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_variant.sh"
       ],
       "shared": [
@@ -1165,6 +1166,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_variant.sh"
       ],
       "shared": [
@@ -1689,6 +1691,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_iip3.sh"
       ],
       "shared": [

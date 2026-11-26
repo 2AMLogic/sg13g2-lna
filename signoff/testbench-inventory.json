@@ -1509,6 +1509,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_variant.sh"
       ],
       "shared": [
@@ -1696,6 +1697,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_variant.sh"
       ],
       "shared": [
@@ -2403,6 +2405,7 @@
       ],
       "result_status": "published",
       "runners": [
+        "sim/lna-characterization/campaign_requests.sh",
         "sim/lna-characterization/run_lna_iip3.sh"
       ],
       "shared": [
@@ -2575,6 +2578,7 @@
     "sim/lna-bias-pvt/tests/test_reduce_biasop.py": "sha256:83118b28df19600737795c8619f30c9b9df5d5a44d018ebc693008c40bcedb39",
     "sim/lna-bias-pvt/tests/test_startup_waveform_audit.py": "sha256:311c67333d2f277760e54b22decd07ed965ba554db79128f82fb77ef847bd8ca",
     "sim/lna-characterization/README.md": "sha256:9bbeeb913f6d6035f52e7cf8ba2b47b6b7496bc89811aedeb08e06646e205c5e",
+    "sim/lna-characterization/campaign_requests.sh": "sha256:1442cec82ecfe57eb2b0999ed37d01facf126d26df0b1beb4ad080d11437e09f",
     "sim/lna-characterization/gen_spec_envelopes.py": "sha256:c8ba7ca228c993b5e1356605356cccc358b20ab494886ddeb4de7228a57debdd",
     "sim/lna-characterization/lna_variant_campaign.py": "sha256:cd7049ebc054de0bc5d6565f30f8062bcff39f450e3694183315a9f4c1e2467a",
     "sim/lna-characterization/parse_lna_sweep.py": "sha256:ad13f4dad6e9a4504dd602e6f3b6dcdf3f4f029e21883a6f4dbe24555b97af86",
@@ -2638,9 +2642,9 @@
     "sim/lna-characterization/records/issue-27-matched-pvt-verdict.md": "sha256:923252dfcaf4edc613de5dc32a75416498327fb4dd744f892148a685b071ce54",
     "sim/lna-characterization/reduce_spec_envelopes.py": "sha256:7c0cd8867fd4b1d191582a9e1613a2651e19bd4188fdd0a5263a6b971542506f",
     "sim/lna-characterization/render_results.py": "sha256:b65635a99e09b1aaf76105b756c1384c0e41d04ed3c2ccd4eec94d966a5d20a6",
-    "sim/lna-characterization/run_lna_iip3.sh": "sha256:b70c09a1345c677ec5ae09757a935c14347b68f965363915f9c6d7bb8c6a8ccf",
+    "sim/lna-characterization/run_lna_iip3.sh": "sha256:98bd530d63345ef9160452f64f3b9cd71a942e0cf158a113ae0e3063903f90e7",
     "sim/lna-characterization/run_lna_sweep.sh": "sha256:83e354065978ea1e96735ad8aa1a0b7ac0ad5893690ec32265454b6b1d151e56",
-    "sim/lna-characterization/run_lna_variant.sh": "sha256:75a3d70828cd22c5ef3c9cadbf74d6dfa128446c37cb4ec84456775fbb1365cd",
+    "sim/lna-characterization/run_lna_variant.sh": "sha256:55d3ddf40b4eed8d3255ddfe40fbe9401b8feea240f9cb6999f9ae8f6cd3ae4e",
     "sim/lna-characterization/run_spec_envelopes.sh": "sha256:34a140e55dc0333a03b0b20ad8256c762feb0186f08e54fce632286bd12f0950",
     "sim/lna-characterization/testbench/tb_lna_iip3.spice.tmpl": "sha256:eda18bdb0fb22b389d50ce5ec1326f2b2da2ed207c7cc75895d05c58766efd98",
     "sim/lna-characterization/testbench/tb_lna_sparam.spice.tmpl": "sha256:7b2fc01379680b7a611e0f23f252b32033c597737b4d5a79267785035cde2943",
